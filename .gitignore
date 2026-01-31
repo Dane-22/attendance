@@ -1,14 +1,14 @@
-# # Database Credentials
-# main/conn/db_connection.php
+# Database Credentials
+main/conn/db_connection.php
 
-# # User-Uploaded Content
-# main/employee/uploads/
+# User-Uploaded Content
+main/employee/uploads/
 
-# # Environment & Config Files
-# .env
+# Environment & Config Files
+.env
 
-# # System & IDE Files
-# .vscode/
-# node_modules/
-# Thumbs.db
-# .DS_Store
+# System & IDE Files
+.vscode/
+node_modules/
+Thumbs.db
+.DS_Store
