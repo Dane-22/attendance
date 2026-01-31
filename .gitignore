@@ -5,7 +5,7 @@ main/conn/db_connection.php
 main/employee/uploads/
 
 # Environment & Config Files
-main/.env
+.env
 
 # System & IDE Files
 .vscode/
