@@ -1210,7 +1210,7 @@ for ($i = 6; $i >= 0; $i--) {
     </main>
   </div>
 
-  <script src="../assets/employee.js"></script>
+  <script src="../assets/js/employee.js"></script>
   <script>
     // Tab switching
     function switchTab(tabName) {
