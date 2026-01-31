@@ -18,6 +18,7 @@ if (!empty($_SESSION['employee_id'])) {
 		<title>JAJR Company — Engineering the Future</title>
 		<script src="https://cdn.tailwindcss.com"></script>
 		<link rel="stylesheet" href="assets/css/style.css">
+		<link rel="icon" type="image/x-icon" href="assets/img/profile/jajr-logo.png">
 	</head>
 	<body class="font-sans antialiased text-gray-100 bg-gray-900">
 		<!-- Navbar -->

@@ -252,6 +252,8 @@ function buildQueryString($params = []) {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
+   <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
+
   <style>
     .dark-engineering { background: #0b0b0b; color: white; min-height: 100vh; }
     .main-content { margin-left: 280px; padding: 2rem; min-height: 100vh; }
