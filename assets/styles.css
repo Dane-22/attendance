@@ -1,0 +1,41 @@
+/* Custom gradient using the exact orange */
+.hero-gradient {
+  background: linear-gradient(90deg, #FFA500 0%, #000000 100%);
+}
+
+/* Blueprint grid background */
+.blueprint-bg {
+  background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px;
+}
+
+/* Glow effect for CTAs */
+.glow-orange:hover {
+  box-shadow: 0 8px 30px rgba(255,165,0,0.35);
+}
+
+/* Reveal on scroll */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 700ms ease, transform 700ms ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* SVG drawing animation */
+.draw path {
+  stroke-dasharray: 800;
+  stroke-dashoffset: 800;
+  animation: draw 2s forwards ease-in-out;
+}
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Spinning gear */
+.gear { animation: spin 6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+

@@ -1,0 +1,200 @@
+/* CSS Adjustments for employees.php - Matching select_employee.php Spacing */
+
+/* 1. Main Wrapper Spacing - Match select_employee.php (.main-content) */
+.main-content {
+    padding: 16px;
+}
+
+/* 2. Container Spacing */
+.container {
+    padding: 0 0.5rem;
+}
+
+/* 3. Grid View Spacing - Reduced gap to match select_employee */
+.employees-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+/* 4. List View Spacing */
+.employees-list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 5. Details View Spacing */
+.employees-details-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+/* 6. Employee Card Spacing - Reduced padding */
+.employee-card-list {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.employee-card-details {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+/* 7. Internal Card Padding */
+.employee-card-details .details-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.employee-card-details .details-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+/* 8. Title Alignment - Match select_employee section titles */
+.section-title {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #FFD700;
+}
+
+/* Alternative: Using H2 selector for "Existing Employees" title */
+section h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #FFD700;
+}
+
+/* 9. View Options Container */
+.view-options-container {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* 10. Top Actions Spacing */
+.top-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+/* 11. Header Spacing */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+/* 12. Avatar Styling - Consistent */
+.employee-card-list .avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #0b0b0b;
+    font-size: 1rem;
+}
+
+.employee-card-details .avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #0b0b0b;
+    font-size: 1.2rem;
+}
+
+/* 13. Card Actions Gap */
+.employee-card-list .card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.employee-card-details .card-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* 14. Responsive Adjustments */
+@media (max-width: 768px) {
+    .employees-grid-view,
+    .employees-details-view {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-card-list {
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+    }
+
+    .employee-card-list .card-actions {
+        grid-column: 1 / span 2;
+        justify-content: flex-end;
+        margin-top: 12px;
+    }
+
+    .employee-card-details .details-body {
+        grid-template-columns: 1fr;
+    }
+
+    .view-options-container {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 12px;
+    }
+
+    .employee-card-list {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .employee-card-details {
+        padding: 12px;
+    }
+
+    .employee-card-details .details-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}

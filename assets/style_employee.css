@@ -1,0 +1,90 @@
+/* Employee interface styles (per-folder) */
+:root{
+  --orange: #FFA500;
+  --black: #000000;
+  --muted: #f3f4f6;
+  --card-bg: #ffffff;
+}
+
+body.employee-bg{
+  background: #f7fafc; /* very light gray */
+  color: #111827;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  margin:0;
+}
+
+/* Main container */
+.app-shell{ display:flex; min-height:100vh; }
+.sidebar{ width:220px; background:var(--black); color:#fff; display:flex; flex-direction:column; padding:12px; gap:12px; transition:width .22s ease; }
+.sidebar.collapsed{ width:72px; }
+.sidebar .logo{ height:44px; border-radius:8px; background: linear-gradient(90deg, var(--orange), var(--black)); display:flex; align-items:center; justify-content:center; font-weight:700; margin-bottom:6px; }
+.sidebar .sidebar-brand{ display:flex; flex-direction:column; }
+.menu-item{ display:flex; gap:12px; align-items:center; padding:10px; border-radius:8px; color:#d1d5db; text-decoration:none; }
+.menu-item .icon{ width:28px; text-align:center; }
+.menu-item .label{ white-space:nowrap; }
+.menu-item:hover{ background: rgba(255,165,0,0.06); color:var(--orange); transform: translateX(6px); }
+.menu-item.active{ background: linear-gradient(90deg, rgba(255,165,0,0.12), rgba(0,0,0,0.08)); color:var(--orange); box-shadow: 0 6px 18px rgba(255,165,0,0.08); }
+.sidebar.collapsed .label{ display:none; }
+/* hide brand content when collapsed */
+.sidebar.collapsed .sidebar-brand{ display:none; }
+
+/* Logout button styling */
+.menu-item.logout{ transition: box-shadow .18s ease, transform .12s ease; }
+.menu-item.logout .icon{ display:inline-block; }
+.menu-item.logout:hover{ 
+  color: var(--orange);
+  background: rgba(255,165,0,0.04);
+  box-shadow: 0 8px 28px rgba(255,165,0,0.12);
+  transform: translateX(4px);
+}
+.menu-item.logout:focus{ outline:none; box-shadow: 0 8px 28px rgba(255,165,0,0.12); }
+
+.main-content{ flex:1; padding:20px; overflow:auto; }
+.header-card{ background:#fff; padding:14px; border-radius:10px; box-shadow: 0 4px 20px rgba(2,6,23,0.06); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.header-left{ display:flex; align-items:center; gap:12px; }
+.menu-toggle{ background:transparent; border:none; color:#374151; font-size:20px; cursor:pointer; padding:6px; border-radius:6px; }
+.welcome{ font-size:1.15rem; font-weight:600; }
+.clock{ font-family: monospace; font-size:1.05rem; color:#374151; }
+
+.grid-cards{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:18px; margin-top:16px; }
+.card{ background:#fff; padding:14px; border-radius:10px; box-shadow: 0 6px 18px rgba(2,6,23,0.04); }
+.label{ color:#6b7280; font-size:0.85rem; }
+.value{ margin-top:8px; font-weight:700; font-size:1.2rem; }
+
+.clock-actions{ display:flex; gap:12px; align-items:center; }
+.btn-clock{ padding:10px 14px; border-radius:8px; font-weight:700; cursor:pointer; border:none; }
+.btn-clock.in{ background: linear-gradient(90deg,var(--orange), #FF8C00); color:#000; }
+.btn-clock.out{ background: #e5e7eb; color:#111827; }
+.shift-label{ font-size:0.95rem; color:#6b7280; margin-left:8px; }
+
+/* Kanban board */
+.board{ display:flex; gap:16px; margin-top:20px; align-items:flex-start; }
+.column{ background:#f9fafb; padding:12px; border-radius:10px; width:100%; min-height:380px; box-shadow: 0 6px 18px rgba(2,6,23,0.03); display:flex; flex-direction:column; }
+.column-header{ padding:8px 10px; border-radius:8px; margin-bottom:10px; font-weight:700; color:#111827; }
+.col-todo .column-header{ background:#ffffff; }
+.col-inprogress .column-header{ background:#e0f2fe; }
+.col-review .column-header{ background:linear-gradient(90deg,#FFEDD5,#FFF7ED); }
+.col-done .column-header{ background:#dcfce7; }
+.task-list{ flex:1; }
+.task-card{ background:#fff; padding:10px; border-radius:8px; margin-bottom:10px; box-shadow: 0 4px 12px rgba(2,6,23,0.04); cursor:grab; }
+.priority-High{ color:#dc2626; font-weight:700; }
+.priority-Medium{ color:#f97316; font-weight:700; }
+.priority-Low{ color:#10b981; font-weight:700; }
+/* lowercase variants (some templates output lowercase) */
+.priority-high{ color:#dc2626; font-weight:700; }
+.priority-medium{ color:#f97316; font-weight:700; }
+.priority-low{ color:#10b981; font-weight:700; }
+.task-meta{ font-size:0.85rem; color:#6b7280; margin-top:6px; }
+
+.modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,0.5); display:none; align-items:center; justify-content:center; z-index:60; }
+.modal{ background:#fff; padding:18px; border-radius:10px; max-width:520px; width:100%; }
+
+/* Responsive */
+@media (max-width: 1000px){
+  .board{ flex-direction:column; }
+  .sidebar{ position:fixed; left:0; top:0; bottom:0; z-index:70; transform:translateX(-100%); transition:transform .18s ease; }
+  .sidebar.open{ transform:translateX(0); }
+  .main-content{ padding:14px; }
+}
+
+/* On very small screens the sidebar will be hidden by design; overlay toggle manages visibility. */

@@ -1,0 +1,69 @@
+/* Auth styles (used by login.php + signup.php) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --orange: #FFA500;
+  --black: #000000;
+}
+
+.auth-bg{
+  background: linear-gradient(90deg, var(--orange) 0%, var(--black) 100%);
+  min-height: 100vh;
+}
+
+.auth-card{
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.auth-left{
+  padding: 2rem;
+}
+
+.auth-right{
+  padding: 2rem;
+}
+
+/* Rotating gear animation */
+.gear-anim{ animation: gear-spin 6s linear infinite; transform-origin: center; }
+@keyframes gear-spin { to { transform: rotate(360deg); } }
+
+/* Pulsing grid */
+.grid-pulse{ animation: pulse-grid 2.5s ease-in-out infinite; }
+@keyframes pulse-grid { 0% { opacity: 0.12 } 50% { opacity: 0.22 } 100% { opacity: 0.12 } }
+
+/* Glow buttons */
+.btn-glow{
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.btn-glow:hover{
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(255,165,0,0.28);
+}
+
+/* Fade transitions */
+.fade-in{ opacity: 0; transform: translateY(8px); transition: opacity .5s ease, transform .5s ease; }
+.fade-in.visible{ opacity: 1; transform: none; }
+.fade-out{ opacity: 1; transition: opacity .35s ease; }
+.fade-out.hidden{ opacity: 0; }
+
+/* Responsive tweaks */
+@media (max-width: 768px){
+  .auth-left{ display: none; }
+  .auth-card{ border-radius: 8px; }
+}
+
+/* Form elements */
+.input-field{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #fff;
+}
+.input-field::placeholder{ color: rgba(255,255,255,0.5); }
+
+/* Small helper */
+.small-muted{ color: rgba(255,255,255,0.7); font-size: .95rem; }

@@ -1,0 +1,249 @@
+[2026-01-16 08:19:04] Received: {
+    "employee_id": 1,
+    "status": "Present",
+    "branch_name": "STO. Rosario",
+    "attendance_date": "2026-01-16"
+}
+[2026-01-16 08:24:07] Received: {
+    "employee_id": 1,
+    "status": "Present",
+    "branch_name": "STO. Rosario",
+    "attendance_date": "2026-01-16"
+}
+[2026-01-19 00:29:05] Received: {"employee_id":1,"status":"IN"}
+[2026-01-19 00:45:45] Received: {"branch_name":"BCDA","attendance_date":"2026-01-19","employee_id":1,"status":""}
+[2026-01-19 00:53:51] Received: {"branch_name":"PIAS (Office)","attendance_date":"2026-01-19","employee_id":1,"status":"PRESENT"}
+[2026-01-19 02:25:19] Received: {"branch_name":"CAPITOL","attendance_date":"2026-01-19","employee_id":1,"status":"PRESENT"}
+[2026-01-19 02:30:02] Received: {"branch_name":"DALLANGAYAN","attendance_date":"2026-01-19","employee_id":1,"status":"PRESENT"}
+[2026-01-20 00:08:22] Received: {"branch_name":"PIAS (Office)","attendance_date":"2026-01-20","employee_id":1,"status":"PRESENT"}
+[2026-01-20 01:15:27] Received JSON: {"branch_name":"STO. ROSARIO","identifier":"1","password":"12345678"}
+[2026-01-20 01:15:56] Received JSON: {"branch_name":"STO. ROSARIO","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 01:29:10] Received JSON: {"branch_name":"DALLANGAYAN","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 01:30:27] Received JSON: {"branch_name":"PIAS (Office)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 01:36:18] Received JSON: {"branch_name":"CAPITOL","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 01:48:01] Received JSON: {"branch_name":"PIAS (Office)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 01:48:40] Received JSON: {"branch_name":"PIAS (Office)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 01:49:49] Received JSON: {"branch_name":"PIAS (Sundara)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 01:52:24] Received JSON: {"branch_name":"DALLANGAYAN","identifier":"SA001","password":"67"}
+[2026-01-20 02:04:39] Received JSON: {"branch_name":"PIAS (Sundara)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 02:12:23] Received JSON: {"branch_name":"PIAS (Office)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 02:31:46] Received JSON: {"branch_name":"PIAS (Sundara)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 02:34:48] Received JSON: {"branch_name":"PANICSICAN","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 02:39:52] Received JSON: {"branch_name":"CAPITOL","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 02:48:02] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:02:37] Received JSON: {"branch_name":"CAPITOL","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:03:58] Received JSON: {"branch_name":"PIAS (Office)","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:19:47] Received JSON: {"branch_name":"PANICSICAN","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:20:47] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:21:22] Received JSON: {"branch_name":"STO. ROSARIO","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:26:30] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:27:34] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:30:33] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:34:08] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:40:13] Received JSON: {"branch_name":"PANICSICAN","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 03:43:37] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 04:00:21] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 05:38:48] Attendance Request: {"employee_id":"8","branch_name":"BCDA"}
+[2026-01-20 05:44:35] Fetching available employees for date: 2026-01-20
+[2026-01-20 05:45:16] Received JSON: {"branch_name":"BCDA","identifier":"SA001","password":"Dante051223@"}
+[2026-01-20 06:41:00] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=STO.%20ROSARIO
+[2026-01-20 06:56:57] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 07:08:24] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 07:14:23] Received JSON: employee_code=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 07:14:50] Received JSON: employee_id=8&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 07:15:10] Received JSON: email=admin%40jajrconstruction.com&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 07:16:16] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 07:35:43] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=STO.%20ROSARIO
+[2026-01-20 07:36:31] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 07:58:16] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-20 08:07:39] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=STO.%20ROSARIO
+[2026-01-20 08:41:19] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 00:57:00] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=PIAS%20%28Office%29
+[2026-01-21 03:19:46] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:19:55] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:28:21] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 03:28:26] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:28:36] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:28:38] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:28:39] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:28:39] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:30:14] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:32:16] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:33:13] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:33:24] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:33:40] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:34:02] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:34:10] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:34:58] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:35:30] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:44:10] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=PIAS%20%28Office%29
+[2026-01-21 03:44:13] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:44:22] Fetching available employees for date: 2026-01-21
+[2026-01-21 03:58:17] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 06:12:09] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=STO.%20ROSARIO
+[2026-01-21 06:13:29] Fetching available employees for date: 2026-01-21
+[2026-01-21 06:18:17] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=STO.%20ROSARIO
+[2026-01-21 06:19:37] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 06:28:12] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 06:29:06] Fetching available employees for date: 2026-01-21
+[2026-01-21 06:29:11] Fetching available employees for date: 2026-01-21
+[2026-01-21 06:48:37] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 06:48:40] Fetching available employees for date: 2026-01-21
+[2026-01-21 06:48:47] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:18:17] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 07:18:24] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:18:31] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:18:31] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:34:38] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 07:34:40] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:34:45] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:34:51] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:34:52] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:34:53] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:34:53] Fetching available employees for date: 2026-01-21
+[2026-01-21 07:34:57] Fetching available employees for date: 2026-01-21
+[2026-01-21 08:33:55] Received JSON: identifier=SA001&password=Dante051223&branch_name=BCDA
+[2026-01-21 08:34:01] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 08:34:03] Fetching available employees for date: 2026-01-21
+[2026-01-21 08:34:08] Fetching available employees for date: 2026-01-21
+[2026-01-21 08:34:11] Fetching available employees for date: 2026-01-21
+[2026-01-21 08:34:12] Fetching available employees for date: 2026-01-21
+[2026-01-21 08:34:14] Fetching available employees for date: 2026-01-21
+[2026-01-21 08:34:18] Fetching available employees for date: 2026-01-21
+[2026-01-21 08:34:21] Fetching available employees for date: 2026-01-21
+[2026-01-21 09:03:01] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-21 09:03:03] Fetching available employees for date: 2026-01-21
+[2026-01-21 09:03:06] Fetching available employees for date: 2026-01-21
+[2026-01-22 01:31:36] Fetching available employees for date: 2026-01-22
+[2026-01-22 01:31:41] Fetching available employees for date: 2026-01-22
+[2026-01-22 02:28:13] Fetching available employees for date: 2026-01-22
+[2026-01-22 02:28:28] Fetching available employees for date: 2026-01-22
+[2026-01-22 02:28:35] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:22:20] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-22 03:22:23] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:22:31] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:40:23] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-22 03:40:25] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:40:31] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:43:23] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-22 03:43:26] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:44:01] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:45:37] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-22 03:45:39] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:45:46] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:45:48] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:45:50] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:45:51] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:45:52] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:45:54] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:59:14] Fetching available employees for date: 2026-01-22
+[2026-01-22 03:59:20] Fetching available employees for date: 2026-01-22
+[2026-01-22 04:00:04] Fetching available employees for date: 2026-01-22
+[2026-01-22 04:00:06] Fetching available employees for date: 2026-01-22
+[2026-01-22 04:00:07] Fetching available employees for date: 2026-01-22
+[2026-01-22 04:00:08] Fetching available employees for date: 2026-01-22
+[2026-01-22 04:00:10] Fetching available employees for date: 2026-01-22
+[2026-01-22 05:50:17] Attendance Request: {"employee_id":"","branch_name":"","status":"","attendance_date":""}
+[2026-01-22 05:50:46] Attendance Request: {"employee_id":"1","branch_name":"BCDA","status":"Present","attendance_date":"2026-01-22"}
+[2026-01-22 06:04:23] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:04:33] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:04:48] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:04:50] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:04:53] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:04:57] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:05:01] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:44:53] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:44:57] Attendance Request: {"employee_id":"3","branch_name":"BCDA"}
+[2026-01-22 06:44:59] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:45:04] Attendance Request: {"employee_id":"4","branch_name":"STO. ROSARIO"}
+[2026-01-22 06:45:07] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:45:10] Attendance Request: {"employee_id":"5","branch_name":"PANICSICAN"}
+[2026-01-22 06:45:10] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:45:12] Attendance Request: {"employee_id":"7","branch_name":"DALLANGAYAN"}
+[2026-01-22 06:45:17] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:45:19] Attendance Request: {"employee_id":"8","branch_name":"PIAS (Sundara)"}
+[2026-01-22 06:45:19] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:45:21] Attendance Request: {"employee_id":"10","branch_name":"PIAS (Office)"}
+[2026-01-22 06:45:22] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:46:21] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:46:23] Fetching available employees for date: 2026-01-22
+[2026-01-22 06:46:24] Fetching available employees for date: 2026-01-22
+[2026-01-23 00:43:35] Fetching available employees for date: 2026-01-23
+[2026-01-23 00:45:27] Fetching available employees for date: 2026-01-23
+[2026-01-23 00:45:31] Fetching available employees for date: 2026-01-23
+[2026-01-23 00:45:38] Attendance Request: {"employee_id":"61","branch_name":"PIAS (Office)"}
+[2026-01-23 00:45:45] Attendance Request: {"employee_id":"71","branch_name":"PIAS (Office)"}
+[2026-01-23 00:45:49] Attendance Request: {"employee_id":"70","branch_name":"PIAS (Office)"}
+[2026-01-23 00:45:57] Attendance Request: {"employee_id":"62","branch_name":"PIAS (Office)"}
+[2026-01-23 00:46:18] Fetching available employees for date: 2026-01-23
+[2026-01-23 05:33:16] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=PIAS%20%28Office%29
+[2026-01-23 05:34:40] Fetching available employees for date: 2026-01-23
+[2026-01-23 05:34:56] Fetching available employees for date: 2026-01-23
+[2026-01-23 05:34:58] Fetching available employees for date: 2026-01-23
+[2026-01-23 05:36:40] Fetching available employees for date: 2026-01-23
+[2026-01-28 07:53:59] Received POST: []
+[2026-01-28 07:55:22] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-28 07:57:38] Received JSON: identifier=SA001&password=Dante051223&branch_name=BCDA
+[2026-01-28 07:57:50] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-28 07:59:33] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-28 07:59:44] Branch: PIAS (Sundara) | Date: 2026-01-28
+[2026-01-28 07:59:57] Branch: PIAS (Sundara) | Date: 2026-01-28
+[2026-01-28 07:59:57] Branch: PIAS (Sundara) | Date: 2026-01-28
+[2026-01-28 08:01:58] Branch:  | Date: 2026-01-28
+[2026-01-28 08:02:19] Branch: BCDA | Date: 2026-01-28
+[2026-01-28 08:05:08] Branch: Pias (Sundara) | Date: 2026-01-28
+[2026-01-28 08:11:45] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-28 08:11:46] Branch: CAPITOL | Date: 2026-01-28
+[2026-01-28 08:11:50] Branch: PIAS (Office) | Date: 2026-01-28
+[2026-01-28 08:12:00] Branch: DALLANGAYAN | Date: 2026-01-28
+[2026-01-28 08:12:09] Branch: BCDA | Date: 2026-01-28
+[2026-01-28 08:12:34] Branch: PIAS (Sundara) | Date: 2026-01-28
+[2026-01-28 08:12:49] Branch: DALLANGAYAN | Date: 2026-01-28
+[2026-01-28 08:14:21] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-28 08:14:29] Branch: DALLANGAYAN | Date: 2026-01-28
+[2026-01-28 08:14:33] Branch: PIAS (Sundara) | Date: 2026-01-28
+[2026-01-28 08:14:36] Attendance Request: {"employee_id":"15","branch_name":"PIAS (Sundara)"}
+[2026-01-28 08:27:13] Branch: Pias (Sundara) | Date: 2026-01-28
+[2026-01-28 08:29:45] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-28 08:30:16] Branch: DALLANGAYAN | Date: 2026-01-28
+[2026-01-28 08:30:18] Branch: PIAS (Sundara) | Date: 2026-01-28
+[2026-01-29 03:27:49] Received POST: []
+[2026-01-29 03:28:04] Received POST: []
+[2026-01-29 03:28:19] Received POST: []
+[2026-01-29 03:28:26] Received POST: []
+[2026-01-29 03:28:46] Received POST: []
+[2026-01-29 03:28:54] Received POST: []
+[2026-01-29 03:29:00] Received POST: []
+[2026-01-29 03:29:08] Received POST: []
+[2026-01-29 03:30:40] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-29 03:35:27] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=BCDA
+[2026-01-29 03:35:32] Branch: BCDA | Date: 2026-01-29
+[2026-01-29 03:35:37] Branch: STO. ROSARIO | Date: 2026-01-29
+[2026-01-29 03:36:06] Branch: PANICSICAN | Date: 2026-01-29
+[2026-01-29 03:36:09] Branch: BCDA | Date: 2026-01-29
+[2026-01-29 03:36:19] Attendance Request: {"employee_id":"42","branch_name":"STO. ROSARIO"}
+[2026-01-29 03:38:18] Branch: STO. ROSARIO | Date: 2026-01-29
+[2026-01-30 03:06:37] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-30 03:06:54] Attendance Request: {"identifier":"SA001","password":"Dante051223@","branch_name":"Sto. Rosario"}
+[2026-01-30 03:07:05] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 03:07:45] Branch:  | Date: 2026-01-30
+[2026-01-30 03:08:03] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 03:09:37] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 03:10:26] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 03:10:37] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 03:11:57] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 03:13:18] Received POST: []
+[2026-01-30 03:13:45] Attendance Request: []
+[2026-01-30 03:13:50] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 03:13:57] Branch:  | Date: 2026-01-30
+[2026-01-30 03:18:24] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-30 03:19:17] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-30 03:20:49] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-30 06:31:37] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-30 06:32:59] Received JSON: identifier=SA001&password=Dante051223&branch_name=Sto.%20Rosario
+[2026-01-30 06:33:05] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-30 07:06:35] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-30 07:06:40] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 07:07:29] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 07:08:18] Branch: Sto. Rosario | Date: 2026-01-30
+[2026-01-30 07:08:31] Branch: Sto. Rosario | Date: 2026-01-30
