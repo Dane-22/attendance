@@ -843,6 +843,12 @@ function applyAutoAbsent($db, $date) {
         gap: 12px;
     }
 
+    .employee-grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+    }
+
     .employee-list-view {
         display: flex;
         flex-direction: column;
@@ -936,10 +942,9 @@ function applyAutoAbsent($db, $date) {
 
     .employee-card-list .employee-info {
         flex: 1;
-        display: grid;
-        grid-template-columns: 2fr 1fr 2fr 1fr;
-        gap: 12px;
-        align-items: center;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
     }
 
     .employee-card-list .employee-name {
@@ -1132,7 +1137,31 @@ function applyAutoAbsent($db, $date) {
     }
 
     .btn-present:disabled,
-    .btn-present-late:disabled {
+    .btn-transfer {
+        background: #7c3aed;
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+
+    .btn-transfer:hover:not(:disabled) {
+        background: #6d28d9;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+    }
+
+    .btn-transfer:disabled {
         background: #444;
         color: #888;
         cursor: not-allowed;
@@ -1527,8 +1556,7 @@ function applyAutoAbsent($db, $date) {
         }
 
         .employee-card-list .employee-info {
-            grid-template-columns: 1fr;
-            gap: 8px;
+            gap: 6px;
         }
 
         .employee-card-list {
@@ -1569,7 +1597,8 @@ function applyAutoAbsent($db, $date) {
         }
         
         .btn-present,
-        .btn-present-late {
+        .btn-present-late,
+        .btn-transfer {
             min-width: 100px;
             height: 22px;
             font-size: 11px;
@@ -1690,7 +1719,7 @@ function applyAutoAbsent($db, $date) {
           <div>
             <div class="welcome">Select Employee for Attendance</div>
             <div class="text-sm text-gray">
-                Employee Code: <strong><?php echo htmlspecialchars($employeeCode); ?></strong> |
+                Employee Code: <strong><?php echo htmlspecialchars($employeeCode); ?></strong> 
                 Position: <?php echo htmlspecialchars($position); ?>
             </div>
           </div>
@@ -2297,8 +2326,7 @@ function applyAutoAbsent($db, $date) {
             <div class="employee-card-grid" id="employee-${employee.id}">
               <div class="employee-info">
                 <div class="employee-name">${employee.name}</div>
-                <div class="employee-code">ID: ${employee.employee_code}</div>
-                <div class="employee-position">${employee.position}</div>
+     
                 <div class="employee-original-branch">Original Branch: ${employee.original_branch || 'Not specified'}</div>
                 ${branchHistory}
               </div>
@@ -2326,28 +2354,36 @@ function applyAutoAbsent($db, $date) {
             <div class="employee-card-list" id="employee-${employee.id}">
               <div class="employee-info">
                 <div class="employee-name">${employee.name}</div>
-                <div class="employee-code">${employee.employee_code}</div>
-                <div class="employee-position">${employee.position}</div>
+          
                 ${branchHistory}
-                <div class="status-button-container">
-                  <span class="employee-status ${statusClass}">${statusText}</span>
-                  <button class="${buttonClass}" 
-                          onclick="${buttonAction}(${employee.id}, '${employee.name.replace(/'/g, "\\'")}')"
-                          ${isDisabled ? 'disabled' : ''}
-                          title="${buttonTitle}">
-                    <i class="fas fa-${buttonAction === 'transferEmployee' ? 'exchange-alt' : 'check-circle'}"></i> ${buttonText}
-                  </button>
-                </div>
+              </div>
+              <div class="status-button-container">
+                <span class="employee-status ${statusClass}">${statusText}</span>
+                <button class="${buttonClass}" 
+                        onclick="${buttonAction}(${employee.id}, '${employee.name.replace(/'/g, "\\'")}')"
+                        ${isDisabled ? 'disabled' : ''}
+                        title="${buttonTitle}">
+                  <i class="fas fa-${buttonAction === 'transferEmployee' ? 'exchange-alt' : 'check-circle'}"></i> ${buttonText}
+                </button>
               </div>
             </div>
           `;
         } else if (viewToUse === 'details') {
+          // Add branch history indicator for details view
+          let branchHistory = '';
+          if (employee.attendance_status === 'Present' && employee.logged_branch) {
+            branchHistory = `<div class="branch-history" style="font-size: 0.75rem; color: #FFD000; background: #0B0B0B; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;">
+              <i class="fas fa-map-marker-alt"></i> Current: ${employee.logged_branch}
+            </div>`;
+          }
+          
           html += `
             <div class="employee-card-details" id="employee-${employee.id}">
               <div class="employee-header">
                 <div class="header-left">
                   <div class="employee-name">${employee.name}</div>
                   <div class="employee-code">Employee Code: ${employee.employee_code}</div>
+                  ${branchHistory}
                 </div>
                 <span class="employee-status ${statusClass}">${statusText}</span>
               </div>
@@ -2360,10 +2396,7 @@ function applyAutoAbsent($db, $date) {
                   <div class="detail-label">Original Branch</div>
                   <div class="detail-value">${employee.original_branch || 'Not specified'}</div>
                 </div>
-                <div class="detail-item">
-                  <div class="detail-label">Current Branch</div>
-                  <div class="detail-value">${selectedBranch}</div>
-                </div>
+
                 <div class="detail-item">
                   <div class="detail-label">Status</div>
                   <div class="detail-value">${employee.has_attendance_today ? 
@@ -2374,10 +2407,10 @@ function applyAutoAbsent($db, $date) {
               </div>
               <div class="action-buttons">
                 <button class="${buttonClass}" 
-                        onclick="markPresent(${employee.id}, '${employee.name.replace(/'/g, "\\'")}')"
+                        onclick="${buttonAction}(${employee.id}, '${employee.name.replace(/'/g, "\\'")}')"
                         ${isDisabled ? 'disabled' : ''}
                         title="${buttonTitle}">
-                  <i class="fas fa-check-circle"></i> ${buttonText}
+                  <i class="fas fa-${buttonAction === 'transferEmployee' ? 'exchange-alt' : 'check-circle'}"></i> ${buttonText}
                 </button>
               </div>
             </div>
