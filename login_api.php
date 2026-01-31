@@ -1,6 +1,6 @@
 <?php
 // login_api.php - FIXED VERSION
-require_once DIR . '/conn/db_connection.php';
+require_once __DIR__ . "/conn/db_connection.php";
 header('Content-Type: application/json');
 
 // --- 1. START NG ERROR LOGGER (Kusa itong gagawa ng api_debug.log) ---

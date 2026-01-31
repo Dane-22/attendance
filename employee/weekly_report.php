@@ -182,7 +182,6 @@ if ($view_type === 'monthly') {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../assets/css/style.css">
      <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
-
     <style>
         :root {
             --gold: #FFD700;
