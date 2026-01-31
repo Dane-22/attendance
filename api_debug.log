@@ -302,3 +302,7 @@
 [2026-01-31 04:22:22] Branch: Sto. Rosario | Date: 2026-01-31
 [2026-01-31 04:22:23] Branch: Sto. Rosario | Date: 2026-01-31
 [2026-01-31 04:22:24] Branch: Sto. Rosario | Date: 2026-01-31
+[2026-01-31 04:54:00] Received POST: []
+[2026-01-31 04:58:06] Received JSON: identifier=SA001&password=Dante051223%40&branch_name=Sto.%20Rosario
+[2026-01-31 04:59:06] Attendance Request: {"employee_id":"11","branch_name":"Sto. Rosario"}
+[2026-01-31 05:05:47] Received POST: []

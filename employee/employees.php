@@ -286,13 +286,711 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
   <style>
-    /* View Options Styles */
-    .view-options-container {
+    /* ===== ENHANCED EDIT FORM MODAL STYLES ===== */
+    .edit-form-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .edit-form-container {
         background: #1a1a1a;
-        border: 1px solid rgba(255,215,0,0.2);
-        border-radius: 12px;
-        padding: 16px 20px;
+        border: 2px solid #FFD700;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 700px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(255, 215, 0, 0.2);
+    }
+
+    .edit-form-header {
+        padding: 24px;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        background: rgba(0, 0, 0, 0.3);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .edit-form-header h3 {
+        margin: 0;
+        color: #FFD700;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .employee-id-display {
+        background: rgba(255, 215, 0, 0.1);
+        color: #FFD700;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 8px;
+    }
+
+    .edit-form-body {
+        padding: 24px;
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .section-title {
+        font-size: 18px;
+        color: #FFD700;
         margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        font-weight: 600;
+    }
+
+    .form-row-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .form-label.required::after {
+        content: " *";
+        color: #ff4444;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #FFD700;
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+    }
+
+    .form-input:disabled {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 215, 0, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+        cursor: not-allowed;
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: #FFD700;
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+    }
+
+    .form-select option {
+        background: #1a1a1a;
+        color: #ffffff;
+    }
+
+    .profile-image-upload {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-top: 16px;
+    }
+
+    .profile-image-preview {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 3px solid #FFD700;
+        overflow: hidden;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #0b0b0b;
+        font-size: 24px;
+    }
+
+    .profile-image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .file-upload-area {
+        flex: 1;
+    }
+
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .file-input-wrapper input[type=file] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .file-input-label {
+        display: block;
+        padding: 12px 16px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 2px dashed rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        color: #FFD700;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .file-input-label:hover {
+        background: rgba(255, 215, 0, 0.2);
+        border-color: #FFD700;
+    }
+
+    .file-info {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 8px;
+        text-align: center;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+        padding-top: 24px;
+        margin-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-cancel {
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        color: #ffffff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: #ffffff;
+    }
+
+    .btn-save {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        border: none;
+        border-radius: 8px;
+        color: #0b0b0b;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: #ffffff;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #FFD700;
+    }
+
+    /* ===== ENHANCED GRID VIEW ===== */
+    .employees-grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+    }
+
+    .employee-card-grid {
+        background: rgba(20, 20, 20, 0.9);
+        border: 2px solid rgba(255, 215, 0, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .employee-card-grid:hover {
+        transform: translateY(-8px);
+        border-color: #FFD700;
+        box-shadow: 0 12px 24px rgba(255, 215, 0, 0.2);
+    }
+
+    .employee-badge-grid {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 215, 0, 0.1);
+        color: #FFD700;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .employee-card-grid .card-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .employee-card-grid .avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 3px solid #FFD700;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .employee-card-grid .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .employee-card-grid .avatar .initials {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #0b0b0b;
+        font-size: 28px;
+    }
+
+    .employee-card-grid .employee-info {
+        flex: 1;
+    }
+
+    .employee-card-grid .employee-name {
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        line-height: 1.3;
+    }
+
+    .employee-card-grid .employee-position {
+        color: #FFD700;
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 6px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .employee-card-grid .employee-email {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        margin: 0;
+        word-break: break-all;
+    }
+
+    .employee-status {
+        display: inline-block;
+        padding: 4px 12px;
+        background: rgba(74, 222, 128, 0.1);
+        color: #4ade80;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+
+    .employee-card-grid .card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    .action-btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+    }
+
+    .action-btn-edit {
+        background: rgba(255, 215, 0, 0.1);
+        color: #FFD700;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .action-btn-edit:hover {
+        background: rgba(255, 215, 0, 0.2);
+        border-color: #FFD700;
+        transform: translateY(-2px);
+    }
+
+    .action-btn-delete {
+        background: rgba(255, 68, 68, 0.1);
+        color: #ff4444;
+        border: 1px solid rgba(255, 68, 68, 0.3);
+    }
+
+    .action-btn-delete:hover {
+        background: rgba(255, 68, 68, 0.2);
+        border-color: #ff4444;
+        transform: translateY(-2px);
+    }
+
+    /* ===== ENHANCED LIST VIEW ===== */
+    .employees-list-view {
+        background: rgba(20, 20, 20, 0.8);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        overflow: hidden;
+    }
+
+    .list-header {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        padding: 16px 24px;
+        background: rgba(0, 0, 0, 0.5);
+        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        color: #FFD700;
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .employee-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        padding: 16px 24px;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .employee-row:hover {
+        background: rgba(255, 215, 0, 0.05);
+    }
+
+    .employee-row:last-child {
+        border-bottom: none;
+    }
+
+    .employee-row-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid #FFD700;
+        overflow: hidden;
+        margin-right: 12px;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .employee-row-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .employee-row-avatar .initials {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #0b0b0b;
+        font-size: 16px;
+    }
+
+    .employee-row-info {
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .employee-row-name {
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 15px;
+        margin-bottom: 4px;
+    }
+
+    .employee-row-email {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 13px;
+    }
+
+    .employee-row-position,
+    .employee-row-status,
+    .employee-row-code {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+    }
+
+    .employee-row-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .row-action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 16px;
+    }
+
+    .row-action-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .row-action-edit:hover {
+        background: rgba(255, 215, 0, 0.1);
+        color: #FFD700;
+    }
+
+    .row-action-delete:hover {
+        background: rgba(255, 68, 68, 0.1);
+        color: #ff4444;
+    }
+
+    /* ===== ENHANCED DETAILS VIEW ===== */
+    .employees-details-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 24px;
+    }
+
+    .employee-card-details {
+        background: rgba(20, 20, 20, 0.9);
+        border: 2px solid rgba(255, 215, 0, 0.2);
+        border-radius: 16px;
+        padding: 32px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .employee-card-details:hover {
+        border-color: #FFD700;
+        box-shadow: 0 8px 24px rgba(255, 215, 0, 0.15);
+    }
+
+    .employee-badge-details {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        background: rgba(255, 215, 0, 0.1);
+        color: #FFD700;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .details-header {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .details-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 3px solid #FFD700;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .details-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .details-avatar .initials {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #0b0b0b;
+        font-size: 36px;
+    }
+
+    .details-header-info {
+        flex: 1;
+    }
+
+    .details-name {
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0 0 12px 0;
+        line-height: 1.2;
+    }
+
+    .details-position {
+        color: #FFD700;
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+    }
+
+    .details-email {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .details-body {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .detail-label {
+        font-size: 12px;
+        color: rgba(255, 215, 0, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+
+    .detail-value {
+        font-size: 16px;
+        color: #ffffff;
+        font-weight: 500;
+    }
+
+    .details-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+        padding-top: 24px;
+        margin-top: 24px;
+        border-top: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    /* ===== VIEW OPTIONS ENHANCEMENT ===== */
+    .view-options-container {
+        background: rgba(20, 20, 20, 0.9);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -301,166 +999,55 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
     }
 
     .view-options-title {
-        font-size: 16px;
-        font-weight: 600;
+        font-size: 18px;
+        font-weight: 700;
         color: #FFD700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
     .view-options {
         display: flex;
-        gap: 8px;
+        gap: 12px;
     }
 
     .view-option-btn {
-        background: rgba(30,30,30,0.8);
-        border: 1px solid rgba(255,215,0,0.3);
-        border-radius: 6px;
-        padding: 8px 16px;
+        padding: 12px 24px;
+        background: rgba(30, 30, 30, 0.8);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 10px;
         color: #888;
-        font-size: 14px;
-        font-weight: 500;
+        font-size: 15px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         text-decoration: none;
     }
 
     .view-option-btn:hover {
-        border-color: rgba(255,215,0,0.5);
+        border-color: rgba(255, 215, 0, 0.5);
         color: #FFD700;
+        transform: translateY(-2px);
     }
 
     .view-option-btn.active {
         background: linear-gradient(135deg, #FFD700, #FFA500);
         border-color: #FFD700;
         color: #000;
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
     }
 
-    /* Grid View Styles */
-    .employees-grid-view {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-    }
-
-    /* List View Styles */
-    .employees-list-view {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .employee-card-list {
-        background: rgba(20,20,20,0.8);
-        border: 1px solid rgba(255,215,0,0.2);
-        border-radius: 12px;
-        padding: 1rem;
-        display: grid;
-        grid-template-columns: auto 1fr auto auto;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .employee-card-list .avatar {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: #0b0b0b;
-        font-size: 1rem;
-    }
-
-    .employee-card-list .info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .employee-card-list .card-actions {
-        display: flex;
-        gap: 8px;
-    }
-
-    /* Details View Styles */
-    .employees-details-view {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 20px;
-    }
-
-    .employee-card-details {
-        background: rgba(20,20,20,0.8);
-        border: 1px solid rgba(255,215,0,0.2);
-        border-radius: 12px;
-        padding: 1.5rem;
-    }
-
-    .employee-card-details .details-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(255,215,0,0.1);
-    }
-
-    .employee-card-details .avatar {
-        width: 50px;
-        height: 50px;
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: #0b0b0b;
-        font-size: 1.2rem;
-    }
-
-    .employee-card-details .details-body {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 16px;
-        margin-bottom: 1.5rem;
-    }
-
-    .detail-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .detail-label {
-        font-size: 12px;
-        color: rgba(255,255,255,0.6);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .detail-value {
-        font-size: 14px;
-        color: #ffffff;
-        font-weight: 500;
-    }
-
-    .employee-card-details .card-actions {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-    }
-
-    /* ===== PAGINATION STYLES ===== */
+    /* ===== PAGINATION ENHANCEMENT ===== */
     .pagination-container {
-        background: #1a1a1a;
-        border: 1px solid rgba(255,215,0,0.2);
-        border-radius: 12px;
-        padding: 16px 20px;
-        margin: 20px 0;
+        background: rgba(20, 20, 20, 0.9);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin: 24px 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -469,194 +1056,211 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
     }
 
     .pagination-info {
-        font-size: 14px;
-        color: #888;
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.8);
     }
 
     .pagination-info strong {
         color: #FFD700;
+        font-weight: 700;
     }
 
     .pagination-controls {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         flex-wrap: wrap;
     }
 
     .page-size-selector {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
 
     .page-size-label {
         font-size: 14px;
-        color: #888;
+        color: rgba(255, 255, 255, 0.7);
     }
 
     .page-size-select {
-        background: rgba(30,30,30,0.8);
-        border: 1px solid rgba(255,215,0,0.3);
-        border-radius: 6px;
-        padding: 6px 12px;
+        background: rgba(30, 30, 30, 0.8);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        padding: 8px 16px;
         color: #ffffff;
         font-size: 14px;
         cursor: pointer;
-        min-width: 70px;
+        min-width: 80px;
+        transition: all 0.3s ease;
     }
 
     .page-size-select:focus {
         outline: none;
         border-color: #FFD700;
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
     }
 
     .pagination-buttons {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
     }
 
     .page-btn {
-        background: rgba(30,30,30,0.8);
-        border: 1px solid rgba(255,215,0,0.3);
-        border-radius: 6px;
-        padding: 6px 12px;
+        min-width: 40px;
+        height: 40px;
+        padding: 0 8px;
+        background: rgba(30, 30, 30, 0.8);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
         color: #ffffff;
         font-size: 14px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        min-width: 36px;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         text-decoration: none;
-        display: inline-block;
     }
 
     .page-btn:hover:not(:disabled):not(.active) {
-        border-color: rgba(255,215,0,0.5);
+        border-color: rgba(255, 215, 0, 0.5);
         color: #FFD700;
+        transform: translateY(-2px);
     }
 
     .page-btn.active {
         background: linear-gradient(135deg, #FFD700, #FFA500);
         border-color: #FFD700;
         color: #000000;
-        font-weight: 600;
+        font-weight: 700;
+        box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
     }
 
     .page-btn:disabled {
-        background: rgba(20,20,20,0.5);
-        border-color: rgba(255,215,0,0.1);
-        color: #555;
+        background: rgba(20, 20, 20, 0.5);
+        border-color: rgba(255, 215, 0, 0.1);
+        color: rgba(255, 255, 255, 0.3);
         cursor: not-allowed;
+        transform: none;
     }
 
     .page-dots {
-        color: #888;
-        padding: 0 6px;
+        color: rgba(255, 255, 255, 0.5);
+        padding: 0 8px;
         font-size: 14px;
     }
 
     .page-jump {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         margin-left: 12px;
     }
 
     .page-jump-input {
-        background: rgba(30,30,30,0.8);
-        border: 1px solid rgba(255,215,0,0.3);
-        border-radius: 6px;
-        padding: 6px 10px;
+        background: rgba(30, 30, 30, 0.8);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        padding: 8px 12px;
         color: #ffffff;
         font-size: 14px;
-        width: 60px;
+        width: 70px;
         text-align: center;
+        transition: all 0.3s ease;
     }
 
     .page-jump-input:focus {
         outline: none;
         border-color: #FFD700;
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
     }
 
     .page-jump-btn {
-        background: rgba(30,30,30,0.8);
-        border: 1px solid rgba(255,215,0,0.3);
-        border-radius: 6px;
-        padding: 6px 12px;
-        color: #ffffff;
-        font-size: 13px;
+        padding: 8px 16px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        color: #FFD700;
+        font-size: 14px;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
     }
 
     .page-jump-btn:hover {
+        background: rgba(255, 215, 0, 0.2);
         border-color: #FFD700;
-        color: #FFD700;
-    }
-
-    /* Loading animation for pagination */
-    .pagination-loading {
-        display: inline-block;
-        margin-left: 8px;
-        color: #FFD700;
-    }
-
-    .pagination-loading i {
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        transform: translateY(-2px);
     }
 
     /* Responsive Styles */
     @media (max-width: 768px) {
-        /* Force list view on mobile */
         .employees-grid-view,
         .employees-details-view {
             grid-template-columns: 1fr;
         }
 
-        .employee-card-list {
-            grid-template-columns: auto 1fr;
-            gap: 12px;
+        .list-header,
+        .employee-row {
+            grid-template-columns: 1fr;
+            padding: 16px;
         }
 
-        .employee-card-list .card-actions {
-            grid-column: 1 / span 2;
+        .employee-row > div {
+            margin-bottom: 8px;
+        }
+
+        .employee-row-actions {
             justify-content: flex-end;
             margin-top: 12px;
         }
 
-        .employee-card-details .details-body {
+        .details-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 16px;
+        }
+
+        .details-body {
             grid-template-columns: 1fr;
         }
 
-        /* Responsive pagination */
-        .pagination-container {
+        .view-options-container {
             flex-direction: column;
             align-items: stretch;
-            gap: 12px;
-            padding: 14px;
+            padding: 16px;
         }
 
-        .pagination-info {
-            text-align: center;
-            order: 1;
+        .view-options {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .view-option-btn {
+            padding: 10px 16px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 0;
+            justify-content: center;
+        }
+
+        .pagination-container {
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
         }
 
         .pagination-controls {
             flex-direction: column;
-            gap: 12px;
-            order: 2;
+            width: 100%;
         }
 
         .page-size-selector {
-            justify-content: center;
             width: 100%;
+            justify-content: center;
         }
 
         .pagination-buttons {
@@ -665,43 +1269,15 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
         }
 
         .page-jump {
-            margin-left: 0;
-            margin-top: 8px;
-            justify-content: center;
             width: 100%;
+            justify-content: center;
+            margin-left: 0;
         }
 
-        /* Hide view options on mobile (force list view) */
-        .view-options-container {
-            display: none;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .employee-card-list {
-            padding: 12px;
-            gap: 10px;
-        }
-
-        .employee-card-details {
-            padding: 1rem;
-        }
-
-        .employee-card-details .details-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .page-btn {
-            min-width: 32px;
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-
-        .page-size-select {
-            padding: 4px 8px;
-            font-size: 12px;
+        .edit-form-container {
+            margin: 0;
+            border-radius: 0;
+            max-height: 100vh;
         }
     }
   </style>
@@ -731,19 +1307,21 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
 
       <!-- View Options -->
       <div class="view-options-container">
-        <div class="view-options-title">View Options:</div>
+        <div class="view-options-title">
+          <i class="fas fa-eye"></i> View Options
+        </div>
         <div class="view-options">
           <a href="?view=grid&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'grid' ? 'active' : ''; ?>">
             <i class="fas fa-th"></i>
-            <span>Grid</span>
+            <span>Grid View</span>
           </a>
           <a href="?view=list&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'list' ? 'active' : ''; ?>">
             <i class="fas fa-list"></i>
-            <span>List</span>
+            <span>List View</span>
           </a>
           <a href="?view=details&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'details' ? 'active' : ''; ?>">
             <i class="fas fa-info-circle"></i>
-            <span>Details</span>
+            <span>Details View</span>
           </a>
         </div>
       </div>
@@ -772,7 +1350,7 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
       </div>
 
       <section class="mt-6">
-        <h2 style="margin-bottom:12px;color:#FFD700;">Existing Employees</h2>
+        <h2 style="margin-bottom:20px;color:#FFD700;font-size:24px;">Existing Employees</h2>
         
         <?php 
         // Check if mobile - force list view on mobile
@@ -785,160 +1363,122 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
             
             <?php if ($viewToUse === 'grid'): ?>
               <!-- Grid View Card -->
-              <article class="employee-card record" style="background: rgba(20,20,20,0.8); border: 1px solid rgba(255,215,0,0.2); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-                <div class="meta" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                  <div class="avatar" style="width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0b0b0b; font-size: 1.2rem; border: 2px solid #FFD000; overflow: hidden;">
+              <article class="employee-card-grid" onclick="viewEmployeeProfile(<?php echo $e['id']; ?>)">
+                <div class="employee-badge-grid"><?php echo htmlspecialchars($e['employee_code']); ?></div>
+                <div class="card-header">
+                  <div class="avatar">
                     <?php if (!empty($e['profile_image']) && file_exists(__DIR__ . '/uploads/' . $e['profile_image'])): ?>
-                      <img src="uploads/<?php echo htmlspecialchars($e['profile_image']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                      <img src="uploads/<?php echo htmlspecialchars($e['profile_image']); ?>" alt="Profile">
                     <?php else: ?>
-                      <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #FFD700, #FFA500); display: flex; align-items: center; justify-content: center;">
+                      <div class="initials">
                         <?php echo strtoupper(substr($e['first_name'],0,1) . substr($e['last_name'],0,1)); ?>
                       </div>
                     <?php endif; ?>
                   </div>
-                  <div class="info">
-                    <div class="name" style="font-weight: 600; color: white; font-size: 1.1rem;">
+                  <div class="employee-info">
+                    <h3 class="employee-name">
                       <?php echo htmlspecialchars($e['last_name'] . ', ' . $e['first_name']); ?>
-                    </div>
-                    <div class="sub" style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                      <?php echo htmlspecialchars($e['employee_code']); ?> • <?php echo htmlspecialchars($e['position']); ?>
-                    </div>
-                    <div class="sub" style="margin-top:6px; color:rgba(255,255,255,0.6); font-size:.85rem;">
+                    </h3>
+                    <p class="employee-position">
+                      <i class="fas fa-briefcase"></i>
+                      <?php echo htmlspecialchars($e['position']); ?>
+                    </p>
+                    <p class="employee-email">
+                      <i class="fas fa-envelope"></i>
                       <?php echo htmlspecialchars($e['email']); ?>
-                    </div>
+                    </p>
+                    <span class="employee-status"><?php echo htmlspecialchars($e['status']); ?></span>
                   </div>
                 </div>
 
-                <div class="card-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                  <form method="POST" style="display:inline-block;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="<?php echo $e['id']; ?>">
-                    <button class="action-icon" onclick="return confirm('Remove employee?')" title="Delete" style="background: rgba(255,68,68,0.1); color: #ff4444; border: 1px solid rgba(255,68,68,0.3); padding: 0.5rem; border-radius: 6px; cursor: pointer;">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </form>
-
-                  <details>
-                    <summary class="action-icon" title="Edit" style="background: rgba(255,215,0,0.1); color: #FFD700; border: 1px solid rgba(255,215,0,0.3); padding: 0.5rem; border-radius: 6px; cursor: pointer; list-style: none;">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </summary>
-                    <form method="POST" class="edit-form card" style="margin-top:8px;padding:12px; background: rgba(30,30,30,0.9); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px;">
-                      <input type="hidden" name="action" value="update">
-                      <input type="hidden" name="id" value="<?php echo $e['id']; ?>">
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="employee_code" value="<?php echo htmlspecialchars($e['employee_code']); ?>" placeholder="Code" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="first_name" value="<?php echo htmlspecialchars($e['first_name']); ?>" placeholder="First name" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="last_name" value="<?php echo htmlspecialchars($e['last_name']); ?>" placeholder="Last name" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="email" value="<?php echo htmlspecialchars($e['email']); ?>" placeholder="Email" type="email" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="position" value="<?php echo htmlspecialchars($e['position']); ?>" placeholder="Position" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div style="text-align:right;margin-top:8px;">
-                        <button class="btn add-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600;">Save</button>
-                      </div>
-                    </form>
-                  </details>
+                <div class="card-actions">
+                  <button class="action-btn action-btn-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')">
+                    <i class="fa-solid fa-trash"></i>
+                    Delete
+                  </button>
+                  <button class="action-btn action-btn-edit" onclick="openEditModal(event, <?php echo $e['id']; ?>)">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    Edit
+                  </button>
                 </div>
               </article>
 
             <?php elseif ($viewToUse === 'list'): ?>
-              <!-- List View Card -->
-              <article class="employee-card-list">
-                <div class="avatar" style="border: 2px solid #FFD000; border-radius: 8px; overflow: hidden;">
-                  <?php if (!empty($e['profile_image']) && file_exists(__DIR__ . '/uploads/' . $e['profile_image'])): ?>
-                    <img src="uploads/<?php echo htmlspecialchars($e['profile_image']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
-                  <?php else: ?>
-                    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #FFD700, #FFA500); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0b0b0b; font-size: 1.2rem;">
-                      <?php echo strtoupper(substr($e['first_name'],0,1) . substr($e['last_name'],0,1)); ?>
-                    </div>
-                  <?php endif; ?>
-                </div>
-                <div class="info">
-                  <div class="name" style="font-weight: 600; color: white; font-size: 1rem;">
-                    <?php echo htmlspecialchars($e['last_name'] . ', ' . $e['first_name']); ?>
-                  </div>
-                  <div class="sub" style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                    <?php echo htmlspecialchars($e['employee_code']); ?> • <?php echo htmlspecialchars($e['position']); ?>
-                  </div>
-                  <div class="sub" style="color:rgba(255,255,255,0.6); font-size:.85rem;">
-                    <?php echo htmlspecialchars($e['email']); ?>
-                  </div>
-                </div>
-                <div class="card-actions">
-                  <form method="POST" style="display:inline-block;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="<?php echo $e['id']; ?>">
-                    <button class="action-icon" onclick="return confirm('Remove employee?')" title="Delete" style="background: rgba(255,68,68,0.1); color: #ff4444; border: 1px solid rgba(255,68,68,0.3); padding: 0.5rem; border-radius: 6px; cursor: pointer;">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </form>
-
-                  <details>
-                    <summary class="action-icon" title="Edit" style="background: rgba(255,215,0,0.1); color: #FFD700; border: 1px solid rgba(255,215,0,0.3); padding: 0.5rem; border-radius: 6px; cursor: pointer; list-style: none;">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </summary>
-                    <form method="POST" enctype="multipart/form-data" class="edit-form card" style="margin-top:8px;padding:12px; background: rgba(30,30,30,0.9); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; position: absolute; z-index: 10;">
-                      <input type="hidden" name="action" value="update">
-                      <input type="hidden" name="id" value="<?php echo $e['id']; ?>">
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="employee_code" value="<?php echo htmlspecialchars($e['employee_code']); ?>" placeholder="Code" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="first_name" value="<?php echo htmlspecialchars($e['first_name']); ?>" placeholder="First name" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="last_name" value="<?php echo htmlspecialchars($e['last_name']); ?>" placeholder="Last name" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="email" value="<?php echo htmlspecialchars($e['email']); ?>" placeholder="Email" type="email" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="position" value="<?php echo htmlspecialchars($e['position']); ?>" placeholder="Position" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <label for="profile_image_list_<?php echo $e['id']; ?>" style="color: white; display: block; margin-bottom: 0.5rem;">Profile Image:</label>
-                        <input type="file" id="profile_image_list_<?php echo $e['id']; ?>" name="profile_image" accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                        <small style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">Accepted formats: JPG, PNG, GIF, WebP (max 5MB)</small>
-                      </div>
-                      <div style="text-align:right;margin-top:8px;">
-                        <button class="btn add-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600;">Save</button>
-                      </div>
-                    </form>
-                  </details>
-                </div>
-              </article>
-
-            <?php elseif ($viewToUse === 'details'): ?>
-              <!-- Details View Card -->
-              <article class="employee-card-details">
-                <div class="details-header">
-                  <div class="avatar" style="border: 2px solid #FFD000; border-radius: 8px; overflow: hidden;">
+              <!-- List View Row -->
+              <div class="employee-row">
+                <div>
+                  <div class="employee-row-avatar">
                     <?php if (!empty($e['profile_image']) && file_exists(__DIR__ . '/uploads/' . $e['profile_image'])): ?>
-                      <img src="uploads/<?php echo htmlspecialchars($e['profile_image']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                      <img src="uploads/<?php echo htmlspecialchars($e['profile_image']); ?>" alt="Profile">
                     <?php else: ?>
-                      <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #FFD700, #FFA500); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0b0b0b; font-size: 1.2rem;">
+                      <div class="initials">
                         <?php echo strtoupper(substr($e['first_name'],0,1) . substr($e['last_name'],0,1)); ?>
                       </div>
                     <?php endif; ?>
                   </div>
-                  <div>
-                    <div class="name" style="font-weight: 600; color: white; font-size: 1.1rem;">
+                  <div class="employee-row-info">
+                    <div class="employee-row-name">
                       <?php echo htmlspecialchars($e['last_name'] . ', ' . $e['first_name']); ?>
                     </div>
-                    <div class="sub" style="color: #FFD700; font-size: 0.9rem;">
-                      <?php echo htmlspecialchars($e['employee_code']); ?>
+                    <div class="employee-row-email">
+                      <?php echo htmlspecialchars($e['email']); ?>
                     </div>
+                  </div>
+                </div>
+                <div class="employee-row-code">
+                  <?php echo htmlspecialchars($e['employee_code']); ?>
+                </div>
+                <div class="employee-row-position">
+                  <?php echo htmlspecialchars($e['position']); ?>
+                </div>
+                <div class="employee-row-status">
+                  <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
+                </div>
+                <div class="employee-row-actions">
+                  <button class="row-action-btn row-action-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')" title="Delete">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                  <button class="row-action-btn row-action-edit" onclick="openEditModal(event, <?php echo $e['id']; ?>)" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                </div>
+              </div>
+
+            <?php elseif ($viewToUse === 'details'): ?>
+              <!-- Details View Card -->
+              <article class="employee-card-details">
+                <div class="employee-badge-details"><?php echo htmlspecialchars($e['employee_code']); ?></div>
+                <div class="details-header">
+                  <div class="details-avatar">
+                    <?php if (!empty($e['profile_image']) && file_exists(__DIR__ . '/uploads/' . $e['profile_image'])): ?>
+                      <img src="uploads/<?php echo htmlspecialchars($e['profile_image']); ?>" alt="Profile">
+                    <?php else: ?>
+                      <div class="initials">
+                        <?php echo strtoupper(substr($e['first_name'],0,1) . substr($e['last_name'],0,1)); ?>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+                  <div class="details-header-info">
+                    <h2 class="details-name">
+                      <?php echo htmlspecialchars($e['last_name'] . ', ' . $e['first_name']); ?>
+                    </h2>
+                    <p class="details-position">
+                      <i class="fas fa-briefcase"></i>
+                      <?php echo htmlspecialchars($e['position']); ?>
+                    </p>
+                    <p class="details-email">
+                      <i class="fas fa-envelope"></i>
+                      <?php echo htmlspecialchars($e['email']); ?>
+                    </p>
                   </div>
                 </div>
                 
                 <div class="details-body">
+                  <div class="detail-item">
+                    <div class="detail-label">Employee Code</div>
+                    <div class="detail-value"><?php echo htmlspecialchars($e['employee_code']); ?></div>
+                  </div>
+
                   <div class="detail-item">
                     <div class="detail-label">Position</div>
                     <div class="detail-value"><?php echo htmlspecialchars($e['position']); ?></div>
@@ -950,53 +1490,50 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
                       <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
                     </div>
                   </div>
+
                   <div class="detail-item">
                     <div class="detail-label">Email</div>
                     <div class="detail-value"><?php echo htmlspecialchars($e['email']); ?></div>
                   </div>
+
+                  <div class="detail-item">
+                    <div class="detail-label">Created</div>
+                    <div class="detail-value">
+                      <?php 
+                      if (!empty($e['created_at'])) {
+                        $created_date = new DateTime($e['created_at']);
+                        echo $created_date->format('M j, Y');
+                      } else {
+                        echo 'N/A';
+                      }
+                      ?>
+                    </div>
+                  </div>
+
+                  <div class="detail-item">
+                    <div class="detail-label">Last Updated</div>
+                    <div class="detail-value">
+                      <?php 
+                      if (!empty($e['updated_at'])) {
+                        $updated_date = new DateTime($e['updated_at']);
+                        echo $updated_date->format('M j, Y');
+                      } else {
+                        echo 'N/A';
+                      }
+                      ?>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="card-actions">
-                  <form method="POST" style="display:inline-block;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="<?php echo $e['id']; ?>">
-                    <button class="action-icon" onclick="return confirm('Remove employee?')" title="Delete" style="background: rgba(255,68,68,0.1); color: #ff4444; border: 1px solid rgba(255,68,68,0.3); padding: 0.5rem; border-radius: 6px; cursor: pointer;">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </form>
-
-                  <details>
-                    <summary class="action-icon" title="Edit" style="background: rgba(255,215,0,0.1); color: #FFD700; border: 1px solid rgba(255,215,0,0.3); padding: 0.5rem; border-radius: 6px; cursor: pointer; list-style: none;">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </summary>
-                    <form method="POST" class="edit-form card" style="margin-top:8px;padding:12px; background: rgba(30,30,30,0.9); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px;">
-                      <input type="hidden" name="action" value="update">
-                      <input type="hidden" name="id" value="<?php echo $e['id']; ?>">
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="employee_code" value="<?php echo htmlspecialchars($e['employee_code']); ?>" placeholder="Code" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="first_name" value="<?php echo htmlspecialchars($e['first_name']); ?>" placeholder="First name" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="last_name" value="<?php echo htmlspecialchars($e['last_name']); ?>" placeholder="Last name" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="email" value="<?php echo htmlspecialchars($e['email']); ?>" placeholder="Email" type="email" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <input name="position" value="<?php echo htmlspecialchars($e['position']); ?>" placeholder="Position" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                      </div>
-                      <div class="form-row" style="margin-bottom: 0.75rem;">
-                        <label for="profile_image_details_<?php echo $e['id']; ?>" style="color: white; display: block; margin-bottom: 0.5rem;">Profile Image:</label>
-                        <input type="file" id="profile_image_details_<?php echo $e['id']; ?>" name="profile_image" accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 6px; background: rgba(0,0,0,0.5); color: white;">
-                        <small style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">Accepted formats: JPG, PNG, GIF, WebP (max 5MB)</small>
-                      </div>
-                      <div style="text-align:right;margin-top:8px;">
-                        <button class="btn add-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600;">Save</button>
-                      </div>
-                    </form>
-                  </details>
+                <div class="details-actions">
+                  <button class="action-btn action-btn-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')">
+                    <i class="fa-solid fa-trash"></i>
+                    Delete
+                  </button>
+                  <button class="action-btn action-btn-edit" onclick="openEditModal(event, <?php echo $e['id']; ?>)">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    Edit Employee
+                  </button>
                 </div>
               </article>
             <?php endif; ?>
@@ -1038,6 +1575,110 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
     </div>
   </main>
 
+  <!-- Enhanced Edit Employee Modal -->
+  <div class="edit-form-modal" id="editModal">
+    <div class="edit-form-container">
+      <div class="edit-form-header">
+        <button class="close-btn" onclick="closeEditModal()">&times;</button>
+        <h3>Edit Employee</h3>
+        <div class="employee-id-display" id="editEmployeeId">Loading...</div>
+      </div>
+      <form id="editEmployeeForm" method="POST" enctype="multipart/form-data" class="edit-form-body">
+        <input type="hidden" name="action" value="update">
+        <input type="hidden" name="id" id="editEmployeeIdInput">
+
+        <!-- Profile Information Section -->
+        <div class="form-section">
+          <h4 class="section-title">Profile Information</h4>
+          <div class="form-row-grid">
+            <div class="form-group">
+              <label class="form-label required">Employee Code</label>
+              <input type="text" name="employee_code" id="editEmployeeCode" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">First Name</label>
+              <input type="text" name="first_name" id="editFirstName" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Middle Name</label>
+              <input type="text" name="middle_name" id="editMiddleName" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Last Name</label>
+              <input type="text" name="last_name" id="editLastName" class="form-input" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Information Section -->
+        <div class="form-section">
+          <h4 class="section-title">Contact Information</h4>
+          <div class="form-row-grid">
+            <div class="form-group">
+              <label class="form-label required">Email Address</label>
+              <input type="email" name="email" id="editEmail" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" name="phone" id="editPhone" class="form-input" placeholder="+63 XXX XXX XXXX">
+            </div>
+          </div>
+        </div>
+
+        <!-- Employment Details Section -->
+        <div class="form-section">
+          <h4 class="section-title">Employment Details</h4>
+          <div class="form-row-grid">
+            <div class="form-group">
+              <label class="form-label required">Position</label>
+              <input type="text" name="position" id="editPosition" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Department</label>
+              <input type="text" name="department" id="editDepartment" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select name="status" id="editStatus" class="form-select">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="On Leave">On Leave</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Image Section -->
+        <div class="form-section">
+          <h4 class="section-title">Profile Image</h4>
+          <div class="profile-image-upload">
+            <div class="profile-image-preview" id="profileImagePreview">
+              <div class="initials" id="profileImageInitials">JD</div>
+            </div>
+            <div class="file-upload-area">
+              <div class="file-input-wrapper">
+                <input type="file" id="profileImageInput" name="profile_image" accept="image/*" onchange="previewProfileImage(this)">
+                <label for="profileImageInput" class="file-input-label">
+                  <i class="fas fa-cloud-upload-alt"></i> Choose New Profile Image
+                </label>
+              </div>
+              <div class="file-info">
+                Max file size: 5MB • Formats: JPG, PNG, GIF, WebP
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn-save">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Add Employee Modal -->
   <div class="modal-backdrop" id="addModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
     <div class="modal-panel" style="background: #0b0b0b; border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
@@ -1074,41 +1715,146 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
   </div>
 
   <script>
-    // Modal functionality
+    // ===== MODAL FUNCTIONALITY =====
     const openAddDesktop = document.getElementById('openAddDesktop');
     const openAddMobile = document.getElementById('openAddMobile');
     const addModal = document.getElementById('addModal');
     const closeAdd = document.getElementById('closeAdd');
+    const editModal = document.getElementById('editModal');
     
-    function openModal() {
+    function openAddModal() {
       addModal.style.display = 'flex';
     }
     
-    function closeModal() {
+    function closeAddModal() {
       addModal.style.display = 'none';
     }
     
-    openAddDesktop?.addEventListener('click', openModal);
-    openAddMobile?.addEventListener('click', openModal);
-    closeAdd?.addEventListener('click', closeModal);
+    openAddDesktop?.addEventListener('click', openAddModal);
+    openAddMobile?.addEventListener('click', openAddModal);
+    closeAdd?.addEventListener('click', closeAddModal);
     
     addModal?.addEventListener('click', (e) => {
       if(e.target === addModal) {
-        closeModal();
+        closeAddModal();
       }
     });
 
-    // Auto-close edit forms when clicking outside on mobile
-    document.addEventListener('click', function(e) {
-      if (window.innerWidth <= 768) {
-        const openDetails = document.querySelector('details[open]');
-        if (openDetails && !openDetails.contains(e.target)) {
-          openDetails.removeAttribute('open');
+    // ===== EDIT MODAL FUNCTIONALITY =====
+    let currentEditEmployeeId = null;
+
+    function openEditModal(event, employeeId) {
+      event.stopPropagation();
+      currentEditEmployeeId = employeeId;
+      
+      // Load employee data via AJAX
+      fetch(`get_employee_data.php?id=${employeeId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const employee = data.employee;
+            
+            // Populate form fields
+            document.getElementById('editEmployeeId').textContent = employee.employee_code;
+            document.getElementById('editEmployeeIdInput').value = employee.id;
+            document.getElementById('editEmployeeCode').value = employee.employee_code;
+            document.getElementById('editFirstName').value = employee.first_name;
+            document.getElementById('editMiddleName').value = employee.middle_name || '';
+            document.getElementById('editLastName').value = employee.last_name;
+            document.getElementById('editEmail').value = employee.email;
+            document.getElementById('editPhone').value = employee.phone || '';
+            document.getElementById('editPosition').value = employee.position;
+            document.getElementById('editDepartment').value = employee.department || '';
+            document.getElementById('editStatus').value = employee.status;
+            
+            // Update profile image preview
+            const profileImagePreview = document.getElementById('profileImagePreview');
+            const profileImageInitials = document.getElementById('profileImageInitials');
+            
+            if (employee.profile_image) {
+              profileImagePreview.innerHTML = `<img src="uploads/${employee.profile_image}" alt="Profile" onerror="this.style.display='none'; document.getElementById('profileImageInitials').style.display='flex';">`;
+              profileImageInitials.style.display = 'none';
+              profileImageInitials.textContent = (employee.first_name[0] + employee.last_name[0]).toUpperCase();
+            } else {
+              profileImagePreview.innerHTML = '';
+              profileImageInitials.style.display = 'flex';
+              profileImageInitials.textContent = (employee.first_name[0] + employee.last_name[0]).toUpperCase();
+              profileImagePreview.appendChild(profileImageInitials);
+            }
+            
+            // Show modal
+            editModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+          } else {
+            alert('Error loading employee data: ' + (data.message || 'Unknown error'));
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error loading employee data. Please try again.');
+        });
+    }
+
+    function closeEditModal() {
+      editModal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      currentEditEmployeeId = null;
+    }
+
+    function previewProfileImage(input) {
+      const preview = document.getElementById('profileImagePreview');
+      const initials = document.getElementById('profileImageInitials');
+      
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          preview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview" style="width:100%;height:100%;object-fit:cover;">`;
+          initials.style.display = 'none';
         }
+        
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    // Close modal when clicking outside
+    editModal?.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeEditModal();
       }
     });
 
-    // Pagination functions
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeEditModal();
+        closeAddModal();
+      }
+    });
+
+    // ===== EMPLOYEE ACTIONS =====
+    function deleteEmployee(event, employeeId, employeeName) {
+      event.stopPropagation();
+      
+      if (confirm(`Are you sure you want to delete employee "${employeeName}"? This action cannot be undone.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="id" value="${employeeId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
+
+    function viewEmployeeProfile(employeeId) {
+      // In a real application, this would redirect to a profile page
+      // For now, open the edit modal
+      openEditModal({stopPropagation: () => {}}, employeeId);
+    }
+
+    // ===== PAGINATION FUNCTIONS =====
     function changePageSize(newSize) {
       const url = new URL(window.location.href);
       url.searchParams.set('per_page', newSize);
@@ -1138,6 +1884,16 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
     document.getElementById('pageJumpInput')?.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         jumpToPage();
+      }
+    });
+
+    // Auto-close edit forms when clicking outside on mobile
+    document.addEventListener('click', function(e) {
+      if (window.innerWidth <= 768) {
+        const openDetails = document.querySelector('details[open]');
+        if (openDetails && !openDetails.contains(e.target)) {
+          openDetails.removeAttribute('open');
+        }
       }
     });
   </script>

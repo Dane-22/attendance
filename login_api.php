@@ -1,6 +1,6 @@
 <?php
 // login_api.php - FIXED VERSION
-require_once __DIR__ . '/conn/db_connection.php';
+require_once DIR . '/conn/db_connection.php';
 header('Content-Type: application/json');
 
 // --- 1. START NG ERROR LOGGER (Kusa itong gagawa ng api_debug.log) ---
@@ -21,18 +21,28 @@ file_put_contents($log_file, $log_entry, FILE_APPEND);
 // --- END NG LOGGER ---
 
 // --- 2. PAG-ASSIGN NG MGA VALUES ---
-$identifier   = $data['identifier']   ?? $_POST['identifier']   ?? null;
-$password     = $data['password']     ?? $_POST['password']     ?? null;
-$daily_branch = $data['branch_name'] ?? $_POST['branch_name'] ?? null;
+// Prioritize $_POST for URL-encoded data (from React Native)
+$identifier   = $_POST['identifier']   ?? $data['identifier']   ?? null;
+$password     = $_POST['password']     ?? $data['password']     ?? null;
+$daily_branch = $_POST['branch_name'] ?? $data['branch_name'] ?? null;
 
 // --- 3. VALIDATION ---
+// Debug: Log what we actually received
+error_log("DEBUG: \$_POST = " . print_r($_POST, true));
+error_log("DEBUG: \$data = " . print_r($data, true));
+error_log("DEBUG: identifier = " . var_export($identifier, true));
+error_log("DEBUG: password = " . var_export($password, true));
+error_log("DEBUG: branch_name = " . var_export($daily_branch, true));
+
 if (!$identifier || !$password || !$daily_branch) {
     echo json_encode([
         "success" => false, 
         "message" => "Please fill in all fields (Identifier, Password, and Branch).",
         "debug" => [
             "received_id" => $identifier,
-            "received_branch" => $daily_branch
+            "received_branch" => $daily_branch,
+            "post_data" => $_POST,
+            "json_data" => $data
         ]
     ]);
     exit;
