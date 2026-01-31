@@ -12,3 +12,5 @@ main/employee/uploads/
 node_modules/
 Thumbs.db
 .DS_Store
+
+#test
