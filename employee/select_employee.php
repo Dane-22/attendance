@@ -173,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'load_employees') {
         $branch = $_POST['branch'] ?? '';
+        $branchFilter = $_POST['branch_filter'] ?? '';
         $showMarked = $_POST['show_marked'] ?? 'false';
         $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
         $perPage = isset($_POST['per_page']) ? intval($_POST['per_page']) : 10;
@@ -184,7 +185,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $offset = ($page - 1) * $perPage;
 
         if (empty($branch)) {
-            echo json_encode(['success' => false, 'message' => 'Branch is required']);
+            echo json_encode(['success' => false, 'message' => 'Deployment branch is required']);
+            exit();
+        }
+
+        // Validate that the branch exists
+        $branchCheckQuery = "SELECT id FROM branches WHERE branch_name = ? AND is_active = 1";
+        $branchCheckStmt = mysqli_prepare($db, $branchCheckQuery);
+        mysqli_stmt_bind_param($branchCheckStmt, 's', $branch);
+        mysqli_stmt_execute($branchCheckStmt);
+        $branchCheckResult = mysqli_stmt_get_result($branchCheckStmt);
+        if (mysqli_num_rows($branchCheckResult) === 0) {
+            echo json_encode(['success' => false, 'message' => 'Invalid branch selected']);
             exit();
         }
 
@@ -203,15 +215,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         // DEBUG: Log parameters
-        error_log("DEBUG: Loading employees - branch: $branch, page: $page, perPage: $perPage, offset: $offset");
+        error_log("DEBUG: Loading employees - branch: $branch, branch_filter: $branchFilter, page: $page, perPage: $perPage, offset: $offset");
         
         try {
             // Build base query for counting - SIMPLIFIED VERSION
-            if ($showMarked === 'true') {
+            if (!empty($branchFilter)) {
+                // When branch filter is selected, show only PRESENT employees from that branch
+                $countQuery = "SELECT COUNT(*) as total
+                              FROM employees e
+                              INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
+                              WHERE e.status = 'Active' AND e.branch_name = ? AND a.status = 'Present'";
+                $branchParams = [$branchFilter];
+            } elseif ($showMarked === 'true') {
                 // Show ALL employees with their attendance status
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
                               WHERE e.status = 'Active'";
+                $branchParams = [];
             } else {
                 // Show ONLY employees WITHOUT attendance (before cutoff) or with specific status
                 if ($isBeforeCutoff) {
@@ -220,18 +240,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   FROM employees e
                                   LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
                                   WHERE e.status = 'Active' AND (a.id IS NULL)";
+                    $branchParams = [];
                 } else {
                     // After cutoff: show only employees not marked as Present
                     $countQuery = "SELECT COUNT(*) as total
                                   FROM employees e
                                   LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
                                   WHERE e.status = 'Active' AND (a.id IS NULL OR a.status != 'Present')";
+                    $branchParams = [];
                 }
             }
             
             // Execute count query
             error_log("DEBUG: Count Query: $countQuery");
-            $countResult = mysqli_query($db, $countQuery);
+            $countStmt = mysqli_prepare($db, $countQuery);
+            if (!empty($branchParams)) {
+                mysqli_stmt_bind_param($countStmt, str_repeat('s', count($branchParams)), ...$branchParams);
+            }
+            mysqli_stmt_execute($countStmt);
+            $countResult = mysqli_stmt_get_result($countStmt);
             
             if (!$countResult) {
                 error_log("DEBUG: Count query failed: " . mysqli_error($db));
@@ -247,7 +274,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             error_log("DEBUG: Total count: $totalCount, Total pages: $totalPages");
             
             // SIMPLIFIED MAIN QUERY - Remove complex CASE statements temporarily
-            if ($showMarked === 'true') {
+            if (!empty($branchFilter)) {
+                // When branch filter is selected, show only PRESENT employees from that branch
+                $query = "SELECT
+                            e.id,
+                            e.employee_code,
+                            e.first_name,
+                            e.middle_name,
+                            e.last_name,
+                            e.position,
+                            e.branch_name as original_branch,
+                            a.branch_name as logged_branch,
+                            a.status as attendance_status,
+                            a.is_auto_absent,
+                            1 as has_attendance_today
+                          FROM employees e
+                          INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
+                          WHERE e.status = 'Active' AND e.branch_name = ? AND a.status = 'Present'
+                          ORDER BY e.last_name, e.first_name
+                          LIMIT $perPage OFFSET $offset";
+                $branchParams = [$branchFilter];
+            } elseif ($showMarked === 'true') {
                 // Show ALL employees with their attendance status
                 $query = "SELECT
                             e.id,
@@ -269,6 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                           WHERE e.status = 'Active'
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
+                $branchParams = [];
             } else {
                 // Show ONLY employees WITHOUT attendance (before cutoff) or with specific status
                 if ($isBeforeCutoff) {
@@ -293,6 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                               WHERE e.status = 'Active' AND (a.id IS NULL)
                               ORDER BY e.last_name, e.first_name
                               LIMIT $perPage OFFSET $offset";
+                    $branchParams = [];
                 } else {
                     // After cutoff: show only employees not marked as Present
                     $query = "SELECT
@@ -315,11 +364,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                               WHERE e.status = 'Active' AND (a.id IS NULL OR a.status != 'Present')
                               ORDER BY e.last_name, e.first_name
                               LIMIT $perPage OFFSET $offset";
+                    $branchParams = [];
                 }
             }
             
             error_log("DEBUG: Main Query: $query");
-            $result = mysqli_query($db, $query);
+            $stmt = mysqli_prepare($db, $query);
+            if (!empty($branchParams)) {
+                mysqli_stmt_bind_param($stmt, str_repeat('s', count($branchParams)), ...$branchParams);
+            }
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
             
             if (!$result) {
                 error_log("DEBUG: Main query failed: " . mysqli_error($db));
@@ -775,6 +830,33 @@ function applyAutoAbsent($db, $date) {
     input:checked + .slider:before {
         transform: translateX(20px);
         background-color: #000;
+    }
+
+    .branch-filter {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .branch-filter-select {
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 6px 10px;
+        color: #ffffff;
+        font-size: 12px;
+        min-width: 120px;
+        cursor: pointer;
+    }
+
+    .branch-filter-select:focus {
+        outline: none;
+        border-color: #FFD700;
+    }
+
+    .branch-filter-select option {
+        background: #2a2a2a;
+        color: #ffffff;
     }
 
     .view-options {
@@ -1817,6 +1899,16 @@ function applyAutoAbsent($db, $date) {
       <div class="filter-options-container">
         <div class="filter-options-title">Filters:</div>
         <div class="filter-options">
+          <div class="branch-filter">
+            <label for="branchFilter" style="font-size: 12px; color: #888; margin-bottom: 4px; display: block;">Show Present Employees From:</label>
+            <select id="branchFilter" class="branch-filter-select">
+              <option value="">All Branches</option>
+              <?php foreach ($branches as $branch): ?>
+                <option value="<?php echo htmlspecialchars($branch['branch_name']); ?>"><?php echo htmlspecialchars($branch['branch_name']); ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          
           <div class="toggle-switch">
             <span class="toggle-label">Show All Employees</span>
             <label class="toggle">
@@ -1906,6 +1998,7 @@ function applyAutoAbsent($db, $date) {
   <script src="../assets/js/sidebar-toggle.js"></script>
   <script>
     let selectedBranch = null;
+    let currentBranchFilter = '';
     let currentView = 'grid';
     let currentEmployees = [];
     let showMarked = false;
@@ -1952,7 +2045,7 @@ function applyAutoAbsent($db, $date) {
         currentPage = 1;
         
         // Load employees
-        loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+        loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
       });
     });
 
@@ -1962,7 +2055,17 @@ function applyAutoAbsent($db, $date) {
         // Reset to page 1 when filter changes
         currentPage = 1;
         if (selectedBranch) {
-            loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+            loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
+        }
+    });
+
+    // Branch filter dropdown
+    document.getElementById('branchFilter').addEventListener('change', function() {
+        currentBranchFilter = this.value;
+        // Reset to page 1 when filter changes
+        currentPage = 1;
+        if (selectedBranch) {
+            loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
         }
     });
 
@@ -2011,7 +2114,7 @@ function applyAutoAbsent($db, $date) {
     }
 
     // Load employees function with pagination - FIXED VERSION
-    function loadEmployees(branch, showMarked = false, page = 1, perPage = 10) {
+    function loadEmployees(branch, showMarked = false, page = 1, perPage = 10, branchFilter = '') {
       if (isLoading) return;
       
       const container = document.getElementById('employeeContainer');
@@ -2025,6 +2128,7 @@ function applyAutoAbsent($db, $date) {
       const formData = new FormData();
       formData.append('action', 'load_employees');
       formData.append('branch', branch);
+      formData.append('branch_filter', branchFilter);
       formData.append('show_marked', showMarked.toString());
       formData.append('page', page);
       formData.append('per_page', perPage);
@@ -2182,7 +2286,7 @@ function applyAutoAbsent($db, $date) {
       
       currentPage = page;
       if (selectedBranch) {
-        loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+        loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
       }
       
       // Scroll to top of employee container
@@ -2215,7 +2319,7 @@ function applyAutoAbsent($db, $date) {
       document.getElementById('pageSizeSelectBottom').value = perPage;
       
       if (selectedBranch) {
-        loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+        loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
       }
     }
     
@@ -2506,7 +2610,7 @@ function applyAutoAbsent($db, $date) {
           showError(data.message);
           // If server failed, reload to get correct data
           if (selectedBranch) {
-            loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+            loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
           }
         }
       })
@@ -2515,7 +2619,7 @@ function applyAutoAbsent($db, $date) {
         showError('Failed to mark attendance');
         // Reload on error
         if (selectedBranch) {
-          loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+          loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
         }
       });
     }
@@ -2559,7 +2663,7 @@ function applyAutoAbsent($db, $date) {
           
           // Reload employees to update the branch history
           setTimeout(() => {
-            loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+            loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
           }, 1500);
         } else {
           // Remove glow effect on error
@@ -2623,7 +2727,7 @@ function applyAutoAbsent($db, $date) {
       
       if (wasBeforeCutoff && !isBeforeCutoff && selectedBranch) {
         // We just passed cutoff time, reload employees
-        loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+        loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
         
         // Update time alert
         updateTimeDisplay();
@@ -2823,7 +2927,7 @@ function applyAutoAbsent($db, $date) {
         document.getElementById('searchInput').disabled = false;
         // Reset to page 1 when selecting a branch
         currentPage = 1;
-        loadEmployees(selectedBranch, showMarked, currentPage, perPage);
+        loadEmployees(selectedBranch, showMarked, currentPage, perPage, currentBranchFilter);
     }
 
     // Attach click handlers to initial branch cards
