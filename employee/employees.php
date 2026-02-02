@@ -255,12 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get current view preference from session or default to grid
-$currentView = $_SESSION['employee_view'] ?? 'grid';
+$currentView = $_SESSION['employee_view'] ?? 'details';
 
 // Handle view change request
 if (isset($_GET['view'])) {
     $view = $_GET['view'];
-    if (in_array($view, ['grid', 'list', 'details'])) {
+    if (in_array($view, ['list', 'details'])) {
         $_SESSION['employee_view'] = $view;
         $currentView = $view;
     }
@@ -364,12 +364,12 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
         font-weight: 600;
     }
 
-    .form-row-grid {
+    /* .form-row-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 20px;
         margin-bottom: 16px;
-    }
+    } */
 
     .form-group {
         display: flex;
@@ -572,13 +572,13 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
     }
 
     /* ===== ENHANCED GRID VIEW ===== */
-    .employees-grid-view {
+    /* .employees-grid-view {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 24px;
-    }
+    } */
 
-    .employee-card-grid {
+    /* .employee-card-grid {
         background: rgba(20, 20, 20, 0.9);
         border: 2px solid rgba(255, 215, 0, 0.2);
         border-radius: 16px;
@@ -587,15 +587,15 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
         position: relative;
         overflow: hidden;
         cursor: pointer;
-    }
+    } */
 
-    .employee-card-grid:hover {
+    /* .employee-card-grid:hover {
         transform: translateY(-8px);
         border-color: #FFD700;
         box-shadow: 0 12px 24px rgba(255, 215, 0, 0.2);
-    }
+    } */
 
-    .employee-badge-grid {
+    /* .employee-badge-grid {
         position: absolute;
         top: 20px;
         right: 20px;
@@ -606,16 +606,16 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
         font-size: 13px;
         font-weight: 700;
         letter-spacing: 0.5px;
-    }
+    } */
 
-    .employee-card-grid .card-header {
+    /* .employee-card-grid .card-header {
         display: flex;
         align-items: center;
         gap: 20px;
         margin-bottom: 20px;
-    }
+    } */
 
-    .employee-card-grid .avatar {
+    /* .employee-card-grid .avatar {
         width: 80px;
         height: 80px;
         border-radius: 50%;
@@ -689,7 +689,7 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
         margin-top: 20px;
         padding-top: 20px;
         border-top: 1px solid rgba(255, 215, 0, 0.2);
-    }
+    } */
 
     .action-btn {
         padding: 10px 16px;
@@ -1311,10 +1311,10 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
           <i class="fas fa-eye"></i> View Options
         </div>
         <div class="view-options">
-          <a href="?view=grid&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'grid' ? 'active' : ''; ?>">
+          <!-- <a href="?view=grid&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'grid' ? 'active' : ''; ?>">
             <i class="fas fa-th"></i>
             <span>Grid View</span>
-          </a>
+          </a> -->
           <a href="?view=list&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'list' ? 'active' : ''; ?>">
             <i class="fas fa-list"></i>
             <span>List View</span>
@@ -1363,7 +1363,7 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
             
             <?php if ($viewToUse === 'grid'): ?>
               <!-- Grid View Card -->
-              <article class="employee-card-grid" onclick="viewEmployeeProfile(<?php echo $e['id']; ?>)">
+              <!-- <article class="employee-card-grid" onclick="viewEmployeeProfile(<?php echo $e['id']; ?>)">
                 <div class="employee-badge-grid"><?php echo htmlspecialchars($e['employee_code']); ?></div>
                 <div class="card-header">
                   <div class="avatar">
@@ -1401,7 +1401,7 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
                     Edit
                   </button>
                 </div>
-              </article>
+              </article> -->
 
             <?php elseif ($viewToUse === 'list'): ?>
               <!-- List View Row -->
