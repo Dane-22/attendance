@@ -458,7 +458,7 @@ function applyAutoAbsent($db, $date) {
         
         // Mark that auto absent has been applied for today (Philippine date)
         $markQuery = "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, auto_absent_applied, created_at) 
-                     VALUES (0, 'System', ?, 'System', 1, NOW())";
+                     VALUES (0, 'Absent', ?, 'System', 1, NOW())";
         $markStmt = mysqli_prepare($db, $markQuery);
         mysqli_stmt_bind_param($markStmt, 's', $date);
         mysqli_stmt_execute($markStmt);
