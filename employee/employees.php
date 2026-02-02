@@ -1447,7 +1447,7 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
             <?php elseif ($viewToUse === 'details'): ?>
               <!-- Details View Card -->
               <article class="employee-card-details">
-                <div class="employee-badge-details"><?php echo htmlspecialchars($e['employee_code']); ?></div>
+               
                 <div class="details-header">
                   <div class="details-avatar">
                     <?php if (!empty($e['profile_image']) && file_exists(__DIR__ . '/uploads/' . $e['profile_image'])): ?>
@@ -1479,48 +1479,11 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
                     <div class="detail-value"><?php echo htmlspecialchars($e['employee_code']); ?></div>
                   </div>
 
-                  <div class="detail-item">
-                    <div class="detail-label">Position</div>
-                    <div class="detail-value"><?php echo htmlspecialchars($e['position']); ?></div>
-                  </div>
 
                   <div class="detail-item">
                     <div class="detail-label">Status</div>
                     <div class="detail-value">
                       <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
-                    </div>
-                  </div>
-
-                  <div class="detail-item">
-                    <div class="detail-label">Email</div>
-                    <div class="detail-value"><?php echo htmlspecialchars($e['email']); ?></div>
-                  </div>
-
-                  <div class="detail-item">
-                    <div class="detail-label">Created</div>
-                    <div class="detail-value">
-                      <?php 
-                      if (!empty($e['created_at'])) {
-                        $created_date = new DateTime($e['created_at']);
-                        echo $created_date->format('M j, Y');
-                      } else {
-                        echo 'N/A';
-                      }
-                      ?>
-                    </div>
-                  </div>
-
-                  <div class="detail-item">
-                    <div class="detail-label">Last Updated</div>
-                    <div class="detail-value">
-                      <?php 
-                      if (!empty($e['updated_at'])) {
-                        $updated_date = new DateTime($e['updated_at']);
-                        echo $updated_date->format('M j, Y');
-                      } else {
-                        echo 'N/A';
-                      }
-                      ?>
                     </div>
                   </div>
                 </div>
