@@ -11,7 +11,6 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
 ?>
 <aside class="sidebar" id="sidebar">
   <div style="display:flex;align-items:center;gap:10px;padding:8px 6px;">
-    <div class="logo">JAJR</div>
     <div class="sidebar-brand">
         <div style="font-weight:700; color:var(--gold-2);">JAJR Company</div>
       <div style="font-size:12px; color:#9CA3AF;">Owned by Arzadon</div>
@@ -54,7 +53,7 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
 
   <!-- Admin/Super Admin Only: Activity Logs -->
   <?php if ($isAdmin): ?>
-    <a href="../admin/logs.php" class="menu-item <?= $current === '../admin/logs.php' ? 'active' : '' ?>" data-target="../admin/logs.php"><span class="icon">🗂️</span><span class="label">Activity Logs</span></a>
+    <a href="logs.php" class="menu-item <?= $current === 'logs.php' ? 'active' : '' ?>" data-target="logs.php"><span class="icon">🗂️</span><span class="label">Activity Logs</span></a>
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Settings -->

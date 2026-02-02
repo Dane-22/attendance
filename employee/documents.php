@@ -754,7 +754,7 @@ function buildQueryString($params = []) {
               <article class="employee-card glass-card" style="padding: 1.5rem;">
                 <div class="meta" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                   <?php if (!empty($emp['profile_image'])): ?>
-                    <img src="<?php echo htmlspecialchars($emp['profile_image']); ?>" 
+                    <img src="uploads/<?php echo htmlspecialchars($emp['profile_image']); ?>" 
                          alt="Profile" 
                          style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 2px solid #FFD700;">
                   <?php else: ?>
@@ -787,7 +787,7 @@ function buildQueryString($params = []) {
               <article class="employee-card-list">
                 <div class="icon-container">
                   <?php if (!empty($emp['profile_image'])): ?>
-                    <img src="<?php echo htmlspecialchars($emp['profile_image']); ?>" 
+                    <img src="uploads/<?php echo htmlspecialchars($emp['profile_image']); ?>" 
                          alt="Profile" 
                          style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 2px solid #FFD700;">
                   <?php else: ?>
@@ -820,7 +820,7 @@ function buildQueryString($params = []) {
               <article class="employee-card-details">
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
                   <?php if (!empty($emp['profile_image'])): ?>
-                    <img src="<?php echo htmlspecialchars($emp['profile_image']); ?>" 
+                    <img src="uploads/<?php echo htmlspecialchars($emp['profile_image']); ?>" 
                          alt="Profile" 
                          style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid #FFD700;">
                   <?php else: ?>
@@ -946,7 +946,7 @@ function buildQueryString($params = []) {
             <!-- Profile Image -->
             <div class="flex-shrink-0">
               <?php if (!empty($empDetails['profile_image'])): ?>
-                <img src="<?php echo htmlspecialchars($empDetails['profile_image']); ?>" 
+                <img src="uploads/<?php echo htmlspecialchars($empDetails['profile_image']); ?>" 
                      alt="Profile" 
                      style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 3px solid #FFD700;">
               <?php else: ?>
