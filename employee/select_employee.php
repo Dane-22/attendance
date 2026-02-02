@@ -224,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
                               INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
-                              WHERE e.status = 'Active' AND e.branch_name = ? AND a.status = 'Present'";
+                              WHERE e.status = 'Active' AND a.branch_name = ? AND a.status = 'Present'";
                 $branchParams = [$branchFilter];
             } elseif ($showMarked === 'true') {
                 // Show ALL employees with their attendance status
@@ -290,7 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             1 as has_attendance_today
                           FROM employees e
                           INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
-                          WHERE e.status = 'Active' AND e.branch_name = ? AND a.status = 'Present'
+                          WHERE e.status = 'Active' AND a.branch_name = ? AND a.status = 'Present'
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
                 $branchParams = [$branchFilter];
