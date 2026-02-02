@@ -266,14 +266,52 @@ if (isset($_GET['view'])) {
     }
 }
 
-// Get total count of employees
-$countResult = mysqli_query($db, "SELECT COUNT(*) as total FROM employees");
+// Get search parameter
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$searchTerm = mysqli_real_escape_string($db, $search);
+
+// Build search condition
+$searchCondition = '';
+if (!empty($search)) {
+    $searchCondition = "WHERE (
+        CONCAT(first_name, ' ', last_name) LIKE '%$searchTerm%' OR
+        CONCAT(last_name, ', ', first_name) LIKE '%$searchTerm%' OR
+        employee_code LIKE '%$searchTerm%' OR
+        email LIKE '%$searchTerm%' OR
+        position LIKE '%$searchTerm%' OR
+        branch_name LIKE '%$searchTerm%'
+    )";
+}
+
+// Get total count of employees (with search filter)
+$countQuery = "SELECT COUNT(*) as total FROM employees $searchCondition";
+$countResult = mysqli_query($db, $countQuery);
 $countRow = mysqli_fetch_assoc($countResult);
 $totalEmployees = $countRow['total'];
 $totalPages = ceil($totalEmployees / $perPage);
 
-// Get employees with pagination
-$emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_name LIMIT $perPage OFFSET $offset");
+// Get employees with pagination and search
+$query = "SELECT * FROM employees $searchCondition ORDER BY last_name, first_name LIMIT $perPage OFFSET $offset";
+$emps = mysqli_query($db, $query);
+
+// Helper function to build URLs with all parameters
+function buildEmployeeUrl($params = []) {
+    global $search, $perPage;
+    $urlParams = [
+        'page' => '1',
+        'per_page' => $perPage,
+        'view' => $_GET['view'] ?? 'list'
+    ];
+    
+    if (!empty($search)) {
+        $urlParams['search'] = $search;
+    }
+    
+    // Merge with provided params
+    $urlParams = array_merge($urlParams, $params);
+    
+    return '?' . http_build_query($urlParams);
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -567,6 +605,71 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
     }
 
     .close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #FFD700;
+    }
+
+    /* ===== SEARCH BAR ===== */
+    .search-container {
+        background: rgba(20, 20, 20, 0.8);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 16px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 16px;
+        z-index: 1;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 16px 12px 48px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #FFD700;
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+    }
+
+    .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .clear-search-btn {
+        position: absolute;
+        right: 16px;
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .clear-search-btn:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #FFD700;
     }
@@ -1315,14 +1418,25 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
             <i class="fas fa-th"></i>
             <span>Grid View</span>
           </a> -->
-          <a href="?view=list&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'list' ? 'active' : ''; ?>">
+          <a href="<?php echo buildEmployeeUrl(['view' => 'list']); ?>" class="view-option-btn <?php echo $currentView === 'list' ? 'active' : ''; ?>">
             <i class="fas fa-list"></i>
             <span>List View</span>
           </a>
-          <a href="?view=details&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'details' ? 'active' : ''; ?>">
+          <a href="<?php echo buildEmployeeUrl(['view' => 'details']); ?>" class="view-option-btn <?php echo $currentView === 'details' ? 'active' : ''; ?>">
             <i class="fas fa-info-circle"></i>
             <span>Details View</span>
           </a>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search employees by name, code, email, or position..." value="<?php echo htmlspecialchars($search ?? ''); ?>">
+          <button type="button" id="clearSearch" class="clear-search-btn" style="display: none;">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
       </div>
 
@@ -1859,6 +1973,60 @@ $emps = mysqli_query($db, "SELECT * FROM employees ORDER BY last_name, first_nam
         }
       }
     });
+
+    // ===== SEARCH FUNCTIONALITY =====
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearch');
+
+    // Show/hide clear button based on input
+    searchInput?.addEventListener('input', function() {
+      const hasValue = this.value.trim().length > 0;
+      clearSearchBtn.style.display = hasValue ? 'flex' : 'none';
+    });
+
+    // Clear search
+    clearSearchBtn?.addEventListener('click', function() {
+      searchInput.value = '';
+      this.style.display = 'none';
+      performSearch();
+    });
+
+    // Perform search on Enter key
+    searchInput?.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+
+    // Debounced search (search after user stops typing for 500ms)
+    let searchTimeout;
+    searchInput?.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        performSearch();
+      }, 500);
+    });
+
+    function performSearch() {
+      const searchTerm = searchInput.value.trim();
+      const url = new URL(window.location.href);
+      
+      if (searchTerm) {
+        url.searchParams.set('search', searchTerm);
+      } else {
+        url.searchParams.delete('search');
+      }
+      
+      // Reset to first page when searching
+      url.searchParams.set('page', '1');
+      
+      window.location.href = url.toString();
+    }
+
+    // Initialize clear button visibility on page load
+    if (searchInput && searchInput.value.trim()) {
+      clearSearchBtn.style.display = 'flex';
+    }
   </script>
 </body>
 </html>
@@ -1873,7 +2041,7 @@ function generatePaginationButtons($currentPage, $totalPages, $perPage, $current
     // Previous button
     if ($currentPage > 1) {
         $prevPage = $currentPage - 1;
-        $html .= '<a href="?page=' . $prevPage . '&per_page=' . $perPage . '&view=' . $currentView . '" class="page-btn">';
+        $html .= '<a href="' . buildEmployeeUrl(['page' => $prevPage]) . '" class="page-btn">';
         $html .= '<i class="fas fa-chevron-left"></i>';
         $html .= '</a>';
     } else {
@@ -1881,7 +2049,7 @@ function generatePaginationButtons($currentPage, $totalPages, $perPage, $current
     }
     
     // First page
-    $html .= '<a href="?page=1&per_page=' . $perPage . '&view=' . $currentView . '" class="page-btn ' . ($currentPage === 1 ? 'active' : '') . '">1</a>';
+    $html .= '<a href="' . buildEmployeeUrl(['page' => 1]) . '" class="page-btn ' . ($currentPage === 1 ? 'active' : '') . '">1</a>';
     
     // Ellipsis if needed
     if ($currentPage > 3) {
@@ -1891,7 +2059,7 @@ function generatePaginationButtons($currentPage, $totalPages, $perPage, $current
     // Pages around current page
     for ($i = max(2, $currentPage - 1); $i <= min($totalPages - 1, $currentPage + 1); $i++) {
         if ($i > 1 && $i < $totalPages) {
-            $html .= '<a href="?page=' . $i . '&per_page=' . $perPage . '&view=' . $currentView . '" class="page-btn ' . ($currentPage === $i ? 'active' : '') . '">' . $i . '</a>';
+            $html .= '<a href="' . buildEmployeeUrl(['page' => $i]) . '" class="page-btn ' . ($currentPage === $i ? 'active' : '') . '">' . $i . '</a>';
         }
     }
     
@@ -1902,13 +2070,13 @@ function generatePaginationButtons($currentPage, $totalPages, $perPage, $current
     
     // Last page (if not first page)
     if ($totalPages > 1) {
-        $html .= '<a href="?page=' . $totalPages . '&per_page=' . $perPage . '&view=' . $currentView . '" class="page-btn ' . ($currentPage === $totalPages ? 'active' : '') . '">' . $totalPages . '</a>';
+        $html .= '<a href="' . buildEmployeeUrl(['page' => $totalPages]) . '" class="page-btn ' . ($currentPage === $totalPages ? 'active' : '') . '">' . $totalPages . '</a>';
     }
     
     // Next button
     if ($currentPage < $totalPages) {
         $nextPage = $currentPage + 1;
-        $html .= '<a href="?page=' . $nextPage . '&per_page=' . $perPage . '&view=' . $currentView . '" class="page-btn">';
+        $html .= '<a href="' . buildEmployeeUrl(['page' => $nextPage]) . '" class="page-btn">';
         $html .= '<i class="fas fa-chevron-right"></i>';
         $html .= '</a>';
     } else {
