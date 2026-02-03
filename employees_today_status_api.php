@@ -26,15 +26,10 @@ if (empty($branch_name)) {
 }
 
 function attendanceHasColumn($db, $columnName) {
-    $sql = "SHOW COLUMNS FROM attendance LIKE ?";
-    $stmt = mysqli_prepare($db, $sql);
-    if (!$stmt) return false;
-    mysqli_stmt_bind_param($stmt, 's', $columnName);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $exists = $result && mysqli_num_rows($result) > 0;
-    mysqli_stmt_close($stmt);
-    return $exists;
+    $safe = mysqli_real_escape_string($db, $columnName);
+    $sql = "SHOW COLUMNS FROM `attendance` LIKE '{$safe}'";
+    $result = mysqli_query($db, $sql);
+    return $result && mysqli_num_rows($result) > 0;
 }
 
 $hasTimeIn = attendanceHasColumn($db, 'time_in');
