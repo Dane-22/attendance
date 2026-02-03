@@ -20,6 +20,17 @@ try {
         require_once _DIR_ . '/db_connection.php';
     }
 
+    $debug = isset($_GET['debug']) && $_GET['debug'] === '1';
+
+    if (!isset($db) || !$db) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database connection not initialized',
+        ]);
+        exit;
+    }
+
     $is_md5_hash = function($value) {
         return is_string($value) && preg_match('/^[a-f0-9]{32}$/i', $value);
     };
@@ -54,8 +65,31 @@ try {
     }
     
     $stmt = mysqli_prepare($db, $sql);
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error: prepare failed',
+            'debug' => $debug ? [
+                'mysqli_error' => mysqli_error($db),
+                'sql' => $sql,
+            ] : null,
+        ]);
+        exit;
+    }
     mysqli_stmt_bind_param($stmt, "s", $identifier);
-    mysqli_stmt_execute($stmt);
+    if (!mysqli_stmt_execute($stmt)) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error: execute failed',
+            'debug' => $debug ? [
+                'mysqli_error' => mysqli_stmt_error($stmt),
+            ] : null,
+        ]);
+        mysqli_stmt_close($stmt);
+        exit;
+    }
     $result = mysqli_stmt_get_result($stmt);
     $user = mysqli_fetch_assoc($result);
     
@@ -107,15 +141,16 @@ try {
     
     mysqli_stmt_close($stmt);
     
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Database error: ' . $e->getMessage(),
-        'debug' => [
+        'message' => 'Server error',
+        'debug' => (isset($_GET['debug']) && $_GET['debug'] === '1') ? [
+            'error' => $e->getMessage(),
             'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ]
+            'line' => $e->getLine(),
+        ] : null,
     ]);
 }
 ?>
