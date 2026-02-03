@@ -20,6 +20,25 @@ $rateLimitEnabled = false; // CHANGE TO false PARA I-DISABLE MUNA
 $rateLimitWindow = 60; // 60 seconds
 $rateLimitMaxRequests = 30; // Maximum requests per window
 
+function attendanceHasTimeColumns($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME IN ('time_in','time_out')";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 2;
+    return $cached;
+}
+
 function checkRateLimit() {
     global $rateLimitEnabled, $rateLimitWindow, $rateLimitMaxRequests;
     
@@ -364,8 +383,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 exit();
             }
 
+            $hasTimeCols = attendanceHasTimeColumns($db);
             $employees = [];
             while ($row = mysqli_fetch_assoc($result)) {
+                $shiftId = null;
+                $timeIn = null;
+                $timeOut = null;
+                $totalHours = 0;
+
+                if ($hasTimeCols) {
+                    // Latest shift (for displaying current session and clock-out targeting)
+                    $shiftSql = "SELECT id, time_in, time_out
+                                FROM attendance
+                                WHERE employee_id = ? AND attendance_date = CURDATE() AND time_in IS NOT NULL
+                                ORDER BY id DESC
+                                LIMIT 1";
+                    $shiftStmt = mysqli_prepare($db, $shiftSql);
+                    if ($shiftStmt) {
+                        mysqli_stmt_bind_param($shiftStmt, 'i', $row['id']);
+                        mysqli_stmt_execute($shiftStmt);
+                        $shiftResult = mysqli_stmt_get_result($shiftStmt);
+                        if ($shiftResult && ($shiftRow = mysqli_fetch_assoc($shiftResult))) {
+                            $shiftId = $shiftRow['id'];
+                            $timeIn = $shiftRow['time_in'];
+                            $timeOut = $shiftRow['time_out'];
+                        }
+                        mysqli_stmt_close($shiftStmt);
+                    }
+
+                    // Total hours for today (sum of all sessions)
+                    $totalSql = "SELECT
+                                    SUM(
+                                        GREATEST(
+                                            0,
+                                            TIME_TO_SEC(
+                                                TIMEDIFF(
+                                                    COALESCE(time_out, CURTIME()),
+                                                    time_in
+                                                )
+                                            )
+                                        )
+                                    ) AS total_seconds
+                                  FROM attendance
+                                  WHERE employee_id = ?
+                                    AND attendance_date = CURDATE()
+                                    AND time_in IS NOT NULL";
+                    $totalStmt = mysqli_prepare($db, $totalSql);
+                    if ($totalStmt) {
+                        mysqli_stmt_bind_param($totalStmt, 'i', $row['id']);
+                        mysqli_stmt_execute($totalStmt);
+                        $totalResult = mysqli_stmt_get_result($totalStmt);
+                        if ($totalResult && ($totalRow = mysqli_fetch_assoc($totalResult))) {
+                            $totalSeconds = intval($totalRow['total_seconds'] ?? 0);
+                            $totalHours = round($totalSeconds / 3600, 2);
+                        }
+                        mysqli_stmt_close($totalStmt);
+                    }
+                }
+
                 $employees[] = [
                     'id' => $row['id'],
                     'employee_code' => $row['employee_code'],
@@ -375,7 +450,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'logged_branch' => $row['logged_branch'] ?? $branch, // Use selected branch if null
                     'attendance_status' => $row['attendance_status'] ?? null,
                     'is_auto_absent' => (bool)($row['is_auto_absent'] ?? false),
-                    'has_attendance_today' => (bool)($row['has_attendance_today'] ?? false)
+                    'has_attendance_today' => (bool)($row['has_attendance_today'] ?? false),
+                    'shift_id' => $shiftId,
+                    'time_in' => $timeIn,
+                    'time_out' => $timeOut,
+                    'total_hours' => $totalHours
                 ];
             }
 

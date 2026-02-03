@@ -1,8 +1,5 @@
 <?php
 // login_api_simple.php - Based on your working login.php
-ini_set('display_errors', '0');
-ini_set('display_startup_errors', '0');
-error_reporting(0);
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
@@ -14,26 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 try {
-    if (file_exists(_DIR_ . '/conn/db_connection.php')) {
-        require_once _DIR_ . '/conn/db_connection.php';
-    } else {
-        require_once _DIR_ . '/db_connection.php';
-    }
-
-    $debug = isset($_GET['debug']) && $_GET['debug'] === '1';
-
-    if (!isset($db) || !$db) {
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Database connection not initialized',
-        ]);
-        exit;
-    }
-
-    $is_md5_hash = function($value) {
-        return is_string($value) && preg_match('/^[a-f0-9]{32}$/i', $value);
-    };
+    // Include database connection (adjust path as needed)
+    require_once __DIR__ . '/conn/db_connection.php';
     
     // Get POST data exactly like your login.php
     $identifier = trim($_POST['identifier'] ?? '');
@@ -65,57 +44,14 @@ try {
     }
     
     $stmt = mysqli_prepare($db, $sql);
-    if (!$stmt) {
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Database error: prepare failed',
-            'debug' => $debug ? [
-                'mysqli_error' => mysqli_error($db),
-                'sql' => $sql,
-            ] : null,
-        ]);
-        exit;
-    }
     mysqli_stmt_bind_param($stmt, "s", $identifier);
-    if (!mysqli_stmt_execute($stmt)) {
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Database error: execute failed',
-            'debug' => $debug ? [
-                'mysqli_error' => mysqli_stmt_error($stmt),
-            ] : null,
-        ]);
-        mysqli_stmt_close($stmt);
-        exit;
-    }
+    mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $user = mysqli_fetch_assoc($result);
     
     if ($user) {
-        $storedHash = (string)($user['password_hash'] ?? '');
-
-        $okPassword = false;
-        if ($is_md5_hash($storedHash)) {
-            $okPassword = strtolower(md5($password)) === strtolower($storedHash);
-        } else {
-            $okPassword = password_verify($password, $storedHash);
-        }
-
-        if ($okPassword) {
-
-            if ($is_md5_hash($storedHash)) {
-                $newHash = password_hash($password, PASSWORD_DEFAULT);
-                if ($newHash) {
-                    $upgradeStmt = mysqli_prepare($db, 'UPDATE employees SET password_hash = ? WHERE id = ? LIMIT 1');
-                    if ($upgradeStmt) {
-                        mysqli_stmt_bind_param($upgradeStmt, 'si', $newHash, $user['id']);
-                        mysqli_stmt_execute($upgradeStmt);
-                        mysqli_stmt_close($upgradeStmt);
-                    }
-                }
-            }
+        // Verify password (exactly like your login.php)
+        if (md5($password) === $user['password_hash']) {
             
             // Success response for mobile app
             echo json_encode([
@@ -141,16 +77,15 @@ try {
     
     mysqli_stmt_close($stmt);
     
-} catch (Throwable $e) {
+} catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Server error',
-        'debug' => (isset($_GET['debug']) && $_GET['debug'] === '1') ? [
-            'error' => $e->getMessage(),
+        'message' => 'Database error: ' . $e->getMessage(),
+        'debug' => [
             'file' => $e->getFile(),
-            'line' => $e->getLine(),
-        ] : null,
+            'line' => $e->getLine()
+        ]
     ]);
 }
 ?>

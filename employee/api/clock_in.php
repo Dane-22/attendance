@@ -1,7 +1,7 @@
 <?php
 // api/clock_in.php
 session_start();
-require_once '../conn/db_connection.php';
+require_once __DIR__ . '/../../conn/db_connection.php';
 
 header('Content-Type: application/json');
 
@@ -9,8 +9,9 @@ header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$employeeId = $_POST['employee_id'] ?? $_SESSION['user_id'] ?? null;
+$employeeId = $_POST['employee_id'] ?? $_SESSION['employee_id'] ?? null;
 $employeeCode = $_POST['employee_code'] ?? $_SESSION['employee_code'] ?? null;
+$branchName = $_POST['branch_name'] ?? $_SESSION['daily_branch'] ?? null;
 
 error_log("Clock In Attempt - Employee ID: $employeeId, Code: $employeeCode");
 
@@ -33,16 +34,24 @@ if (mysqli_stmt_num_rows($stmt) > 0) {
 mysqli_stmt_close($stmt);
 
 // Clock in
-$sql = "INSERT INTO attendance (employee_id, time_in) VALUES (?, NOW())";
-$stmt = mysqli_prepare($db, $sql);
-mysqli_stmt_bind_param($stmt, "i", $employeeId);
+if ($branchName !== null && $branchName !== '') {
+    $sql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in) VALUES (?, ?, CURDATE(), NOW())";
+    $stmt = mysqli_prepare($db, $sql);
+    mysqli_stmt_bind_param($stmt, "is", $employeeId, $branchName);
+} else {
+    $sql = "INSERT INTO attendance (employee_id, time_in) VALUES (?, NOW())";
+    $stmt = mysqli_prepare($db, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $employeeId);
+}
 
 if (mysqli_stmt_execute($stmt)) {
     $timeIn = date('H:i:s');
+    $shiftId = mysqli_insert_id($db);
     echo json_encode([
         'success' => true, 
         'message' => 'Clocked in successfully', 
-        'time_in' => $timeIn
+        'time_in' => $timeIn,
+        'shift_id' => $shiftId
     ]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);

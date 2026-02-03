@@ -1,7 +1,7 @@
 <?php
 // api/clock_out.php
 session_start();
-require_once '../conn/db_connection.php';
+require_once __DIR__ . '/../../conn/db_connection.php';
 
 header('Content-Type: application/json');
 
@@ -10,13 +10,31 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $shiftId = $_POST['shift_id'] ?? null;
-$employeeId = $_POST['employee_id'] ?? $_SESSION['user_id'] ?? null;
+$employeeId = $_POST['employee_id'] ?? $_SESSION['employee_id'] ?? null;
 $employeeCode = $_POST['employee_code'] ?? $_SESSION['employee_code'] ?? null;
 
 error_log("Clock Out Attempt - Shift ID: $shiftId, Employee ID: $employeeId, Code: $employeeCode");
 
-if (!$shiftId || !$employeeId) {
-    echo json_encode(['success' => false, 'message' => 'Missing shift or employee data']);
+if (!$employeeId) {
+    echo json_encode(['success' => false, 'message' => 'Missing employee data']);
+    exit();
+}
+
+if (!$shiftId) {
+    // Fallback: close the latest open shift for this employee
+    $findSql = "SELECT id FROM attendance WHERE employee_id = ? AND time_out IS NULL ORDER BY id DESC LIMIT 1";
+    $findStmt = mysqli_prepare($db, $findSql);
+    mysqli_stmt_bind_param($findStmt, "i", $employeeId);
+    mysqli_stmt_execute($findStmt);
+    $findResult = mysqli_stmt_get_result($findStmt);
+    if ($findResult && ($row = mysqli_fetch_assoc($findResult))) {
+        $shiftId = $row['id'];
+    }
+    mysqli_stmt_close($findStmt);
+}
+
+if (!$shiftId) {
+    echo json_encode(['success' => false, 'message' => 'No open shift found']);
     exit();
 }
 
