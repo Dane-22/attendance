@@ -403,7 +403,180 @@
         display: flex;
         align-items: center;
         gap: 10px;
+    }
+
+    .employee-table-wrap {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .employee-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .employee-table thead th {
+        text-align: left;
+        font-size: 12px;
+        color: #FFD700;
+        padding: 12px 12px;
+        border-bottom: 1px solid #333;
+        background: #111;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .employee-table tbody td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        font-size: 12px;
+        color: #eaeaea;
+        vertical-align: middle;
+    }
+
+    .employee-table tbody tr:hover {
+        background: rgba(255, 215, 0, 0.05);
+    }
+
+    .employee-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 220px;
+    }
+
+    .employee-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background: rgba(255, 215, 0, 0.15);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        display: grid;
+        place-items: center;
+        color: #FFD700;
+        font-weight: 800;
+        font-size: 12px;
+        flex: 0 0 32px;
+    }
+
+    .employee-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .employee-sub {
+        font-size: 11px;
+        color: #888;
+    }
+
+    .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        letter-spacing: 0.2px;
+    }
+
+    .actions-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .kebab-menu {
+        position: relative;
+        display: inline-block;
+    }
+
+    .kebab-btn {
+        width: 34px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: transparent;
+        color: #ddd;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+    }
+
+    .kebab-btn:hover {
+        border-color: rgba(255, 215, 0, 0.35);
+        color: #FFD700;
+    }
+
+    .kebab-dropdown {
+        position: absolute;
+        right: 0;
+        top: 38px;
+        min-width: 160px;
+        background: #0b0b0b;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        z-index: 20;
+    }
+
+    .kebab-item {
+        width: 100%;
+        text-align: left;
+        padding: 10px 12px;
+        background: transparent;
+        border: none;
+        color: #eaeaea;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .kebab-item:hover {
+        background: rgba(255, 215, 0, 0.08);
+        color: #FFD700;
+    }
+
+    .kebab-logs {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .kebab-logs-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #FFD700;
+        margin-bottom: 8px;
+        letter-spacing: 0.2px;
+    }
+
+    .kebab-logs-body {
+        font-size: 12px;
+        color: #ddd;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 180px;
+        overflow: auto;
+    }
+
+    .kebab-log-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 8px;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px;
+        background: rgba(255,255,255,0.02);
+    }
+
+    .kebab-log-sep {
+        color: #888;
+        flex: 0 0 auto;
     }
 
     /* Status Badge - COMMON */
@@ -600,6 +773,32 @@
         border-radius: 10px;
         padding: 20px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .time-logs-body {
+        font-size: 12px;
+        color: #ddd;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 360px;
+        overflow: auto;
+    }
+
+    .time-log-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.02);
+    }
+
+    .time-log-sep {
+        color: #888;
+        flex: 0 0 auto;
     }
 
     .form-row {

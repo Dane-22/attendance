@@ -8,7 +8,23 @@
     let isBeforeCutoff = '<?php echo $isBeforeCutoff ? "true" : "false"; ?>';
     let cutoffTime = '<?php echo $cutoffTime; ?>';
     let currentTime = '<?php echo $currentTime; ?>';
-    
+
+    function formatTime(t) {
+      if (!t) return '--';
+      const s = String(t);
+      const trimmed = s.trim();
+      if (!trimmed) return '--';
+
+      // Accept both DATETIME (YYYY-MM-DD HH:MM:SS) and TIME (HH:MM:SS)
+      const parts = trimmed.split(' ');
+      const last = parts[parts.length - 1];
+
+      // Handle ISO format like YYYY-MM-DDTHH:MM:SS
+      const isoParts = last.split('T');
+      const timePart = isoParts[isoParts.length - 1];
+      return timePart;
+    }
+
     // Pagination variables
     let currentPage = 1;
     let perPage = 10;
@@ -339,79 +355,308 @@
         return;
       }
 
-      let html = `<div class="employee-list-view">`;
+      const formatHours = (h) => {
+        const n = Number(h);
+        if (!isFinite(n) || n <= 0) return '0.00';
+        return n.toFixed(2);
+      };
+
+      const escapeAttr = (s) => String(s ?? '').replace(/"/g, '&quot;');
+      const escapeJsString = (s) => String(s ?? '').replace(/'/g, "\\'");
+
+      let html = `
+        <div class="employee-table-wrap">
+          <table class="employee-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Time In</th>
+                <th>Time Out</th>
+                <th>Total Hours</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
 
       employees.forEach(employee => {
-        let statusClass = 'status-available';
-        let statusText = 'Available';
-        let currentStatus = '';
-        let isAutoAbsent = employee.is_auto_absent;
-        
-        if (employee.has_attendance_today) {
-          if (employee.attendance_status === 'Present') {
-            statusClass = 'status-present';
-            statusText = 'Present';
-            currentStatus = 'present';
-          } else if (employee.attendance_status === 'Absent') {
-            if (employee.is_auto_absent) {
-              statusClass = 'status-absent-auto';
-              statusText = 'Auto-Absent';
-              currentStatus = 'absent-auto';
-            } else {
-              statusClass = 'status-absent-manual';
-              statusText = 'Absent';
-              currentStatus = 'absent-manual';
-            }
-          }
-        }
+        const name = employee.name || '';
+        const initials = name.trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '?';
+        const timeIn = formatTime(employee.time_in);
+        const timeOut = formatTime(employee.time_out);
+        const totalHours = formatHours(employee.total_hours);
 
-        // Determine button text and class based on time and status
-        let buttonText = 'Mark Present';
-        let buttonClass = 'btn-present';
-        let isDisabled = false;
-        let buttonTitle = 'Mark as Present';
-        let buttonAction = 'markPresent';
+        const hasOpenShift = !!employee.time_in && !employee.time_out;
 
-        if (employee.attendance_status === 'Present') {
-          buttonText = 'Transfer';
-          buttonClass = 'btn-transfer';
-          buttonTitle = 'Transfer to different branch';
-          buttonAction = 'transferEmployee';
-        } else if (!isBeforeCutoff) {
-          buttonText = 'Mark as Present (Late)';
-          buttonClass = 'btn-present-late';
-          buttonTitle = 'Mark as Present (Late override)';
-        }
+        const menuId = `emp-menu-${employee.id}`;
 
-        // Add branch history indicator for list view
-        let branchHistory = '';
-        if (employee.attendance_status === 'Present' && employee.logged_branch) {
-          branchHistory = `<div class="branch-history" style="font-size: 0.75rem; color: #FFD000; background: #0B0B0B; padding: 2px 6px; border-radius: 4px; margin-left: 8px; display: inline-block;">
-            <i class="fas fa-map-marker-alt"></i> Current: ${employee.logged_branch}
-          </div>`;
-        }
-        
         html += `
-          <div class="employee-card-list" id="employee-${employee.id}">
-            <div class="employee-info">
-              <div class="employee-name">${employee.name} <span class="employee-code"></span></div>
-              ${branchHistory}
-            </div>
-            <div class="status-button-container">
-              <span class="employee-status ${statusClass}">${statusText}</span>
-              <button class="${buttonClass}" 
-                      onclick="${buttonAction}(${employee.id}, '${employee.name.replace(/'/g, "\\'")}')"
-                      ${isDisabled ? 'disabled' : ''}
-                      title="${buttonTitle}">
-                <i class="fas fa-${buttonAction === 'transferEmployee' ? 'exchange-alt' : 'check-circle'}"></i> ${buttonText}
-              </button>
-            </div>
-          </div>
+          <tr id="employee-${employee.id}" data-shift-id="${employee.shift_id || ''}" data-has-open-shift="${hasOpenShift ? '1' : '0'}">
+            <td>
+              <div class="employee-cell">
+                <div class="employee-avatar" aria-hidden="true">${escapeAttr(initials)}</div>
+                <div class="employee-meta">
+                  <div class="employee-name">${escapeAttr(name)}</div>
+                  <div class="employee-sub">${escapeAttr(employee.employee_code || '')}</div>
+                </div>
+              </div>
+            </td>
+            <td class="mono time-in-cell">${escapeAttr(timeIn)}</td>
+            <td class="mono time-out-cell">${escapeAttr(timeOut)}</td>
+            <td class="mono">${escapeAttr(totalHours)}</td>
+            <td>
+              <div class="actions-cell">
+                <button class="${hasOpenShift ? 'btn-present-late' : 'btn-present'} btn-shift-toggle"
+                        onclick="toggleShift(${employee.id}, '${escapeJsString(name)}')"
+                        title="${hasOpenShift ? 'Time Out' : 'Time In'}">
+                  <i class="fas ${hasOpenShift ? 'fa-sign-out-alt' : 'fa-sign-in-alt'}"></i> ${hasOpenShift ? 'Time Out' : 'Time In'}
+                </button>
+                <div class="kebab-menu">
+                  <button class="kebab-btn" onclick="toggleEmployeeMenu('${menuId}', ${employee.id})" aria-label="Options">
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
+                  <div class="kebab-dropdown" id="${menuId}" style="display: none;">
+                    <button class="kebab-item" onclick="openTimeLogsModal(${employee.id}, '${escapeJsString(name)}')">
+                      <i class="fas fa-clock"></i> Time Logs Today
+                    </button>
+                    <button class="kebab-item" onclick="transferEmployee(${employee.id}, '${escapeJsString(name)}')">
+                      <i class="fas fa-exchange-alt"></i> Transfer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
         `;
       });
 
-      html += '</div>';
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
       container.innerHTML = html;
+    }
+
+    function toggleEmployeeMenu(menuId, employeeId) {
+      const menu = document.getElementById(menuId);
+      if (!menu) return;
+      const isOpen = menu.style.display !== 'none';
+
+      document.querySelectorAll('.kebab-dropdown').forEach(el => {
+        el.style.display = 'none';
+      });
+
+      menu.style.display = isOpen ? 'none' : 'block';
+    }
+
+    function closeTimeLogsModal() {
+      const modal = document.getElementById('timeLogsModal');
+      if (!modal) return;
+      modal.classList.remove('show');
+      const body = document.getElementById('timeLogsBody');
+      if (body) body.textContent = '';
+    }
+
+    function openTimeLogsModal(employeeId, employeeName) {
+      const modal = document.getElementById('timeLogsModal');
+      const title = document.getElementById('timeLogsTitle');
+      const body = document.getElementById('timeLogsBody');
+      if (!modal || !title || !body) return;
+
+      title.textContent = `Time Logs Today — ${employeeName}`;
+      body.textContent = 'Loading...';
+      modal.classList.add('show');
+
+      const formData = new FormData();
+      formData.append('action', 'get_shift_logs');
+      formData.append('employee_id', employeeId);
+      formData.append('limit', '50');
+
+      fetch('select_employee.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data || !data.success) {
+          body.textContent = (data && data.message) ? data.message : 'Unable to load logs';
+          return;
+        }
+
+        const logs = Array.isArray(data.logs) ? data.logs : [];
+        if (logs.length === 0) {
+          body.textContent = 'No logs found for today.';
+          return;
+        }
+
+        body.innerHTML = logs.map(l => {
+          const tin = formatTime(l.time_in || '--');
+          const tout = formatTime(l.time_out || '--');
+          return `<div class="time-log-row"><span class="mono">${tin}</span><span class="time-log-sep">→</span><span class="mono">${tout}</span></div>`;
+        }).join('');
+      })
+      .catch(err => {
+        console.error(err);
+        body.textContent = 'Failed to load logs';
+      });
+    }
+
+    function toggleShift(employeeId, employeeName) {
+      const row = document.getElementById(`employee-${employeeId}`);
+      const hasOpen = row ? row.dataset.hasOpenShift === '1' : false;
+      const shiftId = row ? (row.dataset.shiftId ? parseInt(row.dataset.shiftId, 10) : null) : null;
+
+      if (hasOpen) {
+        clockOutEmployee(employeeId, shiftId, employeeName);
+        return;
+      }
+
+      clockInEmployee(employeeId, employeeName);
+    }
+
+    document.addEventListener('click', function(e) {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('.kebab-menu')) return;
+      document.querySelectorAll('.kebab-dropdown').forEach(el => {
+        el.style.display = 'none';
+      });
+    });
+
+    function clockInEmployee(employeeId, employeeName) {
+      if (!selectedBranch) {
+        showError('Please select a branch first');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('employee_id', employeeId);
+      formData.append('branch_name', selectedBranch);
+
+      fetch('api/clock_in.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      })
+      .then(async (r) => {
+        const text = await r.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          data = null;
+        }
+
+        if (!r.ok) {
+          const msg = data?.message || `Request failed (HTTP ${r.status})`;
+          throw new Error(msg);
+        }
+
+        if (!data) {
+          throw new Error('Invalid server response');
+        }
+
+        if (data.success) {
+          showSuccess(`${employeeName} time-in recorded (${data.time_in || ''})`);
+          const row = document.getElementById(`employee-${employeeId}`);
+          if (row) {
+            const timeCell = row.querySelector('.time-in-cell');
+            if (timeCell) timeCell.textContent = formatTime(data.time_in);
+
+            if (data.shift_id) {
+              row.dataset.shiftId = String(data.shift_id);
+            }
+            row.dataset.hasOpenShift = '1';
+
+            const btn = row.querySelector('.btn-shift-toggle');
+            if (btn) {
+              btn.classList.remove('btn-present');
+              btn.classList.add('btn-present-late');
+              btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Time Out';
+              btn.title = 'Time Out';
+            }
+          }
+          setTimeout(() => {
+            if (selectedBranch) loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+          }, 300);
+          return;
+        }
+
+        throw new Error(data.message || 'Failed to Time In');
+      })
+      .catch(err => {
+        console.error(err);
+        showError(err.message || 'Failed to Time In');
+      });
+    }
+
+    function clockOutEmployee(employeeId, shiftId, employeeName) {
+      const formData = new FormData();
+      formData.append('employee_id', employeeId);
+      if (shiftId) formData.append('shift_id', shiftId);
+
+      fetch('api/clock_out.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      })
+      .then(async (r) => {
+        const text = await r.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          data = null;
+        }
+
+        if (!r.ok) {
+          const msg = data?.message || `Request failed (HTTP ${r.status})`;
+          throw new Error(msg);
+        }
+
+        if (!data) {
+          throw new Error('Invalid server response');
+        }
+
+        if (data.success) {
+          showSuccess(`${employeeName} time-out recorded (${data.time_out || ''})`);
+          const row = document.getElementById(`employee-${employeeId}`);
+          if (row) {
+            const timeCell = row.querySelector('.time-out-cell');
+            if (timeCell) timeCell.textContent = formatTime(data.time_out);
+
+            row.dataset.hasOpenShift = '0';
+            row.dataset.shiftId = '';
+
+            const btn = row.querySelector('.btn-shift-toggle');
+            if (btn) {
+              btn.classList.remove('btn-present-late');
+              btn.classList.add('btn-present');
+              btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Time In';
+              btn.title = 'Time In';
+            }
+          }
+          setTimeout(() => {
+            if (selectedBranch) loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+          }, 300);
+          return;
+        }
+
+        throw new Error(data.message || 'Failed to Time Out');
+      })
+      .catch(err => {
+        console.error(err);
+        showError(err.message || 'Failed to Time Out');
+      });
     }
 
     // MARK PRESENT FUNCTION
@@ -539,8 +784,24 @@
         },
         body: formData
       })
-      .then(response => response.json())
-      .then(data => {
+      .then(async (r) => {
+        const text = await r.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          data = null;
+        }
+
+        if (!r.ok) {
+          const msg = data?.message || `Request failed (HTTP ${r.status})`;
+          throw new Error(msg);
+        }
+
+        if (!data) {
+          throw new Error('Invalid server response');
+        }
+
         if (data.success) {
           // Remove glow effect and reload
           if (employeeElement) {
@@ -550,20 +811,17 @@
             }, 1000);
           }
           
-          showSuccess(`${employeeName} transferred to ${selectedBranch} successfully!`);
+          const toBranch = data.new_branch || selectedBranch;
+          showSuccess(`${employeeName} transferred to ${toBranch} successfully!`);
           
           // Reload employees to update the branch history
           setTimeout(() => {
             loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
           }, 1500);
-        } else {
-          // Remove glow effect on error
-          if (employeeElement) {
-            employeeElement.style.boxShadow = '';
-            employeeElement.style.transform = '';
-          }
-          showError(data.message);
+          return;
         }
+
+        throw new Error(data.message || 'Failed to transfer employee');
       })
       .catch(error => {
         console.error('Error:', error);
@@ -572,7 +830,7 @@
           employeeElement.style.boxShadow = '';
           employeeElement.style.transform = '';
         }
-        showError('Failed to transfer employee');
+        showError(error.message || 'Failed to transfer employee');
       });
     }
 

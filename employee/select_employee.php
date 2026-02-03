@@ -71,7 +71,7 @@ require('function/attendance.php');
       </div>
 
       <!-- Time Alert -->
-      <div class="time-alert <?php echo $isBeforeCutoff ? 'before-cutoff' : 'after-cutoff'; ?>">
+      <!-- <div class="time-alert <?php echo $isBeforeCutoff ? 'before-cutoff' : 'after-cutoff'; ?>">
         <?php if ($isBeforeCutoff): ?>
           <i class="fas fa-clock"></i>
           <div class="time-alert-content">
@@ -91,7 +91,7 @@ require('function/attendance.php');
             </div>
           </div>
         <?php endif; ?>
-      </div>
+      </div> -->
 
       <!-- Branch Selection -->
       <div class="branch-selection">
@@ -149,6 +149,18 @@ require('function/attendance.php');
               </button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div id="timeLogsModal" class="modal-backdrop">
+        <div class="modal-panel" style="width: 520px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 id="timeLogsTitle" style="margin: 0; color: #FFD700; font-size: 18px;">Time Logs Today</h3>
+            <button onclick="closeTimeLogsModal()" style="background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 0;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div id="timeLogsBody" class="time-logs-body">Loading...</div>
         </div>
       </div>
       

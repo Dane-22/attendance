@@ -1,5 +1,8 @@
 <?php
 // login_api_simple.php - Based on your working login.php
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(0);
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
@@ -11,13 +14,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 try {
-    // Include database connection (adjust path as needed)
-    require_once __DIR__ . '/conn/db_connection.php';
+    if (file_exists(__DIR__ . '/conn/db_connection.php')) {
+        require_once __DIR__ . '/conn/db_connection.php';
+    } else {
+        require_once __DIR__ . '/db_connection.php';
+    }
+
+    $debug = isset($_GET['debug']) && $_GET['debug'] === '1';
+
+    if (!isset($db) || !$db) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database connection not initialized',
+        ]);
+        exit;
+    }
+
+    $is_md5_hash = function($value) {
+        return is_string($value) && preg_match('/^[a-f0-9]{32}$/i', $value);
+    };
     
     // Get POST data exactly like your login.php
-    $identifier = trim($_POST['identifier'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $daily_branch = $_POST['branch_name'] ?? '';
+    $identifier = trim((string)($_POST['identifier'] ?? $_REQUEST['identifier'] ?? ''));
+    $password = (string)($_POST['password'] ?? $_REQUEST['password'] ?? '');
+    $daily_branch = trim((string)($_POST['branch_name'] ?? $_REQUEST['branch_name'] ?? ''));
     
     // Debug log
     error_log("API: identifier=$identifier, branch=$daily_branch");
@@ -44,14 +65,57 @@ try {
     }
     
     $stmt = mysqli_prepare($db, $sql);
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error: prepare failed',
+            'debug' => $debug ? [
+                'mysqli_error' => mysqli_error($db),
+                'sql' => $sql,
+            ] : null,
+        ]);
+        exit;
+    }
     mysqli_stmt_bind_param($stmt, "s", $identifier);
-    mysqli_stmt_execute($stmt);
+    if (!mysqli_stmt_execute($stmt)) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error: execute failed',
+            'debug' => $debug ? [
+                'mysqli_error' => mysqli_stmt_error($stmt),
+            ] : null,
+        ]);
+        mysqli_stmt_close($stmt);
+        exit;
+    }
     $result = mysqli_stmt_get_result($stmt);
     $user = mysqli_fetch_assoc($result);
     
     if ($user) {
-        // Verify password (exactly like your login.php)
-        if (md5($password) === $user['password_hash']) {
+        $storedHash = (string)($user['password_hash'] ?? '');
+
+        $okPassword = false;
+        if ($is_md5_hash($storedHash)) {
+            $okPassword = strtolower(md5($password)) === strtolower($storedHash);
+        } else {
+            $okPassword = password_verify($password, $storedHash);
+        }
+
+        if ($okPassword) {
+
+            if ($is_md5_hash($storedHash)) {
+                $newHash = password_hash($password, PASSWORD_DEFAULT);
+                if ($newHash) {
+                    $upgradeStmt = mysqli_prepare($db, 'UPDATE employees SET password_hash = ? WHERE id = ? LIMIT 1');
+                    if ($upgradeStmt) {
+                        mysqli_stmt_bind_param($upgradeStmt, 'si', $newHash, $user['id']);
+                        mysqli_stmt_execute($upgradeStmt);
+                        mysqli_stmt_close($upgradeStmt);
+                    }
+                }
+            }
             
             // Success response for mobile app
             echo json_encode([
@@ -77,15 +141,16 @@ try {
     
     mysqli_stmt_close($stmt);
     
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Database error: ' . $e->getMessage(),
-        'debug' => [
+        'message' => 'Server error',
+        'debug' => (isset($_GET['debug']) && $_GET['debug'] === '1') ? [
+            'error' => $e->getMessage(),
             'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ]
+            'line' => $e->getLine(),
+        ] : null,
     ]);
 }
 ?>

@@ -204,20 +204,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit();
         }
 
-        // Check if cutoff time has passed for today (Philippine time)
-        $today = date('Y-m-d'); // Philippine date
-        $checkCutoffQuery = "SELECT 1 FROM attendance WHERE attendance_date = ? AND auto_absent_applied = 1 LIMIT 1";
-        $checkStmt = mysqli_prepare($db, $checkCutoffQuery);
-        mysqli_stmt_bind_param($checkStmt, 's', $today);
-        mysqli_stmt_execute($checkStmt);
-        $checkResult = mysqli_stmt_get_result($checkStmt);
-        $cutoffApplied = mysqli_num_rows($checkResult) > 0;
-
-        if (!$cutoffApplied && !$isBeforeCutoff) {
-            // Apply automatic absent for unmarked employees
-            applyAutoAbsent($db, $today);
-        }
-
         // DEBUG: Log parameters
         error_log("DEBUG: Loading employees - branch: $branch, status_filter: $statusFilter, page: $page, perPage: $perPage, offset: $offset");
         
@@ -230,22 +216,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 // Show only PRESENT employees
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
+                              INNER JOIN (
+                                  SELECT a1.*
+                                  FROM attendance a1
+                                  INNER JOIN (
+                                      SELECT employee_id, MAX(id) AS max_id
+                                      FROM attendance
+                                      WHERE attendance_date = CURDATE()
+                                      GROUP BY employee_id
+                                  ) t ON a1.id = t.max_id
+                              ) a ON e.id = a.employee_id
                               WHERE e.status = 'Active' AND a.status = 'Present' AND a.branch_name = ?";
                 $countParams = [$branch];
             } elseif ($statusFilter === 'absent') {
                 // Show only ABSENT employees (both auto and manual)
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
+                              INNER JOIN (
+                                  SELECT a1.*
+                                  FROM attendance a1
+                                  INNER JOIN (
+                                      SELECT employee_id, MAX(id) AS max_id
+                                      FROM attendance
+                                      WHERE attendance_date = CURDATE()
+                                      GROUP BY employee_id
+                                  ) t ON a1.id = t.max_id
+                              ) a ON e.id = a.employee_id
                               WHERE e.status = 'Active' AND a.status = 'Absent' AND a.branch_name = ?";
                 $countParams = [$branch];
             } elseif ($statusFilter === 'available') {
-                // Show AVAILABLE employees (not manually marked as present) - includes truly unmarked + auto-absent
+                // Show AVAILABLE employees (not yet marked today)
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
-                              WHERE e.status = 'Active' AND (a.id IS NULL OR (a.status = 'Absent' AND a.is_auto_absent = 1))";
+                              LEFT JOIN (
+                                  SELECT a1.*
+                                  FROM attendance a1
+                                  INNER JOIN (
+                                      SELECT employee_id, MAX(id) AS max_id
+                                      FROM attendance
+                                      WHERE attendance_date = CURDATE()
+                                      GROUP BY employee_id
+                                  ) t ON a1.id = t.max_id
+                              ) a ON e.id = a.employee_id
+                              WHERE e.status = 'Active' AND a.id IS NULL";
                 $countParams = [];
             } else {
                 // Show ALL employees with their attendance status - for pull method, show all
@@ -296,7 +309,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.is_auto_absent,
                             1 as has_attendance_today
                           FROM employees e
-                          INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
+                          INNER JOIN (
+                              SELECT a1.*
+                              FROM attendance a1
+                              INNER JOIN (
+                                  SELECT employee_id, MAX(id) AS max_id
+                                  FROM attendance
+                                  WHERE attendance_date = CURDATE()
+                                  GROUP BY employee_id
+                              ) t ON a1.id = t.max_id
+                          ) a ON e.id = a.employee_id
                           WHERE e.status = 'Active' AND a.status = 'Present' AND a.branch_name = ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
@@ -316,13 +338,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.is_auto_absent,
                             1 as has_attendance_today
                           FROM employees e
-                          INNER JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
+                          INNER JOIN (
+                              SELECT a1.*
+                              FROM attendance a1
+                              INNER JOIN (
+                                  SELECT employee_id, MAX(id) AS max_id
+                                  FROM attendance
+                                  WHERE attendance_date = CURDATE()
+                                  GROUP BY employee_id
+                              ) t ON a1.id = t.max_id
+                          ) a ON e.id = a.employee_id
                           WHERE e.status = 'Active' AND a.status = 'Absent' AND a.branch_name = ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
                 $mainParams = [$branch];
             } elseif ($statusFilter === 'available') {
-                // Show AVAILABLE employees (not manually marked as present) - includes truly unmarked + auto-absent
+                // Show AVAILABLE employees (not yet marked today)
                 $query = "SELECT
                             e.id,
                             e.employee_code,
@@ -339,8 +370,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 ELSE 0 
                             END as has_attendance_today
                           FROM employees e
-                          LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
-                          WHERE e.status = 'Active' AND (a.id IS NULL OR (a.status = 'Absent' AND a.is_auto_absent = 1))
+                          LEFT JOIN (
+                              SELECT a1.*
+                              FROM attendance a1
+                              INNER JOIN (
+                                  SELECT employee_id, MAX(id) AS max_id
+                                  FROM attendance
+                                  WHERE attendance_date = CURDATE()
+                                  GROUP BY employee_id
+                              ) t ON a1.id = t.max_id
+                          ) a ON e.id = a.employee_id
+                          WHERE e.status = 'Active' AND a.id IS NULL
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
                 $mainParams = [];
@@ -362,7 +402,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 ELSE 0 
                             END as has_attendance_today
                           FROM employees e
-                          LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
+                          LEFT JOIN (
+                              SELECT a1.*
+                              FROM attendance a1
+                              INNER JOIN (
+                                  SELECT employee_id, MAX(id) AS max_id
+                                  FROM attendance
+                                  WHERE attendance_date = CURDATE()
+                                  GROUP BY employee_id
+                              ) t ON a1.id = t.max_id
+                          ) a ON e.id = a.employee_id
                           WHERE e.status = 'Active'
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
@@ -418,7 +467,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                             0,
                                             TIME_TO_SEC(
                                                 TIMEDIFF(
-                                                    COALESCE(time_out, CURTIME()),
+                                                    COALESCE(time_out, NOW()),
                                                     time_in
                                                 )
                                             )
@@ -501,7 +550,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         if (mysqli_num_rows($checkResult) > 0) {
             $attendance = mysqli_fetch_assoc($checkResult);
-            
+
             // Update to Present (even if was auto-absent)
             $updateQuery = "UPDATE attendance SET status = ?, branch_name = ?, is_auto_absent = 0, updated_at = NOW() WHERE id = ?";
             $updateStmt = mysqli_prepare($db, $updateQuery);
@@ -509,7 +558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             if (mysqli_stmt_execute($updateStmt)) {
                 echo json_encode([
-                    'success' => true, 
+                    'success' => true,
                     'message' => "Attendance marked as Present" . ($attendance['is_auto_absent'] ? " (overriding auto-absent)" : ""),
                     'is_update' => true
                 ]);
@@ -526,7 +575,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         if (mysqli_stmt_execute($insertStmt)) {
             echo json_encode([
-                'success' => true, 
+                'success' => true,
                 'message' => "Employee marked as Present successfully",
                 'is_update' => false
             ]);
@@ -535,53 +584,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         exit();
     }
-}
 
-// Function to apply automatic absent for unmarked employees after cutoff
-function applyAutoAbsent($db, $date) {
-    // First, mark that we've applied auto absent for today (Philippine date)
-    $checkQuery = "SELECT 1 FROM attendance WHERE attendance_date = ? AND auto_absent_applied = 1 LIMIT 1";
-    $checkStmt = mysqli_prepare($db, $checkQuery);
-    mysqli_stmt_bind_param($checkStmt, 's', $date);
-    mysqli_stmt_execute($checkStmt);
-    $checkResult = mysqli_stmt_get_result($checkStmt);
-    
-    if (mysqli_num_rows($checkResult) == 0) {
-        // Get all active employees without attendance today (Philippine date)
-        $query = "SELECT e.id
-                  FROM employees e
-                  WHERE e.status = 'Active' 
-                  AND NOT EXISTS (
-                      SELECT 1 FROM attendance a 
-                      WHERE a.employee_id = e.id 
-                      AND a.attendance_date = ?
-                  )";
-        $stmt = mysqli_prepare($db, $query);
-        mysqli_stmt_bind_param($stmt, 's', $date);
+    if ($_POST['action'] === 'get_shift_logs') {
+        $employeeId = isset($_POST['employee_id']) ? intval($_POST['employee_id']) : 0;
+        $date = isset($_POST['date']) && $_POST['date'] !== '' ? $_POST['date'] : date('Y-m-d');
+        $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 10;
+        $limit = max(1, min(50, $limit));
+
+        if ($employeeId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Invalid employee']);
+            exit();
+        }
+
+        if (!attendanceHasTimeColumns($db)) {
+            echo json_encode(['success' => false, 'message' => 'Time logs are not available on this database schema']);
+            exit();
+        }
+
+        $sql = "SELECT id, branch_name, attendance_date, time_in, time_out
+                FROM attendance
+                WHERE employee_id = ? AND attendance_date = ? AND time_in IS NOT NULL
+                ORDER BY id DESC
+                LIMIT $limit";
+        $stmt = mysqli_prepare($db, $sql);
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error']);
+            exit();
+        }
+        mysqli_stmt_bind_param($stmt, 'is', $employeeId, $date);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
-        
-        $absentCount = 0;
-        while ($row = mysqli_fetch_assoc($result)) {
-            // Insert auto-absent record
-            $insertQuery = "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, created_at) 
-                           VALUES (?, 'Absent', ?, 'System', 1, NOW())";
-            $insertStmt = mysqli_prepare($db, $insertQuery);
-            mysqli_stmt_bind_param($insertStmt, 'is', $row['id'], $date);
-            mysqli_stmt_execute($insertStmt);
-            $absentCount++;
+
+        $logs = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $logs[] = [
+                    'id' => $row['id'],
+                    'branch_name' => $row['branch_name'] ?? null,
+                    'attendance_date' => $row['attendance_date'] ?? null,
+                    'time_in' => $row['time_in'] ?? null,
+                    'time_out' => $row['time_out'] ?? null
+                ];
+            }
         }
-        
-        // Mark that auto absent has been applied for today (Philippine date)
-        $markQuery = "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, auto_absent_applied, created_at) 
-                     VALUES (0, 'Absent', ?, 'System', 1, NOW())";
-        $markStmt = mysqli_prepare($db, $markQuery);
-        mysqli_stmt_bind_param($markStmt, 's', $date);
-        mysqli_stmt_execute($markStmt);
-        
-        return $absentCount;
+        mysqli_stmt_close($stmt);
+
+        echo json_encode([
+            'success' => true,
+            'logs' => $logs
+        ]);
+        exit();
     }
-    
-    return 0;
 }
 ?>

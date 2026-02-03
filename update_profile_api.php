@@ -88,7 +88,7 @@ $params = [];
 foreach ($allowedFields as $field => $type) {
     if (isset($_POST[$field])) {
         $value = trim((string)$_POST[$field]);
-        $updates[] = "`$field` = ?";
+        $updates[] = "$field = ?";
         $types .= $type;
         $params[] = $value;
     }
@@ -134,7 +134,7 @@ if ($wantsPasswordChange) {
     $usePasswordHash = isset($_POST['use_password_hash']) && (string)$_POST['use_password_hash'] === '1';
     $newHash = $usePasswordHash ? password_hash($new_password, PASSWORD_DEFAULT) : md5($new_password);
 
-    $updates[] = '`password_hash` = ?';
+    $updates[] = 'password_hash = ?';
     $types .= 's';
     $params[] = $newHash;
 }
@@ -165,7 +165,7 @@ if (isset($_FILES['profile_image']) && isset($_FILES['profile_image']['tmp_name'
     }
 
     $profileImagePath = $fileName;
-    $updates[] = '`profile_image` = ?';
+    $updates[] = 'profile_image = ?';
     $types .= 's';
     $params[] = $profileImagePath;
 }
@@ -174,7 +174,7 @@ if (count($updates) === 0) {
     json_error('No fields to update');
 }
 
-$updates[] = '`updated_at` = CURRENT_TIMESTAMP';
+$updates[] = 'updated_at = CURRENT_TIMESTAMP';
 
 $sql = 'UPDATE employees SET ' . implode(', ', $updates) . ' WHERE id = ? LIMIT 1';
 $typesFinal = $types . 'i';
@@ -198,7 +198,7 @@ if (!$ok) {
     json_error('Update failed: ' . $err, 500);
 }
 
-$stmt = mysqli_prepare($db, 'SELECT id, employee_code, first_name, last_name, email, branch_name, position, status, profile_image, daily_rate FROM employees WHERE id = ? LIMIT 1');
+$stmt = mysqli_prepare($db, 'SELECT id, employee_code, first_name, last_name, email, position, status, profile_image, daily_rate FROM employees WHERE id = ? LIMIT 1');
 mysqli_stmt_bind_param($stmt, 'i', $employee_id);
 mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);
@@ -218,8 +218,7 @@ echo json_encode([
         'first_name' => $user['first_name'],
         'last_name' => $user['last_name'],
         'email' => $user['email'],
-        'branch_name' => $user['branch_name'],
-        'position' => $user['position'],
+                'position' => $user['position'],
         'status' => $user['status'],
         'profile_image' => $user['profile_image'],
         'daily_rate' => $user['daily_rate'],

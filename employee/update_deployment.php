@@ -19,68 +19,65 @@ if ($employeeId <= 0 || $branchName === '') {
     exit();
 }
 
-$today = date('Y-m-d');
-
-$selectSql = "SELECT id, branch_name, status FROM attendance WHERE employee_id = ? AND attendance_date = ? LIMIT 1";
-$selectStmt = mysqli_prepare($db, $selectSql);
-if (!$selectStmt) {
+// Fetch current assigned branch from employees table
+$empSql = "SELECT branch_name FROM employees WHERE id = ? LIMIT 1";
+$empStmt = mysqli_prepare($db, $empSql);
+if (!$empStmt) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database error (prepare)']);
+    echo json_encode(['success' => false, 'message' => 'Database error (prepare employee)']);
     exit();
 }
 
-mysqli_stmt_bind_param($selectStmt, 'is', $employeeId, $today);
-mysqli_stmt_execute($selectStmt);
-$result = mysqli_stmt_get_result($selectStmt);
-
-if (!$result || mysqli_num_rows($result) === 0) {
+mysqli_stmt_bind_param($empStmt, 'i', $employeeId);
+mysqli_stmt_execute($empStmt);
+$empResult = mysqli_stmt_get_result($empStmt);
+if (!$empResult || mysqli_num_rows($empResult) === 0) {
     http_response_code(404);
-    echo json_encode(['success' => false, 'message' => 'No attendance record found for today']);
+    echo json_encode(['success' => false, 'message' => 'Employee not found']);
     exit();
 }
 
-$row = mysqli_fetch_assoc($result);
-$attendanceId = intval($row['id']);
-$oldBranch = $row['branch_name'];
-$status = $row['status'];
-
-if ($status !== 'Present') {
-    http_response_code(409);
-    echo json_encode(['success' => false, 'message' => 'Only Present employees can be transferred']);
-    exit();
-}
+$empRow = mysqli_fetch_assoc($empResult);
+$oldBranch = $empRow['branch_name'] ?? '';
 
 if ($oldBranch === $branchName) {
     echo json_encode([
         'success' => true,
         'message' => 'Already on selected branch',
-        'attendance_id' => $attendanceId,
         'old_branch' => $oldBranch,
         'new_branch' => $branchName
     ]);
     exit();
 }
 
-$updateSql = "UPDATE attendance SET branch_name = ?, updated_at = NOW() WHERE id = ?";
-$updateStmt = mysqli_prepare($db, $updateSql);
-if (!$updateStmt) {
+// Update employee assigned branch
+$updateEmpSql = "UPDATE employees SET branch_name = ?, updated_at = NOW() WHERE id = ?";
+$updateEmpStmt = mysqli_prepare($db, $updateEmpSql);
+if (!$updateEmpStmt) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database error (prepare update)']);
+    echo json_encode(['success' => false, 'message' => 'Database error (prepare update employee)']);
+    exit();
+}
+mysqli_stmt_bind_param($updateEmpStmt, 'si', $branchName, $employeeId);
+if (!mysqli_stmt_execute($updateEmpStmt)) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Failed to update employee branch']);
     exit();
 }
 
-mysqli_stmt_bind_param($updateStmt, 'si', $branchName, $attendanceId);
-
-if (!mysqli_stmt_execute($updateStmt)) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Failed to update branch']);
-    exit();
+// Insert transfer log (best effort)
+$transferSql = "INSERT INTO employee_transfers (employee_id, from_branch, to_branch, transfer_date, status)
+                VALUES (?, ?, ?, NOW(), 'completed')";
+$transferStmt = mysqli_prepare($db, $transferSql);
+if ($transferStmt) {
+    mysqli_stmt_bind_param($transferStmt, 'iss', $employeeId, $oldBranch, $branchName);
+    mysqli_stmt_execute($transferStmt);
+    mysqli_stmt_close($transferStmt);
 }
 
 echo json_encode([
     'success' => true,
     'message' => 'Branch updated successfully',
-    'attendance_id' => $attendanceId,
     'old_branch' => $oldBranch,
     'new_branch' => $branchName
 ]);
