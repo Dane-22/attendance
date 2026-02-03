@@ -351,3 +351,9 @@
 [2026-02-03 07:58:49] Received JSON: identifier=SUPER001&password=12345678&branch_name=Sto.%20Rosario
 [2026-02-03 07:58:49] Received JSON: identifier=SUPER001&password=12345678&branch_name=Sto.%20Rosario
 [2026-02-03 07:59:10] Received JSON: identifier=SUPER001&password=12345678&branch_name=Sto.%20Rosario
+[2026-02-03 08:27:58] Received JSON: identifier=SUPER001&password=12345678&branch_name=Sto.%20Rosario
+[2026-02-03 08:27:58] Successful login: SUPER001 from branch: Sto. Rosario
+[2026-02-03 08:36:59] Received JSON: identifier=SUPER001&password=12345678&branch_name=Sto.%20Rosario
+[2026-02-03 08:36:59] Successful login: SUPER001 from branch: Sto. Rosario
+[2026-02-03 08:37:47] Received JSON: identifier=SA001&password=DanteGulapina&branch_name=Sto.%20Rosario
+[2026-02-03 08:37:47] Successful login: SA001 from branch: Sto. Rosario

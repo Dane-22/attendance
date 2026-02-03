@@ -32,15 +32,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stored_hash = $user['password_hash'];
             $password_valid = false;
             
-            // DUAL PASSWORD VERIFICATION: Try password_hash() first, then fall back to MD5
-            if (password_verify($password, $stored_hash)) {
-                // Modern password_hash() format verified
-                $password_valid = true;
-                
-                // OPTIONAL: If it's MD5 format stored in password_hash column, upgrade it
-                if (strlen($stored_hash) === 32 && ctype_xdigit($stored_hash)) {
-                    // This appears to be an MD5 hash stored in the password_hash column
-                    // We should upgrade it to proper password_hash()
+            // DUAL PASSWORD VERIFICATION
+            // First check if it's a password_hash() format
+            if (strpos($stored_hash, '$2y$') === 0) {
+                // It's a password_hash() format - use password_verify()
+                if (password_verify($password, $stored_hash)) {
+                    $password_valid = true;
+                }
+            } else {
+                // It's NOT a password_hash() format - try MD5
+                if (md5($password) === $stored_hash) {
+                    $password_valid = true;
+                    
+                    // AUTO-UPGRADE: Convert MD5 hash to password_hash() for next login
                     $new_hash = password_hash($password, PASSWORD_DEFAULT);
                     $update_sql = "UPDATE employees SET password_hash = ? WHERE id = ?";
                     $update_stmt = mysqli_prepare($db, $update_sql);
@@ -48,18 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mysqli_stmt_execute($update_stmt);
                     mysqli_stmt_close($update_stmt);
                 }
-                
-            } elseif (md5($password) === $stored_hash) {
-                // MD5 format verified - legacy support
-                $password_valid = true;
-                
-                // AUTO-UPGRADE: Convert MD5 hash to password_hash() for next login
-                $new_hash = password_hash($password, PASSWORD_DEFAULT);
-                $update_sql = "UPDATE employees SET password_hash = ? WHERE id = ?";
-                $update_stmt = mysqli_prepare($db, $update_sql);
-                mysqli_stmt_bind_param($update_stmt, "si", $new_hash, $user['id']);
-                mysqli_stmt_execute($update_stmt);
-                mysqli_stmt_close($update_stmt);
             }
             
             if ($password_valid) {
