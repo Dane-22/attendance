@@ -256,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.middle_name,
                             e.last_name,
                             e.position,
-                            e.branch_name as original_branch,
+                            'Not Assigned' as original_branch,
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
@@ -280,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 e.middle_name,
                                 e.last_name,
                                 e.position,
-                                e.branch_name as original_branch,
+                                'Not Assigned' as original_branch,
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
@@ -302,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 e.middle_name,
                                 e.last_name,
                                 e.position,
-                                e.branch_name as original_branch,
+                                'Not Assigned' as original_branch,
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
@@ -432,7 +432,7 @@ function applyAutoAbsent($db, $date) {
     
     if (mysqli_num_rows($checkResult) == 0) {
         // Get all active employees without attendance today (Philippine date)
-        $query = "SELECT e.id, e.branch_name 
+        $query = "SELECT e.id
                   FROM employees e
                   WHERE e.status = 'Active' 
                   AND NOT EXISTS (
@@ -449,9 +449,9 @@ function applyAutoAbsent($db, $date) {
         while ($row = mysqli_fetch_assoc($result)) {
             // Insert auto-absent record
             $insertQuery = "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, created_at) 
-                           VALUES (?, 'Absent', ?, ?, 1, NOW())";
+                           VALUES (?, 'Absent', ?, 'System', 1, NOW())";
             $insertStmt = mysqli_prepare($db, $insertQuery);
-            mysqli_stmt_bind_param($insertStmt, 'iss', $row['id'], $date, $row['branch_name']);
+            mysqli_stmt_bind_param($insertStmt, 'is', $row['id'], $date);
             mysqli_stmt_execute($insertStmt);
             $absentCount++;
         }
@@ -2287,7 +2287,7 @@ function applyAutoAbsent($db, $date) {
                 <div class="employee-name">${employee.name}</div>
                 <div class="employee-code">ID: ${employee.employee_code}</div>
                 <div class="employee-position">${employee.position}</div>
-                <div class="employee-original-branch">Original Branch: ${employee.original_branch || 'Not specified'}</div>
+                <div class="employee-original-branch">Branch: Not Assigned</div>
               </div>
               <div class="status-button-container">
                 <span class="employee-status ${statusClass}">${statusText}</span>
@@ -2335,8 +2335,8 @@ function applyAutoAbsent($db, $date) {
                   <div class="detail-value">${employee.position}</div>
                 </div>
                 <div class="detail-item">
-                  <div class="detail-label">Original Branch</div>
-                  <div class="detail-value">${employee.original_branch || 'Not specified'}</div>
+                  <div class="detail-label">Branch Assignment</div>
+                  <div class="detail-value">Not Assigned (Pull Method)</div>
                 </div>
                 <div class="detail-item">
                   <div class="detail-label">Current Branch</div>

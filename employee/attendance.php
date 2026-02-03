@@ -23,13 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($employee_id > 0 && in_array($status, ['Present', 'Absent'])) {
         // Get employee's details from employees table
-        $branch_sql = "SELECT first_name, last_name, branch_name FROM employees WHERE id = ? LIMIT 1";
+        $branch_sql = "SELECT first_name, last_name FROM employees WHERE id = ? LIMIT 1";
         $branch_stmt = mysqli_prepare($db, $branch_sql);
         mysqli_stmt_bind_param($branch_stmt, 'i', $employee_id);
         mysqli_stmt_execute($branch_stmt);
         $branch_res = mysqli_stmt_get_result($branch_stmt);
         $employee = mysqli_fetch_assoc($branch_res);
-        $employee_branch = $employee['branch_name'] ?? '';
+        $employee_branch = 'Not Assigned';
         
         // Check existing record for the selected date
         $check_sql = "SELECT id FROM attendance WHERE employee_id = ? AND attendance_date = ? LIMIT 1";
@@ -82,7 +82,7 @@ if ($view == 'unmarked') {
     // Only show employees WITHOUT attendance for selected date
     $attendance_sql = "SELECT 
                         e.*,
-                        e.branch_name as display_branch
+                        'Not Assigned' as display_branch
                       FROM employees e
                       LEFT JOIN attendance a ON e.id = a.employee_id 
                         AND a.attendance_date = ?
@@ -95,7 +95,7 @@ if ($view == 'unmarked') {
                         CASE 
                             WHEN a.branch_name IS NOT NULL AND a.branch_name != '' 
                             THEN a.branch_name 
-                            ELSE e.branch_name 
+                            ELSE 'Not Assigned' 
                         END as display_branch,
                         a.id as attendance_id
                       FROM employees e
@@ -106,16 +106,13 @@ if ($view == 'unmarked') {
 // Add branch filter if selected
 if ($selected_branch) {
     if ($view == 'unmarked') {
-        $attendance_sql .= " AND e.branch_name = ?";
+        // For unmarked employees, no branch filter since they don't have branches
+        // $attendance_sql .= " AND 1=1"; // No filter needed
     } else {
-        $attendance_sql .= " AND (CASE 
-                            WHEN a.branch_name IS NOT NULL AND a.branch_name != '' 
-                            THEN a.branch_name 
-                            ELSE e.branch_name 
-                        END) = ?";
+        $attendance_sql .= " AND a.branch_name = ?";
+        $params[] = $selected_branch;
+        $param_types .= 's';
     }
-    $params[] = $selected_branch;
-    $param_types .= 's';
 }
 
 $attendance_sql .= " ORDER BY e.last_name, e.first_name";
@@ -132,20 +129,10 @@ $attendance_res = mysqli_stmt_get_result($attendance_stmt);
 
 // Get distinct branches for filter dropdown
 $branch_res = mysqli_query($db, "
-    SELECT DISTINCT 
-        CASE 
-            WHEN a.branch_name IS NOT NULL AND a.branch_name != '' 
-            THEN a.branch_name 
-            ELSE e.branch_name 
-        END as branch_name 
-    FROM employees e
-    LEFT JOIN attendance a ON e.id = a.employee_id
-    WHERE (
-        (a.branch_name IS NOT NULL AND a.branch_name != '') 
-        OR 
-        (e.branch_name IS NOT NULL AND e.branch_name != '')
-    )
-    ORDER BY branch_name
+    SELECT DISTINCT a.branch_name
+    FROM attendance a
+    WHERE a.branch_name IS NOT NULL AND a.branch_name != ''
+    ORDER BY a.branch_name
 ");
 
 // Summary counts for header
@@ -185,16 +172,9 @@ if ($counts_q) {
 }
 
 // Get total employees count with branch filter if applicable
-if ($selected_branch) {
-    $total_emp_sql = "SELECT COUNT(*) as total FROM employees WHERE branch_name = ?";
-    $total_stmt = mysqli_prepare($db, $total_emp_sql);
-    mysqli_stmt_bind_param($total_stmt, 's', $selected_branch);
-    mysqli_stmt_execute($total_stmt);
-    $total_res = mysqli_stmt_get_result($total_stmt);
-} else {
-    $total_emp_sql = "SELECT COUNT(*) as total FROM employees";
-    $total_res = mysqli_query($db, $total_emp_sql);
-}
+// Get total employees count (no branch filter since employees don't have permanent branches)
+$total_emp_sql = "SELECT COUNT(*) as total FROM employees WHERE status = 'Active'";
+$total_res = mysqli_query($db, $total_emp_sql);
 
 $total_row = mysqli_fetch_assoc($total_res);
 $totalEmployees = $total_row['total'] ?? 0;

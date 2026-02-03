@@ -20,7 +20,7 @@ if (empty($message)) {
 
 // Context Gathering
 $current_date = date('Y-m-d');
-$branches_query = "SELECT DISTINCT branch_name FROM employees WHERE branch_name != ''";
+$branches_query = "SELECT branch_name FROM branches WHERE is_active = 1";
 $branches_res = mysqli_query($db, $branches_query);
 $branches = [];
 while ($row = mysqli_fetch_assoc($branches_res)) { 

@@ -48,7 +48,7 @@ while ($row = mysqli_fetch_assoc($deploymentResult)) {
 }
 
 // 5. All Branches with Today's Headcount
-$allBranchesQuery = "SELECT DISTINCT branch_name FROM employees WHERE status = 'Active' ORDER BY branch_name ASC";
+$allBranchesQuery = "SELECT branch_name FROM branches WHERE is_active = 1 ORDER BY branch_name ASC";
 $allBranchesResult = mysqli_query($db, $allBranchesQuery);
 $branchHeadcount = [];
 

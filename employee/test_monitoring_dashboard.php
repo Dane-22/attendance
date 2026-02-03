@@ -87,7 +87,7 @@ if ($db_connected && $db && ($tables_check['employees'] ?? false) && ($tables_ch
     $result = mysqli_query($db, "SELECT COUNT(*) as count FROM attendance WHERE attendance_date = CURDATE() AND status = 'Absent'");
     $data_check['absent_today'] = mysqli_fetch_assoc($result)['count'] ?? 0;
     
-    $result = mysqli_query($db, "SELECT COUNT(DISTINCT branch_name) as count FROM employees WHERE status = 'Active'");
+    $result = mysqli_query($db, "SELECT COUNT(*) as count FROM branches WHERE is_active = 1");
     $data_check['total_branches'] = mysqli_fetch_assoc($result)['count'] ?? 0;
 }
 

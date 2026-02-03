@@ -22,29 +22,28 @@ if (empty($branch_name)) {
 }
 
 // Get ALL employees with their today's attendance status
-$sql = "SELECT 
+$sql = "SELECT
             e.id,
             e.employee_code,
             e.first_name,
             e.last_name,
-            e.branch_name,
+            'Not Assigned' as branch_name,
             e.position,
             COALESCE(a.status, 'Not Marked') as today_status,
             COALESCE(a.is_auto_absent, 0) as is_auto_absent,
-            CASE 
+            CASE
                 WHEN a.status = 'Present' THEN 1
                 WHEN a.status = 'Absent' THEN 0
                 ELSE -1  # Not marked yet
             END as can_mark_present
         FROM employees e
-        LEFT JOIN attendance a ON e.id = a.employee_id 
+        LEFT JOIN attendance a ON e.id = a.employee_id
             AND a.attendance_date = ?
-        WHERE e.branch_name = ? 
-        AND e.status = 'Active'
+        WHERE e.status = 'Active'
         ORDER BY e.employee_code";
 
 $stmt = mysqli_prepare($db, $sql);
-mysqli_stmt_bind_param($stmt, "ss", $date_today, $branch_name);
+mysqli_stmt_bind_param($stmt, "s", $date_today);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
