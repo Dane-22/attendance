@@ -67,18 +67,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_bind_param($check_stmt, "i", $user['id']);
                 mysqli_stmt_execute($check_stmt);
                 mysqli_stmt_store_result($check_stmt);
+
+                $hasRunningCol = false;
+                $col_sql = "SELECT COUNT(*) as cnt
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = 'attendance'
+                              AND COLUMN_NAME = 'is_time_running'";
+                if ($col_res = mysqli_query($db, $col_sql)) {
+                    $col_row = mysqli_fetch_assoc($col_res);
+                    $hasRunningCol = intval($col_row['cnt'] ?? 0) === 1;
+                }
                 
                 // 5. INSERT OR UPDATE ATTENDANCE WITH DAILY BRANCH
                 if (mysqli_stmt_num_rows($check_stmt) == 0) {
                     // FIRST TIME LOGIN TODAY - INSERT NEW
-                    $att_sql = "INSERT INTO attendance 
+                    $att_sql = $hasRunningCol
+                        ? "INSERT INTO attendance 
+                               (employee_id, branch_name, attendance_date, status, created_at, is_time_running) 
+                               VALUES (?, ?, CURDATE(), 'Present', NOW(), 0)"
+                        : "INSERT INTO attendance 
                                (employee_id, branch_name, attendance_date, status, created_at) 
                                VALUES (?, ?, CURDATE(), 'Present', NOW())";
                     $att_stmt = mysqli_prepare($db, $att_sql);
                     mysqli_stmt_bind_param($att_stmt, "is", $user['id'], $daily_branch);
                 } else {
                     // MAY ATTENDANCE NA - UPDATE BRANCH
-                    $att_sql = "UPDATE attendance 
+                    $att_sql = $hasRunningCol
+                        ? "UPDATE attendance 
+                               SET branch_name = ?, updated_at = NOW(), is_time_running = 0 
+                               WHERE employee_id = ? AND attendance_date = CURDATE()"
+                        : "UPDATE attendance 
                                SET branch_name = ?, updated_at = NOW() 
                                WHERE employee_id = ? AND attendance_date = CURDATE()";
                     $att_stmt = mysqli_prepare($db, $att_sql);

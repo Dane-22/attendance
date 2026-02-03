@@ -39,8 +39,28 @@ if (mysqli_num_rows($check_result) > 0) {
 }
 mysqli_stmt_close($check_stmt);
 
+function attendanceHasIsTimeRunningColumn($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME = 'is_time_running'";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 1;
+    return $cached;
+}
+
 // --- 5. INSERT ATTENDANCE ---
-$insert_sql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, status) VALUES (?, ?, ?, ?)";
+$insert_sql = attendanceHasIsTimeRunningColumn($db)
+    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, status, is_time_running) VALUES (?, ?, ?, ?, 0)"
+    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, status) VALUES (?, ?, ?, ?)";
 $insert_stmt = mysqli_prepare($db, $insert_sql);
 mysqli_stmt_bind_param($insert_stmt, "isss", $employee_id, $branch_selected, $date, $status);
 

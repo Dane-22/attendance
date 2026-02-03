@@ -21,6 +21,24 @@ function attendanceHasTimeColumns($db) {
     return intval($row['cnt'] ?? 0) === 2;
 }
 
+function attendanceHasIsTimeRunningColumn($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME = 'is_time_running'";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 1;
+    return $cached;
+}
+
 $employeeId = $_POST['employee_id'] ?? $_SESSION['employee_id'] ?? null;
 $employeeCode = $_POST['employee_code'] ?? $_SESSION['employee_code'] ?? null;
 $branchName = $_POST['branch_name'] ?? $_SESSION['daily_branch'] ?? null;
@@ -81,8 +99,12 @@ if ($existingStmt) {
     if ($existingResult && ($existingRow = mysqli_fetch_assoc($existingResult))) {
         $existingId = intval($existingRow['id']);
 
+        $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
+
         if ($branchName !== null && $branchName !== '') {
-            $updateSql = "UPDATE attendance SET time_in = NOW(), branch_name = ? WHERE id = ?";
+            $updateSql = $hasRunningCol
+                ? "UPDATE attendance SET time_in = NOW(), branch_name = ?, is_time_running = 1 WHERE id = ?"
+                : "UPDATE attendance SET time_in = NOW(), branch_name = ? WHERE id = ?";
             $updateStmt = mysqli_prepare($db, $updateSql);
             if (!$updateStmt) {
                 echo json_encode(['success' => false, 'message' => 'Database error (prepare update)']);
@@ -90,7 +112,9 @@ if ($existingStmt) {
             }
             mysqli_stmt_bind_param($updateStmt, "si", $branchName, $existingId);
         } else {
-            $updateSql = "UPDATE attendance SET time_in = NOW() WHERE id = ?";
+            $updateSql = $hasRunningCol
+                ? "UPDATE attendance SET time_in = NOW(), is_time_running = 1 WHERE id = ?"
+                : "UPDATE attendance SET time_in = NOW() WHERE id = ?";
             $updateStmt = mysqli_prepare($db, $updateSql);
             if (!$updateStmt) {
                 echo json_encode(['success' => false, 'message' => 'Database error (prepare update)']);
@@ -117,8 +141,12 @@ if ($existingStmt) {
 }
 
 // Clock in
+$hasRunningCol = attendanceHasIsTimeRunningColumn($db);
+
 if ($branchName !== null && $branchName !== '') {
-    $sql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in) VALUES (?, ?, CURDATE(), NOW())";
+    $sql = $hasRunningCol
+        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running) VALUES (?, ?, CURDATE(), NOW(), 1)"
+        : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in) VALUES (?, ?, CURDATE(), NOW())";
     $stmt = mysqli_prepare($db, $sql);
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error (prepare insert)']);
@@ -126,7 +154,9 @@ if ($branchName !== null && $branchName !== '') {
     }
     mysqli_stmt_bind_param($stmt, "is", $employeeId, $branchName);
 } else {
-    $sql = "INSERT INTO attendance (employee_id, time_in) VALUES (?, NOW())";
+    $sql = $hasRunningCol
+        ? "INSERT INTO attendance (employee_id, time_in, is_time_running) VALUES (?, NOW(), 1)"
+        : "INSERT INTO attendance (employee_id, time_in) VALUES (?, NOW())";
     $stmt = mysqli_prepare($db, $sql);
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error (prepare insert)']);
@@ -139,8 +169,8 @@ if (mysqli_stmt_execute($stmt)) {
     $timeIn = date('H:i:s');
     $shiftId = mysqli_insert_id($db);
     echo json_encode([
-        'success' => true, 
-        'message' => 'Clocked in successfully', 
+        'success' => true,
+        'message' => 'Clocked in successfully',
         'time_in' => $timeIn,
         'shift_id' => $shiftId
     ]);

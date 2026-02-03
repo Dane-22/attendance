@@ -39,6 +39,24 @@ function attendanceHasTimeColumns($db) {
     return $cached;
 }
 
+function attendanceHasIsTimeRunningColumn($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME = 'is_time_running'";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 1;
+    return $cached;
+}
+
 function checkRateLimit() {
     global $rateLimitEnabled, $rateLimitWindow, $rateLimitMaxRequests;
     
@@ -179,6 +197,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'load_employees') {
         $branch = $_POST['branch'] ?? '';
         $statusFilter = $_POST['status_filter'] ?? 'all';
+        $searchTerm = isset($_POST['search_term']) ? trim($_POST['search_term']) : '';
+        $isSearch = $searchTerm !== '';
         $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
         $perPage = isset($_POST['per_page']) ? intval($_POST['per_page']) : 10;
         
@@ -188,20 +208,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         $offset = ($page - 1) * $perPage;
 
-        if (empty($branch)) {
-            echo json_encode(['success' => false, 'message' => 'Deployment branch is required']);
-            exit();
-        }
+        if (!$isSearch) {
+            if (empty($branch)) {
+                echo json_encode(['success' => false, 'message' => 'Deployment branch is required']);
+                exit();
+            }
 
-        // Validate that the branch exists
-        $branchCheckQuery = "SELECT id FROM branches WHERE branch_name = ? AND is_active = 1";
-        $branchCheckStmt = mysqli_prepare($db, $branchCheckQuery);
-        mysqli_stmt_bind_param($branchCheckStmt, 's', $branch);
-        mysqli_stmt_execute($branchCheckStmt);
-        $branchCheckResult = mysqli_stmt_get_result($branchCheckStmt);
-        if (mysqli_num_rows($branchCheckResult) === 0) {
-            echo json_encode(['success' => false, 'message' => 'Invalid branch selected']);
-            exit();
+            // Validate that the branch exists
+            $branchCheckQuery = "SELECT id FROM branches WHERE branch_name = ? AND is_active = 1";
+            $branchCheckStmt = mysqli_prepare($db, $branchCheckQuery);
+            mysqli_stmt_bind_param($branchCheckStmt, 's', $branch);
+            mysqli_stmt_execute($branchCheckStmt);
+            $branchCheckResult = mysqli_stmt_get_result($branchCheckStmt);
+            if (mysqli_num_rows($branchCheckResult) === 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid branch selected']);
+                exit();
+            }
+        } else {
+            // Search mode: ignore filter + branch
+            $statusFilter = 'all';
+            $branch = '';
         }
 
         // DEBUG: Log parameters
@@ -212,22 +238,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $countQuery = "";
             $countParams = [];
             
-            if ($statusFilter === 'present') {
-                // Show only employees who timed-in to the selected branch today
+            if ($isSearch) {
+                $like = '%' . $searchTerm . '%';
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              INNER JOIN (
-                                  SELECT a1.*
-                                  FROM attendance a1
+                              WHERE e.status = 'Active'
+                                AND CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) LIKE ?";
+                $countParams = [$like];
+            } elseif ($statusFilter === 'present') {
+                // Show only employees who are currently present in the selected branch (current open shift)
+                if (attendanceHasTimeColumns($db)) {
+                    $countQuery = "SELECT COUNT(*) as total
+                                  FROM employees e
                                   INNER JOIN (
-                                      SELECT employee_id, MAX(id) AS max_id
-                                      FROM attendance
-                                      WHERE attendance_date = CURDATE() AND branch_name = ? AND time_in IS NOT NULL
-                                      GROUP BY employee_id
-                                  ) t ON a1.id = t.max_id
-                              ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active'";
-                $countParams = [$branch];
+                                      SELECT a1.*
+                                      FROM attendance a1
+                                      INNER JOIN (
+                                          SELECT employee_id, MAX(id) AS max_id
+                                          FROM attendance
+                                          WHERE attendance_date = CURDATE()
+                                            AND time_in IS NOT NULL
+                                            AND time_out IS NULL
+                                          GROUP BY employee_id
+                                      ) t ON a1.id = t.max_id
+                                      WHERE a1.branch_name = ?
+                                  ) a ON e.id = a.employee_id
+                                  WHERE e.status = 'Active'";
+                    $countParams = [$branch];
+                } else {
+                    // Fallback schema (no time_in/time_out): best-effort using latest row status
+                    $countQuery = "SELECT COUNT(*) as total
+                                  FROM employees e
+                                  INNER JOIN (
+                                      SELECT a1.*
+                                      FROM attendance a1
+                                      INNER JOIN (
+                                          SELECT employee_id, MAX(id) AS max_id
+                                          FROM attendance
+                                          WHERE attendance_date = CURDATE()
+                                          GROUP BY employee_id
+                                      ) t ON a1.id = t.max_id
+                                  ) a ON e.id = a.employee_id
+                                  WHERE e.status = 'Active'
+                                    AND a.status = 'Present'
+                                    AND a.branch_name = ?";
+                    $countParams = [$branch];
+                }
             } elseif ($statusFilter === 'absent') {
                 // Show only ABSENT employees (both auto and manual)
                 $countQuery = "SELECT COUNT(*) as total
@@ -294,8 +350,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $query = "";
             $mainParams = [];
             
-            if ($statusFilter === 'present') {
-                // Show only employees who timed-in to the selected branch today
+            if ($isSearch) {
+                $like = '%' . $searchTerm . '%';
                 $query = "SELECT
                             e.id,
                             e.employee_code,
@@ -305,24 +361,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.position,
                             'Not Assigned' as original_branch,
                             a.branch_name as logged_branch,
-                            'Present' as attendance_status,
+                            a.status as attendance_status,
                             a.is_auto_absent,
-                            1 as has_attendance_today
+                            CASE 
+                                WHEN a.id IS NOT NULL THEN 1 
+                                ELSE 0 
+                            END as has_attendance_today
                           FROM employees e
-                          INNER JOIN (
+                          LEFT JOIN (
                               SELECT a1.*
                               FROM attendance a1
                               INNER JOIN (
                                   SELECT employee_id, MAX(id) AS max_id
                                   FROM attendance
-                                  WHERE attendance_date = CURDATE() AND branch_name = ? AND time_in IS NOT NULL
+                                  WHERE attendance_date = CURDATE()
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
                           WHERE e.status = 'Active'
+                            AND CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) LIKE ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
-                $mainParams = [$branch];
+                $mainParams = [$like];
+            } elseif ($statusFilter === 'present') {
+                // Show only employees who are currently present in the selected branch (current open shift)
+                if (attendanceHasTimeColumns($db)) {
+                    $query = "SELECT
+                                e.id,
+                                e.employee_code,
+                                e.first_name,
+                                e.middle_name,
+                                e.last_name,
+                                e.position,
+                                'Not Assigned' as original_branch,
+                                a.branch_name as logged_branch,
+                                a.status as attendance_status,
+                                a.is_auto_absent,
+                                1 as has_attendance_today
+                              FROM employees e
+                              INNER JOIN (
+                                  SELECT a1.*
+                                  FROM attendance a1
+                                  INNER JOIN (
+                                      SELECT employee_id, MAX(id) AS max_id
+                                      FROM attendance
+                                      WHERE attendance_date = CURDATE()
+                                        AND time_in IS NOT NULL
+                                        AND time_out IS NULL
+                                      GROUP BY employee_id
+                                  ) t ON a1.id = t.max_id
+                                  WHERE a1.branch_name = ?
+                              ) a ON e.id = a.employee_id
+                              WHERE e.status = 'Active'
+                              ORDER BY e.last_name, e.first_name
+                              LIMIT $perPage OFFSET $offset";
+                    $mainParams = [$branch];
+                } else {
+                    $query = "SELECT
+                                e.id,
+                                e.employee_code,
+                                e.first_name,
+                                e.middle_name,
+                                e.last_name,
+                                e.position,
+                                'Not Assigned' as original_branch,
+                                a.branch_name as logged_branch,
+                                a.status as attendance_status,
+                                a.is_auto_absent,
+                                1 as has_attendance_today
+                              FROM employees e
+                              INNER JOIN (
+                                  SELECT a1.*
+                                  FROM attendance a1
+                                  INNER JOIN (
+                                      SELECT employee_id, MAX(id) AS max_id
+                                      FROM attendance
+                                      WHERE attendance_date = CURDATE()
+                                      GROUP BY employee_id
+                                  ) t ON a1.id = t.max_id
+                              ) a ON e.id = a.employee_id
+                              WHERE e.status = 'Active'
+                                AND a.status = 'Present'
+                                AND a.branch_name = ?
+                              ORDER BY e.last_name, e.first_name
+                              LIMIT $perPage OFFSET $offset";
+                    $mainParams = [$branch];
+                }
             } elseif ($statusFilter === 'absent') {
                 // Show only ABSENT employees
                 $query = "SELECT
@@ -336,7 +460,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
-                            1 as has_attendance_today
+                            CASE 
+                                WHEN a.id IS NOT NULL THEN 1 
+                                ELSE 0 
+                            END as has_attendance_today
                           FROM employees e
                           INNER JOIN (
                               SELECT a1.*
@@ -442,14 +569,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 if ($hasTimeCols) {
                     // Latest shift (for displaying current session and clock-out targeting)
-                    $shiftSql = "SELECT id, time_in, time_out
-                                FROM attendance
-                                WHERE employee_id = ? AND attendance_date = CURDATE() AND branch_name = ? AND time_in IS NOT NULL
-                                ORDER BY id DESC
-                                LIMIT 1";
+                    if ($isSearch) {
+                        $shiftSql = "SELECT id, time_in, time_out
+                                    FROM attendance
+                                    WHERE employee_id = ? AND attendance_date = CURDATE() AND time_in IS NOT NULL
+                                    ORDER BY id DESC
+                                    LIMIT 1";
+                    } else {
+                        $shiftSql = "SELECT id, time_in, time_out
+                                    FROM attendance
+                                    WHERE employee_id = ? AND attendance_date = CURDATE() AND branch_name = ? AND time_in IS NOT NULL
+                                    ORDER BY id DESC
+                                    LIMIT 1";
+                    }
                     $shiftStmt = mysqli_prepare($db, $shiftSql);
                     if ($shiftStmt) {
-                        mysqli_stmt_bind_param($shiftStmt, 'is', $row['id'], $branch);
+                        if ($isSearch) {
+                            mysqli_stmt_bind_param($shiftStmt, 'i', $row['id']);
+                        } else {
+                            mysqli_stmt_bind_param($shiftStmt, 'is', $row['id'], $branch);
+                        }
                         mysqli_stmt_execute($shiftStmt);
                         $shiftResult = mysqli_stmt_get_result($shiftStmt);
                         if ($shiftResult && ($shiftRow = mysqli_fetch_assoc($shiftResult))) {
@@ -461,26 +600,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     }
 
                     // Total hours for today (sum of all sessions)
-                    $totalSql = "SELECT
-                                    SUM(
-                                        GREATEST(
-                                            0,
-                                            TIME_TO_SEC(
-                                                TIMEDIFF(
-                                                    COALESCE(time_out, NOW()),
-                                                    time_in
+                    if ($isSearch) {
+                        $totalSql = "SELECT
+                                        SUM(
+                                            GREATEST(
+                                                0,
+                                                TIME_TO_SEC(
+                                                    TIMEDIFF(
+                                                        COALESCE(time_out, NOW()),
+                                                        time_in
+                                                    )
                                                 )
                                             )
-                                        )
-                                    ) AS total_seconds
-                                  FROM attendance
-                                  WHERE employee_id = ?
-                                    AND attendance_date = CURDATE()
-                                    AND branch_name = ?
-                                    AND time_in IS NOT NULL";
+                                        ) AS total_seconds
+                                      FROM attendance
+                                      WHERE employee_id = ?
+                                        AND attendance_date = CURDATE()
+                                        AND time_in IS NOT NULL";
+                    } else {
+                        $totalSql = "SELECT
+                                        SUM(
+                                            GREATEST(
+                                                0,
+                                                TIME_TO_SEC(
+                                                    TIMEDIFF(
+                                                        COALESCE(time_out, NOW()),
+                                                        time_in
+                                                    )
+                                                )
+                                            )
+                                        ) AS total_seconds
+                                      FROM attendance
+                                      WHERE employee_id = ?
+                                        AND attendance_date = CURDATE()
+                                        AND branch_name = ?
+                                        AND time_in IS NOT NULL";
+                    }
                     $totalStmt = mysqli_prepare($db, $totalSql);
                     if ($totalStmt) {
-                        mysqli_stmt_bind_param($totalStmt, 'is', $row['id'], $branch);
+                        if ($isSearch) {
+                            mysqli_stmt_bind_param($totalStmt, 'i', $row['id']);
+                        } else {
+                            mysqli_stmt_bind_param($totalStmt, 'is', $row['id'], $branch);
+                        }
                         mysqli_stmt_execute($totalStmt);
                         $totalResult = mysqli_stmt_get_result($totalStmt);
                         if ($totalResult && ($totalRow = mysqli_fetch_assoc($totalResult))) {
@@ -553,7 +715,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $attendance = mysqli_fetch_assoc($checkResult);
 
             // Update to Present (even if was auto-absent)
-            $updateQuery = "UPDATE attendance SET status = ?, branch_name = ?, is_auto_absent = 0, updated_at = NOW() WHERE id = ?";
+            $updateQuery = attendanceHasIsTimeRunningColumn($db)
+                ? "UPDATE attendance SET status = ?, branch_name = ?, is_auto_absent = 0, is_time_running = 0, updated_at = NOW() WHERE id = ?"
+                : "UPDATE attendance SET status = ?, branch_name = ?, is_auto_absent = 0, updated_at = NOW() WHERE id = ?";
             $updateStmt = mysqli_prepare($db, $updateQuery);
             mysqli_stmt_bind_param($updateStmt, 'ssi', $status, $branch, $attendance['id']);
 
@@ -570,7 +734,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         // Insert new attendance record as Present
-        $insertQuery = "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, created_at) VALUES (?, ?, CURDATE(), ?, 0, NOW())";
+        $insertQuery = attendanceHasIsTimeRunningColumn($db)
+            ? "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, created_at, is_time_running) VALUES (?, ?, CURDATE(), ?, 0, NOW(), 0)"
+            : "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, created_at) VALUES (?, ?, CURDATE(), ?, 0, NOW())";
         $insertStmt = mysqli_prepare($db, $insertQuery);
         mysqli_stmt_bind_param($insertStmt, 'iss', $employeeId, $status, $branch);
 

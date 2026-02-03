@@ -9,6 +9,24 @@ header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+function attendanceHasIsTimeRunningColumn($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME = 'is_time_running'";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 1;
+    return $cached;
+}
+
 $shiftId = $_POST['shift_id'] ?? null;
 $employeeId = $_POST['employee_id'] ?? $_SESSION['employee_id'] ?? null;
 $employeeCode = $_POST['employee_code'] ?? $_SESSION['employee_code'] ?? null;
@@ -39,7 +57,9 @@ if (!$shiftId) {
 }
 
 // Clock out
-$sql = "UPDATE attendance SET time_out = NOW() WHERE id = ? AND employee_id = ? AND time_out IS NULL";
+$sql = attendanceHasIsTimeRunningColumn($db)
+    ? "UPDATE attendance SET time_out = NOW(), is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL"
+    : "UPDATE attendance SET time_out = NOW() WHERE id = ? AND employee_id = ? AND time_out IS NULL";
 $stmt = mysqli_prepare($db, $sql);
 mysqli_stmt_bind_param($stmt, "ii", $shiftId, $employeeId);
 

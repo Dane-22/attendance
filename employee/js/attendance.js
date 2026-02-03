@@ -5,6 +5,8 @@
     let currentStatusFilter = 'available'; // 'all', 'present', 'absent', or 'available'
     let currentView = 'list';
     let currentEmployees = [];
+    let currentSearchTerm = '';
+    let searchDebounceTimer = null;
     let isBeforeCutoff = '<?php echo $isBeforeCutoff ? "true" : "false"; ?>';
     let cutoffTime = '<?php echo $cutoffTime; ?>';
     let currentTime = '<?php echo $currentTime; ?>';
@@ -57,7 +59,7 @@
         currentPage = 1;
         
         // Load employees
-        loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+        reloadEmployees();
       });
     });
 
@@ -66,33 +68,41 @@
         currentStatusFilter = this.value;
         // Reset to page 1 when filter changes
         currentPage = 1;
-        if (selectedBranch) {
-            loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
-        }
+        // If searching, ignore filter and reload search results; otherwise reload branch
+        reloadEmployees();
     });
 
     // Search functionality
     document.getElementById('searchInput').addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        filterAndRenderEmployees(searchTerm);
+        const raw = (this.value || '').trim();
+        currentSearchTerm = raw;
+
+        if (searchDebounceTimer) {
+          clearTimeout(searchDebounceTimer);
+        }
+
+        searchDebounceTimer = setTimeout(() => {
+          currentPage = 1;
+          reloadEmployees();
+        }, 300);
     });
 
-    function filterAndRenderEmployees(searchTerm = '') {
-        if (searchTerm) {
-            const filteredEmployees = currentEmployees.filter(employee => {
-                const name = employee.name.toLowerCase();
-                const position = employee.position.toLowerCase();
-                return name.includes(searchTerm) || 
-                       position.includes(searchTerm);
-            });
-            renderEmployees(filteredEmployees);
-        } else {
-            renderEmployees(currentEmployees);
-        }
+    function reloadEmployees() {
+      const hasSearch = !!(currentSearchTerm && currentSearchTerm.trim());
+
+      if (hasSearch) {
+        // Search mode: across all employees across all branches, ignore dropdown filter
+        loadEmployees('', currentPage, perPage, 'all', currentSearchTerm);
+        return;
+      }
+
+      // Normal mode: requires selected branch
+      if (!selectedBranch) return;
+      loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter, '');
     }
 
     // Load employees function with pagination
-    function loadEmployees(branch, page = 1, perPage = 10, statusFilter = 'all') {
+    function loadEmployees(branch, page = 1, perPage = 10, statusFilter = 'all', searchTerm = '') {
       if (isLoading) return;
       
       const container = document.getElementById('employeeContainer');
@@ -109,6 +119,7 @@
       formData.append('status_filter', statusFilter);
       formData.append('page', page);
       formData.append('per_page', perPage);
+      formData.append('search_term', searchTerm || '');
 
       console.log('DEBUG: Loading employees - Branch:', branch, 'Status Filter:', statusFilter, 'Page:', page, 'Per Page:', perPage);
 
@@ -265,9 +276,7 @@
       if (page < 1 || page > totalPages || page === currentPage || isLoading) return;
       
       currentPage = page;
-      if (selectedBranch) {
-        loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
-      }
+      reloadEmployees();
       
       // Scroll to top of employee container
       document.getElementById('employeeContainer').scrollIntoView({ behavior: 'smooth' });
@@ -296,9 +305,7 @@
       document.getElementById('pageSizeSelect').value = perPage;
       document.getElementById('pageSizeSelectBottom').value = perPage;
       
-      if (selectedBranch) {
-        loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
-      }
+      reloadEmployees();
     }
     
     function showPagination() {
@@ -393,6 +400,10 @@
                 <div class="employee-avatar" aria-hidden="true">${escapeAttr(initials)}</div>
                 <div class="employee-meta">
                   <div class="employee-name">${escapeAttr(name)}</div>
+                  <div class="employee-sub employee-branch">
+                    <span class="employee-branch-label">Current Branch:</span>
+                    <span class="employee-branch-value">${escapeAttr(employee.logged_branch || '--')}</span>
+                  </div>
                 </div>
               </div>
             </td>
@@ -578,8 +589,9 @@
               btn.title = 'Time Out';
             }
           }
+
           setTimeout(() => {
-            if (selectedBranch) loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+            reloadEmployees();
           }, 300);
           return;
         }
@@ -640,8 +652,9 @@
               btn.title = 'Time In';
             }
           }
+
           setTimeout(() => {
-            if (selectedBranch) loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+            reloadEmployees();
           }, 300);
           return;
         }
@@ -654,110 +667,12 @@
       });
     }
 
-    // MARK PRESENT FUNCTION
-    function markPresent(employeeId, employeeName) {
-      if (!selectedBranch) {
-        showError('Please select a branch first');
-        return;
-      }
-
-      // Diretso tanggalin sa UI
-      const employeeElement = document.getElementById(`employee-${employeeId}`);
-      if (employeeElement) {
-        employeeElement.style.transition = 'all 0.3s ease';
-        employeeElement.style.opacity = '0';
-        employeeElement.style.transform = 'translateY(-10px)';
-        
-        // Wait for animation then remove
-        setTimeout(() => {
-          employeeElement.remove();
-          
-          // Update currentEmployees array
-          currentEmployees = currentEmployees.filter(emp => emp.id !== employeeId);
-          
-          // Update total count locally
-          totalEmployees = Math.max(0, totalEmployees - 1);
-          
-          // Recalculate pagination
-          const employeesOnPage = currentEmployees.length;
-          if (employeesOnPage === 0 && currentPage > 1) {
-            // Go to previous page if current page is empty
-            goToPage(currentPage - 1);
-          } else {
-            // Update pagination display
-            updatePaginationControls();
-            
-            // Check if all employees are marked
-            if (totalEmployees === 0) {
-              const container = document.getElementById('employeeContainer');
-              // Show appropriate message based on current filter
-              let message = '';
-              if (currentStatusFilter === 'present') {
-                message = 'No employees marked as Present today';
-              } else if (currentStatusFilter === 'available') {
-                if (isBeforeCutoff) {
-                  message = 'All employees have been marked! No available employees.';
-                } else {
-                  message = 'No available employees. All have been marked or auto-absent.';
-                }
-              } else {
-                message = 'No employees found';
-              }
-              
-              container.innerHTML = `<div class="no-employees">
-                <i class="fas fa-users" style="font-size: 36px; color: #444; margin-bottom: 10px;"></i>
-                <div>${message}</div>
-              </div>`;
-              hidePagination();
-            }
-          }
-        }, 300);
-      }
-
-      // Send to server
-      const formData = new FormData();
-      formData.append('action', 'mark_present');
-      formData.append('employee_id', employeeId);
-      formData.append('branch', selectedBranch);
-
-      fetch('select_employee.php', {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          const timeStatus = isBeforeCutoff ? '' : ' (Late)';
-          showSuccess(`${employeeName} marked as Present${timeStatus} successfully!`);
-        } else {
-          showError(data.message);
-          // If server failed, reload to get correct data
-          if (selectedBranch) {
-            loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
-          }
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        showError('Failed to mark attendance');
-        // Reload on error
-        if (selectedBranch) {
-          loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
-        }
-      });
-    }
-
-    // TRANSFER EMPLOYEE FUNCTION
     function transferEmployee(employeeId, employeeName) {
       if (!selectedBranch) {
         showError('Please select a branch first');
         return;
       }
 
-      // Add glow effect to the card
       const employeeElement = document.getElementById(`employee-${employeeId}`);
       if (employeeElement) {
         employeeElement.style.transition = 'all 0.3s ease';
@@ -765,7 +680,6 @@
         employeeElement.style.transform = 'scale(1.02)';
       }
 
-      // Send to server
       const formData = new FormData();
       formData.append('employee_id', employeeId);
       formData.append('branch_name', selectedBranch);
@@ -792,24 +706,23 @@
         }
 
         if (!data) {
-          throw new Error('Invalid server response');
+          const snippet = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+          throw new Error(`Invalid server response${snippet ? `: ${snippet}` : ''}`);
         }
 
         if (data.success) {
-          // Remove glow effect and reload
           if (employeeElement) {
             setTimeout(() => {
               employeeElement.style.boxShadow = '';
               employeeElement.style.transform = '';
             }, 1000);
           }
-          
+
           const toBranch = data.new_branch || selectedBranch;
           showSuccess(`${employeeName} transferred to ${toBranch} successfully!`);
-          
-          // Reload employees to update the branch history
+
           setTimeout(() => {
-            loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+            reloadEmployees();
           }, 1500);
           return;
         }
@@ -818,7 +731,6 @@
       })
       .catch(error => {
         console.error('Error:', error);
-        // Remove glow effect on error
         if (employeeElement) {
           employeeElement.style.boxShadow = '';
           employeeElement.style.transform = '';
@@ -862,7 +774,7 @@
       
       if (wasBeforeCutoff && !isBeforeCutoff && selectedBranch) {
         // We just passed cutoff time, reload employees
-        loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+        reloadEmployees();
         
         // Update time alert
         updateTimeDisplay();
@@ -1062,7 +974,7 @@
         document.getElementById('searchInput').disabled = false;
         // Reset to page 1 when selecting a branch
         currentPage = 1;
-        loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter);
+        reloadEmployees();
     }
 
     // Attach click handlers to initial branch cards

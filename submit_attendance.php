@@ -3,6 +3,24 @@
 require_once __DIR__ . '/conn/db_connection.php';
 header('Content-Type: application/json');
 
+function attendanceHasIsTimeRunningColumn($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME = 'is_time_running'";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 1;
+    return $cached;
+}
+
 // --- 1. START NG ERROR LOGGER ---
 $log_file = "api_debug.log";
 $current_time = date("Y-m-d H:i:s");
@@ -40,7 +58,9 @@ if (mysqli_num_rows($check_result) > 0) {
 mysqli_stmt_close($check_stmt);
 
 // --- 5. INSERT ATTENDANCE ---
-$insert_sql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, status) VALUES (?, ?, ?, ?)";
+$insert_sql = attendanceHasIsTimeRunningColumn($db)
+    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, status, is_time_running) VALUES (?, ?, ?, ?, 0)"
+    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, status) VALUES (?, ?, ?, ?)";
 $insert_stmt = mysqli_prepare($db, $insert_sql);
 mysqli_stmt_bind_param($insert_stmt, "isss", $employee_id, $branch_selected, $date, $status);
 

@@ -473,6 +473,22 @@
         color: #888;
     }
 
+    .employee-branch {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+    }
+
+    .employee-branch-label {
+        display: inline-block;
+        min-width: 92px;
+        color: #888;
+    }
+
+    .employee-branch-value {
+        color: #aaa;
+    }
+
     .mono {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         letter-spacing: 0.2px;
