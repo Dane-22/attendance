@@ -213,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $countParams = [];
             
             if ($statusFilter === 'present') {
-                // Show only PRESENT employees
+                // Show only employees who timed-in to the selected branch today
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
                               INNER JOIN (
@@ -222,11 +222,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   INNER JOIN (
                                       SELECT employee_id, MAX(id) AS max_id
                                       FROM attendance
-                                      WHERE attendance_date = CURDATE()
+                                      WHERE attendance_date = CURDATE() AND branch_name = ? AND time_in IS NOT NULL
                                       GROUP BY employee_id
                                   ) t ON a1.id = t.max_id
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active' AND a.status = 'Present' AND a.branch_name = ?";
+                              WHERE e.status = 'Active'";
                 $countParams = [$branch];
             } elseif ($statusFilter === 'absent') {
                 // Show only ABSENT employees (both auto and manual)
@@ -295,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $mainParams = [];
             
             if ($statusFilter === 'present') {
-                // Show only PRESENT employees
+                // Show only employees who timed-in to the selected branch today
                 $query = "SELECT
                             e.id,
                             e.employee_code,
@@ -305,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.position,
                             'Not Assigned' as original_branch,
                             a.branch_name as logged_branch,
-                            a.status as attendance_status,
+                            'Present' as attendance_status,
                             a.is_auto_absent,
                             1 as has_attendance_today
                           FROM employees e
@@ -315,11 +315,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                               INNER JOIN (
                                   SELECT employee_id, MAX(id) AS max_id
                                   FROM attendance
-                                  WHERE attendance_date = CURDATE()
+                                  WHERE attendance_date = CURDATE() AND branch_name = ? AND time_in IS NOT NULL
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active' AND a.status = 'Present' AND a.branch_name = ?
+                          WHERE e.status = 'Active'
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
                 $mainParams = [$branch];
@@ -444,12 +444,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     // Latest shift (for displaying current session and clock-out targeting)
                     $shiftSql = "SELECT id, time_in, time_out
                                 FROM attendance
-                                WHERE employee_id = ? AND attendance_date = CURDATE() AND time_in IS NOT NULL
+                                WHERE employee_id = ? AND attendance_date = CURDATE() AND branch_name = ? AND time_in IS NOT NULL
                                 ORDER BY id DESC
                                 LIMIT 1";
                     $shiftStmt = mysqli_prepare($db, $shiftSql);
                     if ($shiftStmt) {
-                        mysqli_stmt_bind_param($shiftStmt, 'i', $row['id']);
+                        mysqli_stmt_bind_param($shiftStmt, 'is', $row['id'], $branch);
                         mysqli_stmt_execute($shiftStmt);
                         $shiftResult = mysqli_stmt_get_result($shiftStmt);
                         if ($shiftResult && ($shiftRow = mysqli_fetch_assoc($shiftResult))) {
@@ -476,10 +476,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   FROM attendance
                                   WHERE employee_id = ?
                                     AND attendance_date = CURDATE()
+                                    AND branch_name = ?
                                     AND time_in IS NOT NULL";
                     $totalStmt = mysqli_prepare($db, $totalSql);
                     if ($totalStmt) {
-                        mysqli_stmt_bind_param($totalStmt, 'i', $row['id']);
+                        mysqli_stmt_bind_param($totalStmt, 'is', $row['id'], $branch);
                         mysqli_stmt_execute($totalStmt);
                         $totalResult = mysqli_stmt_get_result($totalStmt);
                         if ($totalResult && ($totalRow = mysqli_fetch_assoc($totalResult))) {

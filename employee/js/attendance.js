@@ -81,10 +81,8 @@
         if (searchTerm) {
             const filteredEmployees = currentEmployees.filter(employee => {
                 const name = employee.name.toLowerCase();
-                const code = employee.employee_code.toLowerCase();
                 const position = employee.position.toLowerCase();
                 return name.includes(searchTerm) || 
-                       code.includes(searchTerm) || 
                        position.includes(searchTerm);
             });
             renderEmployees(filteredEmployees);
@@ -397,7 +395,6 @@
                 <div class="employee-avatar" aria-hidden="true">${escapeAttr(initials)}</div>
                 <div class="employee-meta">
                   <div class="employee-name">${escapeAttr(name)}</div>
-                  <div class="employee-sub">${escapeAttr(employee.employee_code || '')}</div>
                 </div>
               </div>
             </td>
