@@ -11,8 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 try {
-    // Include database connection (adjust path as needed)
-    require_once __DIR__ . '/conn/db_connection.php';
+    if (file_exists(_DIR_ . '/conn/db_connection.php')) {
+        require_once _DIR_ . '/conn/db_connection.php';
+    } else {
+        require_once _DIR_ . '/db_connection.php';
+    }
+
+    $is_md5_hash = function($value) {
+        return is_string($value) && preg_match('/^[a-f0-9]{32}$/i', $value);
+    };
     
     // Get POST data exactly like your login.php
     $identifier = trim($_POST['identifier'] ?? '');
@@ -50,8 +57,28 @@ try {
     $user = mysqli_fetch_assoc($result);
     
     if ($user) {
-        // Verify password (exactly like your login.php)
-        if (md5($password) === $user['password_hash']) {
+        $storedHash = (string)($user['password_hash'] ?? '');
+
+        $okPassword = false;
+        if ($is_md5_hash($storedHash)) {
+            $okPassword = strtolower(md5($password)) === strtolower($storedHash);
+        } else {
+            $okPassword = password_verify($password, $storedHash);
+        }
+
+        if ($okPassword) {
+
+            if ($is_md5_hash($storedHash)) {
+                $newHash = password_hash($password, PASSWORD_DEFAULT);
+                if ($newHash) {
+                    $upgradeStmt = mysqli_prepare($db, 'UPDATE employees SET password_hash = ? WHERE id = ? LIMIT 1');
+                    if ($upgradeStmt) {
+                        mysqli_stmt_bind_param($upgradeStmt, 'si', $newHash, $user['id']);
+                        mysqli_stmt_execute($upgradeStmt);
+                        mysqli_stmt_close($upgradeStmt);
+                    }
+                }
+            }
             
             // Success response for mobile app
             echo json_encode([
