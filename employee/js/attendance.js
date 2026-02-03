@@ -2,7 +2,7 @@
 
     // Global variables
     let selectedBranch = null;
-    let currentStatusFilter = 'all'; // 'all', 'present', 'absent', or 'available'
+    let currentStatusFilter = 'available'; // 'all', 'present', 'absent', or 'available'
     let currentView = 'list';
     let currentEmployees = [];
     let isBeforeCutoff = '<?php echo $isBeforeCutoff ? "true" : "false"; ?>';
@@ -334,8 +334,6 @@
         let message = '';
         if (currentStatusFilter === 'present') {
           message = 'No employees marked as Present today';
-        } else if (currentStatusFilter === 'absent') {
-          message = 'No employees marked as Absent today';
         } else if (currentStatusFilter === 'available') {
           if (isBeforeCutoff) {
             message = 'All employees have been marked! No available employees.';
@@ -696,8 +694,6 @@
               let message = '';
               if (currentStatusFilter === 'present') {
                 message = 'No employees marked as Present today';
-              } else if (currentStatusFilter === 'absent') {
-                message = 'No employees marked as Absent today';
               } else if (currentStatusFilter === 'available') {
                 if (isBeforeCutoff) {
                   message = 'All employees have been marked! No available employees.';
