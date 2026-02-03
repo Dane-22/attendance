@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($user) {
             // VERIFY PASSWORD
-            if (md5($password) === $user['password_hash']) {
+            if (password_verify($password, $user['password_hash'])) {
                 
                 // ========== SET ALL SESSION VARIABLES PROPERLY ==========
                 
