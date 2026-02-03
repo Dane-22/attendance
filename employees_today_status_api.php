@@ -25,6 +25,26 @@ if (empty($branch_name)) {
     exit;
 }
 
+function attendanceHasColumn($db, $columnName) {
+    $sql = "SHOW COLUMNS FROM attendance LIKE ?";
+    $stmt = mysqli_prepare($db, $sql);
+    if (!$stmt) return false;
+    mysqli_stmt_bind_param($stmt, 's', $columnName);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $exists = $result && mysqli_num_rows($result) > 0;
+    mysqli_stmt_close($stmt);
+    return $exists;
+}
+
+$hasTimeIn = attendanceHasColumn($db, 'time_in');
+$hasTimeOut = attendanceHasColumn($db, 'time_out');
+$hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
+
+$timeInSelect = $hasTimeIn ? "a.time_in" : "NULL";
+$timeOutSelect = $hasTimeOut ? "a.time_out" : "NULL";
+$isTimeRunningSelect = $hasIsTimeRunning ? "COALESCE(a.is_time_running, 0)" : "0";
+
 // Get ALL employees with their latest attendance log for today
 $sql = "SELECT 
             e.id,
@@ -34,12 +54,12 @@ $sql = "SELECT
             e.position,
             a.branch_name,
             a.status as today_status,
-            a.time_in,
-            a.time_out,
+            {$timeInSelect} as time_in,
+            {$timeOutSelect} as time_out,
             COALESCE(a.is_auto_absent, 0) as is_auto_absent,
-            COALESCE(a.is_time_running, 0) as is_time_running,
+            {$isTimeRunningSelect} as is_time_running,
             CASE
-              WHEN COALESCE(a.is_time_running, 0) = 1 THEN 1
+              WHEN {$isTimeRunningSelect} = 1 THEN 1
               ELSE 0
             END as is_timed_in
         FROM employees e

@@ -97,15 +97,15 @@ require('function/attendance.php');
       <div class="branch-selection">
         <div class="branch-header">
           <div class="branch-title">Select Deployment Branch</div>
-          <!-- DEBUG: Always show Add Branch button -->
-          <button class="btn-add-branch" id="addBranchBtn" title="Add new branch">
-            <i class="fas fa-plus"></i> Add Branch
-          </button>
+          <?php if (($_SESSION['position'] ?? '') === 'Super Admin'): ?>
+            <button class="btn-add-branch" id="addBranchBtn" title="Add new branch">
+              <i class="fas fa-plus"></i> Add Branch
+            </button>
+          <?php endif; ?>
         </div>
         <div class="branch-grid" id="branchGrid">
           <?php foreach ($branches as $branch): ?>
           <div class="branch-card" data-branch-id="<?php echo htmlspecialchars($branch['id']); ?>" data-branch="<?php echo htmlspecialchars($branch['branch_name']); ?>">
-            <!-- DEBUG: Always show delete button -->
             <button class="btn-remove-branch" onclick="removeBranch(<?php echo htmlspecialchars($branch['id']); ?>, '<?php echo htmlspecialchars($branch['branch_name']); ?>')" title="Delete branch">
               <i class="fas fa-times"></i>
             </button>
@@ -117,40 +117,42 @@ require('function/attendance.php');
       </div>
 
       <!-- Add Branch Modal -->
-      <div id="addBranchModal" class="modal-backdrop">
-        <div class="modal-panel" style="width: 420px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3 style="margin: 0; color: #FFD700; font-size: 18px;">Add New Branch</h3>
-            <button onclick="closeAddBranchModal()" style="background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 0;">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          
-          <form id="addBranchForm" onsubmit="submitAddBranch(event)">
-            <div class="form-row">
-              <label style="font-size: 12px; color: #FFD700; font-weight: 600; margin-bottom: 6px; display: block;">Branch Name</label>
-              <input 
-                type="text" 
-                id="branchNameInput" 
-                name="branch_name" 
-                placeholder="Enter branch name (e.g., Main Office, Branch A)" 
-                required 
-                style="background: transparent; border: 1px solid rgba(255,255,255,0.04); padding: 0.6rem 0.75rem; border-radius: 8px; color: #ffffff; width: 100%;"
-              />
-              <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">Branch names must be unique and 2-255 characters</small>
+      <?php if (($_SESSION['position'] ?? '') === 'Super Admin'): ?>
+        <div id="addBranchModal" class="modal-backdrop">
+          <div class="modal-panel" style="width: 420px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="margin: 0; color: #FFD700; font-size: 18px;">Add New Branch</h3>
+              <button onclick="closeAddBranchModal()" style="background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 0;">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
+            
+            <form id="addBranchForm" onsubmit="submitAddBranch(event)">
+              <div class="form-row">
+                <label style="font-size: 12px; color: #FFD700; font-weight: 600; margin-bottom: 6px; display: block;">Branch Name</label>
+                <input 
+                  type="text" 
+                  id="branchNameInput" 
+                  name="branch_name" 
+                  placeholder="Enter branch name (e.g., Main Office, Branch A)" 
+                  required 
+                  style="background: transparent; border: 1px solid rgba(255,255,255,0.04); padding: 0.6rem 0.75rem; border-radius: 8px; color: #ffffff; width: 100%;"
+                />
+                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">Branch names must be unique and 2-255 characters</small>
+              </div>
 
-            <div style="display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;">
-              <button type="button" onclick="closeAddBranchModal()" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                Cancel
-              </button>
-              <button type="submit" style="background: #FFD700; border: none; color: #0b0b0b; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                <i class="fas fa-plus"></i> Add Branch
-              </button>
-            </div>
-          </form>
+              <div style="display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;">
+                <button type="button" onclick="closeAddBranchModal()" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                  Cancel
+                </button>
+                <button type="submit" style="background: #FFD700; border: none; color: #0b0b0b; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                  <i class="fas fa-plus"></i> Add Branch
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      <?php endif; ?>
 
       <div id="timeLogsModal" class="modal-backdrop">
         <div class="modal-panel" style="width: 520px;">
