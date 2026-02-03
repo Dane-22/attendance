@@ -160,10 +160,11 @@ require('function/attendance.php');
           <div class="status-filter">
             <!-- <label for="statusFilter" style="font-size: 12px; color: #888; margin-bottom: 4px; display: block;">Filter by Status:</label> -->
             <select id="statusFilter" class="status-filter-select">
+                
               <option value="all">All Employees</option>
+              <option value="available">Available (Not Marked)</option>
               <option value="present">Present Only</option>
               <option value="absent">Absent Only</option>
-              <option value="available">Available (Not Marked)</option>
             </select>
           </div>
           

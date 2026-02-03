@@ -222,11 +222,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                               WHERE e.status = 'Active' AND a.status = 'Absent' AND a.branch_name = ?";
                 $countParams = [$branch];
             } elseif ($statusFilter === 'available') {
-                // Show only AVAILABLE employees (not marked today) - for pull method, show all available
+                // Show AVAILABLE employees (not manually marked as present) - includes truly unmarked + auto-absent
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
                               LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
-                              WHERE e.status = 'Active' AND a.id IS NULL";
+                              WHERE e.status = 'Active' AND (a.id IS NULL OR (a.status = 'Absent' AND a.is_auto_absent = 1))";
                 $countParams = [];
             } else {
                 // Show ALL employees with their attendance status - for pull method, show all
@@ -303,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                           LIMIT $perPage OFFSET $offset";
                 $mainParams = [$branch];
             } elseif ($statusFilter === 'available') {
-                // Show only AVAILABLE employees (not marked today) - for pull method, show all available
+                // Show AVAILABLE employees (not manually marked as present) - includes truly unmarked + auto-absent
                 $query = "SELECT
                             e.id,
                             e.employee_code,
@@ -312,13 +312,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.last_name,
                             e.position,
                             'Not Assigned' as original_branch,
-                            NULL as logged_branch,
-                            NULL as attendance_status,
-                            0 as is_auto_absent,
-                            0 as has_attendance_today
+                            a.branch_name as logged_branch,
+                            a.status as attendance_status,
+                            a.is_auto_absent,
+                            CASE 
+                                WHEN a.id IS NOT NULL THEN 1 
+                                ELSE 0 
+                            END as has_attendance_today
                           FROM employees e
                           LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = CURDATE()
-                          WHERE e.status = 'Active' AND a.id IS NULL
+                          WHERE e.status = 'Active' AND (a.id IS NULL OR (a.status = 'Absent' AND a.is_auto_absent = 1))
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
                 $mainParams = [];
