@@ -61,7 +61,9 @@ if (!empty($row['branch_name']) && $row['branch_name'] !== $branchName) {
 }
 
 $attendanceId = $row['id'];
-$updateSql = "UPDATE attendance SET time_out = NOW(), is_time_running = 0, updated_at = NOW() WHERE id = ?";
+$updateSql = $hasIsTimeRunning
+    ? "UPDATE attendance SET time_out = NOW(), is_time_running = 0, updated_at = NOW() WHERE id = ?"
+    : "UPDATE attendance SET time_out = NOW(), updated_at = NOW() WHERE id = ?";
 $updateStmt = mysqli_prepare($db, $updateSql);
 mysqli_stmt_bind_param($updateStmt, 'i', $attendanceId);
 if (mysqli_stmt_execute($updateStmt)) {

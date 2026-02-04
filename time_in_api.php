@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 
 $employeeId = $_POST['employee_id'] ?? null;
 $branchName = $_POST['branch_name'] ?? null;
+$debug = isset($_POST['debug']) ? (int)$_POST['debug'] : 0;
 
 if (!$employeeId || !$branchName) {
     echo json_encode(['success' => false, 'message' => 'Missing employee_id or branch_name']);
@@ -17,23 +18,51 @@ function attendanceHasColumn($db, $columnName) {
     return $result && mysqli_num_rows($result) > 0;
 }
 
+function getCurrentDatabaseName($db) {
+    $result = mysqli_query($db, "SELECT DATABASE() AS db_name");
+    if (!$result) return null;
+    $row = mysqli_fetch_assoc($result);
+    return $row ? ($row['db_name'] ?? null) : null;
+}
+
+function hasAttendanceTable($db) {
+    $result = mysqli_query($db, "SHOW TABLES LIKE 'attendance'");
+    return $result && mysqli_num_rows($result) > 0;
+}
+
 $hasTimeIn = attendanceHasColumn($db, 'time_in');
 $hasTimeOut = attendanceHasColumn($db, 'time_out');
 $hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
 
 if (!$hasTimeIn) {
-    echo json_encode([
+    $payload = [
         'success' => false,
         'message' => 'Server database is missing attendance.time_in. Please run DB migration on the correct database.'
-    ]);
+    ];
+    if ($debug === 1) {
+        $payload['debug'] = [
+            'db_name' => getCurrentDatabaseName($db),
+            'has_attendance_table' => hasAttendanceTable($db),
+            'mysqli_error' => mysqli_error($db),
+        ];
+    }
+    echo json_encode($payload);
     exit();
 }
 
 if (!$hasTimeOut) {
-    echo json_encode([
+    $payload = [
         'success' => false,
         'message' => 'Server database is missing attendance.time_out. Please run DB migration on the correct database.'
-    ]);
+    ];
+    if ($debug === 1) {
+        $payload['debug'] = [
+            'db_name' => getCurrentDatabaseName($db),
+            'has_attendance_table' => hasAttendanceTable($db),
+            'mysqli_error' => mysqli_error($db),
+        ];
+    }
+    echo json_encode($payload);
     exit();
 }
 
@@ -60,7 +89,9 @@ if ($row && $row['time_in'] && empty($row['time_out'])) {
     exit();
 }
 
-$insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_time_running) VALUES (?, ?, ?, NOW(), 'Present', NOW(), 1)";
+$insertSql = $hasIsTimeRunning
+    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_time_running) VALUES (?, ?, ?, NOW(), 'Present', NOW(), 1)"
+    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at) VALUES (?, ?, ?, NOW(), 'Present', NOW())";
 $insertStmt = mysqli_prepare($db, $insertSql);
 mysqli_stmt_bind_param($insertStmt, 'iss', $employeeId, $branchName, $date);
 if (mysqli_stmt_execute($insertStmt)) {

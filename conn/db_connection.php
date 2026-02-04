@@ -1,6 +1,8 @@
 <?php
 // conn/db_connection.php
 
+date_default_timezone_set('Asia/Manila');
+
 // Load environment variables from .env file
 $envPath = dirname(__DIR__) . '/.env';
 if (file_exists($envPath)) {
@@ -48,6 +50,9 @@ try {
     if (!$db) {
         throw new Exception("Connection failed: " . mysqli_connect_error());
     }
+
+    // Ensure DB session uses PHT (UTC+08:00) for NOW()/CURDATE()
+    @mysqli_query($db, "SET time_zone = '+08:00'");
     
     // Set charset to ensure proper JSON encoding
     mysqli_set_charset($db, 'utf8mb4');
