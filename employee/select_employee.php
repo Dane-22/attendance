@@ -44,6 +44,12 @@ require('function/attendance.php');
       <div id="successMessage" class="success-message"></div>
       <div id="errorMessage" class="error-message"></div>
 
+      <div id="undoSnackbar" class="undo-snackbar" aria-live="polite" style="display: none;">
+        <div class="undo-snackbar-text" id="undoSnackbarText"></div>
+        <button type="button" class="undo-snackbar-btn" id="undoSnackbarBtn">UNDO</button>
+        <button type="button" class="undo-snackbar-close" id="undoSnackbarClose" aria-label="Close">&times;</button>
+      </div>
+
       <!-- DEBUG INFO - Press Ctrl+Shift+D to show -->
       <div id="debugInfo" style="background: red; color: white; padding: 10px; margin-bottom: 10px; display: none;">
           Debug Info:<br>
@@ -106,7 +112,7 @@ require('function/attendance.php');
         <div class="branch-grid" id="branchGrid">
           <?php foreach ($branches as $branch): ?>
           <div class="branch-card" data-branch-id="<?php echo htmlspecialchars($branch['id']); ?>" data-branch="<?php echo htmlspecialchars($branch['branch_name']); ?>">
-            <button class="btn-remove-branch" onclick="removeBranch(<?php echo htmlspecialchars($branch['id']); ?>, '<?php echo htmlspecialchars($branch['branch_name']); ?>')" title="Delete branch">
+            <button class="btn-remove-branch" onclick="removeBranch(event, <?php echo htmlspecialchars($branch['id']); ?>, '<?php echo htmlspecialchars($branch['branch_name']); ?>')" title="Delete branch">
               <i class="fas fa-times"></i>
             </button>
             <div class="branch-name"><?php echo htmlspecialchars($branch['branch_name']); ?></div>
@@ -261,6 +267,6 @@ require('function/attendance.php');
   </div>
 
   <script src="../assets/js/sidebar-toggle.js"></script>
-  <script src="js/attendance.js"></script>
+  <script src="js/attendance.js?v=<?php echo filemtime(__DIR__ . '/js/attendance.js'); ?>"></script>
 </body>
 </html>

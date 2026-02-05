@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $employeeId = isset($_POST['employee_id']) ? intval($_POST['employee_id']) : 0;
 $branchName = isset($_POST['branch_name']) ? trim($_POST['branch_name']) : '';
+$action = isset($_POST['action']) ? trim($_POST['action']) : 'transfer';
 
 if ($employeeId <= 0 || $branchName === '') {
     if (ob_get_length()) {
@@ -105,20 +106,25 @@ if (!mysqli_stmt_execute($updateAttStmt)) {
 }
 
 // Insert transfer log (best effort)
-$transferSql = "INSERT INTO employee_transfers (employee_id, from_branch, to_branch, transfer_date, status)
-                VALUES (?, ?, ?, NOW(), 'completed')";
-$transferStmt = mysqli_prepare($db, $transferSql);
-if ($transferStmt) {
-    mysqli_stmt_bind_param($transferStmt, 'iss', $employeeId, $oldBranch, $branchName);
-    mysqli_stmt_execute($transferStmt);
-    mysqli_stmt_close($transferStmt);
+$didLogTransfer = false;
+if ($action !== 'undo_transfer') {
+    $transferSql = "INSERT INTO employee_transfers (employee_id, from_branch, to_branch, transfer_date, status)
+                    VALUES (?, ?, ?, NOW(), 'completed')";
+    $transferStmt = mysqli_prepare($db, $transferSql);
+    if ($transferStmt) {
+        mysqli_stmt_bind_param($transferStmt, 'iss', $employeeId, $oldBranch, $branchName);
+        mysqli_stmt_execute($transferStmt);
+        mysqli_stmt_close($transferStmt);
+        $didLogTransfer = true;
+    }
 }
 
 echo json_encode([
     'success' => true,
-    'message' => 'Branch updated successfully',
+    'message' => ($action === 'undo_transfer') ? 'Transfer undone' : 'Branch updated successfully',
     'old_branch' => $oldBranch,
-    'new_branch' => $branchName
+    'new_branch' => $branchName,
+    'logged_transfer' => $didLogTransfer
 ]);
 
 } catch (Throwable $e) {

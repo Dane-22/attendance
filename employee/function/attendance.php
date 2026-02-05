@@ -100,9 +100,35 @@ function checkRateLimit() {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['branch_action'])) {
         header('Content-Type: application/json');
+
+        ini_set('display_errors', 0);
+        error_reporting(E_ALL);
+        ob_start();
+
+        $jsonFail = function($message, $extra = []) {
+            if (ob_get_level()) {
+                ob_clean();
+            }
+            $payload = array_merge(['success' => false, 'message' => $message], $extra);
+            echo json_encode($payload);
+            exit();
+        };
+
+        set_exception_handler(function($e) use ($jsonFail) {
+            $jsonFail('Server error: ' . $e->getMessage());
+        });
+
+        register_shutdown_function(function() use ($jsonFail) {
+            $err = error_get_last();
+            if (!$err) return;
+            $types = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+            if (in_array($err['type'] ?? 0, $types, true)) {
+                $jsonFail('Server error: ' . ($err['message'] ?? 'Fatal error'));
+            }
+        });
         
         // DEBUG version - force admin access
-        $isAdmin = true; // Force true for debugging
+        $isAdmin = (($_SESSION['position'] ?? '') === 'Super Admin');
         
         if ($_POST['branch_action'] === 'add_branch') {
             if (!$isAdmin) {
@@ -118,7 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $checkStmt = mysqli_prepare($db, $checkQuery);
             mysqli_stmt_bind_param($checkStmt, 's', $branch_name);
             mysqli_stmt_execute($checkStmt);
-            if (mysqli_stmt_get_result($checkStmt)->num_rows > 0) {
+            mysqli_stmt_store_result($checkStmt);
+            if (mysqli_stmt_num_rows($checkStmt) > 0) {
                 echo json_encode(['success' => false, 'message' => 'Branch already exists']);
                 exit();
             }
@@ -138,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
                 exit();
             }
+
             $branch_id = isset($_POST['branch_id']) ? intval($_POST['branch_id']) : 0;
             if ($branch_id <= 0) {
                 echo json_encode(['success' => false, 'message' => 'Invalid branch ID']);
@@ -147,22 +175,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $getBranchStmt = mysqli_prepare($db, $getBranchQuery);
             mysqli_stmt_bind_param($getBranchStmt, 'i', $branch_id);
             mysqli_stmt_execute($getBranchStmt);
-            $branchResult = mysqli_stmt_get_result($getBranchStmt);
-            if ($branchResult->num_rows === 0) {
+            mysqli_stmt_store_result($getBranchStmt);
+            if (mysqli_stmt_num_rows($getBranchStmt) === 0) {
                 echo json_encode(['success' => false, 'message' => 'Branch not found']);
                 exit();
             }
-            $branchRow = mysqli_fetch_assoc($branchResult);
-            $branch_name = $branchRow['branch_name'];
-            $checkEmployeesQuery = "SELECT COUNT(*) as count FROM employees WHERE branch_name = ? AND status = 'Active'";
-            $checkEmployeesStmt = mysqli_prepare($db, $checkEmployeesQuery);
-            mysqli_stmt_bind_param($checkEmployeesStmt, 's', $branch_name);
-            mysqli_stmt_execute($checkEmployeesStmt);
-            $employeeCount = mysqli_fetch_assoc(mysqli_stmt_get_result($checkEmployeesStmt));
-            if ($employeeCount['count'] > 0) {
-                echo json_encode(['success' => false, 'message' => "Cannot delete branch with active employees. ({$employeeCount['count']} assigned)"]);
+
+            $branch_name = '';
+            mysqli_stmt_bind_result($getBranchStmt, $branch_name);
+            mysqli_stmt_fetch($getBranchStmt);
+
+            if ($branch_name === '') {
+                echo json_encode(['success' => false, 'message' => 'Branch not found']);
                 exit();
             }
+
+            // Employees table schema may not include branch assignment columns.
+            // Prevent deleting a branch that is in use by checking attendance records.
+            $checkUsageSql = "SELECT COUNT(*) as cnt FROM attendance WHERE branch_name = ? AND attendance_date = CURDATE()";
+            $checkUsageStmt = mysqli_prepare($db, $checkUsageSql);
+            if ($checkUsageStmt) {
+                mysqli_stmt_bind_param($checkUsageStmt, 's', $branch_name);
+                mysqli_stmt_execute($checkUsageStmt);
+                $usageCount = 0;
+                mysqli_stmt_bind_result($checkUsageStmt, $usageCount);
+                mysqli_stmt_fetch($checkUsageStmt);
+                mysqli_stmt_close($checkUsageStmt);
+                $usageCount = intval($usageCount);
+
+                if ($usageCount > 0) {
+                    echo json_encode(['success' => false, 'message' => "Cannot delete branch in use today. ({$usageCount} attendance records)"]); 
+                    exit();
+                }
+            }
+
             $deleteQuery = "DELETE FROM branches WHERE id = ?";
             $deleteStmt = mysqli_prepare($db, $deleteQuery);
             mysqli_stmt_bind_param($deleteStmt, 'i', $branch_id);
@@ -170,6 +216,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => true, 'message' => "Branch '{$branch_name}' deleted successfully"]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Error deleting branch: ' . mysqli_error($db)]);
+            }
+            exit();
+        }
+
+        if ($_POST['branch_action'] === 'undo_delete_branch') {
+            if (!$isAdmin) {
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                exit();
+            }
+
+            $branch_name = isset($_POST['branch_name']) ? trim($_POST['branch_name']) : '';
+            if (empty($branch_name) || strlen($branch_name) < 2 || strlen($branch_name) > 255) {
+                echo json_encode(['success' => false, 'message' => 'Branch name must be 2-255 characters']);
+                exit();
+            }
+
+            $checkQuery = "SELECT id FROM branches WHERE branch_name = ?";
+            $checkStmt = mysqli_prepare($db, $checkQuery);
+            if (!$checkStmt) {
+                echo json_encode(['success' => false, 'message' => 'Database error (prepare check)']);
+                exit();
+            }
+            mysqli_stmt_bind_param($checkStmt, 's', $branch_name);
+            mysqli_stmt_execute($checkStmt);
+            mysqli_stmt_store_result($checkStmt);
+            if (mysqli_stmt_num_rows($checkStmt) > 0) {
+                $existingId = 0;
+                mysqli_stmt_bind_result($checkStmt, $existingId);
+                mysqli_stmt_fetch($checkStmt);
+                $existingId = intval($existingId);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Branch restored',
+                    'branch_id' => $existingId,
+                    'branch_name' => $branch_name
+                ]);
+                exit();
+            }
+
+            $insertQuery = "INSERT INTO branches (branch_name, created_at) VALUES (?, NOW())";
+            $insertStmt = mysqli_prepare($db, $insertQuery);
+            if (!$insertStmt) {
+                echo json_encode(['success' => false, 'message' => 'Database error (prepare insert)']);
+                exit();
+            }
+            mysqli_stmt_bind_param($insertStmt, 's', $branch_name);
+            if (mysqli_stmt_execute($insertStmt)) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Branch restored',
+                    'branch_id' => mysqli_insert_id($db),
+                    'branch_name' => $branch_name
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error restoring branch: ' . mysqli_error($db)]);
             }
             exit();
         }

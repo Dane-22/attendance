@@ -33,6 +33,9 @@
     let totalEmployees = 0;
     let totalPages = 1;
     let isLoading = false;
+    let pendingAction = null;
+    let pendingFinalizeTimer = null;
+    let pendingCountdownTimer = null;
 
     // Initialize page size from localStorage
     const savedPageSize = localStorage.getItem('employeePageSize');
@@ -169,7 +172,7 @@
       })
       .catch(error => {
         console.error('DEBUG: Fetch error:', error);
-        container.innerHTML = '<div class="no-employees"><i class="fas fa-exclamation-triangle" style="font-size: 36px; color: #dc2626; margin-bottom: 10px;"></i><div>Failed to load employees</div><div style="font-size: 11px; margin-top: 10px; color: #888;">Error: ' + error.message + '</div><div style="font-size: 11px; margin-top: 5px; color: #888;">Check browser console (F12) for details</div></div>';
+        container.innerHTML = '<div class="no-employees"><i class="fas fa-exclamation-triangle" style="font-size: 36px; color: #dc2626; margin-bottom: 10px;"></i><div>Failed to load employees</div><div style="font-size: 11px; margin-top: 10px; color: #888;">Check browser console (F12) for details</div><div style="font-size: 11px; margin-top: 5px; color: #888;">Error: ' + error.message + '</div></div>';
         hidePagination();
       })
       .finally(() => {
@@ -518,11 +521,110 @@
       const shiftId = row ? (row.dataset.shiftId ? parseInt(row.dataset.shiftId, 10) : null) : null;
 
       if (hasOpen) {
-        clockOutEmployee(employeeId, shiftId, employeeName);
+        scheduleAttendanceAction('out', employeeId, shiftId, employeeName);
         return;
       }
 
-      clockInEmployee(employeeId, employeeName);
+      scheduleAttendanceAction('in', employeeId, null, employeeName);
+    }
+
+    function clearPendingAction() {
+      pendingAction = null;
+      if (pendingFinalizeTimer) {
+        clearTimeout(pendingFinalizeTimer);
+        pendingFinalizeTimer = null;
+      }
+      if (pendingCountdownTimer) {
+        clearInterval(pendingCountdownTimer);
+        pendingCountdownTimer = null;
+      }
+    }
+
+    function hidePendingToast() {
+      const el = document.getElementById('undoSnackbar');
+      if (!el) return;
+      el.style.display = 'none';
+    }
+
+    function showPendingToast(getMessage, onUndo, secondsTotal = 5) {
+      const el = document.getElementById('undoSnackbar');
+      const textEl = document.getElementById('undoSnackbarText');
+      const btn = document.getElementById('undoSnackbarBtn');
+      const closeBtn = document.getElementById('undoSnackbarClose');
+      if (!el || !textEl || !btn || !closeBtn) return;
+
+      let secondsLeft = Math.max(1, parseInt(secondsTotal, 10) || 5);
+
+      textEl.textContent = getMessage(secondsLeft);
+      el.style.display = 'flex';
+
+      btn.onclick = () => {
+        clearPendingAction();
+        hidePendingToast();
+        if (typeof onUndo === 'function') {
+          try { onUndo(); } catch (e) { console.error(e); }
+        }
+      };
+
+      closeBtn.onclick = () => {
+        clearPendingAction();
+        hidePendingToast();
+      };
+
+      if (pendingCountdownTimer) {
+        clearInterval(pendingCountdownTimer);
+        pendingCountdownTimer = null;
+      }
+
+      pendingCountdownTimer = setInterval(() => {
+        secondsLeft -= 1;
+        if (secondsLeft <= 0) {
+          clearInterval(pendingCountdownTimer);
+          pendingCountdownTimer = null;
+          return;
+        }
+        textEl.textContent = getMessage(secondsLeft);
+      }, 1000);
+    }
+
+    function scheduleAttendanceAction(type, employeeId, shiftId, employeeName) {
+      if (type === 'in' && !selectedBranch) {
+        showError('Please select a branch first');
+        return;
+      }
+
+      clearPendingAction();
+
+      pendingAction = {
+        type,
+        employeeId,
+        shiftId,
+        employeeName,
+        branchName: selectedBranch
+      };
+
+      const verb = type === 'in' ? 'Time In' : 'Time Out';
+      showPendingToast(
+        (secondsLeft) => `${verb} for ${employeeName} in ${secondsLeft}s`,
+        () => {
+          showSuccess(`${verb} canceled for ${employeeName}`);
+        },
+        5
+      );
+
+      pendingFinalizeTimer = setTimeout(() => {
+        const action = pendingAction;
+        clearPendingAction();
+        hidePendingToast();
+        if (!action) return;
+
+        if (action.type === 'in') {
+          performClockIn(action.employeeId, action.employeeName, action.branchName);
+          return;
+        }
+
+        performClockOut(action.employeeId, action.shiftId, action.employeeName);
+      }, 5000);
     }
 
     document.addEventListener('click', function(e) {
@@ -534,15 +636,15 @@
       });
     });
 
-    function clockInEmployee(employeeId, employeeName) {
-      if (!selectedBranch) {
+    function performClockIn(employeeId, employeeName, branchName) {
+      if (!branchName) {
         showError('Please select a branch first');
         return;
       }
 
       const formData = new FormData();
       formData.append('employee_id', employeeId);
-      formData.append('branch_name', selectedBranch);
+      formData.append('branch_name', branchName);
 
       fetch('api/clock_in.php', {
         method: 'POST',
@@ -604,7 +706,7 @@
       });
     }
 
-    function clockOutEmployee(employeeId, shiftId, employeeName) {
+    function performClockOut(employeeId, shiftId, employeeName) {
       const formData = new FormData();
       formData.append('employee_id', employeeId);
       if (shiftId) formData.append('shift_id', shiftId);
@@ -706,24 +808,49 @@
         }
 
         if (!data) {
-          const snippet = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-          throw new Error(`Invalid server response${snippet ? `: ${snippet}` : ''}`);
+          throw new Error('Invalid server response');
         }
 
         if (data.success) {
-          if (employeeElement) {
-            setTimeout(() => {
-              employeeElement.style.boxShadow = '';
-              employeeElement.style.transform = '';
-            }, 1000);
-          }
+          const oldBranch = data.old_branch || '';
+          const newBranch = data.new_branch || selectedBranch;
+          showSuccess(`${employeeName} transferred to ${newBranch}`);
 
-          const toBranch = data.new_branch || selectedBranch;
-          showSuccess(`${employeeName} transferred to ${toBranch} successfully!`);
+          showUndoSnackbar(`Transferred ${employeeName} to ${newBranch}`, async () => {
+            if (!oldBranch) {
+              showError('Unable to undo (missing previous branch)');
+              return;
+            }
+            const undoForm = new FormData();
+            undoForm.append('action', 'undo_transfer');
+            undoForm.append('employee_id', employeeId);
+            undoForm.append('branch_name', oldBranch);
+
+            const resp = await fetch('update_deployment.php', {
+              method: 'POST',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: undoForm
+            });
+            const undoText = await resp.text();
+            let undoData = null;
+            try { undoData = JSON.parse(undoText); } catch (e) { undoData = null; }
+            if (!resp.ok || !undoData) {
+              throw new Error(undoData?.message || `Undo failed (HTTP ${resp.status})`);
+            }
+            if (!undoData.success) {
+              throw new Error(undoData.message || 'Undo failed');
+            }
+            showSuccess(`${employeeName} transfer undone (back to ${oldBranch})`);
+            setTimeout(() => {
+              reloadEmployees();
+            }, 300);
+          }, 5000);
 
           setTimeout(() => {
             reloadEmployees();
-          }, 1500);
+          }, 300);
           return;
         }
 
@@ -739,7 +866,6 @@
       });
     }
 
-    // Message functions
     function showSuccess(message) {
       const el = document.getElementById('successMessage');
       el.textContent = message;
@@ -749,11 +875,64 @@
     }
 
     function showError(message) {
-      const el = document.getElementById('errorMessage');
-      el.textContent = message;
-      el.style.display = 'block';
+      const errorMessage = document.getElementById('errorMessage');
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
       document.getElementById('successMessage').style.display = 'none';
-      setTimeout(() => el.style.display = 'none', 5000);
+      setTimeout(() => {
+        errorMessage.style.display = 'none';
+      }, 4000);
+    }
+
+    let undoSnackbarTimer = null;
+    let undoSnackbarHandler = null;
+
+    function hideUndoSnackbar() {
+      const el = document.getElementById('undoSnackbar');
+      if (!el) return;
+      el.style.display = 'none';
+      if (undoSnackbarTimer) {
+        clearTimeout(undoSnackbarTimer);
+        undoSnackbarTimer = null;
+      }
+      undoSnackbarHandler = null;
+    }
+
+    function showUndoSnackbar(message, onUndo, timeoutMs = 5000) {
+      const el = document.getElementById('undoSnackbar');
+      const textEl = document.getElementById('undoSnackbarText');
+      const btn = document.getElementById('undoSnackbarBtn');
+      const closeBtn = document.getElementById('undoSnackbarClose');
+      if (!el || !textEl || !btn || !closeBtn) return;
+
+      if (undoSnackbarTimer) {
+        clearTimeout(undoSnackbarTimer);
+        undoSnackbarTimer = null;
+      }
+
+      undoSnackbarHandler = typeof onUndo === 'function' ? onUndo : null;
+      textEl.textContent = message;
+      el.style.display = 'flex';
+
+      btn.onclick = async () => {
+        if (!undoSnackbarHandler) {
+          hideUndoSnackbar();
+          return;
+        }
+        const handler = undoSnackbarHandler;
+        hideUndoSnackbar();
+        try {
+          await handler();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      closeBtn.onclick = () => hideUndoSnackbar();
+
+      undoSnackbarTimer = setTimeout(() => {
+        hideUndoSnackbar();
+      }, timeoutMs);
     }
 
     // Auto-refresh every minute to check cutoff time (Philippine Time)
@@ -783,9 +962,9 @@
 
     // ===== BRANCH MANAGEMENT FUNCTIONS (INTEGRATED) =====
     
-    // DEBUG: Force admin access
-    const isAdminUser = true; // Force true for debugging
+    const isAdminUser = !!document.getElementById('addBranchBtn');
     
+    // DEBUG: Add Branch button found, attaching click handler
     if (isAdminUser && document.getElementById('addBranchBtn')) {
         console.log('DEBUG: Add Branch button found, attaching click handler');
         document.getElementById('addBranchBtn').addEventListener('click', function() {
@@ -835,14 +1014,62 @@
 
         fetch(window.location.pathname, {
             method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: formData
         })
-        .then(response => response.json())
+        .then(async (response) => {
+            const text = await response.text();
+            let data = null;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                data = null;
+            }
+
+            if (!response.ok) {
+                throw new Error(data?.message || `Request failed (HTTP ${response.status})`);
+            }
+
+            if (!data) {
+                const snippet = (text || '').trim().slice(0, 200);
+                throw new Error(snippet ? `Non-JSON response: ${snippet}` : 'Empty server response');
+            }
+
+            return data;
+        })
         .then(data => {
             if (data.success) {
                 showBranchMessage('Branch added successfully!', 'success');
                 document.getElementById('addBranchForm').reset();
                 addBranchCardToUI(data.branch_id, data.branch_name);
+
+                if (data.branch_id) {
+                    const addedBranchId = data.branch_id;
+                    const addedBranchName = data.branch_name || branchName;
+                    showUndoSnackbar(`Branch added: ${addedBranchName}`, async () => {
+                        const undoForm = new FormData();
+                        undoForm.append('branch_action', 'delete_branch');
+                        undoForm.append('branch_id', addedBranchId);
+
+                        const resp = await fetch(window.location.pathname, {
+                            method: 'POST',
+                            body: undoForm
+                        });
+                        const undoData = await resp.json();
+                        if (!undoData || !undoData.success) {
+                            throw new Error(undoData?.message || 'Undo failed');
+                        }
+
+                        const card = document.querySelector(`[data-branch-id="${addedBranchId}"]`);
+                        if (card) {
+                            card.remove();
+                        }
+                        showSuccess('Branch addition undone');
+                    }, 5000);
+                }
+
                 setTimeout(() => {
                     closeAddBranchModal();
                 }, 1500);
@@ -868,7 +1095,7 @@
         branchCard.setAttribute('data-branch-id', branchId);
         branchCard.setAttribute('data-branch', branchName);
         branchCard.innerHTML = `
-            ${isAdminUser ? `<button class="btn-remove-branch" onclick="removeBranch(${branchId}, '${branchName.replace(/'/g, "\\'")}')" title="Delete branch">
+            ${isAdminUser ? `<button class="btn-remove-branch" onclick="removeBranch(event, ${branchId}, '${branchName.replace(/'/g, "\\'")}')" title="Delete branch">
                 <i class="fas fa-times"></i>
             </button>` : ''}
             <div class="branch-name">${branchName}</div>
@@ -882,10 +1109,12 @@
         });
     }
 
-    function removeBranch(branchId, branchName) {
-        event.stopPropagation();
+    function removeBranch(e, branchId, branchName) {
+        if (e && typeof e.stopPropagation === 'function') {
+            e.stopPropagation();
+        }
         
-        if (!confirm(`Are you sure you want to delete the branch "${branchName}"?\n\nThis action cannot be undone.`)) {
+        if (!confirm(`Are you sure you want to delete the branch "${branchName}"?`)) {
             return;
         }
 
@@ -901,9 +1130,31 @@
 
         fetch(window.location.pathname, {
             method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: formData
         })
-        .then(response => response.json())
+        .then(async (response) => {
+            const text = await response.text();
+            let data = null;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                data = null;
+            }
+
+            if (!response.ok) {
+                throw new Error(data?.message || `Request failed (HTTP ${response.status})`);
+            }
+
+            if (!data) {
+                const snippet = (text || '').trim().slice(0, 200);
+                throw new Error(snippet ? `Non-JSON response: ${snippet}` : 'Empty server response');
+            }
+
+            return data;
+        })
         .then(data => {
             if (data.success) {
                 branchCard.style.transition = 'all 0.3s ease';
@@ -925,6 +1176,24 @@
                         hidePagination();
                     }
                 }, 300);
+
+                showUndoSnackbar(`Branch deleted: ${branchName}`, async () => {
+                    const undoForm = new FormData();
+                    undoForm.append('branch_action', 'undo_delete_branch');
+                    undoForm.append('branch_id', branchId);
+                    undoForm.append('branch_name', branchName);
+
+                    const resp = await fetch(window.location.pathname, {
+                        method: 'POST',
+                        body: undoForm
+                    });
+                    const undoData = await resp.json();
+                    if (!undoData || !undoData.success) {
+                        throw new Error(undoData?.message || 'Undo failed');
+                    }
+                    addBranchCardToUI(undoData.branch_id || branchId, undoData.branch_name || branchName);
+                    showSuccess('Branch deletion undone');
+                }, 5000);
             } else {
                 removeBtn.innerHTML = originalContent;
                 removeBtn.disabled = false;
@@ -935,7 +1204,7 @@
             console.error('Error:', error);
             removeBtn.innerHTML = originalContent;
             removeBtn.disabled = false;
-            showGlobalMessage('Failed to delete branch', 'error');
+            showGlobalMessage(error?.message || 'Failed to delete branch', 'error');
         });
     }
 

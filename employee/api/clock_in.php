@@ -42,11 +42,39 @@ function attendanceHasIsTimeRunningColumn($db) {
 $employeeId = $_POST['employee_id'] ?? $_SESSION['employee_id'] ?? null;
 $employeeCode = $_POST['employee_code'] ?? $_SESSION['employee_code'] ?? null;
 $branchName = $_POST['branch_name'] ?? $_SESSION['daily_branch'] ?? null;
+$action = $_POST['action'] ?? '';
+$shiftId = $_POST['shift_id'] ?? null;
 
 error_log("Clock In Attempt - Employee ID: $employeeId, Code: $employeeCode");
 
 if (!$employeeId || !$employeeCode) {
     echo json_encode(['success' => false, 'message' => 'Missing employee data']);
+    exit();
+}
+
+if ($action === 'undo_clock_in') {
+    if (!$shiftId) {
+        echo json_encode(['success' => false, 'message' => 'Missing shift_id']);
+        exit();
+    }
+
+    $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
+    $sql = $hasRunningCol
+        ? "UPDATE attendance SET time_in = NULL, is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL"
+        : "UPDATE attendance SET time_in = NULL WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL";
+    $stmt = mysqli_prepare($db, $sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error (prepare undo)']);
+        exit();
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $shiftId, $employeeId);
+
+    if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
+        echo json_encode(['success' => true, 'message' => 'Clock-in undone', 'shift_id' => $shiftId]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Unable to undo clock-in']);
+    }
+    mysqli_stmt_close($stmt);
     exit();
 }
 
@@ -124,7 +152,18 @@ if ($existingStmt) {
         }
 
         if (mysqli_stmt_execute($updateStmt)) {
-            $timeIn = date('H:i:s');
+            $timeIn = null;
+            $timeStmt = mysqli_prepare($db, "SELECT time_in FROM attendance WHERE id = ? AND employee_id = ? LIMIT 1");
+            if ($timeStmt) {
+                mysqli_stmt_bind_param($timeStmt, 'ii', $existingId, $employeeId);
+                mysqli_stmt_execute($timeStmt);
+                $timeRes = mysqli_stmt_get_result($timeStmt);
+                if ($timeRes && ($timeRow = mysqli_fetch_assoc($timeRes))) {
+                    $timeIn = $timeRow['time_in'] ?? null;
+                }
+                mysqli_stmt_close($timeStmt);
+            }
+
             echo json_encode([
                 'success' => true,
                 'message' => 'Clocked in successfully',
@@ -166,8 +205,19 @@ if ($branchName !== null && $branchName !== '') {
 }
 
 if (mysqli_stmt_execute($stmt)) {
-    $timeIn = date('H:i:s');
     $shiftId = mysqli_insert_id($db);
+    $timeIn = null;
+    $timeStmt = mysqli_prepare($db, "SELECT time_in FROM attendance WHERE id = ? AND employee_id = ? LIMIT 1");
+    if ($timeStmt) {
+        mysqli_stmt_bind_param($timeStmt, 'ii', $shiftId, $employeeId);
+        mysqli_stmt_execute($timeStmt);
+        $timeRes = mysqli_stmt_get_result($timeStmt);
+        if ($timeRes && ($timeRow = mysqli_fetch_assoc($timeRes))) {
+            $timeIn = $timeRow['time_in'] ?? null;
+        }
+        mysqli_stmt_close($timeStmt);
+    }
+
     echo json_encode([
         'success' => true,
         'message' => 'Clocked in successfully',

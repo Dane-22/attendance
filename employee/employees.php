@@ -3,6 +3,15 @@
 require_once __DIR__ . '/../conn/db_connection.php';
 session_start();
 
+// ===== CHECK USER ROLE =====
+// Check if user is logged in
+if (!isset($_SESSION['employee_code'])) {
+    header('Location: ../login.php');
+    exit();
+}
+
+// Check if user is Super Admin
+$isSuperAdmin = ($_SESSION['user_role'] ?? '') === 'Super Admin';
 // ===== RATE LIMITER CONFIGURATION =====
 $rateLimitEnabled = false; // Set to true pag working na lahat
 $rateLimitWindow = 60; // 60 seconds
@@ -254,13 +263,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get current view preference from session or default to grid
-$currentView = $_SESSION['employee_view'] ?? 'details';
+// Get current view preference from session or default to list (removed details)
+$currentView = $_SESSION['employee_view'] ?? 'list';
 
 // Handle view change request
 if (isset($_GET['view'])) {
     $view = $_GET['view'];
-    if (in_array($view, ['list', 'details'])) {
+    if (in_array($view, ['list'])) { // Removed 'details' from allowed views
         $_SESSION['employee_view'] = $view;
         $currentView = $view;
     }
@@ -401,13 +410,6 @@ function buildEmployeeUrl($params = []) {
         border-bottom: 1px solid rgba(255, 215, 0, 0.3);
         font-weight: 600;
     }
-
-    /* .form-row-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-bottom: 16px;
-    } */
 
     .form-group {
         display: flex;
@@ -674,126 +676,6 @@ function buildEmployeeUrl($params = []) {
         color: #FFD700;
     }
 
-    /* ===== ENHANCED GRID VIEW ===== */
-    /* .employees-grid-view {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 24px;
-    } */
-
-    /* .employee-card-grid {
-        background: rgba(20, 20, 20, 0.9);
-        border: 2px solid rgba(255, 215, 0, 0.2);
-        border-radius: 16px;
-        padding: 24px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        cursor: pointer;
-    } */
-
-    /* .employee-card-grid:hover {
-        transform: translateY(-8px);
-        border-color: #FFD700;
-        box-shadow: 0 12px 24px rgba(255, 215, 0, 0.2);
-    } */
-
-    /* .employee-badge-grid {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(255, 215, 0, 0.1);
-        color: #FFD700;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    } */
-
-    /* .employee-card-grid .card-header {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 20px;
-    } */
-
-    /* .employee-card-grid .avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        border: 3px solid #FFD700;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-
-    .employee-card-grid .avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .employee-card-grid .avatar .initials {
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: #0b0b0b;
-        font-size: 28px;
-    }
-
-    .employee-card-grid .employee-info {
-        flex: 1;
-    }
-
-    .employee-card-grid .employee-name {
-        color: #ffffff;
-        font-size: 20px;
-        font-weight: 700;
-        margin: 0 0 8px 0;
-        line-height: 1.3;
-    }
-
-    .employee-card-grid .employee-position {
-        color: #FFD700;
-        font-size: 14px;
-        font-weight: 600;
-        margin: 0 0 6px 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .employee-card-grid .employee-email {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
-        margin: 0;
-        word-break: break-all;
-    }
-
-    .employee-status {
-        display: inline-block;
-        padding: 4px 12px;
-        background: rgba(74, 222, 128, 0.1);
-        color: #4ade80;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-top: 8px;
-    }
-
-    .employee-card-grid .card-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid rgba(255, 215, 0, 0.2);
-    } */
-
     .action-btn {
         padding: 10px 16px;
         border-radius: 8px;
@@ -956,194 +838,6 @@ function buildEmployeeUrl($params = []) {
         color: #ff4444;
     }
 
-    /* ===== ENHANCED DETAILS VIEW ===== */
-    .employees-details-view {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-        gap: 24px;
-    }
-
-    .employee-card-details {
-        background: rgba(20, 20, 20, 0.9);
-        border: 2px solid rgba(255, 215, 0, 0.2);
-        border-radius: 16px;
-        padding: 32px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .employee-card-details:hover {
-        border-color: #FFD700;
-        box-shadow: 0 8px 24px rgba(255, 215, 0, 0.15);
-    }
-
-    .employee-badge-details {
-        position: absolute;
-        top: 24px;
-        right: 24px;
-        background: rgba(255, 215, 0, 0.1);
-        color: #FFD700;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 700;
-    }
-
-    .details-header {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-        margin-bottom: 32px;
-        padding-bottom: 24px;
-        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-    }
-
-    .details-avatar {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        border: 3px solid #FFD700;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-
-    .details-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .details-avatar .initials {
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: #0b0b0b;
-        font-size: 36px;
-    }
-
-    .details-header-info {
-        flex: 1;
-    }
-
-    .details-name {
-        color: #ffffff;
-        font-size: 28px;
-        font-weight: 700;
-        margin: 0 0 12px 0;
-        line-height: 1.2;
-    }
-
-    .details-position {
-        color: #FFD700;
-        font-size: 18px;
-        font-weight: 600;
-        margin: 0 0 8px 0;
-    }
-
-    .details-email {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 16px;
-        margin: 0;
-    }
-
-    .details-body {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 24px;
-        margin-bottom: 32px;
-    }
-
-    .detail-item {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .detail-label {
-        font-size: 12px;
-        color: rgba(255, 215, 0, 0.7);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 600;
-    }
-
-    .detail-value {
-        font-size: 16px;
-        color: #ffffff;
-        font-weight: 500;
-    }
-
-    .details-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 16px;
-        padding-top: 24px;
-        margin-top: 24px;
-        border-top: 1px solid rgba(255, 215, 0, 0.2);
-    }
-
-    /* ===== VIEW OPTIONS ENHANCEMENT ===== */
-    .view-options-container {
-        background: rgba(20, 20, 20, 0.9);
-        border: 2px solid rgba(255, 215, 0, 0.3);
-        border-radius: 16px;
-        padding: 20px 24px;
-        margin-bottom: 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-
-    .view-options-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #FFD700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .view-options {
-        display: flex;
-        gap: 12px;
-    }
-
-    .view-option-btn {
-        padding: 12px 24px;
-        background: rgba(30, 30, 30, 0.8);
-        border: 2px solid rgba(255, 215, 0, 0.3);
-        border-radius: 10px;
-        color: #888;
-        font-size: 15px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-    }
-
-    .view-option-btn:hover {
-        border-color: rgba(255, 215, 0, 0.5);
-        color: #FFD700;
-        transform: translateY(-2px);
-    }
-
-    .view-option-btn.active {
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        border-color: #FFD700;
-        color: #000;
-        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-    }
-
     /* ===== PAGINATION ENHANCEMENT ===== */
     .pagination-container {
         background: rgba(20, 20, 20, 0.9);
@@ -1301,11 +995,6 @@ function buildEmployeeUrl($params = []) {
 
     /* Responsive Styles */
     @media (max-width: 768px) {
-        .employees-grid-view,
-        .employees-details-view {
-            grid-template-columns: 1fr;
-        }
-
         .list-header,
         .employee-row {
             grid-template-columns: 1fr;
@@ -1319,35 +1008,6 @@ function buildEmployeeUrl($params = []) {
         .employee-row-actions {
             justify-content: flex-end;
             margin-top: 12px;
-        }
-
-        .details-header {
-            flex-direction: column;
-            text-align: center;
-            gap: 16px;
-        }
-
-        .details-body {
-            grid-template-columns: 1fr;
-        }
-
-        .view-options-container {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 16px;
-        }
-
-        .view-options {
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .view-option-btn {
-            padding: 10px 16px;
-            font-size: 14px;
-            flex: 1;
-            min-width: 0;
-            justify-content: center;
         }
 
         .pagination-container {
@@ -1403,30 +1063,11 @@ function buildEmployeeUrl($params = []) {
 
       <div class="top-actions">
         <div class="text-muted">Total Employees: <strong><?php echo $totalEmployees; ?></strong></div>
+        <?php if ($isSuperAdmin): ?>
         <button class="add-btn" id="openAddDesktop" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
           <i class="fa-solid fa-user-plus"></i>&nbsp;Add Employee
         </button>
-      </div>
-
-      <!-- View Options -->
-      <div class="view-options-container">
-        <div class="view-options-title">
-          <i class="fas fa-eye"></i> View Options
-        </div>
-        <div class="view-options">
-          <!-- <a href="?view=grid&page=<?php echo $page; ?>&per_page=<?php echo $perPage; ?>" class="view-option-btn <?php echo $currentView === 'grid' ? 'active' : ''; ?>">
-            <i class="fas fa-th"></i>
-            <span>Grid View</span>
-          </a> -->
-          <a href="<?php echo buildEmployeeUrl(['view' => 'list']); ?>" class="view-option-btn <?php echo $currentView === 'list' ? 'active' : ''; ?>">
-            <i class="fas fa-list"></i>
-            <span>List View</span>
-          </a>
-          <a href="<?php echo buildEmployeeUrl(['view' => 'details']); ?>" class="view-option-btn <?php echo $currentView === 'details' ? 'active' : ''; ?>">
-            <i class="fas fa-info-circle"></i>
-            <span>Details View</span>
-          </a>
-        </div>
+        <?php endif; ?>
       </div>
 
       <!-- Search Bar -->
@@ -1476,7 +1117,7 @@ function buildEmployeeUrl($params = []) {
           <?php mysqli_data_seek($emps, 0); while ($e = mysqli_fetch_assoc($emps)): ?>
             
             <?php if ($viewToUse === 'grid'): ?>
-              <!-- Grid View Card -->
+              <!-- Grid View Card (optional, you can remove this if you only want list view) -->
               <!-- <article class="employee-card-grid" onclick="viewEmployeeProfile(<?php echo $e['id']; ?>)">
                 <div class="employee-badge-grid"><?php echo htmlspecialchars($e['employee_code']); ?></div>
                 <div class="card-header">
@@ -1557,62 +1198,6 @@ function buildEmployeeUrl($params = []) {
                   </button>
                 </div>
               </div>
-
-            <?php elseif ($viewToUse === 'details'): ?>
-              <!-- Details View Card -->
-              <article class="employee-card-details">
-               
-                <div class="details-header">
-                  <div class="details-avatar">
-                    <?php if (!empty($e['profile_image']) && file_exists(__DIR__ . '/uploads/' . $e['profile_image'])): ?>
-                      <img src="uploads/<?php echo htmlspecialchars($e['profile_image']); ?>" alt="Profile">
-                    <?php else: ?>
-                      <div class="initials">
-                        <?php echo strtoupper(substr($e['first_name'],0,1) . substr($e['last_name'],0,1)); ?>
-                      </div>
-                    <?php endif; ?>
-                  </div>
-                  <div class="details-header-info">
-                    <h2 class="details-name">
-                      <?php echo htmlspecialchars($e['last_name'] . ', ' . $e['first_name']); ?>
-                    </h2>
-                    <p class="details-position">
-                      <i class="fas fa-briefcase"></i>
-                      <?php echo htmlspecialchars($e['position']); ?>
-                    </p>
-                    <p class="details-email">
-                      <i class="fas fa-envelope"></i>
-                      <?php echo htmlspecialchars($e['email']); ?>
-                    </p>
-                  </div>
-                </div>
-                
-                <div class="details-body">
-                  <div class="detail-item">
-                    <div class="detail-label">Employee Code</div>
-                    <div class="detail-value"><?php echo htmlspecialchars($e['employee_code']); ?></div>
-                  </div>
-
-
-                  <div class="detail-item">
-                    <div class="detail-label">Status</div>
-                    <div class="detail-value">
-                      <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="details-actions">
-                  <button class="action-btn action-btn-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')">
-                    <i class="fa-solid fa-trash"></i>
-                    Delete
-                  </button>
-                  <button class="action-btn action-btn-edit" onclick="openEditModal(event, <?php echo $e['id']; ?>)">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    Edit Employee
-                  </button>
-                </div>
-              </article>
             <?php endif; ?>
             
           <?php endwhile; ?>

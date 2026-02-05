@@ -758,10 +758,69 @@
         background: #dc2626;
         color: #ffffff;
         padding: 8px 12px;
-        border-radius: 6px;
-        margin-bottom: 12px;
+        border-radius: 10px;
+        margin-bottom: 10px;
         display: none;
         font-size: 13px;
+    }
+
+    .undo-snackbar {
+        position: fixed;
+        left: 16px;
+        bottom: 16px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: min(520px, calc(100vw - 32px));
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(15, 15, 15, 0.95);
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+        color: #eaeaea;
+        font-size: 13px;
+    }
+
+    .undo-snackbar-text {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #eaeaea;
+    }
+
+    .undo-snackbar-btn {
+        border: none;
+        background: transparent;
+        color: #FFD700;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .undo-snackbar-btn:hover {
+        background: rgba(255, 215, 0, 0.10);
+    }
+
+    .undo-snackbar-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: transparent;
+        color: #9a9a9a;
+        cursor: pointer;
+        line-height: 1;
+        font-size: 18px;
+    }
+
+    .undo-snackbar-close:hover {
+        color: #eaeaea;
+        border-color: rgba(255,255,255,0.18);
     }
 
     /* MODAL STYLES */
