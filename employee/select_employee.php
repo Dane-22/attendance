@@ -46,7 +46,6 @@ require('function/attendance.php');
 
       <div id="undoSnackbar" class="undo-snackbar" aria-live="polite" style="display: none;">
         <div class="undo-snackbar-text" id="undoSnackbarText"></div>
-        <button type="button" class="undo-snackbar-btn" id="undoSnackbarBtn">UNDO</button>
         <button type="button" class="undo-snackbar-close" id="undoSnackbarClose" aria-label="Close">&times;</button>
       </div>
 
@@ -183,6 +182,7 @@ require('function/attendance.php');
               <option value="available">Available (Not Marked)</option>
               <option value="all">All Employees</option>
               <option value="present">Present</option>
+              <option value="absent">Absent</option>
             </select>
           </div>
           
@@ -267,6 +267,7 @@ require('function/attendance.php');
   </div>
 
   <script src="../assets/js/sidebar-toggle.js"></script>
-  <script src="js/attendance.js?v=<?php echo filemtime(__DIR__ . '/js/attendance.js'); ?>"></script>
+  <script src="js/attendance.js"></script>
+
 </body>
 </html>

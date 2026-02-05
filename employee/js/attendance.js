@@ -37,6 +37,8 @@
     let pendingFinalizeTimer = null;
     let pendingCountdownTimer = null;
 
+    let lastActionByEmployee = {};
+
     // Initialize page size from localStorage
     const savedPageSize = localStorage.getItem('employeePageSize');
     if (savedPageSize) {
@@ -101,7 +103,8 @@
 
       // Normal mode: requires selected branch
       if (!selectedBranch) return;
-      loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter, '');
+      const effectiveFilter = (currentStatusFilter === 'absent') ? 'available' : currentStatusFilter;
+      loadEmployees(selectedBranch, currentPage, perPage, effectiveFilter, '');
     }
 
     // Load employees function with pagination
@@ -344,7 +347,7 @@
         let message = '';
         if (currentStatusFilter === 'present') {
           message = 'No employees marked as Present today';
-        } else if (currentStatusFilter === 'available') {
+        } else if (currentStatusFilter === 'available' || currentStatusFilter === 'absent') {
           if (isBeforeCutoff) {
             message = 'All employees have been marked! No available employees.';
           } else {
@@ -430,6 +433,9 @@
                     </button>
                     <button class="kebab-item" onclick="transferEmployee(${employee.id}, '${escapeJsString(name)}')">
                       <i class="fas fa-exchange-alt"></i> Transfer
+                    </button>
+                    <button class="kebab-item" onclick="undoLastAction(${employee.id}, '${escapeJsString(name)}')">
+                      <i class="fas fa-rotate-left"></i> Undo last action
                     </button>
                   </div>
                 </div>
@@ -521,110 +527,104 @@
       const shiftId = row ? (row.dataset.shiftId ? parseInt(row.dataset.shiftId, 10) : null) : null;
 
       if (hasOpen) {
-        scheduleAttendanceAction('out', employeeId, shiftId, employeeName);
+        performClockOut(employeeId, shiftId, employeeName);
         return;
       }
 
-      scheduleAttendanceAction('in', employeeId, null, employeeName);
+      performClockIn(employeeId, employeeName, selectedBranch);
     }
 
-    function clearPendingAction() {
-      pendingAction = null;
-      if (pendingFinalizeTimer) {
-        clearTimeout(pendingFinalizeTimer);
-        pendingFinalizeTimer = null;
-      }
-      if (pendingCountdownTimer) {
-        clearInterval(pendingCountdownTimer);
-        pendingCountdownTimer = null;
-      }
-    }
-
-    function hidePendingToast() {
-      const el = document.getElementById('undoSnackbar');
-      if (!el) return;
-      el.style.display = 'none';
-    }
-
-    function showPendingToast(getMessage, onUndo, secondsTotal = 5) {
-      const el = document.getElementById('undoSnackbar');
-      const textEl = document.getElementById('undoSnackbarText');
-      const btn = document.getElementById('undoSnackbarBtn');
-      const closeBtn = document.getElementById('undoSnackbarClose');
-      if (!el || !textEl || !btn || !closeBtn) return;
-
-      let secondsLeft = Math.max(1, parseInt(secondsTotal, 10) || 5);
-
-      textEl.textContent = getMessage(secondsLeft);
-      el.style.display = 'flex';
-
-      btn.onclick = () => {
-        clearPendingAction();
-        hidePendingToast();
-        if (typeof onUndo === 'function') {
-          try { onUndo(); } catch (e) { console.error(e); }
-        }
-      };
-
-      closeBtn.onclick = () => {
-        clearPendingAction();
-        hidePendingToast();
-      };
-
-      if (pendingCountdownTimer) {
-        clearInterval(pendingCountdownTimer);
-        pendingCountdownTimer = null;
-      }
-
-      pendingCountdownTimer = setInterval(() => {
-        secondsLeft -= 1;
-        if (secondsLeft <= 0) {
-          clearInterval(pendingCountdownTimer);
-          pendingCountdownTimer = null;
-          return;
-        }
-        textEl.textContent = getMessage(secondsLeft);
-      }, 1000);
-    }
-
-    function scheduleAttendanceAction(type, employeeId, shiftId, employeeName) {
-      if (type === 'in' && !selectedBranch) {
-        showError('Please select a branch first');
+    async function undoLastAction(employeeId, employeeName) {
+      const action = lastActionByEmployee[String(employeeId)];
+      if (!action) {
+        showError(`No action to undo for ${employeeName}`);
         return;
       }
 
-      clearPendingAction();
+      try {
+        if (action.type === 'clock_in') {
+          const form = new FormData();
+          form.append('employee_id', employeeId);
+          form.append('action', 'undo_clock_in');
+          form.append('shift_id', action.shiftId);
 
-      pendingAction = {
-        type,
-        employeeId,
-        shiftId,
-        employeeName,
-        branchName: selectedBranch
-      };
+          const resp = await fetch('api/clock_in.php', {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: form
+          });
+          const text = await resp.text();
+          let data = null;
+          try { data = JSON.parse(text); } catch (e) { data = null; }
+          if (!resp.ok || !data) throw new Error(data?.message || `Undo failed (HTTP ${resp.status})`);
+          if (!data.success) throw new Error(data.message || 'Unable to undo');
 
-      const verb = type === 'in' ? 'Time In' : 'Time Out';
-      showPendingToast(
-        (secondsLeft) => `${verb} for ${employeeName} in ${secondsLeft}s`,
-        () => {
-          showSuccess(`${verb} canceled for ${employeeName}`);
-        },
-        5
-      );
-
-      pendingFinalizeTimer = setTimeout(() => {
-        const action = pendingAction;
-        clearPendingAction();
-        hidePendingToast();
-        if (!action) return;
-
-        if (action.type === 'in') {
-          performClockIn(action.employeeId, action.employeeName, action.branchName);
+          showSuccess(`${employeeName} time-in undone`);
+          delete lastActionByEmployee[String(employeeId)];
+          reloadEmployees();
           return;
         }
 
-        performClockOut(action.employeeId, action.shiftId, action.employeeName);
-      }, 5000);
+        if (action.type === 'clock_out') {
+          const form = new FormData();
+          form.append('employee_id', employeeId);
+          form.append('action', 'undo_clock_out');
+          form.append('shift_id', action.shiftId);
+
+          const resp = await fetch('api/clock_out.php', {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: form
+          });
+          const text = await resp.text();
+          let data = null;
+          try { data = JSON.parse(text); } catch (e) { data = null; }
+          if (!resp.ok || !data) throw new Error(data?.message || `Undo failed (HTTP ${resp.status})`);
+          if (!data.success) throw new Error(data.message || 'Unable to undo');
+
+          showSuccess(`${employeeName} time-out undone`);
+          delete lastActionByEmployee[String(employeeId)];
+          reloadEmployees();
+          return;
+        }
+
+        if (action.type === 'transfer') {
+          const oldBranch = action.oldBranch || '';
+          if (!oldBranch) throw new Error('Unable to undo (missing previous branch)');
+
+          const undoForm = new FormData();
+          undoForm.append('action', 'undo_transfer');
+          undoForm.append('employee_id', employeeId);
+          undoForm.append('branch_name', oldBranch);
+
+          const resp = await fetch('update_deployment.php', {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: undoForm
+          });
+          const undoText = await resp.text();
+          let undoData = null;
+          try { undoData = JSON.parse(undoText); } catch (e) { undoData = null; }
+          if (!resp.ok || !undoData) throw new Error(undoData?.message || `Undo failed (HTTP ${resp.status})`);
+          if (!undoData.success) throw new Error(undoData.message || 'Undo failed');
+
+          showSuccess(`${employeeName} transfer undone (back to ${oldBranch})`);
+          delete lastActionByEmployee[String(employeeId)];
+          reloadEmployees();
+          return;
+        }
+
+        throw new Error('Unknown action type');
+      } catch (e) {
+        console.error(e);
+        showError(e.message || 'Undo failed');
+      }
     }
 
     document.addEventListener('click', function(e) {
@@ -673,6 +673,12 @@
 
         if (data.success) {
           showSuccess(`${employeeName} time-in recorded (${data.time_in || ''})`);
+          if (data.shift_id) {
+            lastActionByEmployee[String(employeeId)] = {
+              type: 'clock_in',
+              shiftId: data.shift_id
+            };
+          }
           const row = document.getElementById(`employee-${employeeId}`);
           if (row) {
             const timeCell = row.querySelector('.time-in-cell');
@@ -738,6 +744,12 @@
 
         if (data.success) {
           showSuccess(`${employeeName} time-out recorded (${data.time_out || ''})`);
+          if (shiftId) {
+            lastActionByEmployee[String(employeeId)] = {
+              type: 'clock_out',
+              shiftId: shiftId
+            };
+          }
           const row = document.getElementById(`employee-${employeeId}`);
           if (row) {
             const timeCell = row.querySelector('.time-out-cell');
@@ -816,37 +828,12 @@
           const newBranch = data.new_branch || selectedBranch;
           showSuccess(`${employeeName} transferred to ${newBranch}`);
 
-          showUndoSnackbar(`Transferred ${employeeName} to ${newBranch}`, async () => {
-            if (!oldBranch) {
-              showError('Unable to undo (missing previous branch)');
-              return;
-            }
-            const undoForm = new FormData();
-            undoForm.append('action', 'undo_transfer');
-            undoForm.append('employee_id', employeeId);
-            undoForm.append('branch_name', oldBranch);
-
-            const resp = await fetch('update_deployment.php', {
-              method: 'POST',
-              headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-              },
-              body: undoForm
-            });
-            const undoText = await resp.text();
-            let undoData = null;
-            try { undoData = JSON.parse(undoText); } catch (e) { undoData = null; }
-            if (!resp.ok || !undoData) {
-              throw new Error(undoData?.message || `Undo failed (HTTP ${resp.status})`);
-            }
-            if (!undoData.success) {
-              throw new Error(undoData.message || 'Undo failed');
-            }
-            showSuccess(`${employeeName} transfer undone (back to ${oldBranch})`);
-            setTimeout(() => {
-              reloadEmployees();
-            }, 300);
-          }, 5000);
+          lastActionByEmployee[String(employeeId)] = {
+            type: 'transfer',
+            oldBranch: oldBranch,
+            newBranch: newBranch
+          };
+          showUndoSnackbar(`Last action saved for undo: transferred ${employeeName} to ${newBranch}`);
 
           setTimeout(() => {
             reloadEmployees();
@@ -898,12 +885,11 @@
       undoSnackbarHandler = null;
     }
 
-    function showUndoSnackbar(message, onUndo, timeoutMs = 5000) {
+    function showUndoSnackbar(message, onUndo, timeoutMs = 0) {
       const el = document.getElementById('undoSnackbar');
       const textEl = document.getElementById('undoSnackbarText');
-      const btn = document.getElementById('undoSnackbarBtn');
       const closeBtn = document.getElementById('undoSnackbarClose');
-      if (!el || !textEl || !btn || !closeBtn) return;
+      if (!el || !textEl || !closeBtn) return;
 
       if (undoSnackbarTimer) {
         clearTimeout(undoSnackbarTimer);
@@ -914,25 +900,13 @@
       textEl.textContent = message;
       el.style.display = 'flex';
 
-      btn.onclick = async () => {
-        if (!undoSnackbarHandler) {
-          hideUndoSnackbar();
-          return;
-        }
-        const handler = undoSnackbarHandler;
-        hideUndoSnackbar();
-        try {
-          await handler();
-        } catch (e) {
-          console.error(e);
-        }
-      };
-
       closeBtn.onclick = () => hideUndoSnackbar();
 
-      undoSnackbarTimer = setTimeout(() => {
-        hideUndoSnackbar();
-      }, timeoutMs);
+      if (timeoutMs && timeoutMs > 0) {
+        undoSnackbarTimer = setTimeout(() => {
+          hideUndoSnackbar();
+        }, timeoutMs);
+      }
     }
 
     // Auto-refresh every minute to check cutoff time (Philippine Time)
