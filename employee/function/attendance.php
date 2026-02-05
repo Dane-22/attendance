@@ -432,8 +432,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 // Show ALL employees with their attendance status - for pull method, show all
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              WHERE e.status = 'Active' AND e.branch_id = ?";
-                $countParams = [(string)$selectedBranchId];
+                              WHERE e.status = 'Active'";
+                $countParams = [];
             }
             
             // Execute count query
@@ -658,10 +658,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active' AND e.branch_id = ?
+                          WHERE e.status = 'Active'
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
-                $mainParams = [(string)$selectedBranchId];
+                $mainParams = [];
             }
             
             error_log("DEBUG: Main Query: $query");
