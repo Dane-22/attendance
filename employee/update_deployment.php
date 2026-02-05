@@ -42,6 +42,55 @@ if ($employeeId <= 0 || $branchName === '') {
     exit();
 }
 
+// Resolve branch_id from the provided branch_name
+$branchSql = "SELECT id, branch_name FROM branches WHERE branch_name = ? LIMIT 1";
+$branchStmt = mysqli_prepare($db, $branchSql);
+if (!$branchStmt) {
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database error (prepare branch)']);
+    exit();
+}
+mysqli_stmt_bind_param($branchStmt, 's', $branchName);
+mysqli_stmt_execute($branchStmt);
+$branchRes = mysqli_stmt_get_result($branchStmt);
+$branchRow = $branchRes ? mysqli_fetch_assoc($branchRes) : null;
+mysqli_stmt_close($branchStmt);
+
+if (!$branchRow || empty($branchRow['id'])) {
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid branch']);
+    exit();
+}
+
+$newBranchId = intval($branchRow['id']);
+$newBranchName = $branchRow['branch_name'] ?? $branchName;
+
+// Fetch employee current assigned branch_id (and name)
+$empSql = "SELECT e.branch_id, b.branch_name AS branch_name FROM employees e LEFT JOIN branches b ON b.id = e.branch_id WHERE e.id = ? LIMIT 1";
+$empStmt = mysqli_prepare($db, $empSql);
+if (!$empStmt) {
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database error (prepare employee)']);
+    exit();
+}
+mysqli_stmt_bind_param($empStmt, 'i', $employeeId);
+mysqli_stmt_execute($empStmt);
+$empResult = mysqli_stmt_get_result($empStmt);
+$empRow = $empResult ? mysqli_fetch_assoc($empResult) : null;
+mysqli_stmt_close($empStmt);
+
+$oldOriginalBranchId = isset($empRow['branch_id']) ? intval($empRow['branch_id']) : null;
+$oldOriginalBranchName = $empRow['branch_name'] ?? '';
+
 // Fetch current assigned branch from employees table
 // Get latest attendance branch today for this employee
 $attSql = "SELECT id, branch_name FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() ORDER BY id DESC LIMIT 1";
@@ -105,6 +154,28 @@ if (!mysqli_stmt_execute($updateAttStmt)) {
     exit();
 }
 
+// Update employee assigned branch_id
+$updateEmpSql = "UPDATE employees SET branch_id = ? WHERE id = ?";
+$updateEmpStmt = mysqli_prepare($db, $updateEmpSql);
+if (!$updateEmpStmt) {
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database error (prepare update employee)']);
+    exit();
+}
+mysqli_stmt_bind_param($updateEmpStmt, 'ii', $newBranchId, $employeeId);
+if (!mysqli_stmt_execute($updateEmpStmt)) {
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Failed to update employee branch']);
+    exit();
+}
+mysqli_stmt_close($updateEmpStmt);
+
 // Insert transfer log (best effort)
 $didLogTransfer = false;
 if ($action !== 'undo_transfer') {
@@ -123,7 +194,11 @@ echo json_encode([
     'success' => true,
     'message' => ($action === 'undo_transfer') ? 'Transfer undone' : 'Branch updated successfully',
     'old_branch' => $oldBranch,
-    'new_branch' => $branchName,
+    'new_branch' => $newBranchName,
+    'old_original_branch_id' => $oldOriginalBranchId,
+    'new_original_branch_id' => $newBranchId,
+    'old_original_branch' => $oldOriginalBranchName,
+    'new_original_branch' => $newBranchName,
     'logged_transfer' => $didLogTransfer
 ]);
 

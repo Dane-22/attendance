@@ -16,14 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit;
 }
 
-// Get parameters
+// Get parameters (branch_name kept for backward compatibility; endpoint returns all employees)
 $branch_name = isset($_REQUEST['branch_name']) ? trim($_REQUEST['branch_name']) : '';
 $date_today = date("Y-m-d");
-
-if (empty($branch_name)) {
-    echo json_encode(["success" => false, "message" => "Branch name is required"]);
-    exit;
-}
 
 function attendanceHasColumn($db, $columnName) {
     $safe = mysqli_real_escape_string($db, $columnName);
@@ -40,13 +35,15 @@ $timeInSelect = $hasTimeIn ? "a.time_in" : "NULL";
 $timeOutSelect = $hasTimeOut ? "a.time_out" : "NULL";
 $isTimeRunningSelect = $hasIsTimeRunning ? "COALESCE(a.is_time_running, 0)" : "0";
 
-// Get ALL employees with their latest attendance log for today
+// Get ALL employees with their assigned branch (employees.branch_id -> branches) and latest attendance log for today
 $sql = "SELECT 
             e.id,
             e.employee_code,
             e.first_name,
             e.last_name,
             e.position,
+            e.branch_id,
+            b.branch_name AS assigned_branch_name,
             a.branch_name,
             a.status as today_status,
             {$timeInSelect} as time_in,
@@ -58,6 +55,7 @@ $sql = "SELECT
               ELSE 0
             END as is_timed_in
         FROM employees e
+        LEFT JOIN branches b ON e.branch_id = b.id
         LEFT JOIN (
             SELECT a1.*
             FROM attendance a1
@@ -84,6 +82,8 @@ while ($row = mysqli_fetch_assoc($result)) {
         'first_name' => $row['first_name'],
         'last_name' => $row['last_name'],
         'position' => $row['position'],
+        'branch_id' => isset($row['branch_id']) ? (is_null($row['branch_id']) ? null : (int)$row['branch_id']) : null,
+        'assigned_branch_name' => $row['assigned_branch_name'],
         'branch_name' => $row['branch_name'],
         'today_status' => $row['today_status'],
         'time_in' => $row['time_in'],

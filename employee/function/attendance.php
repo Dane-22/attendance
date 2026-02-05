@@ -325,6 +325,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 echo json_encode(['success' => false, 'message' => 'Invalid branch selected']);
                 exit();
             }
+
+            $branchCheckRow = mysqli_fetch_assoc($branchCheckResult);
+            $selectedBranchId = isset($branchCheckRow['id']) ? intval($branchCheckRow['id']) : 0;
+            if ($selectedBranchId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid branch selected']);
+                exit();
+            }
         } else {
             // Search mode: ignore filter + branch
             $statusFilter = 'all';
@@ -364,8 +371,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       ) t ON a1.id = t.max_id
                                       WHERE a1.branch_name = ?
                                   ) a ON e.id = a.employee_id
-                                  WHERE e.status = 'Active'";
-                    $countParams = [$branch];
+                                  WHERE e.status = 'Active' AND e.branch_id = ?";
+                    $countParams = [$branch, (string)$selectedBranchId];
                 } else {
                     // Fallback schema (no time_in/time_out): best-effort using latest row status
                     $countQuery = "SELECT COUNT(*) as total
@@ -382,8 +389,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   ) a ON e.id = a.employee_id
                                   WHERE e.status = 'Active'
                                     AND a.status = 'Present'
-                                    AND a.branch_name = ?";
-                    $countParams = [$branch];
+                                    AND a.branch_name = ?
+                                    AND e.branch_id = ?";
+                    $countParams = [$branch, (string)$selectedBranchId];
                 }
             } elseif ($statusFilter === 'absent') {
                 // Show only ABSENT employees (both auto and manual)
@@ -399,8 +407,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       GROUP BY employee_id
                                   ) t ON a1.id = t.max_id
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active' AND a.status = 'Absent' AND a.branch_name = ?";
-                $countParams = [$branch];
+                              WHERE e.status = 'Active'
+                                AND a.status = 'Absent'
+                                AND a.branch_name = ?
+                                AND e.branch_id = ?";
+                $countParams = [$branch, (string)$selectedBranchId];
             } elseif ($statusFilter === 'available') {
                 // Show AVAILABLE employees (not yet marked today)
                 $countQuery = "SELECT COUNT(*) as total
@@ -415,14 +426,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       GROUP BY employee_id
                                   ) t ON a1.id = t.max_id
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active' AND a.id IS NULL";
-                $countParams = [];
+                              WHERE e.status = 'Active' AND e.branch_id = ? AND a.id IS NULL";
+                $countParams = [(string)$selectedBranchId];
             } else {
                 // Show ALL employees with their attendance status - for pull method, show all
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              WHERE e.status = 'Active'";
-                $countParams = [];
+                              WHERE e.status = 'Active' AND e.branch_id = ?";
+                $countParams = [(string)$selectedBranchId];
             }
             
             // Execute count query
@@ -460,7 +471,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.middle_name,
                             e.last_name,
                             e.position,
-                            'Not Assigned' as original_branch,
+                            ob.branch_name as original_branch,
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
@@ -469,6 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 ELSE 0 
                             END as has_attendance_today
                           FROM employees e
+                          LEFT JOIN branches ob ON ob.id = e.branch_id
                           LEFT JOIN (
                               SELECT a1.*
                               FROM attendance a1
@@ -494,12 +506,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 e.middle_name,
                                 e.last_name,
                                 e.position,
-                                'Not Assigned' as original_branch,
+                                ob.branch_name as original_branch,
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
                                 1 as has_attendance_today
                               FROM employees e
+                              LEFT JOIN branches ob ON ob.id = e.branch_id
                               INNER JOIN (
                                   SELECT a1.*
                                   FROM attendance a1
@@ -513,10 +526,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   ) t ON a1.id = t.max_id
                                   WHERE a1.branch_name = ?
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active'
+                              WHERE e.status = 'Active' AND e.branch_id = ?
                               ORDER BY e.last_name, e.first_name
                               LIMIT $perPage OFFSET $offset";
-                    $mainParams = [$branch];
+                    $mainParams = [$branch, (string)$selectedBranchId];
                 } else {
                     $query = "SELECT
                                 e.id,
@@ -525,12 +538,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 e.middle_name,
                                 e.last_name,
                                 e.position,
-                                'Not Assigned' as original_branch,
+                                ob.branch_name as original_branch,
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
                                 1 as has_attendance_today
                               FROM employees e
+                              LEFT JOIN branches ob ON ob.id = e.branch_id
                               INNER JOIN (
                                   SELECT a1.*
                                   FROM attendance a1
@@ -544,9 +558,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                               WHERE e.status = 'Active'
                                 AND a.status = 'Present'
                                 AND a.branch_name = ?
+                                AND e.branch_id = ?
                               ORDER BY e.last_name, e.first_name
                               LIMIT $perPage OFFSET $offset";
-                    $mainParams = [$branch];
+                    $mainParams = [$branch, (string)$selectedBranchId];
                 }
             } elseif ($statusFilter === 'absent') {
                 // Show only ABSENT employees
@@ -557,7 +572,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.middle_name,
                             e.last_name,
                             e.position,
-                            'Not Assigned' as original_branch,
+                            ob.branch_name as original_branch,
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
@@ -566,6 +581,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 ELSE 0 
                             END as has_attendance_today
                           FROM employees e
+                          LEFT JOIN branches ob ON ob.id = e.branch_id
                           INNER JOIN (
                               SELECT a1.*
                               FROM attendance a1
@@ -576,10 +592,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active' AND a.status = 'Absent' AND a.branch_name = ?
+                          WHERE e.status = 'Active' AND e.branch_id = ? AND a.status = 'Absent' AND a.branch_name = ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
-                $mainParams = [$branch];
+                $mainParams = [(string)$selectedBranchId, $branch];
             } elseif ($statusFilter === 'available') {
                 // Show AVAILABLE employees (not yet marked today)
                 $query = "SELECT
@@ -589,7 +605,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.middle_name,
                             e.last_name,
                             e.position,
-                            'Not Assigned' as original_branch,
+                            ob.branch_name as original_branch,
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
@@ -598,6 +614,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 ELSE 0 
                             END as has_attendance_today
                           FROM employees e
+                          LEFT JOIN branches ob ON ob.id = e.branch_id
                           LEFT JOIN (
                               SELECT a1.*
                               FROM attendance a1
@@ -608,10 +625,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active' AND a.id IS NULL
+                          WHERE e.status = 'Active' AND e.branch_id = ? AND a.id IS NULL
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
-                $mainParams = [];
+                $mainParams = [(string)$selectedBranchId];
             } else {
                 // Show ALL employees with their attendance status - for pull method, show all
                 $query = "SELECT
@@ -621,7 +638,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.middle_name,
                             e.last_name,
                             e.position,
-                            'Not Assigned' as original_branch,
+                            ob.branch_name as original_branch,
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
@@ -630,6 +647,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 ELSE 0 
                             END as has_attendance_today
                           FROM employees e
+                          LEFT JOIN branches ob ON ob.id = e.branch_id
                           LEFT JOIN (
                               SELECT a1.*
                               FROM attendance a1
@@ -640,10 +658,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active'
+                          WHERE e.status = 'Active' AND e.branch_id = ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
-                $mainParams = [];
+                $mainParams = [(string)$selectedBranchId];
             }
             
             error_log("DEBUG: Main Query: $query");
