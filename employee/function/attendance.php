@@ -394,26 +394,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $countParams = [$branch, (string)$selectedBranchId];
                 }
             } elseif ($statusFilter === 'absent') {
-                // Show only ABSENT employees (both auto and manual)
-                $countQuery = "SELECT COUNT(*) as total
-                              FROM employees e
-                              INNER JOIN (
-                                  SELECT a1.*
-                                  FROM attendance a1
-                                  INNER JOIN (
-                                      SELECT employee_id, MAX(id) AS max_id
-                                      FROM attendance
-                                      WHERE attendance_date = CURDATE()
-                                      GROUP BY employee_id
-                                  ) t ON a1.id = t.max_id
-                              ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active'
-                                AND a.status = 'Absent'
-                                AND a.branch_name = ?
-                                AND e.branch_id = ?";
-                $countParams = [$branch, (string)$selectedBranchId];
-            } elseif ($statusFilter === 'available') {
-                // Show AVAILABLE employees (not yet marked today)
+                // Show ABSENT employees (Choice A): employees with NO attendance record today.
+                // (This is intentionally the same as Available / Not Marked.)
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
                               LEFT JOIN (
@@ -428,6 +410,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                               ) a ON e.id = a.employee_id
                               WHERE e.status = 'Active' AND e.branch_id = ? AND a.id IS NULL";
                 $countParams = [(string)$selectedBranchId];
+            } elseif ($statusFilter === 'available') {
+                // Show AVAILABLE employees:
+                // - not marked today (no attendance row today)
+                // - OR marked Absent today (auto/manual)
+                // - OR already timed out today
+                $availableCondition = '';
+                if (attendanceHasTimeColumns($db)) {
+                    $availableCondition = "(a.id IS NULL OR (a.status = 'Absent' AND a.branch_name = ?) OR (a.time_out IS NOT NULL AND a.branch_name = ?))";
+                    $countParams = [(string)$selectedBranchId, $branch, $branch];
+                } else {
+                    $availableCondition = "(a.id IS NULL OR (a.status = 'Absent' AND a.branch_name = ?))";
+                    $countParams = [(string)$selectedBranchId, $branch];
+                }
+
+                $countQuery = "SELECT COUNT(*) as total
+                              FROM employees e
+                              LEFT JOIN (
+                                  SELECT a1.*
+                                  FROM attendance a1
+                                  INNER JOIN (
+                                      SELECT employee_id, MAX(id) AS max_id
+                                      FROM attendance
+                                      WHERE attendance_date = CURDATE()
+                                      GROUP BY employee_id
+                                  ) t ON a1.id = t.max_id
+                              ) a ON e.id = a.employee_id
+                              WHERE e.status = 'Active'
+                                AND e.branch_id = ?
+                                AND {$availableCondition}";
             } else {
                 // Show ALL employees with their attendance status - for pull method, show all
                 $countQuery = "SELECT COUNT(*) as total
@@ -564,40 +575,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $mainParams = [$branch, (string)$selectedBranchId];
                 }
             } elseif ($statusFilter === 'absent') {
-                // Show only ABSENT employees
-                $query = "SELECT
-                            e.id,
-                            e.employee_code,
-                            e.first_name,
-                            e.middle_name,
-                            e.last_name,
-                            e.position,
-                            ob.branch_name as original_branch,
-                            a.branch_name as logged_branch,
-                            a.status as attendance_status,
-                            a.is_auto_absent,
-                            CASE 
-                                WHEN a.id IS NOT NULL THEN 1 
-                                ELSE 0 
-                            END as has_attendance_today
-                          FROM employees e
-                          LEFT JOIN branches ob ON ob.id = e.branch_id
-                          INNER JOIN (
-                              SELECT a1.*
-                              FROM attendance a1
-                              INNER JOIN (
-                                  SELECT employee_id, MAX(id) AS max_id
-                                  FROM attendance
-                                  WHERE attendance_date = CURDATE()
-                                  GROUP BY employee_id
-                              ) t ON a1.id = t.max_id
-                          ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active' AND e.branch_id = ? AND a.status = 'Absent' AND a.branch_name = ?
-                          ORDER BY e.last_name, e.first_name
-                          LIMIT $perPage OFFSET $offset";
-                $mainParams = [(string)$selectedBranchId, $branch];
-            } elseif ($statusFilter === 'available') {
-                // Show AVAILABLE employees (not yet marked today)
+                // Show ABSENT employees (Choice A): employees with NO attendance record today.
+                // (This is intentionally the same as Available / Not Marked.)
                 $query = "SELECT
                             e.id,
                             e.employee_code,
@@ -629,6 +608,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
                 $mainParams = [(string)$selectedBranchId];
+            } elseif ($statusFilter === 'available') {
+                // Show AVAILABLE employees:
+                // - not marked today (no attendance row today)
+                // - OR marked Absent today (auto/manual)
+                // - OR already timed out today
+                $availableCondition = '';
+                if (attendanceHasTimeColumns($db)) {
+                    $availableCondition = "(a.id IS NULL OR (a.status = 'Absent' AND a.branch_name = ?) OR (a.time_out IS NOT NULL AND a.branch_name = ?))";
+                    $mainParams = [(string)$selectedBranchId, $branch, $branch];
+                } else {
+                    $availableCondition = "(a.id IS NULL OR (a.status = 'Absent' AND a.branch_name = ?))";
+                    $mainParams = [(string)$selectedBranchId, $branch];
+                }
+
+                $query = "SELECT
+                            e.id,
+                            e.employee_code,
+                            e.first_name,
+                            e.middle_name,
+                            e.last_name,
+                            e.position,
+                            ob.branch_name as original_branch,
+                            a.branch_name as logged_branch,
+                            a.status as attendance_status,
+                            a.is_auto_absent,
+                            CASE 
+                                WHEN a.id IS NOT NULL THEN 1 
+                                ELSE 0 
+                            END as has_attendance_today
+                          FROM employees e
+                          LEFT JOIN branches ob ON ob.id = e.branch_id
+                          LEFT JOIN (
+                              SELECT a1.*
+                              FROM attendance a1
+                              INNER JOIN (
+                                  SELECT employee_id, MAX(id) AS max_id
+                                  FROM attendance
+                                  WHERE attendance_date = CURDATE()
+                                  GROUP BY employee_id
+                              ) t ON a1.id = t.max_id
+                          ) a ON e.id = a.employee_id
+                          WHERE e.status = 'Active'
+                            AND e.branch_id = ?
+                            AND {$availableCondition}
+                          ORDER BY e.last_name, e.first_name
+                          LIMIT $perPage OFFSET $offset";
             } else {
                 // Show ALL employees with their attendance status - for pull method, show all
                 $query = "SELECT

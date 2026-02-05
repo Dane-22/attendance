@@ -103,17 +103,12 @@
 
       // Normal mode: requires selected branch
       if (!selectedBranch) return;
-      const effectiveFilter = (currentStatusFilter === 'absent') ? 'available' : currentStatusFilter;
-      loadEmployees(selectedBranch, currentPage, perPage, effectiveFilter, '');
+      loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter, '');
     }
 
     // Load employees function with pagination
     function loadEmployees(branch, page = 1, perPage = 10, statusFilter = 'all', searchTerm = '') {
       if (isLoading) return;
-
-      if (statusFilter === 'absent') {
-        statusFilter = 'available';
-      }
       
       const container = document.getElementById('employeeContainer');
       container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin" style="font-size: 18px; margin-bottom: 10px;"></i><div>Loading employees...</div></div>';
