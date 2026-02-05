@@ -69,25 +69,28 @@ if (!$hasTimeOut) {
 $date = date('Y-m-d');
 
 // Check if already clocked in for today
+// Check if employee has any open session at a different branch today
 $sql = $hasIsTimeRunning
-    ? "SELECT id, time_in, time_out, is_time_running FROM attendance WHERE employee_id = ? AND attendance_date = ? ORDER BY id DESC LIMIT 1"
-    : "SELECT id, time_in, time_out, 0 as is_time_running FROM attendance WHERE employee_id = ? AND attendance_date = ? ORDER BY id DESC LIMIT 1";
+    ? "SELECT id, branch_name, time_in, time_out, is_time_running FROM attendance WHERE employee_id = ? AND attendance_date = ? AND (is_time_running = 1 OR (time_in IS NOT NULL AND time_out IS NULL))"
+    : "SELECT id, branch_name, time_in, time_out FROM attendance WHERE employee_id = ? AND attendance_date = ? AND (time_in IS NOT NULL AND time_out IS NULL)";
 $stmt = mysqli_prepare($db, $sql);
 mysqli_stmt_bind_param($stmt, 'is', $employeeId, $date);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
-$row = $result ? mysqli_fetch_assoc($result) : null;
+$openRows = [];
+while ($r = $result ? mysqli_fetch_assoc($result) : null) {
+    if ($r) $openRows[] = $r;
+}
 mysqli_stmt_close($stmt);
 
-if ($row && (int)($row['is_time_running'] ?? 0) === 1) {
-    echo json_encode(['success' => false, 'message' => 'Already timed in (time is running)', 'time_in' => $row['time_in']]);
-    exit();
+// If any open session exists at a different branch, block
+foreach ($openRows as $row) {
+    if (strcasecmp($row['branch_name'], $branchName) !== 0) {
+        echo json_encode(['success' => false, 'message' => 'Already timed in at another branch today', 'branch_name' => $row['branch_name'], 'time_in' => $row['time_in']]);
+        exit();
+    }
 }
-
-if ($row && $row['time_in'] && empty($row['time_out'])) {
-    echo json_encode(['success' => false, 'message' => 'Already timed in today', 'time_in' => $row['time_in']]);
-    exit();
-}
+// Otherwise, allow time-in (multiple sessions allowed at the same branch in a day)
 
 $insertSql = $hasIsTimeRunning
     ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_time_running) VALUES (?, ?, ?, NOW(), 'Present', NOW(), 1)"
