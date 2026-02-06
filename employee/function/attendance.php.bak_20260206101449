@@ -1,5 +1,4 @@
-﻿<?php
-require_once __DIR__ . '/../../conn/db_connection.php';
+<?php
 $employeeName = $_SESSION['first_name'] . ' ' . $_SESSION['last_name'];
 $employeeCode = $_SESSION['employee_code'];
 $position = $_SESSION['position'] ?? 'Employee';
@@ -281,13 +280,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get available branches from branches table
 $branchesQuery = "SELECT id, branch_name FROM branches WHERE is_active = 1 ORDER BY branch_name ASC";
 $branchesResult = mysqli_query($db, $branchesQuery);
-$branches = [];
-while ($row = mysqli_fetch_assoc($branchesResult)) {
-    $branches[] = ['id' => $row['id'], 'branch_name' => $row['branch_name']];
-}
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Save absent note
+    if ($_POST['action'] === 'save_absent_note') {
+        $employeeId = intval($_POST['employee_id'] ?? 0);
+        $note = trim($_POST['note'] ?? '');
+        $attendanceDate = $_POST['attendance_date'] ?? date('Y-m-d');
+        if (!$employeeId || $note === '') {
+            echo json_encode(['success' => false, 'message' => 'Missing employee ID or note']);
+            exit();
+        }
+        $sql = "UPDATE attendance SET absent_notes = ? WHERE employee_id = ? AND attendance_date = ? AND status = 'Absent' ORDER BY id DESC LIMIT 1";
+        $stmt = mysqli_prepare($db, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'sis', $note, $employeeId, $attendanceDate);
+            $ok = mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+            if ($ok) {
+                echo json_encode(['success' => true, 'message' => 'Absent note saved']);
+                exit();
+            }
+        }
+        echo json_encode(['success' => false, 'message' => 'Failed to save absent note']);
+        exit();
+    }
+
     header('Content-Type: application/json');
     
     // TEMPORARY: COMMENT OUT RATE LIMITER FOR TESTING
@@ -487,6 +506,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
+                            a.absent_notes,
                             CASE 
                                 WHEN a.id IS NOT NULL THEN 1 
                                 ELSE 0 
@@ -522,6 +542,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
+                                a.absent_notes,
                                 1 as has_attendance_today
                               FROM employees e
                               LEFT JOIN branches ob ON ob.id = e.branch_id
@@ -554,6 +575,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
+                                a.absent_notes,
                                 1 as has_attendance_today
                               FROM employees e
                               LEFT JOIN branches ob ON ob.id = e.branch_id
@@ -589,6 +611,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
+                            a.absent_notes,
                             CASE 
                                 WHEN a.id IS NOT NULL THEN 1 
                                 ELSE 0 
@@ -634,6 +657,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
+                            a.absent_notes,
                             CASE 
                                 WHEN a.id IS NOT NULL THEN 1 
                                 ELSE 0 
@@ -668,6 +692,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
+                            a.absent_notes,
                             CASE 
                                 WHEN a.id IS NOT NULL THEN 1 
                                 ELSE 0 
@@ -808,6 +833,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'attendance_status' => $row['attendance_status'] ?? null,
                     'is_auto_absent' => (bool)($row['is_auto_absent'] ?? false),
                     'has_attendance_today' => (bool)($row['has_attendance_today'] ?? false),
+                    'absent_notes' => $row['absent_notes'] ?? null,
                     'shift_id' => $shiftId,
                     'time_in' => $timeIn,
                     'time_out' => $timeOut,
@@ -816,31 +842,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
 
             error_log("DEBUG: Found " . count($employees) . " employees");
-
-            // Custom sort for 'Summary' (status_filter = 'all')
-            if ($statusFilter === 'all') {
-                // Filter employees to only those in the selected branch
-                if (!empty($selectedBranchId)) {
-                    $employees = array_filter($employees, function($emp) use ($selectedBranchId) {
-                        return isset($emp['original_branch']) && $emp['original_branch'] !== null && $emp['original_branch'] !== '' && $emp['original_branch'] == $branch;
-                    });
-                    $employees = array_values($employees); // reindex
-                }
-                usort($employees, function($a, $b) {
-                    // Present or has time_in comes first, then available, then absent
-                    $aPresent = ($a['attendance_status'] === 'Present' || !empty($a['time_in']));
-                    $bPresent = ($b['attendance_status'] === 'Present' || !empty($b['time_in']));
-                    if ($aPresent && !$bPresent) return -1;
-                    if (!$aPresent && $bPresent) return 1;
-                    $aAbsent = ($a['attendance_status'] === 'Absent');
-                    $bAbsent = ($b['attendance_status'] === 'Absent');
-                    if ($aAbsent && !$bAbsent) return 1;
-                    if (!$aAbsent && $bAbsent) return -1;
-                    // Otherwise, sort by name
-                    return strcmp($a['name'], $b['name']);
-                });
-            }
-
+            
             echo json_encode([
                 'success' => true, 
                 'employees' => $employees,

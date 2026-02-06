@@ -30,10 +30,12 @@ function attendanceHasColumn($db, $columnName) {
 $hasTimeIn = attendanceHasColumn($db, 'time_in');
 $hasTimeOut = attendanceHasColumn($db, 'time_out');
 $hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
+$hasTotalOtHrs = attendanceHasColumn($db, 'total_ot_hrs');
 
 $timeInSelect = $hasTimeIn ? "a.time_in" : "NULL";
 $timeOutSelect = $hasTimeOut ? "a.time_out" : "NULL";
 $isTimeRunningSelect = $hasIsTimeRunning ? "COALESCE(a.is_time_running, 0)" : "0";
+$totalOtHrsSelect = $hasTotalOtHrs ? "COALESCE(a.total_ot_hrs, '')" : "''";
 
 // Get ALL employees with their assigned branch (employees.branch_id -> branches) and latest attendance log for today
 $sql = "SELECT 
@@ -50,6 +52,7 @@ $sql = "SELECT
             {$timeOutSelect} as time_out,
             COALESCE(a.is_auto_absent, 0) as is_auto_absent,
             {$isTimeRunningSelect} as is_time_running,
+            {$totalOtHrsSelect} as total_ot_hrs,
             CASE
               WHEN {$isTimeRunningSelect} = 1 THEN 1
               ELSE 0
@@ -90,7 +93,8 @@ while ($row = mysqli_fetch_assoc($result)) {
         'time_out' => $row['time_out'],
         'is_auto_absent' => (bool)$row['is_auto_absent'],
         'is_time_running' => (int)($row['is_time_running'] ?? 0) === 1,
-        'is_timed_in' => (int)$row['is_timed_in'] === 1
+        'is_timed_in' => (int)$row['is_timed_in'] === 1,
+        'total_ot_hrs' => isset($row['total_ot_hrs']) ? (string)$row['total_ot_hrs'] : ''
     ];
 }
 

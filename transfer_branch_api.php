@@ -15,6 +15,13 @@ function employeesHasColumn($db, $columnName) {
     return $result && mysqli_num_rows($result) > 0;
 }
 
+function attendanceHasColumn($db, $columnName) {
+    $safe = mysqli_real_escape_string($db, $columnName);
+    $sql = "SHOW COLUMNS FROM `attendance` LIKE '{$safe}'";
+    $result = mysqli_query($db, $sql);
+    return $result && mysqli_num_rows($result) > 0;
+}
+
 if (!$employeeId || (!$toBranch && !$toBranchId)) {
     echo json_encode(['success' => false, 'message' => 'Missing employee_id or to_branch/to_branch_id']);
     exit();
@@ -130,7 +137,13 @@ if (!mysqli_stmt_execute($updateStmt)) {
 mysqli_stmt_close($updateStmt);
 
 // 4) Time in to target branch
-$insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_time_running) VALUES (?, ?, ?, NOW(), 'Present', NOW(), 1)";
+$hasIsOvertimeRunning = attendanceHasColumn($db, 'is_overtime_running');
+$hasTotalOtHrs = attendanceHasColumn($db, 'total_ot_hrs');
+$shouldIncludeOtDefaults = $hasIsOvertimeRunning && $hasTotalOtHrs;
+
+$insertSql = $shouldIncludeOtDefaults
+    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_overtime_running, is_time_running, total_ot_hrs) VALUES (?, ?, ?, NOW(), 'Present', NOW(), 0, 1, '')"
+    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_time_running) VALUES (?, ?, ?, NOW(), 'Present', NOW(), 1)";
 $insertStmt = mysqli_prepare($db, $insertSql);
 mysqli_stmt_bind_param($insertStmt, 'iss', $employeeId, $resolvedToBranchName, $date);
 if (mysqli_stmt_execute($insertStmt)) {

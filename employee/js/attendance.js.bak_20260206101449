@@ -1,4 +1,4 @@
-﻿// ===== EMPLOYEE ATTENDANCE MANAGEMENT SCRIPT =====
+// ===== EMPLOYEE ATTENDANCE MANAGEMENT SCRIPT =====
 
     // Global variables
     let selectedBranch = null;
@@ -377,7 +377,7 @@
           <table class="employee-table">
             <thead>
               <tr>
-                <th style="width: 48px;">#</th>
+                <th>#</th>
                 <th>Employee</th>
                 <th>Time In</th>
                 <th>Time Out</th>
@@ -388,20 +388,25 @@
             <tbody>
       `;
 
-      employees.forEach((employee, index) => {
+      employees.forEach((employee, idx) => {
         const name = employee.name || '';
         const initials = name.trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '?';
         const timeIn = formatTime(employee.time_in);
         const timeOut = formatTime(employee.time_out);
         const totalHours = formatHours(employee.total_hours);
-
         const hasOpenShift = !!employee.time_in && !employee.time_out;
-
         const menuId = `emp-menu-${employee.id}`;
-
+        const rowNo = ((currentPage - 1) * perPage) + idx + 1;
+        let absentNoteHtml = '';
+        if (employee.attendance_status === 'Absent') {
+          const note = employee.absent_notes ? String(employee.absent_notes).trim() : '';
+          const preview = note.length > 60 ? note.slice(0, 60) + '…' : note;
+          absentNoteHtml = `<div class="absent-note-preview">${preview ? '<i class=\"fas fa-sticky-note\"></i> ' + escapeAttr(preview) : '<span class=\"no-note\">No reason</span>'}
+            <button class=\"edit-absent-note-btn\" onclick=\"openAbsentNoteModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(note)}')\">${note ? 'Edit' : 'Add'} Reason</button></div>`;
+        }
         html += `
           <tr id="employee-${employee.id}" data-shift-id="${employee.shift_id || ''}" data-has-open-shift="${hasOpenShift ? '1' : '0'}">
-            <td class="mono" style="font-weight: bold; color: #FFD700;">${index + 1}</td>
+            <td class="row-number">${rowNo}</td>
             <td>
               <div class="employee-cell">
                 <div class="employee-avatar" aria-hidden="true">${escapeAttr(initials)}</div>
@@ -411,6 +416,7 @@
                     <span class="employee-branch-label">Current Branch:</span>
                     <span class="employee-branch-value">${escapeAttr(employee.logged_branch || '--')}</span>
                   </div>
+                  ${absentNoteHtml}
                 </div>
               </div>
             </td>
