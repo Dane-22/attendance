@@ -387,7 +387,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $like = '%' . $searchTerm . '%';
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              WHERE e.status = 'Active'
+                              WHERE e.status = 'Active' AND e.position = 'Worker'
                                 AND CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) LIKE ?";
                 $countParams = [$like];
             } elseif ($statusFilter === 'present') {
@@ -408,7 +408,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       ) t ON a1.id = t.max_id
                                       WHERE a1.branch_name = ?
                                   ) a ON e.id = a.employee_id
-                                  WHERE e.status = 'Active' AND e.branch_id = ?";
+                                  WHERE e.status = 'Active' AND e.position = 'Worker' AND e.branch_id = ?";
                     $countParams = [$branch, (string)$selectedBranchId];
                 } else {
                     // Fallback schema (no time_in/time_out): best-effort using latest row status
@@ -424,7 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                           GROUP BY employee_id
                                       ) t ON a1.id = t.max_id
                                   ) a ON e.id = a.employee_id
-                                  WHERE e.status = 'Active'
+                                  WHERE e.status = 'Active' AND e.position = 'Worker'
                                     AND a.status = 'Present'
                                     AND a.branch_name = ?
                                     AND e.branch_id = ?";
@@ -446,7 +446,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       GROUP BY employee_id
                                   ) t ON a1.id = t.max_id
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active'
+                              WHERE e.status = 'Active' AND e.position = 'Worker'
                                 AND e.branch_id = ?
                                 AND (a.id IS NULL OR a.status = 'Absent')";
                 $countParams = [(string)$selectedBranchId];
@@ -476,14 +476,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       GROUP BY employee_id
                                   ) t ON a1.id = t.max_id
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active'
+                              WHERE e.status = 'Active' AND e.position = 'Worker'
                                 AND e.branch_id = ?
                                 AND {$availableCondition}";
             } else {
                 // Show ALL employees with their attendance status - for pull method, show all
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
-                              WHERE e.status = 'Active'";
+                              WHERE e.status = 'Active' AND e.position = 'Worker'";
                 $countParams = [];
             }
             
@@ -544,7 +544,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active'
+                          WHERE e.status = 'Active' AND e.position = 'Worker'
                             AND CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) LIKE ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
@@ -581,7 +581,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   ) t ON a1.id = t.max_id
                                   WHERE a1.branch_name = ?
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active' AND e.branch_id = ?
+                              WHERE e.status = 'Active' AND e.position = 'Worker' AND e.branch_id = ?
                               ORDER BY e.last_name, e.first_name
                               LIMIT $perPage OFFSET $offset";
                     $mainParams = [$branch, (string)$selectedBranchId];
@@ -612,7 +612,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       GROUP BY employee_id
                                   ) t ON a1.id = t.max_id
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active'
+                              WHERE e.status = 'Active' AND e.position = 'Worker'
                                 AND a.status = 'Present'
                                 AND a.branch_name = ?
                                 AND e.branch_id = ?
@@ -653,7 +653,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active'
+                          WHERE e.status = 'Active' AND e.position = 'Worker'
                             AND e.branch_id = ?
                             AND (a.id IS NULL OR a.status = 'Absent')
                           ORDER BY e.last_name, e.first_name
@@ -702,7 +702,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active'
+                          WHERE e.status = 'Active' AND e.position = 'Worker'
                             AND e.branch_id = ?
                             AND {$availableCondition}
                           ORDER BY e.last_name, e.first_name
@@ -738,7 +738,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active'
+                          WHERE e.status = 'Active' AND e.position = 'Worker'
                             AND e.branch_id = ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";

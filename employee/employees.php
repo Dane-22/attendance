@@ -11,7 +11,14 @@ if (!isset($_SESSION['employee_code'])) {
 }
 
 // Check if user is Super Admin
-$isSuperAdmin = ($_SESSION['user_role'] ?? '') === 'Super Admin';
+$isSuperAdmin = false;
+$sessionPosition = $_SESSION['position'] ?? '';
+$sessionRole = $_SESSION['role'] ?? '';
+$sessionUserRole = $_SESSION['user_role'] ?? '';
+if ($sessionPosition === 'Super Admin' || $sessionRole === 'Super Admin' || $sessionUserRole === 'Super Admin') {
+    $isSuperAdmin = true;
+}
+
 // ===== RATE LIMITER CONFIGURATION =====
 $rateLimitEnabled = false; // Set to true pag working na lahat
 $rateLimitWindow = 60; // 60 seconds
@@ -63,201 +70,206 @@ $offset = ($page - 1) * $perPage;
 
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Apply rate limiting for POST requests
-    if (!checkRateLimit()) {
-        $msg = 'Rate limit exceeded. Please wait a minute.';
+    // Check if user is Super Admin for employee modifications
+    if (!$isSuperAdmin) {
+        $msg = 'Error: Only Super Admin can modify employee records.';
     } else {
-        $action = $_POST['action'] ?? '';
+        // Apply rate limiting for POST requests
+        if (!checkRateLimit()) {
+            $msg = 'Rate limit exceeded. Please wait a minute.';
+        } else {
+            $action = $_POST['action'] ?? '';
 
-        if ($action === 'add') {
-            $employee_code = trim($_POST['employee_code'] ?? '');
-            $first_name = trim($_POST['first_name'] ?? '');
-            $middle_name = trim($_POST['middle_name'] ?? '');
-            $last_name = trim($_POST['last_name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $position = trim($_POST['position'] ?? '');
-            $password = $_POST['password'] ?? '';
-            
-            if ($employee_code && $first_name && $last_name) {
-                // Check if employee code already exists
-                $check = mysqli_prepare($db, "SELECT id FROM employees WHERE employee_code = ?");
-                mysqli_stmt_bind_param($check, 's', $employee_code);
-                mysqli_stmt_execute($check);
-                mysqli_stmt_store_result($check);
+            if ($action === 'add') {
+                $employee_code = trim($_POST['employee_code'] ?? '');
+                $first_name = trim($_POST['first_name'] ?? '');
+                $middle_name = trim($_POST['middle_name'] ?? '');
+                $last_name = trim($_POST['last_name'] ?? '');
+                $email = trim($_POST['email'] ?? '');
+                $position = trim($_POST['position'] ?? '');
+                $password = $_POST['password'] ?? '';
                 
-                if (mysqli_stmt_num_rows($check) > 0) {
-                    $msg = 'Error: Employee code already exists.';
-                } else {
-                    $hash = md5($password ?: 'password');
-                    $ins = mysqli_prepare($db, "INSERT INTO employees (employee_code, first_name, middle_name, last_name, email, position, password_hash, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', NOW())");
-                    mysqli_stmt_bind_param($ins, 'sssssss', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $hash);
-                    if (mysqli_stmt_execute($ins)) {
-                        $msg = 'Employee added successfully.';
+                if ($employee_code && $first_name && $last_name) {
+                    // Check if employee code already exists
+                    $check = mysqli_prepare($db, "SELECT id FROM employees WHERE employee_code = ?");
+                    mysqli_stmt_bind_param($check, 's', $employee_code);
+                    mysqli_stmt_execute($check);
+                    mysqli_stmt_store_result($check);
+                    
+                    if (mysqli_stmt_num_rows($check) > 0) {
+                        $msg = 'Error: Employee code already exists.';
                     } else {
-                        $msg = 'Error adding employee: ' . mysqli_error($db);
-                    }
-                }
-                mysqli_stmt_close($check);
-            } else {
-                $msg = 'Please provide employee code and name.';
-            }
-        }
-
-        if ($action === 'delete') {
-            $id = intval($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $del = mysqli_prepare($db, "DELETE FROM employees WHERE id = ?");
-                mysqli_stmt_bind_param($del, 'i', $id);
-                if (mysqli_stmt_execute($del)) {
-                    $msg = 'Employee removed.';
-                } else {
-                    $msg = 'Error removing employee: ' . mysqli_error($db);
-                }
-            }
-        }
-
-        if ($action === 'update') {
-            $id = intval($_POST['id'] ?? 0);
-            $employee_code = trim($_POST['employee_code'] ?? '');
-            $first_name = trim($_POST['first_name'] ?? '');
-            $last_name = trim($_POST['last_name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $position = trim($_POST['position'] ?? '');
-            
-            if ($id > 0) {
-                // Check if the new employee code conflicts with another employee
-                $check = mysqli_prepare($db, "SELECT id FROM employees WHERE employee_code = ? AND id != ?");
-                mysqli_stmt_bind_param($check, 'si', $employee_code, $id);
-                mysqli_stmt_execute($check);
-                mysqli_stmt_store_result($check);
-                
-                if (mysqli_stmt_num_rows($check) > 0) {
-                    $msg = 'Error: Employee code already exists for another employee.';
-                } else {
-                    $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, last_name = ?, email = ?, position = ? WHERE id = ?");
-                    mysqli_stmt_bind_param($up, 'sssssi', $employee_code, $first_name, $last_name, $email, $position, $id);
-                    if (mysqli_stmt_execute($up)) {
-                        $msg = 'Employee updated.';
-                        
-                        // Handle profile image upload if provided
-                        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-                            $file = $_FILES['profile_image'];
-                            $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                            $max_size = 5 * 1024 * 1024; // 5MB
-                            
-                            if (in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
-                                // Generate unique filename
-                                $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                                $unique_name = uniqid('profile_', true) . '.' . $extension;
-                                $upload_path = __DIR__ . '/uploads/' . $unique_name;
-                                
-                                // Create uploads directory if it doesn't exist
-                                $upload_dir = __DIR__ . '/uploads/';
-                                if (!is_dir($upload_dir)) {
-                                    mkdir($upload_dir, 0755, true);
-                                }
-                                
-                                // Get current profile image to delete old one
-                                $current_image = null;
-                                $get_current = mysqli_prepare($db, "SELECT profile_image FROM employees WHERE id = ?");
-                                mysqli_stmt_bind_param($get_current, 'i', $id);
-                                mysqli_stmt_execute($get_current);
-                                
-                                // NA-AYOS NA: Bind result muna bago mag-fetch
-                                mysqli_stmt_bind_result($get_current, $current_image);
-                                if (mysqli_stmt_fetch($get_current)) {
-                                    // Successfully fetched the current image
-                                }
-                                mysqli_stmt_close($get_current);
-                                
-                                // Delete old profile image if exists
-                                if ($current_image && file_exists(__DIR__ . '/uploads/' . $current_image)) {
-                                    unlink(__DIR__ . '/uploads/' . $current_image);
-                                }
-                                
-                                if (move_uploaded_file($file['tmp_name'], $upload_path)) {
-                                    // Update database with new image
-                                    $update_img = mysqli_prepare($db, "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?");
-                                    mysqli_stmt_bind_param($update_img, 'si', $unique_name, $id);
-                                    mysqli_stmt_execute($update_img);
-                                    mysqli_stmt_close($update_img);
-                                    $msg .= ' Profile image updated.';
-                                } else {
-                                    $msg .= ' Failed to save profile image.';
-                                }
-                            } else {
-                                $msg .= ' Invalid profile image file.';
-                            }
-                        }
-                    } else {
-                        $msg = 'Error updating employee: ' . mysqli_error($db);
-                    }
-                }
-                mysqli_stmt_close($check);
-            }
-        }
-
-        if ($action === 'upload_profile') {
-            $id = intval($_POST['employee_id'] ?? 0);
-            
-            if ($id > 0 && isset($_FILES['profile_image'])) {
-                // Include the upload logic here or call the upload script
-                $file = $_FILES['profile_image'];
-                $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                $max_size = 5 * 1024 * 1024; // 5MB
-                
-                if ($file['error'] === UPLOAD_ERR_OK && in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
-                    // Generate unique filename
-                    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                    $unique_name = uniqid('profile_', true) . '.' . $extension;
-                    $upload_path = __DIR__ . '/uploads/' . $unique_name;
-                    
-                    // Create uploads directory if it doesn't exist
-                    $upload_dir = __DIR__ . '/uploads/';
-                    if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0755, true);
-                    }
-                    
-                    // Get current profile image to delete old one
-                    $current_image = null;
-                    $get_current = mysqli_prepare($db, "SELECT profile_image FROM employees WHERE id = ?");
-                    mysqli_stmt_bind_param($get_current, 'i', $id);
-                    mysqli_stmt_execute($get_current);
-                    
-                    // NA-AYOS NA: Bind result muna bago mag-fetch
-                    mysqli_stmt_bind_result($get_current, $current_image);
-                    if (mysqli_stmt_fetch($get_current)) {
-                        // Successfully fetched the current image
-                    }
-                    mysqli_stmt_close($get_current);
-                    
-                    // Delete old profile image if exists
-                    if ($current_image && file_exists(__DIR__ . '/uploads/' . $current_image)) {
-                        unlink(__DIR__ . '/uploads/' . $current_image);
-                    }
-                    
-                    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
-                        // Update database
-                        $update = mysqli_prepare($db, "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?");
-                        mysqli_stmt_bind_param($update, 'si', $unique_name, $id);
-                        if (mysqli_stmt_execute($update)) {
-                            $msg = 'Profile image updated successfully.';
+                        $hash = md5($password ?: 'password');
+                        $ins = mysqli_prepare($db, "INSERT INTO employees (employee_code, first_name, middle_name, last_name, email, position, password_hash, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', NOW())");
+                        mysqli_stmt_bind_param($ins, 'sssssss', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $hash);
+                        if (mysqli_stmt_execute($ins)) {
+                            $msg = 'Employee added successfully.';
                         } else {
-                            // If database update fails, delete the uploaded file
-                            if (file_exists($upload_path)) {
-                                unlink($upload_path);
-                            }
-                            $msg = 'Failed to update database.';
+                            $msg = 'Error adding employee: ' . mysqli_error($db);
                         }
-                        mysqli_stmt_close($update);
+                    }
+                    mysqli_stmt_close($check);
+                } else {
+                    $msg = 'Please provide employee code and name.';
+                }
+            }
+
+            if ($action === 'delete') {
+                $id = intval($_POST['id'] ?? 0);
+                if ($id > 0) {
+                    $del = mysqli_prepare($db, "DELETE FROM employees WHERE id = ?");
+                    mysqli_stmt_bind_param($del, 'i', $id);
+                    if (mysqli_stmt_execute($del)) {
+                        $msg = 'Employee removed.';
                     } else {
-                        $msg = 'Failed to save file.';
+                        $msg = 'Error removing employee: ' . mysqli_error($db);
+                    }
+                }
+            }
+
+            if ($action === 'update') {
+                $id = intval($_POST['id'] ?? 0);
+                $employee_code = trim($_POST['employee_code'] ?? '');
+                $first_name = trim($_POST['first_name'] ?? '');
+                $last_name = trim($_POST['last_name'] ?? '');
+                $email = trim($_POST['email'] ?? '');
+                $position = trim($_POST['position'] ?? '');
+                
+                if ($id > 0) {
+                    // Check if the new employee code conflicts with another employee
+                    $check = mysqli_prepare($db, "SELECT id FROM employees WHERE employee_code = ? AND id != ?");
+                    mysqli_stmt_bind_param($check, 'si', $employee_code, $id);
+                    mysqli_stmt_execute($check);
+                    mysqli_stmt_store_result($check);
+                    
+                    if (mysqli_stmt_num_rows($check) > 0) {
+                        $msg = 'Error: Employee code already exists for another employee.';
+                    } else {
+                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, last_name = ?, email = ?, position = ? WHERE id = ?");
+                        mysqli_stmt_bind_param($up, 'sssssi', $employee_code, $first_name, $last_name, $email, $position, $id);
+                        if (mysqli_stmt_execute($up)) {
+                            $msg = 'Employee updated.';
+                            
+                            // Handle profile image upload if provided
+                            if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+                                $file = $_FILES['profile_image'];
+                                $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                                $max_size = 5 * 1024 * 1024; // 5MB
+                                
+                                if (in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
+                                    // Generate unique filename
+                                    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+                                    $unique_name = uniqid('profile_', true) . '.' . $extension;
+                                    $upload_path = __DIR__ . '/uploads/' . $unique_name;
+                                    
+                                    // Create uploads directory if it doesn't exist
+                                    $upload_dir = __DIR__ . '/uploads/';
+                                    if (!is_dir($upload_dir)) {
+                                        mkdir($upload_dir, 0755, true);
+                                    }
+                                    
+                                    // Get current profile image to delete old one
+                                    $current_image = null;
+                                    $get_current = mysqli_prepare($db, "SELECT profile_image FROM employees WHERE id = ?");
+                                    mysqli_stmt_bind_param($get_current, 'i', $id);
+                                    mysqli_stmt_execute($get_current);
+                                    
+                                    // NA-AYOS NA: Bind result muna bago mag-fetch
+                                    mysqli_stmt_bind_result($get_current, $current_image);
+                                    if (mysqli_stmt_fetch($get_current)) {
+                                        // Successfully fetched the current image
+                                    }
+                                    mysqli_stmt_close($get_current);
+                                    
+                                    // Delete old profile image if exists
+                                    if ($current_image && file_exists(__DIR__ . '/uploads/' . $current_image)) {
+                                        unlink(__DIR__ . '/uploads/' . $current_image);
+                                    }
+                                    
+                                    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                                        // Update database with new image
+                                        $update_img = mysqli_prepare($db, "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?");
+                                        mysqli_stmt_bind_param($update_img, 'si', $unique_name, $id);
+                                        mysqli_stmt_execute($update_img);
+                                        mysqli_stmt_close($update_img);
+                                        $msg .= ' Profile image updated.';
+                                    } else {
+                                        $msg .= ' Failed to save profile image.';
+                                    }
+                                } else {
+                                    $msg .= ' Invalid profile image file.';
+                                }
+                            }
+                        } else {
+                            $msg = 'Error updating employee: ' . mysqli_error($db);
+                        }
+                    }
+                    mysqli_stmt_close($check);
+                }
+            }
+
+            if ($action === 'upload_profile') {
+                $id = intval($_POST['employee_id'] ?? 0);
+                
+                if ($id > 0 && isset($_FILES['profile_image'])) {
+                    // Include the upload logic here or call the upload script
+                    $file = $_FILES['profile_image'];
+                    $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                    $max_size = 5 * 1024 * 1024; // 5MB
+                    
+                    if ($file['error'] === UPLOAD_ERR_OK && in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
+                        // Generate unique filename
+                        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+                        $unique_name = uniqid('profile_', true) . '.' . $extension;
+                        $upload_path = __DIR__ . '/uploads/' . $unique_name;
+                        
+                        // Create uploads directory if it doesn't exist
+                        $upload_dir = __DIR__ . '/uploads/';
+                        if (!is_dir($upload_dir)) {
+                            mkdir($upload_dir, 0755, true);
+                        }
+                        
+                        // Get current profile image to delete old one
+                        $current_image = null;
+                        $get_current = mysqli_prepare($db, "SELECT profile_image FROM employees WHERE id = ?");
+                        mysqli_stmt_bind_param($get_current, 'i', $id);
+                        mysqli_stmt_execute($get_current);
+                        
+                        // NA-AYOS NA: Bind result muna bago mag-fetch
+                        mysqli_stmt_bind_result($get_current, $current_image);
+                        if (mysqli_stmt_fetch($get_current)) {
+                            // Successfully fetched the current image
+                        }
+                        mysqli_stmt_close($get_current);
+                        
+                        // Delete old profile image if exists
+                        if ($current_image && file_exists(__DIR__ . '/uploads/' . $current_image)) {
+                            unlink(__DIR__ . '/uploads/' . $current_image);
+                        }
+                        
+                        if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                            // Update database
+                            $update = mysqli_prepare($db, "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?");
+                            mysqli_stmt_bind_param($update, 'si', $unique_name, $id);
+                            if (mysqli_stmt_execute($update)) {
+                                $msg = 'Profile image updated successfully.';
+                            } else {
+                                // If database update fails, delete the uploaded file
+                                if (file_exists($upload_path)) {
+                                    unlink($upload_path);
+                                }
+                                $msg = 'Failed to update database.';
+                            }
+                            mysqli_stmt_close($update);
+                        } else {
+                            $msg = 'Failed to save file.';
+                        }
+                    } else {
+                        $msg = 'Invalid file. Only JPG, PNG, GIF, and WebP files up to 5MB are allowed.';
                     }
                 } else {
-                    $msg = 'Invalid file. Only JPG, PNG, GIF, and WebP files up to 5MB are allowed.';
+                    $msg = 'Invalid request.';
                 }
-            } else {
-                $msg = 'Invalid request.';
             }
         }
     }
@@ -279,28 +291,30 @@ if (isset($_GET['view'])) {
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $searchTerm = mysqli_real_escape_string($db, $search);
 
+$fromClause = "FROM employees e LEFT JOIN branches b ON b.id = e.branch_id";
+
 // Build search condition
 $searchCondition = '';
 if (!empty($search)) {
     $searchCondition = "WHERE (
-        CONCAT(first_name, ' ', last_name) LIKE '%$searchTerm%' OR
-        CONCAT(last_name, ', ', first_name) LIKE '%$searchTerm%' OR
-        employee_code LIKE '%$searchTerm%' OR
-        email LIKE '%$searchTerm%' OR
-        position LIKE '%$searchTerm%' OR
-        branch_name LIKE '%$searchTerm%'
+        CONCAT(e.first_name, ' ', e.last_name) LIKE '%$searchTerm%' OR
+        CONCAT(e.last_name, ', ', e.first_name) LIKE '%$searchTerm%' OR
+        e.employee_code LIKE '%$searchTerm%' OR
+        e.email LIKE '%$searchTerm%' OR
+        e.position LIKE '%$searchTerm%' OR
+        b.branch_name LIKE '%$searchTerm%'
     )";
 }
 
 // Get total count of employees (with search filter)
-$countQuery = "SELECT COUNT(*) as total FROM employees $searchCondition";
+$countQuery = "SELECT COUNT(*) as total $fromClause $searchCondition";
 $countResult = mysqli_query($db, $countQuery);
 $countRow = mysqli_fetch_assoc($countResult);
 $totalEmployees = $countRow['total'];
 $totalPages = ceil($totalEmployees / $perPage);
 
 // Get employees with pagination and search
-$query = "SELECT * FROM employees $searchCondition ORDER BY last_name, first_name LIMIT $perPage OFFSET $offset";
+$query = "SELECT e.*, b.branch_name AS branch_name $fromClause $searchCondition ORDER BY e.last_name, e.first_name LIMIT $perPage OFFSET $offset";
 $emps = mysqli_query($db, $query);
 
 // Helper function to build URLs with all parameters
@@ -1061,6 +1075,14 @@ function buildEmployeeUrl($params = []) {
         </div>
       <?php endif; ?>
 
+      <!-- Debug info - remove in production -->
+      <?php if (isset($_SESSION['user_role'])): ?>
+      <div style="display:none;">
+          User Role: <?php echo $_SESSION['user_role']; ?><br>
+          Is Super Admin: <?php echo $isSuperAdmin ? 'Yes' : 'No'; ?>
+      </div>
+      <?php endif; ?>
+
       <div class="top-actions">
         <div class="text-muted">Total Employees: <strong><?php echo $totalEmployees; ?></strong></div>
         <?php if ($isSuperAdmin): ?>
@@ -1190,12 +1212,14 @@ function buildEmployeeUrl($params = []) {
                   <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
                 </div>
                 <div class="employee-row-actions">
+                  <?php if ($isSuperAdmin): ?>
                   <button class="row-action-btn row-action-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')" title="Delete">
                     <i class="fa-solid fa-trash"></i>
                   </button>
                   <button class="row-action-btn row-action-edit" onclick="openEditModal(event, <?php echo $e['id']; ?>)" title="Edit">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
+                  <?php endif; ?>
                 </div>
               </div>
             <?php endif; ?>
@@ -1230,9 +1254,11 @@ function buildEmployeeUrl($params = []) {
       </div>
 
       <!-- Floating Add Button for mobile -->
+      <?php if ($isSuperAdmin): ?>
       <button class="fab" id="openAddMobile" title="Add employee" style="position: fixed; bottom: 2rem; right: 2rem; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; font-size: 1.5rem; cursor: pointer; z-index: 100;">
         <i class="fa-solid fa-plus"></i>
       </button>
+      <?php endif; ?>
 
     </div>
   </main>
