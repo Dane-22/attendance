@@ -372,6 +372,8 @@
       const escapeAttr = (s) => String(s ?? '').replace(/"/g, '&quot;');
       const escapeJsString = (s) => String(s ?? '').replace(/'/g, "\\'");
 
+      const showNotesColumn = currentStatusFilter === 'absent';
+
       let html = `
         <div class="employee-table-wrap">
           <table class="employee-table">
@@ -382,6 +384,7 @@
                 <th>Time In</th>
                 <th>Time Out</th>
                 <th>Total Hours</th>
+                ${showNotesColumn ? '<th>Notes</th>' : ''}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -398,6 +401,8 @@
         const hasOpenShift = !!employee.time_in && !employee.time_out;
 
         const menuId = `emp-menu-${employee.id}`;
+
+        const absentNotes = employee.absent_notes || '';
 
         html += `
           <tr id="employee-${employee.id}" data-shift-id="${employee.shift_id || ''}" data-has-open-shift="${hasOpenShift ? '1' : '0'}">
@@ -417,6 +422,11 @@
             <td class="mono time-in-cell">${escapeAttr(timeIn)}</td>
             <td class="mono time-out-cell">${escapeAttr(timeOut)}</td>
             <td class="mono">${escapeAttr(totalHours)}</td>
+            ${showNotesColumn ? `<td>
+              <button class="kebab-item" style="background: transparent; border: none; padding: 0; color: #FFD700; cursor: pointer; text-align: left;" onclick="showAbsentNotesModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(absentNotes)}')" title="Add/Edit notes">
+                ${escapeAttr(absentNotes || 'Add notes')}
+              </button>
+            </td>` : ''}
             <td>
               <div class="actions-cell">
                 <button class="${hasOpenShift ? 'btn-present-late' : 'btn-present'} btn-shift-toggle"
@@ -431,6 +441,9 @@
                   <div class="kebab-dropdown" id="${menuId}" style="display: none;">
                     <button class="kebab-item" onclick="openTimeLogsModal(${employee.id}, '${escapeJsString(name)}')">
                       <i class="fas fa-clock"></i> Time Logs Today
+                    </button>
+                    <button class="kebab-item" onclick="showOvertimeModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.total_ot_hrs || '')}')">
+                      <i class="fas fa-hourglass-half"></i> Overtime
                     </button>
                     <button class="kebab-item" onclick="showTransferDropdown(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.logged_branch)}')">
                       <i class="fas fa-exchange-alt"></i> Transfer
@@ -843,6 +856,181 @@
     transferEmployee(employeeId, employeeName, branchName);
   };
 }
+
+    function showAbsentNotesModal(employeeId, employeeName, currentNotes) {
+      let existing = document.getElementById('absentNotesModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'absentNotesModal';
+      modal.style.position = 'fixed';
+      modal.style.top = '0';
+      modal.style.left = '0';
+      modal.style.width = '100vw';
+      modal.style.height = '100vh';
+      modal.style.background = 'rgba(0,0,0,0.3)';
+      modal.style.display = 'flex';
+      modal.style.alignItems = 'center';
+      modal.style.justifyContent = 'center';
+      modal.style.zIndex = '2147483647';
+      modal.style.pointerEvents = 'auto';
+
+      const safeNotes = String(currentNotes ?? '');
+
+      modal.innerHTML = `
+        <div style="background: #222; padding: 24px 32px; border-radius: 12px; box-shadow: 0 2px 32px #000; min-width: 360px; max-width: 96vw;">
+          <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Absent Notes — ${escapeHtml(employeeName)}</h3>
+          <div style="margin-bottom: 16px;">
+            <label for="absentNotesText" style="color: #fff; font-size: 14px;">Notes:</label>
+            <textarea id="absentNotesText" style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px; min-height: 120px; resize: vertical;">${escapeHtml(safeNotes)}</textarea>
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button id="cancelAbsentNotesBtn" style="background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px;">Cancel</button>
+            <button id="saveAbsentNotesBtn" style="background: #FFD700; color: #222; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Save</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      const textarea = document.getElementById('absentNotesText');
+      if (textarea) {
+        setTimeout(() => textarea.focus(), 20);
+      }
+
+      document.getElementById('cancelAbsentNotesBtn').onclick = () => modal.remove();
+      document.getElementById('saveAbsentNotesBtn').onclick = async () => {
+        const notes = (document.getElementById('absentNotesText')?.value ?? '').trim();
+        await saveAbsentNotes(employeeId, notes);
+        modal.remove();
+      };
+    }
+
+    async function saveAbsentNotes(employeeId, notes) {
+      if (!selectedBranch) {
+        showError('Please select a branch first');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('action', 'save_absent_notes');
+      formData.append('employee_id', String(employeeId));
+      formData.append('branch', String(selectedBranch));
+      formData.append('notes', String(notes));
+
+      try {
+        const resp = await fetch('select_employee.php', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        });
+        const text = await resp.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (e) { data = null; }
+        if (!resp.ok || !data) throw new Error(data?.message || `Request failed (HTTP ${resp.status})`);
+        if (!data.success) throw new Error(data.message || 'Failed to save notes');
+
+        showSuccess('Absent notes saved');
+        reloadEmployees();
+      } catch (e) {
+        console.error(e);
+        showError(e.message || 'Failed to save notes');
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showOvertimeModal(employeeId, employeeName, currentOvertime) {
+      let existing = document.getElementById('overtimeModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'overtimeModal';
+      modal.style.position = 'fixed';
+      modal.style.top = '0';
+      modal.style.left = '0';
+      modal.style.width = '100vw';
+      modal.style.height = '100vh';
+      modal.style.background = 'rgba(0,0,0,0.3)';
+      modal.style.display = 'flex';
+      modal.style.alignItems = 'center';
+      modal.style.justifyContent = 'center';
+      modal.style.zIndex = '2147483647';
+      modal.style.pointerEvents = 'auto';
+
+      const safeValue = String(currentOvertime ?? '');
+
+      modal.innerHTML = `
+        <div style="background: #222; padding: 24px 32px; border-radius: 12px; box-shadow: 0 2px 32px #000; min-width: 360px; max-width: 96vw;">
+          <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Overtime — ${escapeHtml(employeeName)}</h3>
+          <div style="margin-bottom: 16px;">
+            <label for="overtimeInput" style="color: #fff; font-size: 14px;">Total overtime hours:</label>
+            <input id="overtimeInput" type="text" value="${escapeHtml(safeValue)}" style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px;" placeholder="e.g. 2 or 2.5" />
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button id="cancelOvertimeBtn" style="background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px;">Cancel</button>
+            <button id="saveOvertimeBtn" style="background: #FFD700; color: #222; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Save</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      const input = document.getElementById('overtimeInput');
+      if (input) {
+        setTimeout(() => input.focus(), 20);
+      }
+
+      document.getElementById('cancelOvertimeBtn').onclick = () => modal.remove();
+      document.getElementById('saveOvertimeBtn').onclick = async () => {
+        const totalOt = (document.getElementById('overtimeInput')?.value ?? '').trim();
+        await saveOvertime(employeeId, totalOt);
+        modal.remove();
+      };
+    }
+
+    async function saveOvertime(employeeId, totalOtHrs) {
+      if (!selectedBranch) {
+        showError('Please select a branch first');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('action', 'save_overtime');
+      formData.append('employee_id', String(employeeId));
+      formData.append('branch', String(selectedBranch));
+      formData.append('total_ot_hrs', String(totalOtHrs));
+
+      try {
+        const resp = await fetch('select_employee.php', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        });
+        const text = await resp.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch (e) { data = null; }
+        if (!resp.ok || !data) throw new Error(data?.message || `Request failed (HTTP ${resp.status})`);
+        if (!data.success) throw new Error(data.message || 'Failed to save overtime');
+
+        showSuccess('Overtime saved');
+        reloadEmployees();
+      } catch (e) {
+        console.error(e);
+        showError(e.message || 'Failed to save overtime');
+      }
+    }
 
     function transferEmployee(employeeId, employeeName, toBranch) {
       if (!toBranch) {

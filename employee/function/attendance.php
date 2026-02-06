@@ -395,8 +395,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $countParams = [$branch, (string)$selectedBranchId];
                 }
             } elseif ($statusFilter === 'absent') {
-                // Show ABSENT employees (Choice A): employees with NO attendance record today.
-                // (This is intentionally the same as Available / Not Marked.)
+                // Show ABSENT employees:
+                // - no attendance record today
+                // - OR latest attendance record today is Absent
                 $countQuery = "SELECT COUNT(*) as total
                               FROM employees e
                               LEFT JOIN (
@@ -409,7 +410,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                       GROUP BY employee_id
                                   ) t ON a1.id = t.max_id
                               ) a ON e.id = a.employee_id
-                              WHERE e.status = 'Active' AND e.branch_id = ? AND a.id IS NULL";
+                              WHERE e.status = 'Active'
+                                AND e.branch_id = ?
+                                AND (a.id IS NULL OR a.status = 'Absent')";
                 $countParams = [(string)$selectedBranchId];
             } elseif ($statusFilter === 'available') {
                 // Show AVAILABLE employees:
@@ -487,6 +490,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
+                            a.absent_notes,
+                            a.total_ot_hrs,
                             CASE 
                                 WHEN a.id IS NOT NULL THEN 1 
                                 ELSE 0 
@@ -522,6 +527,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
+                                a.absent_notes,
+                                a.total_ot_hrs,
                                 1 as has_attendance_today
                               FROM employees e
                               LEFT JOIN branches ob ON ob.id = e.branch_id
@@ -554,6 +561,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 a.branch_name as logged_branch,
                                 a.status as attendance_status,
                                 a.is_auto_absent,
+                                a.absent_notes,
+                                a.total_ot_hrs,
                                 1 as has_attendance_today
                               FROM employees e
                               LEFT JOIN branches ob ON ob.id = e.branch_id
@@ -576,8 +585,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $mainParams = [$branch, (string)$selectedBranchId];
                 }
             } elseif ($statusFilter === 'absent') {
-                // Show ABSENT employees (Choice A): employees with NO attendance record today.
-                // (This is intentionally the same as Available / Not Marked.)
+                // Show ABSENT employees:
+                // - no attendance record today
+                // - OR latest attendance record today is Absent
                 $query = "SELECT
                             e.id,
                             e.employee_code,
@@ -589,9 +599,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
-                            CASE 
-                                WHEN a.id IS NOT NULL THEN 1 
-                                ELSE 0 
+                            a.absent_notes,
+                            a.total_ot_hrs,
+                            CASE
+                                WHEN a.id IS NOT NULL THEN 1
+                                ELSE 0
                             END as has_attendance_today
                           FROM employees e
                           LEFT JOIN branches ob ON ob.id = e.branch_id
@@ -605,7 +617,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                   GROUP BY employee_id
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
-                          WHERE e.status = 'Active' AND e.branch_id = ? AND a.id IS NULL
+                          WHERE e.status = 'Active'
+                            AND e.branch_id = ?
+                            AND (a.id IS NULL OR a.status = 'Absent')
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
                 $mainParams = [(string)$selectedBranchId];
@@ -634,6 +648,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
+                            a.absent_notes,
+                            a.total_ot_hrs,
                             CASE 
                                 WHEN a.id IS NOT NULL THEN 1 
                                 ELSE 0 
@@ -656,7 +672,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
             } else {
-                // Show ALL employees with their attendance status - for pull method, show all
+                // Default: Show ALL employees with their attendance status
                 $query = "SELECT
                             e.id,
                             e.employee_code,
@@ -668,6 +684,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             a.branch_name as logged_branch,
                             a.status as attendance_status,
                             a.is_auto_absent,
+                            a.absent_notes,
+                            a.total_ot_hrs,
                             CASE 
                                 WHEN a.id IS NOT NULL THEN 1 
                                 ELSE 0 
@@ -685,9 +703,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                               ) t ON a1.id = t.max_id
                           ) a ON e.id = a.employee_id
                           WHERE e.status = 'Active'
+                            AND e.branch_id = ?
                           ORDER BY e.last_name, e.first_name
                           LIMIT $perPage OFFSET $offset";
-                $mainParams = [];
+                $mainParams = [(string)$selectedBranchId];
             }
             
             error_log("DEBUG: Main Query: $query");
@@ -806,6 +825,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'original_branch' => $row['original_branch'],
                     'logged_branch' => $row['logged_branch'] ?? $branch, // Use selected branch if null
                     'attendance_status' => $row['attendance_status'] ?? null,
+                    'absent_notes' => $row['absent_notes'] ?? null,
+                    'total_ot_hrs' => $row['total_ot_hrs'] ?? null,
                     'is_auto_absent' => (bool)($row['is_auto_absent'] ?? false),
                     'has_attendance_today' => (bool)($row['has_attendance_today'] ?? false),
                     'shift_id' => $shiftId,
@@ -918,6 +939,142 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to mark attendance: ' . mysqli_error($db)]);
         }
+        exit();
+    }
+
+    if ($_POST['action'] === 'save_absent_notes') {
+        $employeeId = isset($_POST['employee_id']) ? intval($_POST['employee_id']) : 0;
+        $branch = isset($_POST['branch']) ? trim($_POST['branch']) : '';
+        $notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';
+
+        if ($employeeId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Invalid employee']);
+            exit();
+        }
+
+        if ($branch === '') {
+            echo json_encode(['success' => false, 'message' => 'Branch is required']);
+            exit();
+        }
+
+        // Get latest attendance row today for employee (if any)
+        $checkSql = "SELECT id, status FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() ORDER BY id DESC LIMIT 1";
+        $checkStmt = mysqli_prepare($db, $checkSql);
+        if (!$checkStmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error']);
+            exit();
+        }
+        mysqli_stmt_bind_param($checkStmt, 'i', $employeeId);
+        mysqli_stmt_execute($checkStmt);
+        $checkRes = mysqli_stmt_get_result($checkStmt);
+        $existing = ($checkRes && mysqli_num_rows($checkRes) > 0) ? mysqli_fetch_assoc($checkRes) : null;
+        mysqli_stmt_close($checkStmt);
+
+        if (!$existing) {
+            // No record today: create one as Absent with notes
+            $insertSql = "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at)
+                          VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW())";
+            $insertStmt = mysqli_prepare($db, $insertSql);
+            if (!$insertStmt) {
+                echo json_encode(['success' => false, 'message' => 'Database error (prepare insert)']);
+                exit();
+            }
+            mysqli_stmt_bind_param($insertStmt, 'iss', $employeeId, $branch, $notes);
+            if (!mysqli_stmt_execute($insertStmt)) {
+                echo json_encode(['success' => false, 'message' => 'Failed to save notes']);
+                exit();
+            }
+            mysqli_stmt_close($insertStmt);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Absent notes saved',
+                'notes' => $notes
+            ]);
+            exit();
+        }
+
+        $attendanceId = intval($existing['id']);
+        $status = $existing['status'] ?? '';
+        if ($status !== 'Absent') {
+            echo json_encode(['success' => false, 'message' => 'Cannot add notes: employee is not Absent today']);
+            exit();
+        }
+
+        $updateSql = "UPDATE attendance SET absent_notes = ?, updated_at = NOW() WHERE id = ?";
+        $updateStmt = mysqli_prepare($db, $updateSql);
+        if (!$updateStmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error (prepare update)']);
+            exit();
+        }
+        mysqli_stmt_bind_param($updateStmt, 'si', $notes, $attendanceId);
+        if (!mysqli_stmt_execute($updateStmt)) {
+            echo json_encode(['success' => false, 'message' => 'Failed to save notes']);
+            exit();
+        }
+        mysqli_stmt_close($updateStmt);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Absent notes saved',
+            'notes' => $notes
+        ]);
+        exit();
+    }
+
+    if ($_POST['action'] === 'save_overtime') {
+        $employeeId = isset($_POST['employee_id']) ? intval($_POST['employee_id']) : 0;
+        $branch = isset($_POST['branch']) ? trim($_POST['branch']) : '';
+        $totalOtHrs = isset($_POST['total_ot_hrs']) ? trim($_POST['total_ot_hrs']) : '';
+
+        if ($employeeId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Invalid employee']);
+            exit();
+        }
+
+        if ($branch === '') {
+            echo json_encode(['success' => false, 'message' => 'Branch is required']);
+            exit();
+        }
+
+        // Overtime is stored on today's latest attendance record.
+        $checkSql = "SELECT id FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() ORDER BY id DESC LIMIT 1";
+        $checkStmt = mysqli_prepare($db, $checkSql);
+        if (!$checkStmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error']);
+            exit();
+        }
+        mysqli_stmt_bind_param($checkStmt, 'i', $employeeId);
+        mysqli_stmt_execute($checkStmt);
+        $checkRes = mysqli_stmt_get_result($checkStmt);
+        $existing = ($checkRes && mysqli_num_rows($checkRes) > 0) ? mysqli_fetch_assoc($checkRes) : null;
+        mysqli_stmt_close($checkStmt);
+
+        if (!$existing) {
+            echo json_encode(['success' => false, 'message' => 'No attendance record for today. Please mark attendance first.']);
+            exit();
+        }
+
+        $attendanceId = intval($existing['id']);
+
+        $updateSql = "UPDATE attendance SET total_ot_hrs = ?, updated_at = NOW() WHERE id = ?";
+        $updateStmt = mysqli_prepare($db, $updateSql);
+        if (!$updateStmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error (prepare update)']);
+            exit();
+        }
+        mysqli_stmt_bind_param($updateStmt, 'si', $totalOtHrs, $attendanceId);
+        if (!mysqli_stmt_execute($updateStmt)) {
+            echo json_encode(['success' => false, 'message' => 'Failed to save overtime']);
+            exit();
+        }
+        mysqli_stmt_close($updateStmt);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Overtime saved',
+            'total_ot_hrs' => $totalOtHrs
+        ]);
         exit();
     }
 
