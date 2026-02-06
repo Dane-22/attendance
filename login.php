@@ -102,30 +102,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hasRunningCol = intval($col_row['cnt'] ?? 0) === 1;
                 }
                 
-                // 5. INSERT OR UPDATE ATTENDANCE WITH DAILY BRANCH
-                if (mysqli_stmt_num_rows($check_stmt) == 0) {
-                    // FIRST TIME LOGIN TODAY - INSERT NEW
-                    $att_sql = $hasRunningCol
-                        ? "INSERT INTO attendance 
-                               (employee_id, branch_name, attendance_date, status, created_at, is_time_running) 
-                               VALUES (?, ?, CURDATE(), 'Present', NOW(), 0)"
-                        : "INSERT INTO attendance 
-                               (employee_id, branch_name, attendance_date, status, created_at) 
-                               VALUES (?, ?, CURDATE(), 'Present', NOW())";
-                    $att_stmt = mysqli_prepare($db, $att_sql);
-                    mysqli_stmt_bind_param($att_stmt, "is", $user['id'], $daily_branch);
-                } else {
-                    // MAY ATTENDANCE NA - UPDATE BRANCH
-                    $att_sql = $hasRunningCol
-                        ? "UPDATE attendance 
-                               SET branch_name = ?, updated_at = NOW(), is_time_running = 0 
-                               WHERE employee_id = ? AND attendance_date = CURDATE()"
-                        : "UPDATE attendance 
-                               SET branch_name = ?, updated_at = NOW() 
-                               WHERE employee_id = ? AND attendance_date = CURDATE()";
-                    $att_stmt = mysqli_prepare($db, $att_sql);
-                    mysqli_stmt_bind_param($att_stmt, "si", $daily_branch, $user['id']);
-                }
+// 5. INSERT OR UPDATE ATTENDANCE WITH DAILY BRANCH
+if (mysqli_stmt_num_rows($check_stmt) == 0) {
+    // FIRST TIME LOGIN TODAY - INSERT NEW
+    // Check for both columns
+    $checkOvertimeCol = false;
+    $col_sql2 = "SELECT COUNT(*) as cnt
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'attendance'
+                  AND COLUMN_NAME = 'is_overtime_running'";
+    if ($col_res2 = mysqli_query($db, $col_sql2)) {
+        $col_row2 = mysqli_fetch_assoc($col_res2);
+        $checkOvertimeCol = intval($col_row2['cnt'] ?? 0) === 1;
+    }
+    
+    if ($hasRunningCol && $checkOvertimeCol) {
+        $att_sql = "INSERT INTO attendance 
+                    (employee_id, branch_name, attendance_date, status, created_at, is_time_running, is_overtime_running) 
+                    VALUES (?, ?, CURDATE(), 'Present', NOW(), 0, 0)";
+    } elseif ($hasRunningCol) {
+        $att_sql = "INSERT INTO attendance 
+                    (employee_id, branch_name, attendance_date, status, created_at, is_time_running) 
+                    VALUES (?, ?, CURDATE(), 'Present', NOW(), 0)";
+    } else {
+        $att_sql = "INSERT INTO attendance 
+                    (employee_id, branch_name, attendance_date, status, created_at) 
+                    VALUES (?, ?, CURDATE(), 'Present', NOW())";
+    }
+    
+    $att_stmt = mysqli_prepare($db, $att_sql);
+    mysqli_stmt_bind_param($att_stmt, "is", $user['id'], $daily_branch);
+} else {
+    // MAY ATTENDANCE NA - UPDATE BRANCH
+    $att_sql = $hasRunningCol
+        ? "UPDATE attendance 
+               SET branch_name = ?, updated_at = NOW(), is_time_running = 0 
+               WHERE employee_id = ? AND attendance_date = CURDATE()"
+        : "UPDATE attendance 
+               SET branch_name = ?, updated_at = NOW() 
+               WHERE employee_id = ? AND attendance_date = CURDATE()";
+    $att_stmt = mysqli_prepare($db, $att_sql);
+    mysqli_stmt_bind_param($att_stmt, "si", $daily_branch, $user['id']);
+}
                 
                 mysqli_stmt_execute($att_stmt);
                 mysqli_stmt_close($check_stmt);
