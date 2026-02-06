@@ -57,9 +57,8 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Settings -->
-  <?php if ($isAdmin): ?>
-    <a href="settings.php" class="menu-item" data-target="settings.php"><span class="icon">⚙️</span><span class="label">Settings</span></a>
-  <?php endif; ?>
+   <!-- ALL USERS: Settings (Visible to Everyone) -->
+  <a href="settings.php" class="menu-item <?= $current === 'settings.php' ? 'active' : '' ?>" data-target="settings.php"><span class="icon">⚙️</span><span class="label">Settings</span></a>
 
 
   <div style="flex:1"></div>

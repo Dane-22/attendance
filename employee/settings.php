@@ -19,21 +19,18 @@ $position = $_SESSION['position'] ?? 'Employee';
 $employeeId = $_SESSION['id'] ?? 0;
 
 // Check user role/type for system tools access
-// Adjust this based on your actual session variable for role
 $user_role = $_SESSION['user_type'] ?? $_SESSION['role'] ?? $_SESSION['position'] ?? 'Employee';
 
 // Define which roles can access system tools
 $allowed_roles_for_system_tools = ['Super Admin', 'Admin', 'Administrator'];
 $can_access_system_tools = in_array($user_role, $allowed_roles_for_system_tools);
 
-// DEBUG: Check user role
-error_log("User Role: " . $user_role);
-error_log("Can access system tools: " . ($can_access_system_tools ? 'Yes' : 'No'));
-
 // DEBUG: Check session variables
 error_log("Session ID: " . $employeeId);
 error_log("Session First Name: " . $_SESSION['first_name']);
 error_log("Session Last Name: " . $_SESSION['last_name']);
+error_log("User Role: " . $user_role);
+error_log("Can access system tools: " . ($can_access_system_tools ? 'Yes' : 'No'));
 
 // Initialize messages
 $success_message = '';
@@ -230,95 +227,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image'])) {
 
 // ============ DATABASE BACKUP FUNCTION (CORRECTED) ============
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
-    // Create backup directory if it doesn't exist
-    $backup_dir = '../backups/';
-    if (!file_exists($backup_dir)) {
-        if (!mkdir($backup_dir, 0755, true)) {
-            $error_message = "Failed to create backup directory. Please check permissions.";
-            error_log("Backup Error: Cannot create directory $backup_dir");
-        }
-    }
-    
-    // Check if directory is writable
-    if (!is_writable($backup_dir)) {
-        $error_message = "Backup directory is not writable. Please check permissions.";
-        error_log("Backup Error: Directory $backup_dir is not writable");
+    // Check if user has permission to backup database
+    if (!$can_access_system_tools) {
+        $error_message = "You don't have permission to perform this action!";
+        error_log("Unauthorized backup attempt by user ID: $employeeId, Role: $user_role");
     } else {
-        // Generate filename with timestamp
-        $backup_file = $backup_dir . 'attendance_db_backup_' . date('Y-m-d_H-i-s') . '.sql';
-        $handle = fopen($backup_file, 'w');
+        // Create backup directory if it doesn't exist
+        $backup_dir = '../backups/';
+        if (!file_exists($backup_dir)) {
+            if (!mkdir($backup_dir, 0755, true)) {
+                $error_message = "Failed to create backup directory. Please check permissions.";
+                error_log("Backup Error: Cannot create directory $backup_dir");
+            }
+        }
         
-        if ($handle) {
-            // Write SQL header
-            fwrite($handle, "-- Database Backup\n");
-            fwrite($handle, "-- Generated: " . date('Y-m-d H:i:s') . "\n");
-            fwrite($handle, "-- Database: attendance_db\n\n");
-            fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n\n");
+        // Check if directory is writable
+        if (!is_writable($backup_dir)) {
+            $error_message = "Backup directory is not writable. Please check permissions.";
+            error_log("Backup Error: Directory $backup_dir is not writable");
+        } else {
+            // Generate filename with timestamp
+            $backup_file = $backup_dir . 'attendance_db_backup_' . date('Y-m-d_H-i-s') . '.sql';
+            $handle = fopen($backup_file, 'w');
             
-            // Get all tables
-            $tables_query = "SHOW TABLES";
-            $tables_result = mysqli_query($db, $tables_query);
-            
-            if ($tables_result) {
-                while ($table_row = mysqli_fetch_array($tables_result)) {
-                    $table = $table_row[0];
-                    
-                    // Get create table statement
-                    $create_result = mysqli_query($db, "SHOW CREATE TABLE `$table`");
-                    if ($create_result) {
-                        $create_row = mysqli_fetch_array($create_result);
-                        fwrite($handle, "DROP TABLE IF EXISTS `$table`;\n");
-                        fwrite($handle, $create_row[1] . ";\n\n");
+            if ($handle) {
+                // Write SQL header
+                fwrite($handle, "-- Database Backup\n");
+                fwrite($handle, "-- Generated: " . date('Y-m-d H:i:s') . "\n");
+                fwrite($handle, "-- Database: attendance_db\n\n");
+                fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n\n");
+                
+                // Get all tables
+                $tables_query = "SHOW TABLES";
+                $tables_result = mysqli_query($db, $tables_query);
+                
+                if ($tables_result) {
+                    while ($table_row = mysqli_fetch_array($tables_result)) {
+                        $table = $table_row[0];
                         
-                        // Get table data
-                        $data_result = mysqli_query($db, "SELECT * FROM `$table`");
-                        if ($data_result && mysqli_num_rows($data_result) > 0) {
-                            fwrite($handle, "-- Data for table `$table`\n");
+                        // Get create table statement
+                        $create_result = mysqli_query($db, "SHOW CREATE TABLE `$table`");
+                        if ($create_result) {
+                            $create_row = mysqli_fetch_array($create_result);
+                            fwrite($handle, "DROP TABLE IF EXISTS `$table`;\n");
+                            fwrite($handle, $create_row[1] . ";\n\n");
                             
-                            while ($data_row = mysqli_fetch_assoc($data_result)) {
-                                $columns = implode("`, `", array_keys($data_row));
-                                $values = array_map(function($value) use ($db) {
-                                    if (is_null($value)) return 'NULL';
-                                    return "'" . mysqli_real_escape_string($db, $value) . "'";
-                                }, array_values($data_row));
+                            // Get table data
+                            $data_result = mysqli_query($db, "SELECT * FROM `$table`");
+                            if ($data_result && mysqli_num_rows($data_result) > 0) {
+                                fwrite($handle, "-- Data for table `$table`\n");
                                 
-                                fwrite($handle, "INSERT INTO `$table` (`$columns`) VALUES (" . implode(', ', $values) . ");\n");
+                                while ($data_row = mysqli_fetch_assoc($data_result)) {
+                                    $columns = implode("`, `", array_keys($data_row));
+                                    $values = array_map(function($value) use ($db) {
+                                        if (is_null($value)) return 'NULL';
+                                        return "'" . mysqli_real_escape_string($db, $value) . "'";
+                                    }, array_values($data_row));
+                                    
+                                    fwrite($handle, "INSERT INTO `$table` (`$columns`) VALUES (" . implode(', ', $values) . ");\n");
+                                }
+                                fwrite($handle, "\n");
                             }
-                            fwrite($handle, "\n");
                         }
                     }
-                }
-                
-                fwrite($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
-                fclose($handle);
-                
-                // Check if file was created successfully
-                if (file_exists($backup_file) && filesize($backup_file) > 0) {
-                    // Set headers for download
-                    header('Content-Type: application/octet-stream');
-                    header('Content-Disposition: attachment; filename="' . basename($backup_file) . '"');
-                    header('Content-Length: ' . filesize($backup_file));
-                    header('Content-Transfer-Encoding: binary');
-                    header('Cache-Control: must-revalidate');
-                    header('Pragma: public');
                     
-                    // Clear any previous output
-                    ob_clean();
-                    flush();
+                    fwrite($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
+                    fclose($handle);
                     
-                    readfile($backup_file);
-                    
-                    // Clean up
-                    unlink($backup_file);
-                    exit();
+                    // Check if file was created successfully
+                    if (file_exists($backup_file) && filesize($backup_file) > 0) {
+                        // Set headers for download
+                        header('Content-Type: application/octet-stream');
+                        header('Content-Disposition: attachment; filename="' . basename($backup_file) . '"');
+                        header('Content-Length: ' . filesize($backup_file));
+                        header('Content-Transfer-Encoding: binary');
+                        header('Cache-Control: must-revalidate');
+                        header('Pragma: public');
+                        
+                        // Clear any previous output
+                        ob_clean();
+                        flush();
+                        
+                        readfile($backup_file);
+                        
+                        // Clean up
+                        unlink($backup_file);
+                        exit();
+                    } else {
+                        $error_message = "Backup file was created but appears to be empty.";
+                    }
                 } else {
-                    $error_message = "Backup file was created but appears to be empty.";
+                    $error_message = "Failed to retrieve database tables.";
                 }
             } else {
-                $error_message = "Failed to retrieve database tables.";
+                $error_message = "Cannot create backup file. Check directory permissions.";
             }
-        } else {
-            $error_message = "Cannot create backup file. Check directory permissions.";
         }
     }
 }
@@ -494,6 +497,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
         background: rgba(212, 175, 55, 0.1);
         color: var(--accent-gold);
         border-left-color: var(--accent-gold);
+    }
+    
+    .tab-link.admin-only {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(255, 140, 66, 0.1));
+        border-left: 3px solid var(--accent-orange);
+    }
+    
+    .tab-link.admin-only .tab-icon {
+        color: var(--accent-orange);
     }
     
     .tab-icon {
@@ -859,7 +871,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
         Middle Name: <?php echo htmlspecialchars($userData['middle_name'] ?? 'Not found'); ?><br>
         Last Name: <?php echo htmlspecialchars($userData['last_name'] ?? 'Not found'); ?><br>
         Email: <?php echo htmlspecialchars($userData['email'] ?? 'Not found'); ?><br>
-        Position: <?php echo htmlspecialchars($userData['position'] ?? 'Not found'); ?>
+        Position: <?php echo htmlspecialchars($userData['position'] ?? 'Not found'); ?><br>
+        User Role: <?php echo htmlspecialchars($user_role); ?><br>
+        Can Access System Tools: <?php echo $can_access_system_tools ? 'Yes' : 'No'; ?>
       </div>
 
       <!-- Messages -->
@@ -895,23 +909,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
       <!-- Settings Container -->
       <div class="settings-container">
         <!-- Vertical Tabs -->
-<div class="settings-tabs">
-  <a href="#profile" class="tab-link active" onclick="switchTab('profile', event)">
-    <i class="fas fa-user-circle tab-icon"></i>
-    <span>Profile</span>
-  </a>
-  <a href="#security" class="tab-link" onclick="switchTab('security', event)">
-    <i class="fas fa-shield-alt tab-icon"></i>
-    <span>Security</span>
-  </a>
-  
-  <?php if ($can_access_system_tools): ?>
-  <a href="#system" class="tab-link" onclick="switchTab('system', event)">
-    <i class="fas fa-cogs tab-icon"></i>
-    <span>System Tools</span>
-  </a>
-  <?php endif; ?>
-</div>
+        <div class="settings-tabs">
+          <a href="#profile" class="tab-link active" onclick="switchTab('profile', event)">
+            <i class="fas fa-user-circle tab-icon"></i>
+            <span>Profile</span>
+          </a>
+          <a href="#security" class="tab-link" onclick="switchTab('security', event)">
+            <i class="fas fa-shield-alt tab-icon"></i>
+            <span>Security</span>
+          </a>
+          
+          <?php if ($can_access_system_tools): ?>
+          <a href="#system" class="tab-link admin-only" onclick="switchTab('system', event)">
+            <i class="fas fa-cogs tab-icon"></i>
+            <span>System Tools</span>
+            <span style="font-size: 10px; margin-left: 8px; color: var(--accent-orange);">(Admin)</span>
+          </a>
+          <?php endif; ?>
+        </div>
 
         <!-- Settings Content -->
         <div class="settings-content">
@@ -1075,78 +1090,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
             </div>
           </div>
 
-          <!-- System Tools Tab -->
-              <?php if ($can_access_system_tools): ?>
-              <div id="system-tab" class="tab-pane">
-                <div class="section-title">System Tools</div>
-                <div class="section-subtitle">Database maintenance and system utilities</div>
-
-              <div class="system-tools">
-                  <!-- Database Backup -->
-                  <div class="tool-card">
-                    <div class="tool-icon">
-                      <i class="fas fa-database"></i>
-                    </div>
-                    <div class="tool-content">
-                      <div class="tool-title">Database Backup</div>
-                      <div class="tool-description">
-                        Generate and download a complete backup of the attendance database.
-                        This includes all employee records and attendance data.
-                      </div>
-                    </div>
-                    <form method="POST" action="">
-                      <input type="hidden" name="backup_database" value="1">
-                      <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to generate a database backup?')">
-                        <i class="fas fa-download"></i> Generate Backup
-                      </button>
-                    </form>
+          <!-- System Tools Tab (Admin Only) -->
+          <?php if ($can_access_system_tools): ?>
+          <div id="system-tab" class="tab-pane">
+            <div class="section-title">System Tools (Admin Only)</div>
+            <div class="section-subtitle">Database maintenance and system utilities</div>
+            
+            <div class="system-tools">
+              <!-- Database Backup -->
+              <div class="tool-card">
+                <div class="tool-icon">
+                  <i class="fas fa-database"></i>
+                </div>
+                <div class="tool-content">
+                  <div class="tool-title">Database Backup</div>
+                  <div class="tool-description">
+                    Generate and download a complete backup of the attendance database.
+                    This includes all employee records and attendance data.
                   </div>
+                </div>
+                <form method="POST" action="">
+                  <input type="hidden" name="backup_database" value="1">
+                  <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to generate a database backup?')">
+                    <i class="fas fa-download"></i> Generate Backup
+                  </button>
+                </form>
+              </div>
               
               <!-- System Info -->
               <div class="tool-card">
-                  <div class="tool-icon">
-                    <i class="fas fa-info-circle"></i>
-                  </div>
-                  <div class="tool-content">
-                    <div class="tool-title">System Information</div>
-                    <div class="tool-description">
-                      <div style="margin-bottom: 4px;">
-                        <strong>PHP Version:</strong> <?php echo phpversion(); ?>
-                      </div>
-                      <div style="margin-bottom: 4px;">
-                        <strong>MySQL Version:</strong> 
-                        <?php   
-                        $version = mysqli_get_server_info($db);
-                        echo $version ?: 'Unknown';
-                        ?>
-                      </div>
-                      <div>
-                        <strong>Server Time:</strong> <?php echo date('Y-m-d H:i:s'); ?>
-                      </div>
+                <div class="tool-icon">
+                  <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="tool-content">
+                  <div class="tool-title">System Information</div>
+                  <div class="tool-description">
+                    <div style="margin-bottom: 4px;">
+                      <strong>PHP Version:</strong> <?php echo phpversion(); ?>
+                    </div>
+                    <div style="margin-bottom: 4px;">
+                      <strong>MySQL Version:</strong> 
+                      <?php   
+                      $version = mysqli_get_server_info($db);
+                      echo $version ?: 'Unknown';
+                      ?>
+                    </div>
+                    <div>
+                      <strong>Server Time:</strong> <?php echo date('Y-m-d H:i:s'); ?>
+                    </div>
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-dark);">
+                      <strong>Current User Role:</strong> <?php echo htmlspecialchars($user_role); ?>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <?php endif; ?>
-              
-              <!-- Logs -->
-              <!-- <div class="tool-card">
-                <div class="tool-icon">
-                  <i class="fas fa-history"></i>
-                </div>
-                <div class="tool-content">
-                  <div class="tool-title">Activity Logs</div>       
-                  <div class="tool-description">
-                    View system activity and audit logs. (Coming Soon)
-                  </div>
-                </div>
-                <button class="btn btn-primary" disabled>
-                  <i class="fas fa-eye"></i> View Logs
-                </button>
-              </div>
-            </div> -->
           </div>
+          <?php endif; ?>
         </div>
       </div>
     </main>
@@ -1166,7 +1166,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
       });
       
       // Show selected tab
-      document.getElementById(tabName + '-tab').classList.add('active');
+      const targetTab = document.getElementById(tabName + '-tab');
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
       
       // Activate tab button
       event.currentTarget.classList.add('active');
@@ -1274,9 +1277,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
       }
     }
 
-    // Initialize password strength on load
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
+      // Initialize password strength
       checkPasswordStrength();
+      
+      // Set first tab as active
+      const firstTabLink = document.querySelector('.tab-link');
+      if (firstTabLink) {
+        const firstTabId = firstTabLink.getAttribute('href').substring(1);
+        const firstTab = document.getElementById(firstTabId + '-tab');
+        if (firstTab) {
+          firstTab.classList.add('active');
+        }
+      }
       
       // Auto-close messages after 5 seconds
       setTimeout(() => {
@@ -1308,10 +1322,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
           }
         });
       }
-      
-      // Initialize tabs - make sure profile tab is active by default
-      document.querySelectorAll('.tab-link')[0].classList.add('active');
-      document.getElementById('profile-tab').classList.add('active');
     });
   </script>
 </body>
