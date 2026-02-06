@@ -18,6 +18,18 @@ $employeeCode = $_SESSION['employee_code'];
 $position = $_SESSION['position'] ?? 'Employee';
 $employeeId = $_SESSION['id'] ?? 0;
 
+// Check user role/type for system tools access
+// Adjust this based on your actual session variable for role
+$user_role = $_SESSION['user_type'] ?? $_SESSION['role'] ?? $_SESSION['position'] ?? 'Employee';
+
+// Define which roles can access system tools
+$allowed_roles_for_system_tools = ['Super Admin', 'Admin', 'Administrator'];
+$can_access_system_tools = in_array($user_role, $allowed_roles_for_system_tools);
+
+// DEBUG: Check user role
+error_log("User Role: " . $user_role);
+error_log("Can access system tools: " . ($can_access_system_tools ? 'Yes' : 'No'));
+
 // DEBUG: Check session variables
 error_log("Session ID: " . $employeeId);
 error_log("Session First Name: " . $_SESSION['first_name']);
@@ -883,20 +895,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
       <!-- Settings Container -->
       <div class="settings-container">
         <!-- Vertical Tabs -->
-        <div class="settings-tabs">
-          <a href="#profile" class="tab-link active" onclick="switchTab('profile', event)">
-            <i class="fas fa-user-circle tab-icon"></i>
-            <span>Profile</span>
-          </a>
-          <a href="#security" class="tab-link" onclick="switchTab('security', event)">
-            <i class="fas fa-shield-alt tab-icon"></i>
-            <span>Security</span>
-          </a>
-          <a href="#system" class="tab-link" onclick="switchTab('system', event)">
-            <i class="fas fa-cogs tab-icon"></i>
-            <span>System Tools</span>
-          </a>
-        </div>
+<div class="settings-tabs">
+  <a href="#profile" class="tab-link active" onclick="switchTab('profile', event)">
+    <i class="fas fa-user-circle tab-icon"></i>
+    <span>Profile</span>
+  </a>
+  <a href="#security" class="tab-link" onclick="switchTab('security', event)">
+    <i class="fas fa-shield-alt tab-icon"></i>
+    <span>Security</span>
+  </a>
+  
+  <?php if ($can_access_system_tools): ?>
+  <a href="#system" class="tab-link" onclick="switchTab('system', event)">
+    <i class="fas fa-cogs tab-icon"></i>
+    <span>System Tools</span>
+  </a>
+  <?php endif; ?>
+</div>
 
         <!-- Settings Content -->
         <div class="settings-content">
@@ -1061,55 +1076,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
           </div>
 
           <!-- System Tools Tab -->
-          <div id="system-tab" class="tab-pane">
-            <div class="section-title">System Tools</div>
-            <div class="section-subtitle">Database maintenance and system utilities</div>
-            
-            <div class="system-tools">
-              <!-- Database Backup -->
-              <div class="tool-card">
-                <div class="tool-icon">
-                  <i class="fas fa-database"></i>
-                </div>
-                <div class="tool-content">
-                  <div class="tool-title">Database Backup</div>
-                  <div class="tool-description">
-                    Generate and download a complete backup of the attendance database.
-                    This includes all employee records and attendance data.
+              <?php if ($can_access_system_tools): ?>
+              <div id="system-tab" class="tab-pane">
+                <div class="section-title">System Tools</div>
+                <div class="section-subtitle">Database maintenance and system utilities</div>
+
+              <div class="system-tools">
+                  <!-- Database Backup -->
+                  <div class="tool-card">
+                    <div class="tool-icon">
+                      <i class="fas fa-database"></i>
+                    </div>
+                    <div class="tool-content">
+                      <div class="tool-title">Database Backup</div>
+                      <div class="tool-description">
+                        Generate and download a complete backup of the attendance database.
+                        This includes all employee records and attendance data.
+                      </div>
+                    </div>
+                    <form method="POST" action="">
+                      <input type="hidden" name="backup_database" value="1">
+                      <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to generate a database backup?')">
+                        <i class="fas fa-download"></i> Generate Backup
+                      </button>
+                    </form>
                   </div>
-                </div>
-                <form method="POST" action="">
-                  <input type="hidden" name="backup_database" value="1">
-                  <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to generate a database backup?')">
-                    <i class="fas fa-download"></i> Generate Backup
-                  </button>
-                </form>
-              </div>
               
               <!-- System Info -->
               <div class="tool-card">
-                <div class="tool-icon">
-                  <i class="fas fa-info-circle"></i>
-                </div>
-                <div class="tool-content">
-                  <div class="tool-title">System Information</div>
-                  <div class="tool-description">
-                    <div style="margin-bottom: 4px;">
-                      <strong>PHP Version:</strong> <?php echo phpversion(); ?>
-                    </div>
-                    <div style="margin-bottom: 4px;">
-                      <strong>MySQL Version:</strong> 
-                      <?php   
-                      $version = mysqli_get_server_info($db);
-                      echo $version ?: 'Unknown';
-                      ?>
-                    </div>
-                    <div>
-                      <strong>Server Time:</strong> <?php echo date('Y-m-d H:i:s'); ?>
+                  <div class="tool-icon">
+                    <i class="fas fa-info-circle"></i>
+                  </div>
+                  <div class="tool-content">
+                    <div class="tool-title">System Information</div>
+                    <div class="tool-description">
+                      <div style="margin-bottom: 4px;">
+                        <strong>PHP Version:</strong> <?php echo phpversion(); ?>
+                      </div>
+                      <div style="margin-bottom: 4px;">
+                        <strong>MySQL Version:</strong> 
+                        <?php   
+                        $version = mysqli_get_server_info($db);
+                        echo $version ?: 'Unknown';
+                        ?>
+                      </div>
+                      <div>
+                        <strong>Server Time:</strong> <?php echo date('Y-m-d H:i:s'); ?>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+            <?php endif; ?>
               
               <!-- Logs -->
               <!-- <div class="tool-card">
