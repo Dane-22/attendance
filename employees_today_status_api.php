@@ -73,6 +73,7 @@ $sql = "SELECT
             ) t ON a1.id = t.max_id
         ) a ON e.id = a.employee_id
         WHERE e.status = 'Active'
+          AND e.position = 'Worker'
         ORDER BY e.employee_code";
 
 $stmt = mysqli_prepare($db, $sql);
