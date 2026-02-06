@@ -1030,21 +1030,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         if (!$existing) {
             // No record today: create one as Absent with notes
+            $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
             $hasOvertimeRunningCol = attendanceHasIsOvertimeRunningColumn($db);
             $hasTotalOtHrsCol = attendanceHasTotalOtHrsColumn($db);
 
-            if ($hasOvertimeRunningCol) {
-                $insertSql = $hasTotalOtHrsCol
-                    ? "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_overtime_running, total_ot_hrs)
+            if ($hasRunningCol) {
+                if ($hasOvertimeRunningCol) {
+                    $insertSql = $hasTotalOtHrsCol
+                        ? "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_time_running, is_overtime_running, total_ot_hrs)
+                          VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW(), 0, 0, 0)"
+                        : "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_time_running, is_overtime_running)
+                          VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW(), 0, 0)";
+                } else {
+                    $insertSql = $hasTotalOtHrsCol
+                        ? "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_time_running, total_ot_hrs)
                           VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW(), 0, 0)"
-                    : "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_overtime_running)
+                        : "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_time_running)
                           VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW(), 0)";
+                }
             } else {
-                $insertSql = $hasTotalOtHrsCol
-                    ? "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, total_ot_hrs)
+                if ($hasOvertimeRunningCol) {
+                    $insertSql = $hasTotalOtHrsCol
+                        ? "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_overtime_running, total_ot_hrs)
+                          VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW(), 0, 0)"
+                        : "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, is_overtime_running)
+                          VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW(), 0)";
+                } else {
+                    $insertSql = $hasTotalOtHrsCol
+                        ? "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at, total_ot_hrs)
                           VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW(), 0)"
-                    : "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at)
+                        : "INSERT INTO attendance (employee_id, status, attendance_date, branch_name, is_auto_absent, absent_notes, created_at)
                           VALUES (?, 'Absent', CURDATE(), ?, 0, ?, NOW())";
+                }
             }
             $insertStmt = mysqli_prepare($db, $insertSql);
             if (!$insertStmt) {
