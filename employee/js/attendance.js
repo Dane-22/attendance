@@ -432,7 +432,7 @@
                     <button class="kebab-item" onclick="openTimeLogsModal(${employee.id}, '${escapeJsString(name)}')">
                       <i class="fas fa-clock"></i> Time Logs Today
                     </button>
-                    <button class="kebab-item" onclick="transferEmployee(${employee.id}, '${escapeJsString(name)}')">
+                    <button class="kebab-item" onclick="showTransferDropdown(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.logged_branch)}')">
                       <i class="fas fa-exchange-alt"></i> Transfer
                     </button>
                     <button class="kebab-item" onclick="undoLastAction(${employee.id}, '${escapeJsString(name)}')">
@@ -782,9 +782,71 @@
       });
     }
 
-    function transferEmployee(employeeId, employeeName) {
-      if (!selectedBranch) {
-        showError('Please select a branch first');
+    function showTransferDropdown(employeeId, employeeName, currentBranch) {
+  // Remove any existing dropdown/modal
+  let existing = document.getElementById('transferModal');
+  if (existing) existing.remove();
+
+  // Assume branches are available globally via window.allBranches or fetch them via AJAX if needed
+  let branches = window.allBranches || [];
+  if (!branches.length) {
+    // Try to get from DOM if not set (PHP can render a JS array)
+    if (window.branchesFromPHP) branches = window.branchesFromPHP;
+  }
+  // Filter out current branch
+  const options = branches.filter(b => b.branch_name !== currentBranch);
+  if (!options.length) {
+    showError('No other branches available for transfer');
+    return;
+  }
+
+  // Build modal
+  const modal = document.createElement('div');
+  modal.id = 'transferModal';
+  modal.style.position = 'fixed';
+  modal.style.top = '0';
+  modal.style.left = '0';
+  modal.style.width = '100vw';
+  modal.style.height = '100vh';
+  modal.style.background = 'rgba(0,0,0,0.3)';
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+  modal.style.zIndex = '2147483647';
+  modal.style.pointerEvents = 'auto';
+
+  modal.innerHTML = `
+    <div style="background: #222; padding: 24px 32px; border-radius: 12px; box-shadow: 0 2px 32px #000; min-width: 320px; max-width: 96vw;">
+      <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Transfer ${employeeName}</h3>
+      <div style="margin-bottom: 16px;">
+        <label for="transferBranchSelect" style="color: #fff; font-size: 14px;">Select branch:</label>
+        <select id="transferBranchSelect" style="width: 100%; padding: 8px; margin-top: 6px; border-radius: 6px;">
+          ${options.map(b => `<option value="${b.branch_name}">${b.branch_name}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button id="cancelTransferBtn" style="background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px;">Cancel</button>
+        <button id="confirmTransferBtn" style="background: #FFD700; color: #222; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Transfer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  setTimeout(() => {
+    const select = document.getElementById('transferBranchSelect');
+    if (select) select.focus();
+  }, 20);
+
+  document.getElementById('cancelTransferBtn').onclick = () => modal.remove();
+  document.getElementById('confirmTransferBtn').onclick = () => {
+    const branchName = document.getElementById('transferBranchSelect').value;
+    modal.remove();
+    transferEmployee(employeeId, employeeName, branchName);
+  };
+}
+
+    function transferEmployee(employeeId, employeeName, toBranch) {
+      if (!toBranch) {
+        showError('Please select a branch to transfer');
         return;
       }
 
@@ -797,7 +859,7 @@
 
       const formData = new FormData();
       formData.append('employee_id', employeeId);
-      formData.append('branch_name', selectedBranch);
+      formData.append('branch_name', toBranch);
 
       fetch('update_deployment.php', {
         method: 'POST',
@@ -826,7 +888,7 @@
 
         if (data.success) {
           const oldBranch = data.old_branch || '';
-          const newBranch = data.new_branch || selectedBranch;
+          const newBranch = data.new_branch || toBranch;
           showSuccess(`${employeeName} transferred to ${newBranch}`);
 
           lastActionByEmployee[String(employeeId)] = {

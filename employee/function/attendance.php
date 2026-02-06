@@ -820,8 +820,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             // Custom sort for 'Summary' (status_filter = 'all')
             if ($statusFilter === 'all') {
                 // Filter employees to only those in the selected branch
-                if (!empty($selectedBranchId)) {
-                    $employees = array_filter($employees, function($emp) use ($selectedBranchId) {
+                if (!empty($selectedBranchId) && !empty($branch)) {
+                    $employees = array_filter($employees, function($emp) use ($branch) {
                         return isset($emp['original_branch']) && $emp['original_branch'] !== null && $emp['original_branch'] !== '' && $emp['original_branch'] == $branch;
                     });
                     $employees = array_values($employees); // reindex

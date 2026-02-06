@@ -91,6 +91,25 @@ mysqli_stmt_close($empStmt);
 $oldOriginalBranchId = isset($empRow['branch_id']) ? intval($empRow['branch_id']) : null;
 $oldOriginalBranchName = $empRow['branch_name'] ?? '';
 
+// If employee is already assigned to the selected branch, treat as success
+if (!empty($oldOriginalBranchId) && $oldOriginalBranchId === $newBranchId) {
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    echo json_encode([
+        'success' => true,
+        'message' => 'Already on selected branch',
+        'old_branch' => $oldOriginalBranchName,
+        'new_branch' => $newBranchName,
+        'old_original_branch_id' => $oldOriginalBranchId,
+        'new_original_branch_id' => $newBranchId,
+        'old_original_branch' => $oldOriginalBranchName,
+        'new_original_branch' => $newBranchName,
+        'logged_transfer' => false
+    ]);
+    exit();
+}
+
 // Fetch current assigned branch from employees table
 // Get latest attendance branch today for this employee
 $attSql = "SELECT id, branch_name FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() ORDER BY id DESC LIMIT 1";
@@ -107,51 +126,52 @@ if (!$attStmt) {
 mysqli_stmt_bind_param($attStmt, 'i', $employeeId);
 mysqli_stmt_execute($attStmt);
 $attResult = mysqli_stmt_get_result($attStmt);
-if (!$attResult || mysqli_num_rows($attResult) === 0) {
-    if (ob_get_length()) {
-        ob_clean();
-    }
-    http_response_code(404);
-    echo json_encode(['success' => false, 'message' => 'No attendance record for today']);
-    exit();
-}
+// Attendance record is optional; only update if it exists
+$attendanceId = null;
+$oldBranch = $oldOriginalBranchName;
+if ($attResult && mysqli_num_rows($attResult) > 0) {
+    $attRow = mysqli_fetch_assoc($attResult);
+    $attendanceId = isset($attRow['id']) ? intval($attRow['id']) : null;
+    $oldBranch = $attRow['branch_name'] ?? $oldOriginalBranchName;
 
-$attRow = mysqli_fetch_assoc($attResult);
-$attendanceId = intval($attRow['id']);
-$oldBranch = $attRow['branch_name'] ?? '';
+    if ($oldBranch === $branchName) {
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        echo json_encode([
+            'success' => true,
+            'message' => 'Already on selected branch',
+            'old_branch' => $oldBranch,
+            'new_branch' => $branchName,
+            'old_original_branch_id' => $oldOriginalBranchId,
+            'new_original_branch_id' => $newBranchId,
+            'old_original_branch' => $oldOriginalBranchName,
+            'new_original_branch' => $newBranchName,
+            'logged_transfer' => false
+        ]);
+        exit();
+    }
 
-if ($oldBranch === $branchName) {
-    if (ob_get_length()) {
-        ob_clean();
+    // Update latest attendance record branch for today
+    $updateAttSql = "UPDATE attendance SET branch_name = ?, updated_at = NOW() WHERE id = ?";
+    $updateAttStmt = mysqli_prepare($db, $updateAttSql);
+    if (!$updateAttStmt) {
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error (prepare update attendance)']);
+        exit();
     }
-    echo json_encode([
-        'success' => true,
-        'message' => 'Already on selected branch',
-        'old_branch' => $oldBranch,
-        'new_branch' => $branchName
-    ]);
-    exit();
-}
-
-// Update latest attendance record branch for today
-$updateAttSql = "UPDATE attendance SET branch_name = ?, updated_at = NOW() WHERE id = ?";
-$updateAttStmt = mysqli_prepare($db, $updateAttSql);
-if (!$updateAttStmt) {
-    if (ob_get_length()) {
-        ob_clean();
+    mysqli_stmt_bind_param($updateAttStmt, 'si', $branchName, $attendanceId);
+    if (!mysqli_stmt_execute($updateAttStmt)) {
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Failed to update attendance branch']);
+        exit();
     }
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database error (prepare update attendance)']);
-    exit();
-}
-mysqli_stmt_bind_param($updateAttStmt, 'si', $branchName, $attendanceId);
-if (!mysqli_stmt_execute($updateAttStmt)) {
-    if (ob_get_length()) {
-        ob_clean();
-    }
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Failed to update attendance branch']);
-    exit();
 }
 
 // Update employee assigned branch_id

@@ -179,7 +179,7 @@ require('function/attendance.php');
           <div class="status-filter">
             <!-- <label for="statusFilter" style="font-size: 12px; color: #888; margin-bottom: 4px; display: block;">Filter by Status:</label> -->
             <select id="statusFilter" class="status-filter-select">
-              <option value="available">Available (Not Marked)</option>
+              <option value="available">Available</option>
               <option value="all">Summary</option>
               <option value="present">Present</option>
               <option value="absent">Absent</option>
@@ -266,6 +266,9 @@ require('function/attendance.php');
     </main>
   </div>
 
+  <script>
+    window.branchesFromPHP = <?php echo json_encode($branches); ?>;
+  </script>
   <script src="../assets/js/sidebar-toggle.js"></script>
   <script src="js/attendance.js"></script>
 
