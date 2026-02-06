@@ -684,6 +684,27 @@
         box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
     }
 
+    .btn-absent {
+        background: #dc2626;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .btn-absent:hover:not(:disabled) {
+        background: #b91c1c;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+    }
+
     .btn-present:disabled,
     .btn-transfer {
         background: #7c3aed;

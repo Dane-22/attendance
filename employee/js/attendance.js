@@ -399,6 +399,8 @@
         const totalHours = formatHours(employee.total_hours);
 
         const hasOpenShift = !!employee.time_in && !employee.time_out;
+        const hasAttendanceToday = !!employee.has_attendance_today;
+        const isAbsent = employee.attendance_status === 'Absent';
 
         const menuId = `emp-menu-${employee.id}`;
 
@@ -429,9 +431,17 @@
             </td>` : ''}
             <td>
               <div class="actions-cell">
+                ${!hasAttendanceToday ? `
+                <button class="btn-absent"
+                        onclick="markAbsent(${employee.id}, '${escapeJsString(name)}')"
+                        title="Mark Absent">
+                  <i class="fas fa-user-times"></i> Absent
+                </button>
+                ` : ''}
                 <button class="${hasOpenShift ? 'btn-present-late' : 'btn-present'} btn-shift-toggle"
                         onclick="toggleShift(${employee.id}, '${escapeJsString(name)}')"
-                        title="${hasOpenShift ? 'Time Out' : 'Time In'}">
+                        title="${isAbsent ? 'Cannot Time In/Out: Absent' : (hasOpenShift ? 'Time Out' : 'Time In')}"
+                        ${isAbsent ? 'disabled' : ''}>
                   <i class="fas ${hasOpenShift ? 'fa-sign-out-alt' : 'fa-sign-in-alt'}"></i> ${hasOpenShift ? 'Time Out' : 'Time In'}
                 </button>
                 <div class="kebab-menu">
@@ -466,6 +476,18 @@
       `;
 
       container.innerHTML = html;
+    }
+
+    async function markAbsent(employeeId, employeeName) {
+      if (!selectedBranch) {
+        showError('Please select a branch first');
+        return;
+      }
+
+      const ok = confirm(`Mark ${employeeName} as Absent?`);
+      if (!ok) return;
+
+      await saveAbsentNotes(employeeId, '');
     }
 
     function toggleEmployeeMenu(menuId, employeeId) {
