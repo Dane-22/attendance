@@ -3,7 +3,19 @@
 require_once __DIR__ . '/../conn/db_connection.php';
 session_start();
 
-if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin'])) {
+header('Content-Type: application/json');
+
+$sessionPosition = $_SESSION['position'] ?? '';
+$sessionRole = $_SESSION['role'] ?? '';
+$sessionUserRole = $_SESSION['user_role'] ?? '';
+$isPrivileged = in_array($sessionPosition, ['Admin', 'Super Admin', 'Engineer'], true)
+    || in_array($sessionRole, ['Admin', 'Super Admin', 'Engineer'], true)
+    || in_array($sessionUserRole, ['Admin', 'Super Admin', 'Engineer'], true);
+
+// Allow access if logged in via either session style used in the app.
+$isLoggedIn = (!empty($_SESSION['logged_in'])) || (!empty($_SESSION['employee_code']));
+
+if (!$isLoggedIn || !$isPrivileged) {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized access']);
     exit;
@@ -12,6 +24,7 @@ if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 
 $rawInput = file_get_contents('php://input');
 $jsonData = json_decode($rawInput, true);
 $message = trim($_POST['message'] ?? $jsonData['message'] ?? '');
+$page = (string)($_POST['page'] ?? $jsonData['page'] ?? '');
 
 if (empty($message)) {
     echo json_encode(['error' => 'Message is required']);
@@ -32,10 +45,44 @@ $total_employees_res = mysqli_query($db, $total_employees_query);
 $total_employees = mysqli_fetch_assoc($total_employees_res)['count'];
 
 $context = "Current Date: $current_date. Active Branches: " . implode(', ', $branches) . ". Total Active Employees: $total_employees.";
-$full_prompt = "You are JAJR Company AI Assistant. Use this context: $context\n\nUser Question: $message";
+
+$pageKey = basename($page);
+$pageHelp = '';
+$instructionsFile = __DIR__ . '/../include/ai_instructions.md';
+
+if (is_file($instructionsFile)) {
+    $all = (string)file_get_contents($instructionsFile);
+    $target = ($pageKey !== '') ? $pageKey : 'default';
+
+    $normalized = str_replace("\r\n", "\n", $all);
+
+    $pattern = '/^##\s*' . preg_quote($target, '/') . '\s*\n(.*?)(?=\n##\s*|\z)/ms';
+    if (preg_match($pattern, $normalized, $m)) {
+        $pageHelp = trim($m[1]);
+    } else {
+        $fallbackPattern = '/^##\s*default\s*\n(.*?)(?=\n##\s*|\z)/ms';
+        if (preg_match($fallbackPattern, $normalized, $m2)) {
+            $pageHelp = trim($m2[1]);
+        }
+    }
+}
+
+$full_prompt = "You are JAJR Company AI Assistant.\n\n";
+if ($pageHelp !== '') {
+    $full_prompt .= "Help Instructions:\n" . $pageHelp . "\n\n";
+}
+$full_prompt .= "Use this context: $context\n\nUser Question: $message";
 
 // Use Gemini 2.5 Flash (from your test results)
-$api_key = 'AIzaSyCF8wJtyvp7e4IcryIfM-nobZoXUWiokjo';
+$api_key = getenv('GEMINI_API_KEY') ?: '';
+if ($api_key === '') {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'AI is not configured (missing GEMINI_API_KEY).',
+        'hint' => 'Set an environment variable GEMINI_API_KEY on the server and restart the web server.'
+    ]);
+    exit;
+}
 $model_name = 'models/gemini-2.5-flash'; // EXACTLY as shown in your test
 $url = "https://generativelanguage.googleapis.com/v1/{$model_name}:generateContent?key=" . $api_key;
 
@@ -54,15 +101,25 @@ $payload = [
 ];
 
 $ch = curl_init($url);
-curl_setopt_array($ch, [
+
+$caBundle = getenv('CURL_CA_BUNDLE') ?: (getenv('SSL_CERT_FILE') ?: '');
+$allowInsecure = getenv('ALLOW_INSECURE_SSL') === '1';
+
+$curlOpts = [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST => true,
     CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
     CURLOPT_POSTFIELDS => json_encode($payload),
-    CURLOPT_SSL_VERIFYPEER => false,
-    CURLOPT_SSL_VERIFYHOST => false,
+    CURLOPT_SSL_VERIFYPEER => $allowInsecure ? false : true,
+    CURLOPT_SSL_VERIFYHOST => $allowInsecure ? 0 : 2,
     CURLOPT_TIMEOUT => 15
-]);
+];
+
+if (!$allowInsecure && $caBundle !== '' && file_exists($caBundle)) {
+    $curlOpts[CURLOPT_CAINFO] = $caBundle;
+}
+
+curl_setopt_array($ch, $curlOpts);
 
 $result = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);

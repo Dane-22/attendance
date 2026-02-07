@@ -272,5 +272,7 @@ require('function/attendance.php');
   <script src="../assets/js/sidebar-toggle.js"></script>
   <script src="js/attendance.js"></script>
 
+
+
 </body>
 </html>
