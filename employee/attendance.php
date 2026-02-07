@@ -205,6 +205,35 @@ function get_employee_attendance_info($db, $emp_id, $date) {
         'branch_name' => $row['branch_name'] ?? ''
     ];
 }
+
+// Handle undo absent
+if ($_POST['action'] === 'undo_absent') {
+    $employeeId = intval($_POST['employee_id']);
+    $branch = $_POST['branch'] ?? '';
+    
+    try {
+        // Delete the absent record for today
+        $today = date('Y-m-d');
+        
+        $stmt = $pdo->prepare("DELETE FROM attendance WHERE employee_id = ? AND DATE(date) = ? AND status = 'Absent'");
+        $stmt->execute([$employeeId, $today]);
+        
+        // Also clear absent notes if you store them separately
+        $stmt = $pdo->prepare("UPDATE employees SET absent_notes = '' WHERE id = ?");
+        $stmt->execute([$employeeId]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Absent status undone successfully'
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to undo absent: ' . $e->getMessage()
+        ]);
+    }
+    exit();
+}
 ?>
 <!doctype html>
 <html lang="en">

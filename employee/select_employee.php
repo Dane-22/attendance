@@ -44,6 +44,14 @@ require('function/attendance.php');
       <div id="successMessage" class="success-message"></div>
       <div id="errorMessage" class="error-message"></div>
 
+      <div class="welcome-banner" id="welcomeBanner">
+        <div class="welcome-banner-left">Welcome! Please select a branch to start!</div>
+        <div class="welcome-banner-right">
+          <span class="welcome-banner-date"><?php echo date('F j, Y'); ?></span>
+          <span class="welcome-banner-time"><?php echo htmlspecialchars($currentTime); ?></span>
+        </div>
+      </div>
+
       <div id="undoSnackbar" class="undo-snackbar" aria-live="polite" style="display: none;">
         <div class="undo-snackbar-text" id="undoSnackbarText"></div>
         <button type="button" class="undo-snackbar-close" id="undoSnackbarClose" aria-label="Close">&times;</button>
@@ -177,17 +185,15 @@ require('function/attendance.php');
       
       <div class="potanginamo" style="display: flex; justify-content: space-between; align-items: center;">
       <!-- Filter Options -->
-      <div class="filter-options-container" style="width: 54%;">
-        <div class="filter-options-title">Filters:</div>
+      <div class="filter-options-container">
         <div class="filter-options">
           <div class="status-filter">
-            <!-- <label for="statusFilter" style="font-size: 12px; color: #888; margin-bottom: 4px; display: block;">Filter by Status:</label> -->
-            <select id="statusFilter" class="status-filter-select">
-              <option value="available">Available</option>
-              <option value="all">Summary</option>
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-            </select>
+            <div class="status-filter-buttons" id="statusFilterButtons" role="group" aria-label="Filter by status">
+              <button type="button" class="status-pill active" data-status="available">Available</button>
+              <button type="button" class="status-pill" data-status="all">Summary</button>
+              <button type="button" class="status-pill" data-status="present">Present</button>
+              <button type="button" class="status-pill" data-status="absent">Absent</button>
+            </div>
           </div>
           
           <!-- Hide this toggle since we have status filter now -->
@@ -199,18 +205,21 @@ require('function/attendance.php');
             </label>
           </div>
           
-          <div class="view-options">
-            <button class="view-option-btn active" data-view="list" title="List View">
-              <i class="fas fa-list"></i>
-              <span>List View</span>
-            </button>
-          </div>
+          
         </div>
       </div>
 
       <!-- Search Bar -->
-      <div class="search-container" style="width: 45%;">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search employees by name or ID..." disabled style="width: 100%; max-width: 100%;">
+      <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search employees by name or ID..." style="max-width: 100%;">
+      </div>
+
+      <!-- Global Undo Button -->
+      <div id="globalUndoContainer" class="undo-container" style="display: none;">
+        <button id="btnGlobalUndo" class="btn-global-undo" title="Undo last action">
+          <i class="fas fa-rotate-left"></i>
+          <span>Undo</span>
+        </button>
       </div>
       </div>
 
@@ -267,10 +276,30 @@ require('function/attendance.php');
           </div>
         </div>
       </div>
+
+      <!-- Quick Tips -->
+      <div class="quick-tips-container">
+        <div class="quick-tips-header">
+          <i class="fas fa-lightbulb"></i>
+          <span>Quick Tips</span>
+        </div>
+        <ul class="quick-tips-list">
+          <li><strong>Select a Branch:</strong> You must select a deployment branch first to view and manage its employees.</li>
+          <li><strong>Marking Attendance:</strong> Use the <span style="color: #16a34a;">Time In</span> and <span style="color: #dc2626;">Mark Absent</span> buttons to record daily attendance.</li>
+          <li><strong>Search:</strong> You can search for specific employees within the selected branch by name or ID.</li>
+          <li><strong>Filters:</strong> Use the status pills (Available, Present, etc.) to quickly organize your view.</li>
+          <li><strong>Undo:</strong> If you make a mistake, look for the "Undo last action" option in the employee menu (three dots).</li>
+        </ul>
+      </div>
     </main>
   </div>
 
   <script>
+    window.attendanceConfig = {
+      isBeforeCutoff: <?php echo $isBeforeCutoff ? 'true' : 'false'; ?>,
+      cutoffTime: <?php echo json_encode($cutoffTime); ?>,
+      currentTime: <?php echo json_encode($currentTime); ?>
+    };
     window.branchesFromPHP = <?php echo json_encode($branches); ?>;
   </script>
   <script src="../assets/js/sidebar-toggle.js"></script>

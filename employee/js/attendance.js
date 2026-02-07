@@ -7,14 +7,18 @@
     let currentEmployees = [];
     let currentSearchTerm = '';
     let searchDebounceTimer = null;
-    let isBeforeCutoff = '<?php echo $isBeforeCutoff ? "true" : "false"; ?>';
-    let cutoffTime = '<?php echo $cutoffTime; ?>';
-    let currentTime = '<?php echo $currentTime; ?>';
+    const initialAttendanceConfig = (window.attendanceConfig && typeof window.attendanceConfig === 'object')
+      ? window.attendanceConfig
+      : {};
+    let isBeforeCutoff = !!initialAttendanceConfig.isBeforeCutoff;
+    let cutoffTime = String(initialAttendanceConfig.cutoffTime || '09:00');
+    let currentTime = String(initialAttendanceConfig.currentTime || '');
 
     function formatTime(t) {
       if (!t) return '--';
       const s = String(t);
       const trimmed = s.trim();
+
       if (!trimmed) return '--';
 
       // Accept both DATETIME (YYYY-MM-DD HH:MM:SS) and TIME (HH:MM:SS)
@@ -38,6 +42,36 @@
     let pendingCountdownTimer = null;
 
     let lastActionByEmployee = {};
+    let lastGlobalAction = null;
+
+    // ... existing pagination code ...
+
+    // Update global undo button visibility
+    function updateGlobalUndoUI() {
+        const container = document.getElementById('globalUndoContainer');
+        const btn = document.getElementById('btnGlobalUndo');
+        if (!container || !btn) return;
+
+        if (lastGlobalAction) {
+            container.style.display = 'flex';
+            const actionLabel = lastGlobalAction.type.replace('_', ' ');
+            btn.title = `Undo ${actionLabel} for ${lastGlobalAction.employeeName}`;
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    // Hook up global undo button
+    document.addEventListener('DOMContentLoaded', () => {
+        const globalUndoBtn = document.getElementById('btnGlobalUndo');
+        if (globalUndoBtn) {
+            globalUndoBtn.addEventListener('click', () => {
+                if (lastGlobalAction) {
+                    undoLastAction(lastGlobalAction.employeeId, lastGlobalAction.employeeName);
+                }
+            });
+        }
+    });
 
     // Initialize page size from localStorage
     const savedPageSize = localStorage.getItem('employeePageSize');
@@ -68,14 +102,34 @@
       });
     });
 
-    // Status filter dropdown
-    document.getElementById('statusFilter').addEventListener('change', function() {
-        currentStatusFilter = this.value;
-        // Reset to page 1 when filter changes
-        currentPage = 1;
-        // If searching, ignore filter and reload search results; otherwise reload branch
-        reloadEmployees();
-    });
+    // Status filter (inline buttons or fallback dropdown)
+    const statusButtonsWrap = document.getElementById('statusFilterButtons');
+    if (statusButtonsWrap) {
+        statusButtonsWrap.querySelectorAll('[data-status]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const next = String(btn.getAttribute('data-status') || '').trim();
+                if (!next) return;
+                currentStatusFilter = next;
+
+                statusButtonsWrap.querySelectorAll('.status-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                currentPage = 1;
+                reloadEmployees();
+            });
+        });
+    } else {
+        const statusSelect = document.getElementById('statusFilter');
+        if (statusSelect) {
+            statusSelect.addEventListener('change', function() {
+                currentStatusFilter = this.value;
+                // Reset to page 1 when filter changes
+                currentPage = 1;
+                // If searching, ignore filter and reload search results; otherwise reload branch
+                reloadEmployees();
+            });
+        }
+    }
 
     // Search functionality
     document.getElementById('searchInput').addEventListener('input', function() {
@@ -93,17 +147,8 @@
     });
 
     function reloadEmployees() {
-      const hasSearch = !!(currentSearchTerm && currentSearchTerm.trim());
-
-      if (hasSearch) {
-        // Search mode: across all employees across all branches, ignore dropdown filter
-        loadEmployees('', currentPage, perPage, 'all', currentSearchTerm);
-        return;
-      }
-
-      // Normal mode: requires selected branch
       if (!selectedBranch) return;
-      loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter, '');
+      loadEmployees(selectedBranch, currentPage, perPage, currentStatusFilter, currentSearchTerm);
     }
 
     // Load employees function with pagination
@@ -458,7 +503,7 @@
                 <button class="btn-absent"
                         onclick="markAbsent(${employee.id}, '${escapeJsString(name)}')"
                         title="Mark Absent">
-                  <i class="fas fa-user-times"></i> Absent
+                  <i class="fas fa-user-times"></i> Mark Absent
                 </button>
                 ` : ''}
                 <button class="${hasOpenShift ? 'btn-present-late' : 'btn-present'} btn-shift-toggle"
@@ -480,9 +525,6 @@
                     </button>
                     <button class="kebab-item" onclick="showTransferDropdown(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.logged_branch)}')">
                       <i class="fas fa-exchange-alt"></i> Transfer
-                    </button>
-                    <button class="kebab-item" onclick="undoLastAction(${employee.id}, '${escapeJsString(name)}')">
-                      <i class="fas fa-rotate-left"></i> Undo last action
                     </button>
                   </div>
                 </div>
@@ -510,8 +552,27 @@
       const ok = confirm(`Mark ${employeeName} as Absent?`);
       if (!ok) return;
 
-      await saveAbsentNotes(employeeId, '');
-    }
+      try {
+    // Save absent action to lastActionByEmployee BEFORE attempting to mark absent
+    lastActionByEmployee[String(employeeId)] = {
+      type: 'absent',
+      employeeName: employeeName,
+      timestamp: new Date().toISOString()
+    };
+
+    await saveAbsentNotes(employeeId, '');
+    
+    // Show undo option
+    showUndoSnackbar(`${employeeName} marked as absent`, async () => {
+      await undoLastAction(employeeId, employeeName);
+    }, 5000);
+    
+  } catch (e) {
+    // Remove from lastActionByEmployee if failed
+    delete lastActionByEmployee[String(employeeId)];
+    throw e;
+  }
+}
 
     function toggleEmployeeMenu(menuId, employeeId) {
       const menu = document.getElementById(menuId);
@@ -594,97 +655,194 @@
     }
 
     async function undoLastAction(employeeId, employeeName) {
-      const action = lastActionByEmployee[String(employeeId)];
-      if (!action) {
-        showError(`No action to undo for ${employeeName}`);
-        return;
+  const action = lastActionByEmployee[String(employeeId)];
+  if (!action) {
+    showError(`No action to undo for ${employeeName}`);
+    return;
+  }
+
+  try {
+    // Handle clock_in undo
+    if (action.type === 'clock_in') {
+      const form = new FormData();
+      form.append('employee_id', employeeId);
+      form.append('action', 'undo_clock_in');
+      form.append('shift_id', action.shiftId);
+
+      const resp = await fetch('api/clock_in.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: form
+      });
+      
+      const text = await resp.text();
+      let data = null;
+      try { 
+        data = JSON.parse(text); 
+      } catch (e) { 
+        console.error('Failed to parse response:', text);
+        data = null; 
+      }
+      
+      if (!resp.ok || !data) {
+        throw new Error(data?.message || `Undo failed (HTTP ${resp.status})`);
+      }
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Unable to undo');
       }
 
-      try {
-        if (action.type === 'clock_in') {
-          const form = new FormData();
-          form.append('employee_id', employeeId);
-          form.append('action', 'undo_clock_in');
-          form.append('shift_id', action.shiftId);
-
-          const resp = await fetch('api/clock_in.php', {
-            method: 'POST',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: form
-          });
-          const text = await resp.text();
-          let data = null;
-          try { data = JSON.parse(text); } catch (e) { data = null; }
-          if (!resp.ok || !data) throw new Error(data?.message || `Undo failed (HTTP ${resp.status})`);
-          if (!data.success) throw new Error(data.message || 'Unable to undo');
-
-          showSuccess(`${employeeName} time-in undone`);
-          delete lastActionByEmployee[String(employeeId)];
-          reloadEmployees();
-          return;
-        }
-
-        if (action.type === 'clock_out') {
-          const form = new FormData();
-          form.append('employee_id', employeeId);
-          form.append('action', 'undo_clock_out');
-          form.append('shift_id', action.shiftId);
-
-          const resp = await fetch('api/clock_out.php', {
-            method: 'POST',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: form
-          });
-          const text = await resp.text();
-          let data = null;
-          try { data = JSON.parse(text); } catch (e) { data = null; }
-          if (!resp.ok || !data) throw new Error(data?.message || `Undo failed (HTTP ${resp.status})`);
-          if (!data.success) throw new Error(data.message || 'Unable to undo');
-
-          showSuccess(`${employeeName} time-out undone`);
-          delete lastActionByEmployee[String(employeeId)];
-          reloadEmployees();
-          return;
-        }
-
-        if (action.type === 'transfer') {
-          const oldBranch = action.oldBranch || '';
-          if (!oldBranch) throw new Error('Unable to undo (missing previous branch)');
-
-          const undoForm = new FormData();
-          undoForm.append('action', 'undo_transfer');
-          undoForm.append('employee_id', employeeId);
-          undoForm.append('branch_name', oldBranch);
-
-          const resp = await fetch('update_deployment.php', {
-            method: 'POST',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: undoForm
-          });
-          const undoText = await resp.text();
-          let undoData = null;
-          try { undoData = JSON.parse(undoText); } catch (e) { undoData = null; }
-          if (!resp.ok || !undoData) throw new Error(undoData?.message || `Undo failed (HTTP ${resp.status})`);
-          if (!undoData.success) throw new Error(undoData.message || 'Undo failed');
-
-          showSuccess(`${employeeName} transfer undone (back to ${oldBranch})`);
-          delete lastActionByEmployee[String(employeeId)];
-          reloadEmployees();
-          return;
-        }
-
-        throw new Error('Unknown action type');
-      } catch (e) {
-        console.error(e);
-        showError(e.message || 'Undo failed');
-      }
+      showSuccess(`${employeeName} time-in undone`);
+      delete lastActionByEmployee[String(employeeId)];
+      reloadEmployees();
+      return;
     }
+
+    // Handle clock_out undo
+    if (action.type === 'clock_out') {
+      const form = new FormData();
+      form.append('employee_id', employeeId);
+      form.append('action', 'undo_clock_out');
+      form.append('shift_id', action.shiftId);
+
+      const resp = await fetch('api/clock_out.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: form
+      });
+      
+      const text = await resp.text();
+      let data = null;
+      try { 
+        data = JSON.parse(text); 
+      } catch (e) { 
+        console.error('Failed to parse response:', text);
+        data = null; 
+      }
+      
+      if (!resp.ok || !data) {
+        throw new Error(data?.message || `Undo failed (HTTP ${resp.status})`);
+      }
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Unable to undo');
+      }
+
+      showSuccess(`${employeeName} time-out undone`);
+      delete lastActionByEmployee[String(employeeId)];
+      reloadEmployees();
+      return;
+    }
+
+    // Handle transfer undo
+    if (action.type === 'transfer') {
+      const oldBranch = action.oldBranch || '';
+      if (!oldBranch) throw new Error('Unable to undo (missing previous branch)');
+
+      const undoForm = new FormData();
+      undoForm.append('action', 'undo_transfer');
+      undoForm.append('employee_id', employeeId);
+      undoForm.append('branch_name', oldBranch);
+
+      const resp = await fetch('update_deployment.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: undoForm
+      });
+      
+      const undoText = await resp.text();
+      let undoData = null;
+      try { 
+        undoData = JSON.parse(undoText); 
+      } catch (e) { 
+        console.error('Failed to parse response:', undoText);
+        undoData = null; 
+      }
+      
+      if (!resp.ok || !undoData) {
+        throw new Error(undoData?.message || `Undo failed (HTTP ${resp.status})`);
+      }
+      
+      if (!undoData.success) {
+        throw new Error(undoData.message || 'Undo failed');
+      }
+
+      showSuccess(`${employeeName} transfer undone (back to ${oldBranch})`);
+      delete lastActionByEmployee[String(employeeId)];
+      reloadEmployees();
+      return;
+    }
+
+    // Handle absent undo
+    if (action.type === 'absent') {
+      // To undo absent, we need to mark the employee as present
+      // You'll need to call your API endpoint that undoes absent marking
+      const formData = new FormData();
+      formData.append('action', 'undo_absent');
+      formData.append('employee_id', employeeId);
+      formData.append('branch', selectedBranch);
+
+      const resp = await fetch('select_employee.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      });
+      
+      const text = await resp.text();
+      let data = null;
+      try { 
+        data = JSON.parse(text); 
+      } catch (e) { 
+        console.error('Failed to parse response:', text);
+        data = null; 
+      }
+      
+      if (!resp.ok || !data) {
+        throw new Error(data?.message || `Undo absent failed (HTTP ${resp.status})`);
+      }
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Unable to undo absent');
+      }
+
+      showSuccess(`${employeeName} absent status undone`);
+      delete lastActionByEmployee[String(employeeId)];
+      reloadEmployees();
+      return;
+    }
+
+    throw new Error('Unknown action type');
+  } catch (e) {
+    console.error('Undo error:', e);
+    showError(e.message || 'Undo failed');
+  }
+}
+
+// Add this debugging function
+function debugUndo() {
+  console.log('lastActionByEmployee:', lastActionByEmployee);
+  console.log('Current selectedBranch:', selectedBranch);
+  
+  // Check if API endpoint exists
+  fetch('api/clock_in.php', { method: 'HEAD' })
+    .then(response => {
+      console.log('clock_in.php exists:', response.ok);
+    })
+    .catch(err => {
+      console.error('clock_in.php not found:', err);
+    });
+}
+
+// Call it when undo fails
+// debugUndo();
 
     document.addEventListener('click', function(e) {
       const target = e.target;
@@ -733,36 +891,19 @@
         if (data.success) {
           showSuccess(`${employeeName} time-in recorded (${data.time_in || ''})`);
           if (data.shift_id) {
-            lastActionByEmployee[String(employeeId)] = {
+            const actionObj = {
               type: 'clock_in',
-              shiftId: data.shift_id
+              shiftId: data.shift_id,
+              employeeId: employeeId,
+              employeeName: employeeName
             };
+            lastActionByEmployee[String(employeeId)] = actionObj;
+            lastGlobalAction = actionObj;
+            updateGlobalUndoUI();
           }
-          const row = document.getElementById(`employee-${employeeId}`);
-          if (row) {
-            const timeCell = row.querySelector('.time-in-cell');
-            if (timeCell) timeCell.textContent = formatTime(data.time_in);
-
-            if (data.shift_id) {
-              row.dataset.shiftId = String(data.shift_id);
-            }
-            row.dataset.hasOpenShift = '1';
-
-            const btn = row.querySelector('.btn-shift-toggle');
-            if (btn) {
-              btn.classList.remove('btn-present');
-              btn.classList.add('btn-present-late');
-              btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Time Out';
-              btn.title = 'Time Out';
-            }
-          }
-
-          setTimeout(() => {
-            reloadEmployees();
-          }, 300);
+          reloadEmployees();
           return;
         }
-
         throw new Error(data.message || 'Failed to Time In');
       })
       .catch(err => {
@@ -804,34 +945,19 @@
         if (data.success) {
           showSuccess(`${employeeName} time-out recorded (${data.time_out || ''})`);
           if (shiftId) {
-            lastActionByEmployee[String(employeeId)] = {
+            const actionObj = {
               type: 'clock_out',
-              shiftId: shiftId
+              shiftId: shiftId,
+              employeeId: employeeId,
+              employeeName: employeeName
             };
+            lastActionByEmployee[String(employeeId)] = actionObj;
+            lastGlobalAction = actionObj;
+            updateGlobalUndoUI();
           }
-          const row = document.getElementById(`employee-${employeeId}`);
-          if (row) {
-            const timeCell = row.querySelector('.time-out-cell');
-            if (timeCell) timeCell.textContent = formatTime(data.time_out);
-
-            row.dataset.hasOpenShift = '0';
-            row.dataset.shiftId = '';
-
-            const btn = row.querySelector('.btn-shift-toggle');
-            if (btn) {
-              btn.classList.remove('btn-present-late');
-              btn.classList.add('btn-present');
-              btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Time In';
-              btn.title = 'Time In';
-            }
-          }
-
-          setTimeout(() => {
-            reloadEmployees();
-          }, 300);
+          reloadEmployees();
           return;
         }
-
         throw new Error(data.message || 'Failed to Time Out');
       })
       .catch(err => {
@@ -841,66 +967,66 @@
     }
 
     function showTransferDropdown(employeeId, employeeName, currentBranch) {
-  // Remove any existing dropdown/modal
-  let existing = document.getElementById('transferModal');
-  if (existing) existing.remove();
+      // Remove any existing dropdown/modal
+      let existing = document.getElementById('transferModal');
+      if (existing) existing.remove();
 
-  // Assume branches are available globally via window.allBranches or fetch them via AJAX if needed
-  let branches = window.allBranches || [];
-  if (!branches.length) {
-    // Try to get from DOM if not set (PHP can render a JS array)
-    if (window.branchesFromPHP) branches = window.branchesFromPHP;
-  }
-  // Filter out current branch
-  const options = branches.filter(b => b.branch_name !== currentBranch);
-  if (!options.length) {
-    showError('No other branches available for transfer');
-    return;
-  }
+      // Assume branches are available globally via window.allBranches or fetch them via AJAX if needed
+      let branches = window.allBranches || [];
+      if (!branches.length) {
+        // Try to get from DOM if not set (PHP can render a JS array)
+        if (window.branchesFromPHP) branches = window.branchesFromPHP;
+      }
+      // Filter out current branch
+      const options = branches.filter(b => b.branch_name !== currentBranch);
+      if (!options.length) {
+        showError('No other branches available for transfer');
+        return;
+      }
 
-  // Build modal
-  const modal = document.createElement('div');
-  modal.id = 'transferModal';
-  modal.style.position = 'fixed';
-  modal.style.top = '0';
-  modal.style.left = '0';
-  modal.style.width = '100vw';
-  modal.style.height = '100vh';
-  modal.style.background = 'rgba(0,0,0,0.3)';
-  modal.style.display = 'flex';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
-  modal.style.zIndex = '2147483647';
-  modal.style.pointerEvents = 'auto';
+      // Build modal
+      const modal = document.createElement('div');
+      modal.id = 'transferModal';
+      modal.style.position = 'fixed';
+      modal.style.top = '0';
+      modal.style.left = '0';
+      modal.style.width = '100vw';
+      modal.style.height = '100vh';
+      modal.style.background = 'rgba(0,0,0,0.3)';
+      modal.style.display = 'flex';
+      modal.style.alignItems = 'center';
+      modal.style.justifyContent = 'center';
+      modal.style.zIndex = '2147483647';
+      modal.style.pointerEvents = 'auto';
 
-  modal.innerHTML = `
-    <div style="background: #222; padding: 24px 32px; border-radius: 12px; box-shadow: 0 2px 32px #000; min-width: 320px; max-width: 96vw;">
-      <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Transfer ${employeeName}</h3>
-      <div style="margin-bottom: 16px;">
-        <label for="transferBranchSelect" style="color: #fff; font-size: 14px;">Select branch:</label>
-        <select id="transferBranchSelect" style="width: 100%; padding: 8px; margin-top: 6px; border-radius: 6px;">
-          ${options.map(b => `<option value="${b.branch_name}">${b.branch_name}</option>`).join('')}
-        </select>
-      </div>
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button id="cancelTransferBtn" style="background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px;">Cancel</button>
-        <button id="confirmTransferBtn" style="background: #FFD700; color: #222; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Transfer</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  setTimeout(() => {
-    const select = document.getElementById('transferBranchSelect');
-    if (select) select.focus();
-  }, 20);
+      modal.innerHTML = `
+        <div style="background: #222; padding: 24px 32px; border-radius: 12px; box-shadow: 0 2px 32px #000; min-width: 320px; max-width: 96vw;">
+          <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Transfer ${employeeName}</h3>
+          <div style="margin-bottom: 16px;">
+            <label for="transferBranchSelect" style="color: #fff; font-size: 14px;">Select branch:</label>
+            <select id="transferBranchSelect" style="width: 100%; padding: 8px; margin-top: 6px; border-radius: 6px;">
+              ${options.map(b => `<option value="${b.branch_name}">${b.branch_name}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button id="cancelTransferBtn" style="background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px;">Cancel</button>
+            <button id="confirmTransferBtn" style="background: #FFD700; color: #222; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Transfer</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      setTimeout(() => {
+        const select = document.getElementById('transferBranchSelect');
+        if (select) select.focus();
+      }, 20);
 
-  document.getElementById('cancelTransferBtn').onclick = () => modal.remove();
-  document.getElementById('confirmTransferBtn').onclick = () => {
-    const branchName = document.getElementById('transferBranchSelect').value;
-    modal.remove();
-    transferEmployee(employeeId, employeeName, branchName);
-  };
-}
+      document.getElementById('cancelTransferBtn').onclick = () => modal.remove();
+      document.getElementById('confirmTransferBtn').onclick = () => {
+        const branchName = document.getElementById('transferBranchSelect').value;
+        modal.remove();
+        transferEmployee(employeeId, employeeName, branchName);
+      };
+    }
 
     function showAbsentNotesModal(employeeId, employeeName, currentNotes) {
       let existing = document.getElementById('absentNotesModal');
@@ -1090,6 +1216,9 @@
         employeeElement.style.transform = 'scale(1.02)';
       }
 
+      const row = document.getElementById(`employee-${employeeId}`);
+      const oldBranch = row ? row.querySelector('.employee-branch-value')?.textContent.trim() : '';
+
       const formData = new FormData();
       formData.append('employee_id', employeeId);
       formData.append('branch_name', toBranch);
@@ -1120,32 +1249,29 @@
         }
 
         if (data.success) {
-          const oldBranch = data.old_branch || '';
           const newBranch = data.new_branch || toBranch;
           showSuccess(`${employeeName} transferred to ${newBranch}`);
 
-          lastActionByEmployee[String(employeeId)] = {
+          const actionObj = {
             type: 'transfer',
             oldBranch: oldBranch,
-            newBranch: newBranch
+            newBranch: newBranch,
+            employeeId: employeeId,
+            employeeName: employeeName
           };
-          showUndoSnackbar(`Last action saved for undo: transferred ${employeeName} to ${newBranch}`);
+          lastActionByEmployee[String(employeeId)] = actionObj;
+          lastGlobalAction = actionObj;
+          updateGlobalUndoUI();
 
-          setTimeout(() => {
-            reloadEmployees();
-          }, 300);
+          reloadEmployees();
           return;
         }
 
-        throw new Error(data.message || 'Failed to transfer employee');
+        throw new Error(data.message || 'Failed to Transfer');
       })
-      .catch(error => {
-        console.error('Error:', error);
-        if (employeeElement) {
-          employeeElement.style.boxShadow = '';
-          employeeElement.style.transform = '';
-        }
-        showError(error.message || 'Failed to transfer employee');
+      .catch(err => {
+        console.error(err);
+        showError(err.message || 'Failed to Transfer');
       });
     }
 
@@ -1380,16 +1506,21 @@
     }
 
     function closeAddBranchModal() {
-        document.getElementById('addBranchModal').classList.remove('show');
-        document.getElementById('addBranchForm').reset();
+        const modal = document.getElementById('addBranchModal');
+        const form = document.getElementById('addBranchForm');
+        if (modal) modal.classList.remove('show');
+        if (form) form.reset();
         clearBranchMessage();
     }
 
-    document.getElementById('addBranchModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAddBranchModal();
-        }
-    });
+    const addBranchModal = document.getElementById('addBranchModal');
+    if (addBranchModal) {
+        addBranchModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddBranchModal();
+            }
+        });
+    }
 
     function submitAddBranch(event) {
         event.preventDefault();
@@ -1610,6 +1741,12 @@
               removeBtn.disabled = false;
             }
             showGlobalMessage(error?.message || 'Failed to delete branch', 'error');
+        })
+        .finally(() => {
+            if (removeBtn) {
+              removeBtn.innerHTML = originalContent;
+              removeBtn.disabled = false;
+            }
         });
     }
 
@@ -1652,7 +1789,13 @@
     }
 
     // Attach click handlers to initial branch cards
-    renderBranchGrid();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBranchGrid();
+        });
+    } else {
+        renderBranchGrid();
+    }
 
     // DEBUG: Show debug info with keyboard shortcut
     document.addEventListener('keydown', function(e) {
