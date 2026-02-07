@@ -442,7 +442,7 @@
                         onclick="toggleShift(${employee.id}, '${escapeJsString(name)}')"
                         title="${isAbsent ? 'Cannot Time In/Out: Absent' : (hasOpenShift ? 'Time Out' : 'Time In')}"
                         ${isAbsent ? 'disabled' : ''}>
-                  <i class="fas ${hasOpenShift ? 'fa-sign-out-alt' : 'fa-sign-in-alt'}"></i> ${hasOpenShift ? 'Time Out' : 'Time In'}
+                  <i class="fas ${isAbsent ? 'fa-user-times' : (hasOpenShift ? 'fa-sign-out-alt' : 'fa-sign-in-alt')}"></i> ${isAbsent ? 'Absent' : (hasOpenShift ? 'Time Out' : 'Time In')}
                 </button>
                 <div class="kebab-menu">
                   <button class="kebab-btn" onclick="toggleEmployeeMenu('${menuId}', ${employee.id})" aria-label="Options">
