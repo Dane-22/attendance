@@ -149,6 +149,8 @@
           isBeforeCutoff = data.is_before_cutoff;
           currentTime = data.current_time;
           cutoffTime = data.cutoff_time;
+
+          updateBranchStats(data.branch_summary);
           
           // Update time display in header
           updateTimeDisplay();
@@ -170,17 +172,38 @@
           console.error('DEBUG: Server returned error:', data.message);
           container.innerHTML = '<div class="no-employees"><i class="fas fa-exclamation-triangle" style="font-size: 36px; color: #dc2626; margin-bottom: 10px;"></i><div>Error: ' + data.message + '</div><div style="font-size: 11px; margin-top: 10px; color: #888;">Please check browser console for details</div></div>';
           hidePagination();
+          updateBranchStats(null);
         }
       })
       .catch(error => {
         console.error('DEBUG: Fetch error:', error);
         container.innerHTML = '<div class="no-employees"><i class="fas fa-exclamation-triangle" style="font-size: 36px; color: #dc2626; margin-bottom: 10px;"></i><div>Failed to load employees</div><div style="font-size: 11px; margin-top: 10px; color: #888;">Check browser console (F12) for details</div><div style="font-size: 11px; margin-top: 5px; color: #888;">Error: ' + error.message + '</div></div>';
         hidePagination();
+        updateBranchStats(null);
       })
       .finally(() => {
         isLoading = false;
         showPaginationLoading(false);
       });
+    }
+
+    function updateBranchStats(summary) {
+      const totalEl = document.getElementById('statTotalWorkers');
+      const presentEl = document.getElementById('statPresent');
+      const absentEl = document.getElementById('statAbsent');
+
+      if (!totalEl || !presentEl || !absentEl) return;
+
+      if (!summary) {
+        totalEl.textContent = '--';
+        presentEl.textContent = '--';
+        absentEl.textContent = '--';
+        return;
+      }
+
+      totalEl.textContent = String(summary.total_workers ?? 0);
+      presentEl.textContent = String(summary.present ?? 0);
+      absentEl.textContent = String(summary.absent ?? 0);
     }
 
     // Function to update time display

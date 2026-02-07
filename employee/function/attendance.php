@@ -337,6 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $statusFilter = $_POST['status_filter'] ?? 'all';
         $searchTerm = isset($_POST['search_term']) ? trim($_POST['search_term']) : '';
         $isSearch = $searchTerm !== '';
+        
         $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
         $perPage = isset($_POST['per_page']) ? intval($_POST['per_page']) : 10;
         
@@ -379,6 +380,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         error_log("DEBUG: Loading employees - branch: $branch, status_filter: $statusFilter, page: $page, perPage: $perPage, offset: $offset");
         
         try {
+            $branchSummary = null;
+            if (!$isSearch) {
+                $summary = [
+                    'total_workers' => 0,
+                    'present' => 0,
+                    'absent' => 0
+                ];
+
+                // Total workers in branch
+                $totalStmt = mysqli_prepare($db, "SELECT COUNT(*) as cnt FROM employees WHERE status = 'Active' AND position = 'Worker' AND branch_id = ?");
+                mysqli_stmt_bind_param($totalStmt, 'i', $selectedBranchId);
+                mysqli_stmt_execute($totalStmt);
+                $totalRes = mysqli_stmt_get_result($totalStmt);
+                $totalRow = $totalRes ? mysqli_fetch_assoc($totalRes) : null;
+                $summary['total_workers'] = intval($totalRow['cnt'] ?? 0);
+
+                // Present workers in branch (open shift today) if time columns exist, otherwise based on latest status row
+                if (attendanceHasTimeColumns($db)) {
+                    $presentSql = "SELECT COUNT(DISTINCT e.id) as cnt
+                                  FROM employees e
+                                  INNER JOIN (
+                                      SELECT a1.*
+                                      FROM attendance a1
+                                      INNER JOIN (
+                                          SELECT employee_id, MAX(id) AS max_id
+                                          FROM attendance
+                                          WHERE attendance_date = CURDATE()
+                                            AND time_in IS NOT NULL
+                                            AND time_out IS NULL
+                                          GROUP BY employee_id
+                                      ) t ON a1.id = t.max_id
+                                      WHERE a1.branch_name = ?
+                                  ) a ON e.id = a.employee_id
+                                  WHERE e.status = 'Active' AND e.position = 'Worker' AND e.branch_id = ?";
+                    $presentStmt = mysqli_prepare($db, $presentSql);
+                    mysqli_stmt_bind_param($presentStmt, 'si', $branch, $selectedBranchId);
+                } else {
+                    $presentSql = "SELECT COUNT(DISTINCT e.id) as cnt
+                                  FROM employees e
+                                  INNER JOIN (
+                                      SELECT a1.*
+                                      FROM attendance a1
+                                      INNER JOIN (
+                                          SELECT employee_id, MAX(id) AS max_id
+                                          FROM attendance
+                                          WHERE attendance_date = CURDATE()
+                                          GROUP BY employee_id
+                                      ) t ON a1.id = t.max_id
+                                  ) a ON e.id = a.employee_id
+                                  WHERE e.status = 'Active' AND e.position = 'Worker'
+                                    AND a.status = 'Present'
+                                    AND a.branch_name = ?
+                                    AND e.branch_id = ?";
+                    $presentStmt = mysqli_prepare($db, $presentSql);
+                    mysqli_stmt_bind_param($presentStmt, 'si', $branch, $selectedBranchId);
+                }
+                mysqli_stmt_execute($presentStmt);
+                $presentRes = mysqli_stmt_get_result($presentStmt);
+                $presentRow = $presentRes ? mysqli_fetch_assoc($presentRes) : null;
+                $summary['present'] = intval($presentRow['cnt'] ?? 0);
+
+                // Absent workers in branch (latest attendance record today is Absent)
+                $absentSql = "SELECT COUNT(DISTINCT e.id) as cnt
+                              FROM employees e
+                              INNER JOIN (
+                                  SELECT a1.*
+                                  FROM attendance a1
+                                  INNER JOIN (
+                                      SELECT employee_id, MAX(id) AS max_id
+                                      FROM attendance
+                                      WHERE attendance_date = CURDATE()
+                                      GROUP BY employee_id
+                                  ) t ON a1.id = t.max_id
+                              ) a ON e.id = a.employee_id
+                              WHERE e.status = 'Active' AND e.position = 'Worker'
+                                AND e.branch_id = ?
+                                AND a.status = 'Absent'";
+                $absentStmt = mysqli_prepare($db, $absentSql);
+                mysqli_stmt_bind_param($absentStmt, 'i', $selectedBranchId);
+                mysqli_stmt_execute($absentStmt);
+                $absentRes = mysqli_stmt_get_result($absentStmt);
+                $absentRow = mysqli_fetch_assoc($absentRes);
+                $summary['absent'] = intval($absentRow['cnt'] ?? 0);
+
+                $branchSummary = $summary;
+            }
+
             // Build base query for counting - Based on status filter
             $countQuery = "";
             $countParams = [];
@@ -894,6 +982,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             echo json_encode([
                 'success' => true, 
                 'employees' => $employees,
+                'branch_summary' => $branchSummary,
                 'pagination' => [
                     'page' => $page,
                     'per_page' => $perPage,

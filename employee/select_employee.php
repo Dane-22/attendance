@@ -58,20 +58,18 @@ require('function/attendance.php');
           Timezone: <?php echo date_default_timezone_get(); ?>
       </div>
 
-      <!-- Header -->
-      <div class="header-card">
-        <div class="header-left">
-          <div>
-            <div class="welcome">Select Employee for Attendance</div>
-            <div class="text-sm text-gray">
-                Employee Code: <strong><?php echo htmlspecialchars($employeeCode); ?></strong> 
-                Position: <?php echo htmlspecialchars($position); ?>
-            </div>
-          </div>
+      <div class="branch-stats" id="branchStats" aria-live="polite">
+        <div class="stat-card">
+          <div class="stat-label">Total Workers</div>
+          <div class="stat-value" id="statTotalWorkers">--</div>
         </div>
-        <div class="text-sm text-gray">
-            Today (PH): <?php echo date('F d, Y'); ?><br>
-            Current Time (PH): <?php echo $currentTime; ?>
+        <div class="stat-card">
+          <div class="stat-label">Present</div>
+          <div class="stat-value" id="statPresent">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Absent</div>
+          <div class="stat-value" id="statAbsent">--</div>
         </div>
       </div>
 
