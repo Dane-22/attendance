@@ -9,11 +9,11 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $identifier = trim($_POST['identifier'] ?? '');
     $password = $_POST['password'] ?? '';
-    $daily_branch = $_POST['branch_name'] ?? '';
+    $daily_branch = 'Main Branch';
     
     // VALIDATION
-    if (empty($identifier) || empty($password) || empty($daily_branch)) {
-        $errors[] = 'Please fill in all fields including branch selection.';
+    if (empty($identifier) || empty($password)) {
+        $errors[] = 'Please fill in all fields.';
     } else {
         // CHECK USER
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['login_time'] = date('Y-m-d H:i:s');
                 
                 // 2. BRANCH INFORMATION
-                // Daily branch (where working today - from form)
+                // Daily branch (where working today - hardcoded to Main Branch)
                 $_SESSION['daily_branch'] = $daily_branch;
                 
                 // Assigned branch (permanent assignment - from database)
@@ -333,23 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    value="<?php echo htmlspecialchars($_POST['identifier'] ?? ''); ?>" />
           </div>
           
-          <!-- Branch Selection Field -->
-          <div>
-            <label class="block text-sm font-medium">Select Today's Working Branch</label>
-            <select name="branch_name" required class="mt-2 w-full p-3 rounded input-field focus:ring-2 focus:ring-orange-400 focus:border-transparent">
-                <option value="">-- Where are you working today? --</option>
-                <option value="Main Branch" <?php echo (($_POST['branch_name'] ?? '') === 'Main Branch') ? 'selected' : ''; ?>>Main Branch</option>
-                <option value="BCDA" <?php echo (($_POST['branch_name'] ?? '') === 'BCDA') ? 'selected' : ''; ?>>BCDA</option>
-                <option value="STO. Rosario" <?php echo (($_POST['branch_name'] ?? '') === 'STO. Rosario') ? 'selected' : ''; ?>>STO. Rosario</option>
-                <option value="Panicsican" <?php echo (($_POST['branch_name'] ?? '') === 'Panicsican') ? 'selected' : ''; ?>>Panicsican</option>
-                <option value="Dallangayan" <?php echo (($_POST['branch_name'] ?? '') === 'Dallangayan') ? 'selected' : ''; ?>>Dallangayan</option>
-                <option value="Pias (Sunadara)" <?php echo (($_POST['branch_name'] ?? '') === 'Pias (Sunadara)') ? 'selected' : ''; ?>>Pias (Sunadara)</option>
-                <option value="Pias (Office)" <?php echo (($_POST['branch_name'] ?? '') === 'Pias (Office') ? 'selected' : ''; ?>>Pias (Office)</option>
-                <option value="Capitol" <?php echo (($_POST['branch_name'] ?? '') === 'Capitol') ? 'selected' : ''; ?>>Capitol</option>
-                <option value="Test" <?php echo (($_POST['branch_name'] ?? '') === 'Test') ? 'selected' : ''; ?>>Test</option>
-              </select>
-            <p class="text-xs text-gray-400 mt-1">Select the branch where you're working today</p>
-          </div>
+          <input type="hidden" name="branch_name" value="Main Branch" />
           
           <!-- Password Field with Eye Icon -->
           <div>
@@ -385,41 +369,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <script src="assets/js/auth.js" defer></script>
   <script>
-    // Auto-select branch for Super Admin demo
-    document.addEventListener('DOMContentLoaded', function() {
-      const identifierInput = document.querySelector('input[name="identifier"]');
-      const branchSelect = document.querySelector('select[name="branch_name"]');
-      
-      identifierInput?.addEventListener('blur', function() {
-        const identifier = this.value.toLowerCase();
-        // If it looks like a Super Admin account, auto-select Main Branch
-        if (identifier.includes('admin') || identifier.includes('super')) {
-          branchSelect.value = 'Main Branch';
+    // SIMPLE PASSWORD TOGGLE - NO ANTI-COPY COMPLICATIONS
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('passwordInput');
+    
+    if (togglePassword && passwordInput) {
+      togglePassword.addEventListener('click', function() {
+        // Toggle the type attribute
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Toggle the eye icon
+        const icon = this.querySelector('i');
+        if (type === 'password') {
+          icon.className = 'fas fa-eye';
+          icon.title = 'Show password';
+        } else {
+          icon.className = 'fas fa-eye-slash';
+          icon.title = 'Hide password';
         }
       });
-      
-      // SIMPLE PASSWORD TOGGLE - NO ANTI-COPY COMPLICATIONS
-      const togglePassword = document.getElementById('togglePassword');
-      const passwordInput = document.getElementById('passwordInput');
-      
-      if (togglePassword && passwordInput) {
-        togglePassword.addEventListener('click', function() {
-          // Toggle the type attribute
-          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-          passwordInput.setAttribute('type', type);
-          
-          // Toggle the eye icon
-          const icon = this.querySelector('i');
-          if (type === 'password') {
-            icon.className = 'fas fa-eye';
-            icon.title = 'Show password';
-          } else {
-            icon.className = 'fas fa-eye-slash';
-            icon.title = 'Hide password';
-          }
-        });
-      }
-    });
+    }
   </script>
 </body>
 </html>
