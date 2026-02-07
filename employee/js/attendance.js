@@ -52,12 +52,15 @@
         const btn = document.getElementById('btnGlobalUndo');
         if (!container || !btn) return;
 
+        container.style.display = 'flex';
+
         if (lastGlobalAction) {
-            container.style.display = 'flex';
+            btn.disabled = false;
             const actionLabel = lastGlobalAction.type.replace('_', ' ');
             btn.title = `Undo ${actionLabel} for ${lastGlobalAction.employeeName}`;
         } else {
-            container.style.display = 'none';
+            btn.disabled = true;
+            btn.title = 'Nothing to undo';
         }
     }
 
@@ -71,6 +74,8 @@
                 }
             });
         }
+
+        updateGlobalUndoUI();
     });
 
     // Initialize page size from localStorage
@@ -554,11 +559,15 @@
 
       try {
     // Save absent action to lastActionByEmployee BEFORE attempting to mark absent
-    lastActionByEmployee[String(employeeId)] = {
+    const actionObj = {
       type: 'absent',
+      employeeId: employeeId,
       employeeName: employeeName,
       timestamp: new Date().toISOString()
     };
+    lastActionByEmployee[String(employeeId)] = actionObj;
+    lastGlobalAction = actionObj;
+    updateGlobalUndoUI();
 
     await saveAbsentNotes(employeeId, '');
     
@@ -781,6 +790,7 @@
 
     // Handle absent undo
     if (action.type === 'absent') {
+
       // To undo absent, we need to mark the employee as present
       // You'll need to call your API endpoint that undoes absent marking
       const formData = new FormData();
@@ -815,6 +825,10 @@
 
       showSuccess(`${employeeName} absent status undone`);
       delete lastActionByEmployee[String(employeeId)];
+      if (lastGlobalAction && lastGlobalAction.type === 'absent' && String(lastGlobalAction.employeeId) === String(employeeId)) {
+        lastGlobalAction = null;
+        updateGlobalUndoUI();
+      }
       reloadEmployees();
       return;
     }

@@ -215,7 +215,7 @@ require('function/attendance.php');
       </div>
 
       <!-- Global Undo Button -->
-      <div id="globalUndoContainer" class="undo-container" style="display: none;">
+      <div id="globalUndoContainer" class="undo-container" style="display: flex;">
         <button id="btnGlobalUndo" class="btn-global-undo" title="Undo last action">
           <i class="fas fa-rotate-left"></i>
           <span>Undo</span>
@@ -288,7 +288,7 @@ require('function/attendance.php');
           <li><strong>Marking Attendance:</strong> Use the <span style="color: #16a34a;">Time In</span> and <span style="color: #dc2626;">Mark Absent</span> buttons to record daily attendance.</li>
           <li><strong>Search:</strong> You can search for specific employees within the selected branch by name or ID.</li>
           <li><strong>Filters:</strong> Use the status pills (Available, Present, etc.) to quickly organize your view.</li>
-          <li><strong>Undo:</strong> If you make a mistake, look for the "Undo last action" option in the employee menu (three dots).</li>
+          <li><strong>Undo:</strong> If you make a mistake, look for the "Undo" button in the right side of the employee search.</li>
         </ul>
       </div>
     </main>
