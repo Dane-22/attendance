@@ -45,7 +45,7 @@ require('function/attendance.php');
       <div id="errorMessage" class="error-message"></div>
 
       <div class="welcome-banner" id="welcomeBanner">
-        <div class="welcome-banner-left">Welcome! Please select a branch to start!</div>
+        <div class="welcome-banner-left">Welcome! Please select a project to start!</div>
         <div class="welcome-banner-right">
           <span class="welcome-banner-date"><?php echo date('F j, Y'); ?></span>
           <span class="welcome-banner-time"><?php echo htmlspecialchars($currentTime); ?></span>
@@ -104,41 +104,41 @@ require('function/attendance.php');
         <?php endif; ?>
       </div> -->
 
-      <!-- Branch Selection -->
+      <!-- Project Selection -->
       <div class="branch-selection">
         <div class="branch-header">
-          <div class="branch-title">Select Deployment Branch</div>
+          <div class="branch-title">Select Deployment Project</div>
           <?php if (($_SESSION['position'] ?? '') === 'Super Admin'): ?>
-            <button class="btn-add-branch" id="addBranchBtn" title="Add new branch">
-              <i class="fas fa-plus"></i> Add Branch
+            <button class="btn-add-branch" id="addBranchBtn" title="Add new project">
+              <i class="fas fa-plus"></i> Add Project
             </button>
           <?php endif; ?>
         </div>
         <div class="branch-tools">
           <div class="branch-search">
-            <input type="text" id="branchSearchInput" class="branch-search-input" placeholder="Search branches..." autocomplete="off" />
+            <input type="text" id="branchSearchInput" class="branch-search-input" placeholder="Search projects..." autocomplete="off" />
           </div>
           <div class="branch-pager" id="branchPager"></div>
         </div>
         <div class="branch-grid" id="branchGrid">
           <?php foreach ($branches as $branch): ?>
           <div class="branch-card" data-branch-id="<?php echo htmlspecialchars($branch['id']); ?>" data-branch="<?php echo htmlspecialchars($branch['branch_name']); ?>">
-            <button class="btn-remove-branch" onclick="removeBranch(event, <?php echo htmlspecialchars($branch['id']); ?>, '<?php echo htmlspecialchars($branch['branch_name']); ?>')" title="Delete branch">
+            <button class="btn-remove-branch" onclick="removeBranch(event, <?php echo htmlspecialchars($branch['id']); ?>, '<?php echo htmlspecialchars($branch['branch_name']); ?>')" title="Delete project">
               <i class="fas fa-times"></i>
             </button>
             <div class="branch-name"><?php echo htmlspecialchars($branch['branch_name']); ?></div>
-            <div class="branch-desc">Deploy employees to this branch for attendance</div>
+            <div class="branch-desc">Deploy employees to this project for attendance</div>
           </div>
           <?php endforeach; ?>
         </div>
       </div>
 
-      <!-- Add Branch Modal -->
+      <!-- Add Project Modal -->
       <?php if (($_SESSION['position'] ?? '') === 'Super Admin'): ?>
         <div id="addBranchModal" class="modal-backdrop">
           <div class="modal-panel" style="width: 420px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h3 style="margin: 0; color: #FFD700; font-size: 18px;">Add New Branch</h3>
+              <h3 style="margin: 0; color: #FFD700; font-size: 18px;">Add New Project</h3>
               <button onclick="closeAddBranchModal()" style="background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 0;">
                 <i class="fas fa-times"></i>
               </button>
@@ -146,16 +146,16 @@ require('function/attendance.php');
             
             <form id="addBranchForm" onsubmit="submitAddBranch(event)">
               <div class="form-row">
-                <label style="font-size: 12px; color: #FFD700; font-weight: 600; margin-bottom: 6px; display: block;">Branch Name</label>
+                <label style="font-size: 12px; color: #FFD700; font-weight: 600; margin-bottom: 6px; display: block;">Project Name</label>
                 <input 
                   type="text" 
                   id="branchNameInput" 
                   name="branch_name" 
-                  placeholder="Enter branch name (e.g., Main Office, Branch A)" 
+                  placeholder="Enter project name (e.g., Main Office, Project A)" 
                   required 
                   style="background: transparent; border: 1px solid rgba(255,255,255,0.04); padding: 0.6rem 0.75rem; border-radius: 8px; color: #ffffff; width: 100%;"
                 />
-                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">Branch names must be unique and 2-255 characters</small>
+                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">Project names must be unique and 2-255 characters</small>
               </div>
 
               <div style="display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;">
@@ -163,7 +163,7 @@ require('function/attendance.php');
                   Cancel
                 </button>
                 <button type="submit" style="background: #FFD700; border: none; color: #0b0b0b; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                  <i class="fas fa-plus"></i> Add Branch
+                  <i class="fas fa-plus"></i> Add Project
                 </button>
               </div>
             </form>
@@ -248,7 +248,7 @@ require('function/attendance.php');
       <div id="employeeContainer">
         <div class="no-employees">
           <i class="fas fa-users" style="font-size: 36px; color: #444; margin-bottom: 10px;"></i>
-          <div>Please select a deployment branch to view all available employees</div>
+          <div>Please select a deployment project to view all available employees</div>
         </div>
       </div>
 
@@ -284,9 +284,9 @@ require('function/attendance.php');
           <span>Quick Tips</span>
         </div>
         <ul class="quick-tips-list">
-          <li><strong>Select a Branch:</strong> You must select a deployment branch first to view and manage its employees.</li>
+          <li><strong>Select a Project:</strong> You must select a deployment project first to view and manage its employees.</li>
           <li><strong>Marking Attendance:</strong> Use the <span style="color: #16a34a;">Time In</span> and <span style="color: #dc2626;">Mark Absent</span> buttons to record daily attendance.</li>
-          <li><strong>Search:</strong> You can search for specific employees within the selected branch by name or ID.</li>
+          <li><strong>Search:</strong> You can search for specific employees within the selected project by name or ID.</li>
           <li><strong>Filters:</strong> Use the status pills (Available, Present, etc.) to quickly organize your view.</li>
           <li><strong>Undo:</strong> If you make a mistake, look for the "Undo" button in the right side of the employee search.</li>
         </ul>

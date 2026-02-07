@@ -412,6 +412,13 @@
 
     // Render employees - ONLY LIST VIEW
     function renderEmployees(employees) {
+      // Filter out "Absent" employees when viewing "Available" list
+      if (currentStatusFilter === 'available') {
+          employees = employees.filter(emp => {
+          // Exclude employees marked as "Absent"
+          return emp.attendance_status !== 'Absent';
+        });
+      }
       const container = document.getElementById('employeeContainer');
 
       if (employees.length === 0) {
@@ -488,7 +495,7 @@
                 <div class="employee-meta">
                   <div class="employee-name">${escapeAttr(name)}</div>
                   <div class="employee-sub employee-branch">
-                    <span class="employee-branch-label">Current Branch:</span>
+                    <span class="employee-branch-label">Current Project:</span>
                     <span class="employee-branch-value">${escapeAttr(employee.logged_branch || '--')}</span>
                   </div>
                 </div>
@@ -550,7 +557,7 @@
 
     async function markAbsent(employeeId, employeeName) {
       if (!selectedBranch) {
-        showError('Please select a branch first');
+        showError('Please select a project first');
         return;
       }
 
@@ -869,7 +876,7 @@ function debugUndo() {
 
     function performClockIn(employeeId, employeeName, branchName) {
       if (!branchName) {
-        showError('Please select a branch first');
+        showError('Please select a project first');
         return;
       }
 
@@ -994,7 +1001,7 @@ function debugUndo() {
       // Filter out current branch
       const options = branches.filter(b => b.branch_name !== currentBranch);
       if (!options.length) {
-        showError('No other branches available for transfer');
+        showError('No other projects available for transfer');
         return;
       }
 
@@ -1017,7 +1024,7 @@ function debugUndo() {
         <div style="background: #222; padding: 24px 32px; border-radius: 12px; box-shadow: 0 2px 32px #000; min-width: 320px; max-width: 96vw;">
           <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Transfer ${employeeName}</h3>
           <div style="margin-bottom: 16px;">
-            <label for="transferBranchSelect" style="color: #fff; font-size: 14px;">Select branch:</label>
+            <label for="transferBranchSelect" style="color: #fff; font-size: 14px;">Select project:</label>
             <select id="transferBranchSelect" style="width: 100%; padding: 8px; margin-top: 6px; border-radius: 6px;">
               ${options.map(b => `<option value="${b.branch_name}">${b.branch_name}</option>`).join('')}
             </select>
@@ -1093,7 +1100,7 @@ function debugUndo() {
 
     async function saveAbsentNotes(employeeId, notes) {
       if (!selectedBranch) {
-        showError('Please select a branch first');
+        showError('Please select a project first');
         return;
       }
 
@@ -1185,7 +1192,7 @@ function debugUndo() {
 
     async function saveOvertime(employeeId, totalOtHrs) {
       if (!selectedBranch) {
-        showError('Please select a branch first');
+        showError('Please select a project first');
         return;
       }
 
@@ -1219,7 +1226,7 @@ function debugUndo() {
 
     function transferEmployee(employeeId, employeeName, toBranch) {
       if (!toBranch) {
-        showError('Please select a branch to transfer');
+        showError('Please select a project to transfer');
         return;
       }
 
@@ -1471,9 +1478,9 @@ function debugUndo() {
         const nameJs = name.replace(/'/g, "\\'");
         return `
           <div class="branch-card" data-branch-id="${id}" data-branch="${nameEsc}">
-            ${isAdminUser ? `<button class="btn-remove-branch" onclick="removeBranch(event, ${id}, '${nameJs}')" title="Delete branch"><i class="fas fa-times"></i></button>` : ''}
+            ${isAdminUser ? `<button class="btn-remove-branch" onclick="removeBranch(event, ${id}, '${nameJs}')" title="Delete project"><i class="fas fa-times"></i></button>` : ''}
             <div class="branch-name">${nameEsc}</div>
-            <div class="branch-desc">Deploy employees to this branch for attendance</div>
+            <div class="branch-desc">Deploy employees to this project for attendance</div>
           </div>
         `;
       }).join('');
@@ -1542,12 +1549,12 @@ function debugUndo() {
         const branchName = document.getElementById('branchNameInput').value.trim();
         
         if (!branchName) {
-            showBranchMessage('Branch name is required', 'error');
+            showBranchMessage('Project name is required', 'error');
             return;
         }
 
         if (branchName.length < 2) {
-            showBranchMessage('Branch name must be at least 2 characters', 'error');
+            showBranchMessage('Project name must be at least 2 characters', 'error');
             return;
         }
 
@@ -1589,14 +1596,14 @@ function debugUndo() {
         })
         .then(data => {
             if (data.success) {
-                showBranchMessage('Branch added successfully!', 'success');
+                showBranchMessage('Project added successfully!', 'success');
                 document.getElementById('addBranchForm').reset();
                 addBranchCardToUI(data.branch_id, data.branch_name);
 
                 if (data.branch_id) {
                     const addedBranchId = data.branch_id;
                     const addedBranchName = data.branch_name || branchName;
-                    showUndoSnackbar(`Branch added: ${addedBranchName}`, async () => {
+                    showUndoSnackbar(`Project added: ${addedBranchName}`, async () => {
                         const undoForm = new FormData();
                         undoForm.append('branch_action', 'delete_branch');
                         undoForm.append('branch_id', addedBranchId);
@@ -1613,7 +1620,7 @@ function debugUndo() {
                         allBranches = allBranches.filter(b => String(b.id) !== String(addedBranchId));
                         window.allBranches = allBranches;
                         renderBranchGrid();
-                        showSuccess('Branch addition undone');
+                        showSuccess('Project addition undone');
                     }, 5000);
                 }
 
@@ -1626,7 +1633,7 @@ function debugUndo() {
         })
         .catch(error => {
             console.error('Error:', error);
-            showBranchMessage('Failed to add branch', 'error');
+            showBranchMessage('Failed to add project', 'error');
         })
         .finally(() => {
             submitBtn.disabled = false;
@@ -1654,7 +1661,7 @@ function debugUndo() {
             e.stopPropagation();
         }
         
-        if (!confirm(`Are you sure you want to delete the branch "${branchName}"?`)) {
+        if (!confirm(`Are you sure you want to delete the project "${branchName}"?`)) {
             return;
         }
 
@@ -1716,14 +1723,14 @@ function debugUndo() {
                         document.getElementById('employeeContainer').innerHTML = `
                             <div class="no-employees">
                                 <i class="fas fa-users" style="font-size: 36px; color: #444; margin-bottom: 10px;"></i>
-                                <div>Branch deleted. Please select another deployment branch</div>
+                                <div>Project deleted. Please select another deployment project</div>
                             </div>
                         `;
                         hidePagination();
                     }
                 }, 300);
 
-                showUndoSnackbar(`Branch deleted: ${branchName}`, async () => {
+                showUndoSnackbar(`Project deleted: ${branchName}`, async () => {
                     const undoForm = new FormData();
                     undoForm.append('branch_action', 'undo_delete_branch');
                     undoForm.append('branch_id', branchId);
@@ -1738,7 +1745,7 @@ function debugUndo() {
                         throw new Error(undoData?.message || 'Undo failed');
                     }
                     addBranchCardToUI(undoData.branch_id || branchId, undoData.branch_name || branchName);
-                    showSuccess('Branch deletion undone');
+                    showSuccess('Project deletion undone');
                 }, 5000);
             } else {
                 if (removeBtn) {
@@ -1754,7 +1761,7 @@ function debugUndo() {
               removeBtn.innerHTML = originalContent;
               removeBtn.disabled = false;
             }
-            showGlobalMessage(error?.message || 'Failed to delete branch', 'error');
+            showGlobalMessage(error?.message || 'Failed to delete project', 'error');
         })
         .finally(() => {
             if (removeBtn) {
