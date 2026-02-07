@@ -975,6 +975,48 @@
         margin-bottom: 12px;
     }
 
+    .branch-tools {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .branch-search {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    .branch-search-input {
+        width: 100%;
+        padding: 8px 12px;
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 12px;
+        transition: border-color 0.3s;
+    }
+
+    .branch-search-input:focus {
+        outline: none;
+        border-color: #FFD700;
+    }
+
+    .branch-search-input::placeholder {
+        color: #888;
+    }
+
+    .branch-pager {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        justify-content: flex-end;
+        flex: 0 0 auto;
+    }
+
     .btn-add-branch {
         background: #FFD700 !important;
         color: #0b0b0b !important;
@@ -1311,20 +1353,6 @@
             margin-top: 5px;
             justify-content: center;
             width: 100%;
-        }
-
-        .branch-header {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .btn-add-branch {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .modal-panel {
-            width: 90% !important;
         }
     }
 

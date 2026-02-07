@@ -106,6 +106,12 @@ require('function/attendance.php');
             </button>
           <?php endif; ?>
         </div>
+        <div class="branch-tools">
+          <div class="branch-search">
+            <input type="text" id="branchSearchInput" class="branch-search-input" placeholder="Search branches..." autocomplete="off" />
+          </div>
+          <div class="branch-pager" id="branchPager"></div>
+        </div>
         <div class="branch-grid" id="branchGrid">
           <?php foreach ($branches as $branch): ?>
           <div class="branch-card" data-branch-id="<?php echo htmlspecialchars($branch['id']); ?>" data-branch="<?php echo htmlspecialchars($branch['branch_name']); ?>">

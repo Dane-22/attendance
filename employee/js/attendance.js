@@ -1234,6 +1234,139 @@
     
     const isAdminUser = !!document.getElementById('addBranchBtn');
     
+    // Branch list rendering (search + pagination)
+    let allBranches = Array.isArray(window.branchesFromPHP) ? [...window.branchesFromPHP] : [];
+    window.allBranches = allBranches;
+
+    let branchPage = 1;
+    const branchPerPage = 6;
+    let branchSearchTerm = '';
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getFilteredBranches() {
+      const term = (branchSearchTerm || '').trim().toLowerCase();
+      if (!term) return allBranches;
+      return allBranches.filter(b => String(b.branch_name ?? '').toLowerCase().includes(term));
+    }
+
+    function renderBranchPager(totalItems, totalPages) {
+      const pager = document.getElementById('branchPager');
+      if (!pager) return;
+
+      if (totalPages <= 1) {
+        pager.innerHTML = '';
+        return;
+      }
+
+      const maxButtons = 7;
+      let start = Math.max(1, branchPage - 2);
+      let end = Math.min(totalPages, branchPage + 2);
+
+      // Expand range to meet maxButtons where possible
+      while ((end - start + 1) < Math.min(maxButtons, totalPages)) {
+        if (start > 1) start--;
+        else if (end < totalPages) end++;
+        else break;
+      }
+
+      let html = '';
+      html += `<button class="page-btn" type="button" ${branchPage === 1 ? 'disabled' : ''} data-branch-page="${branchPage - 1}"><i class="fas fa-chevron-left"></i></button>`;
+      html += `<button class="page-btn ${branchPage === 1 ? 'active' : ''}" type="button" data-branch-page="1">1</button>`;
+
+      if (start > 2) {
+        html += '<span class="page-dots">...</span>';
+      }
+
+      for (let p = Math.max(2, start); p <= Math.min(totalPages - 1, end); p++) {
+        html += `<button class="page-btn ${branchPage === p ? 'active' : ''}" type="button" data-branch-page="${p}">${p}</button>`;
+      }
+
+      if (end < totalPages - 1) {
+        html += '<span class="page-dots">...</span>';
+      }
+
+      if (totalPages > 1) {
+        html += `<button class="page-btn ${branchPage === totalPages ? 'active' : ''}" type="button" data-branch-page="${totalPages}">${totalPages}</button>`;
+      }
+      html += `<button class="page-btn" type="button" ${branchPage === totalPages ? 'disabled' : ''} data-branch-page="${branchPage + 1}"><i class="fas fa-chevron-right"></i></button>`;
+
+      pager.innerHTML = html;
+
+      pager.querySelectorAll('[data-branch-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const next = parseInt(btn.getAttribute('data-branch-page') || '', 10);
+          if (!Number.isFinite(next)) return;
+          const clamped = Math.min(totalPages, Math.max(1, next));
+          if (clamped === branchPage) return;
+          branchPage = clamped;
+          renderBranchGrid();
+        });
+      });
+    }
+
+    function renderBranchGrid() {
+      const grid = document.getElementById('branchGrid');
+      if (!grid) return;
+
+      const filtered = getFilteredBranches();
+      const totalItems = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / branchPerPage));
+      branchPage = Math.min(totalPages, Math.max(1, branchPage));
+
+      const startIdx = (branchPage - 1) * branchPerPage;
+      const pageItems = filtered.slice(startIdx, startIdx + branchPerPage);
+
+      grid.innerHTML = pageItems.map(b => {
+        const id = escapeHtml(b.id);
+        const name = String(b.branch_name ?? '');
+        const nameEsc = escapeHtml(name);
+        const nameJs = name.replace(/'/g, "\\'");
+        return `
+          <div class="branch-card" data-branch-id="${id}" data-branch="${nameEsc}">
+            ${isAdminUser ? `<button class="btn-remove-branch" onclick="removeBranch(event, ${id}, '${nameJs}')" title="Delete branch"><i class="fas fa-times"></i></button>` : ''}
+            <div class="branch-name">${nameEsc}</div>
+            <div class="branch-desc">Deploy employees to this branch for attendance</div>
+          </div>
+        `;
+      }).join('');
+
+      // Attach click handlers
+      grid.querySelectorAll('.branch-card').forEach(card => {
+        card.addEventListener('click', function() {
+          selectBranch(this);
+        });
+      });
+
+      // Preserve selection highlight if selectedBranch is visible on this page
+      if (selectedBranch) {
+        grid.querySelectorAll('.branch-card').forEach(card => {
+          if (card.dataset.branch === selectedBranch) {
+            card.classList.add('selected');
+          }
+        });
+      }
+
+      renderBranchPager(totalItems, totalPages);
+    }
+
+    // Hook up branch search input
+    const branchSearchInput = document.getElementById('branchSearchInput');
+    if (branchSearchInput) {
+      branchSearchInput.addEventListener('input', () => {
+        branchSearchTerm = branchSearchInput.value || '';
+        branchPage = 1;
+        renderBranchGrid();
+      });
+    }
+
     // DEBUG: Add Branch button found, attaching click handler
     if (isAdminUser && document.getElementById('addBranchBtn')) {
         console.log('DEBUG: Add Branch button found, attaching click handler');
@@ -1332,10 +1465,9 @@
                             throw new Error(undoData?.message || 'Undo failed');
                         }
 
-                        const card = document.querySelector(`[data-branch-id="${addedBranchId}"]`);
-                        if (card) {
-                            card.remove();
-                        }
+                        allBranches = allBranches.filter(b => String(b.id) !== String(addedBranchId));
+                        window.allBranches = allBranches;
+                        renderBranchGrid();
                         showSuccess('Branch addition undone');
                     }, 5000);
                 }
@@ -1358,25 +1490,18 @@
     }
 
     function addBranchCardToUI(branchId, branchName) {
-        const branchGrid = document.getElementById('branchGrid');
-        
-        const branchCard = document.createElement('div');
-        branchCard.className = 'branch-card';
-        branchCard.setAttribute('data-branch-id', branchId);
-        branchCard.setAttribute('data-branch', branchName);
-        branchCard.innerHTML = `
-            ${isAdminUser ? `<button class="btn-remove-branch" onclick="removeBranch(event, ${branchId}, '${branchName.replace(/'/g, "\\'")}')" title="Delete branch">
-                <i class="fas fa-times"></i>
-            </button>` : ''}
-            <div class="branch-name">${branchName}</div>
-            <div class="branch-desc">Deploy employees to this branch</div>
-        `;
-        
-        branchGrid.appendChild(branchCard);
-        
-        branchCard.addEventListener('click', function() {
-            selectBranch(this);
-        });
+        const idNum = parseInt(String(branchId), 10);
+        const id = Number.isFinite(idNum) ? idNum : branchId;
+        const name = String(branchName ?? '').trim();
+        if (!name) return;
+
+        // Avoid duplicates
+        const exists = allBranches.some(b => String(b.id) === String(id));
+        if (!exists) {
+          allBranches.push({ id, branch_name: name });
+          window.allBranches = allBranches;
+        }
+        renderBranchGrid();
     }
 
     function removeBranch(e, branchId, branchName) {
@@ -1393,10 +1518,12 @@
         formData.append('branch_id', branchId);
 
         const branchCard = document.querySelector(`[data-branch-id="${branchId}"]`);
-        const removeBtn = branchCard.querySelector('.btn-remove-branch');
-        const originalContent = removeBtn.innerHTML;
-        removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        removeBtn.disabled = true;
+        const removeBtn = branchCard ? branchCard.querySelector('.btn-remove-branch') : null;
+        const originalContent = removeBtn ? removeBtn.innerHTML : '';
+        if (removeBtn) {
+          removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+          removeBtn.disabled = true;
+        }
 
         fetch(window.location.pathname, {
             method: 'POST',
@@ -1427,14 +1554,18 @@
         })
         .then(data => {
             if (data.success) {
-                branchCard.style.transition = 'all 0.3s ease';
-                branchCard.style.opacity = '0';
-                branchCard.style.transform = 'scale(0.9)';
-                
+                if (branchCard) {
+                  branchCard.style.transition = 'all 0.3s ease';
+                  branchCard.style.opacity = '0';
+                  branchCard.style.transform = 'scale(0.9)';
+                }
+
                 setTimeout(() => {
-                    branchCard.remove();
+                    allBranches = allBranches.filter(b => String(b.id) !== String(branchId));
+                    window.allBranches = allBranches;
+                    renderBranchGrid();
                     showGlobalMessage(data.message, 'success');
-                    
+
                     if (selectedBranch === branchName) {
                         selectedBranch = null;
                         document.getElementById('employeeContainer').innerHTML = `
@@ -1465,15 +1596,19 @@
                     showSuccess('Branch deletion undone');
                 }, 5000);
             } else {
-                removeBtn.innerHTML = originalContent;
-                removeBtn.disabled = false;
+                if (removeBtn) {
+                  removeBtn.innerHTML = originalContent;
+                  removeBtn.disabled = false;
+                }
                 showGlobalMessage(data.message, 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            removeBtn.innerHTML = originalContent;
-            removeBtn.disabled = false;
+            if (removeBtn) {
+              removeBtn.innerHTML = originalContent;
+              removeBtn.disabled = false;
+            }
             showGlobalMessage(error?.message || 'Failed to delete branch', 'error');
         });
     }
@@ -1517,11 +1652,7 @@
     }
 
     // Attach click handlers to initial branch cards
-    document.querySelectorAll('.branch-card').forEach(card => {
-        card.addEventListener('click', function() {
-            selectBranch(this);
-        });
-    });
+    renderBranchGrid();
 
     // DEBUG: Show debug info with keyboard shortcut
     document.addEventListener('keydown', function(e) {
