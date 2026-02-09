@@ -75,6 +75,13 @@ function attendanceHasTotalOtHrsColumn($db) {
     return $cached;
 }
 
+function employeesHasColumn($db, $columnName) {
+    $safe = mysqli_real_escape_string($db, $columnName);
+    $sql = "SHOW COLUMNS FROM `employees` LIKE '{$safe}'";
+    $result = mysqli_query($db, $sql);
+    return $result && mysqli_num_rows($result) > 0;
+}
+
 $employeeId = $_POST['employee_id'] ?? $_SESSION['employee_id'] ?? null;
 $employeeCode = $_POST['employee_code'] ?? $_SESSION['employee_code'] ?? null;
 $branchName = $_POST['branch_name'] ?? $_SESSION['daily_branch'] ?? null;
@@ -85,6 +92,14 @@ error_log("Clock In Attempt - Employee ID: $employeeId, Code: $employeeCode");
 
 if (!$employeeId || !$employeeCode) {
     echo json_encode(['success' => false, 'message' => 'Missing employee data']);
+    exit();
+}
+
+// Basic guard: normal Employees can only clock themselves in
+$sessionEmployeeId = $_SESSION['employee_id'] ?? null;
+$sessionPosition = $_SESSION['position'] ?? 'Employee';
+if ($sessionPosition === 'Employee' && $sessionEmployeeId && (int)$employeeId !== (int)$sessionEmployeeId) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
@@ -153,6 +168,58 @@ if (mysqli_stmt_num_rows($stmt) > 0) {
 }
 mysqli_stmt_close($stmt);
 
+// Validate selected branch and auto-transfer assignment (only after we know time-in will proceed)
+$targetBranchId = null;
+$targetBranchName = null;
+$branchResolveStmt = mysqli_prepare($db, "SELECT id, branch_name FROM branches WHERE branch_name = ? AND is_active = 1 LIMIT 1");
+if ($branchResolveStmt) {
+    mysqli_stmt_bind_param($branchResolveStmt, 's', $branchName);
+    mysqli_stmt_execute($branchResolveStmt);
+    $branchResolveRes = mysqli_stmt_get_result($branchResolveStmt);
+    $branchResolveRow = $branchResolveRes ? mysqli_fetch_assoc($branchResolveRes) : null;
+    mysqli_stmt_close($branchResolveStmt);
+    if ($branchResolveRow) {
+        $targetBranchId = (int)($branchResolveRow['id'] ?? 0);
+        $targetBranchName = $branchResolveRow['branch_name'] ?? null;
+    }
+}
+
+if (!$targetBranchId || !$targetBranchName) {
+    echo json_encode(['success' => false, 'message' => 'Invalid branch selected']);
+    exit();
+}
+
+$currentAssignedBranchId = null;
+$currentAssignedBranchName = null;
+$assignedStmt = mysqli_prepare($db, "SELECT e.branch_id, b.branch_name FROM employees e LEFT JOIN branches b ON b.id = e.branch_id WHERE e.id = ? LIMIT 1");
+if ($assignedStmt) {
+    mysqli_stmt_bind_param($assignedStmt, 'i', $employeeId);
+    mysqli_stmt_execute($assignedStmt);
+    $assignedRes = mysqli_stmt_get_result($assignedStmt);
+    $assignedRow = $assignedRes ? mysqli_fetch_assoc($assignedRes) : null;
+    mysqli_stmt_close($assignedStmt);
+    if ($assignedRow) {
+        $currentAssignedBranchId = isset($assignedRow['branch_id']) ? (int)$assignedRow['branch_id'] : null;
+        $currentAssignedBranchName = $assignedRow['branch_name'] ?? null;
+    }
+}
+
+$didAutoTransfer = false;
+if ($currentAssignedBranchId === null || (int)$currentAssignedBranchId !== (int)$targetBranchId) {
+    $hasUpdatedAt = employeesHasColumn($db, 'updated_at');
+    $updateEmpSql = $hasUpdatedAt
+        ? "UPDATE employees SET branch_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? LIMIT 1"
+        : "UPDATE employees SET branch_id = ? WHERE id = ? LIMIT 1";
+    $updateEmpStmt = mysqli_prepare($db, $updateEmpSql);
+    if ($updateEmpStmt) {
+        mysqli_stmt_bind_param($updateEmpStmt, 'ii', $targetBranchId, $employeeId);
+        if (mysqli_stmt_execute($updateEmpStmt)) {
+            $didAutoTransfer = (mysqli_stmt_affected_rows($updateEmpStmt) > 0);
+        }
+        mysqli_stmt_close($updateEmpStmt);
+    }
+}
+
 // If there's an existing attendance row for today with no time_in yet, update it instead of inserting
 $existingSql = "SELECT id FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() AND time_in IS NULL ORDER BY id DESC LIMIT 1";
 $existingStmt = mysqli_prepare($db, $existingSql);
@@ -218,7 +285,10 @@ if ($existingStmt) {
                 'success' => true,
                 'message' => 'Clocked in successfully',
                 'time_in' => $timeIn,
-                'shift_id' => $existingId
+                'shift_id' => $existingId,
+                'auto_transferred' => $didAutoTransfer,
+                'from_branch' => $currentAssignedBranchName,
+                'to_branch' => $targetBranchName
             ]);
             exit();
         }
@@ -310,7 +380,10 @@ if (mysqli_stmt_execute($stmt)) {
         'success' => true,
         'message' => 'Clocked in successfully',
         'time_in' => $timeIn,
-        'shift_id' => $shiftId
+        'shift_id' => $shiftId,
+        'auto_transferred' => $didAutoTransfer,
+        'from_branch' => $currentAssignedBranchName,
+        'to_branch' => $targetBranchName
     ]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);

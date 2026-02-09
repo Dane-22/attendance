@@ -74,10 +74,12 @@ require('function/attendance.php');
         <div class="stat-card">
           <div class="stat-label">Present</div>
           <div class="stat-value" id="statPresent">--</div>
+          <div class="stat-list" id="statPresentList"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Absent</div>
           <div class="stat-value" id="statAbsent">--</div>
+          <div class="stat-list" id="statAbsentList"></div>
         </div>
       </div>
 

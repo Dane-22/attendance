@@ -241,6 +241,14 @@
       const totalEl = document.getElementById('statTotalWorkers');
       const presentEl = document.getElementById('statPresent');
       const absentEl = document.getElementById('statAbsent');
+      const presentListEl = document.getElementById('statPresentList');
+      const absentListEl = document.getElementById('statAbsentList');
+
+      // DEBUG: Log what we're receiving
+      console.log('DEBUG updateBranchStats:', summary);
+      console.log('DEBUG present_names:', summary?.present_names);
+      console.log('DEBUG absent_names:', summary?.absent_names);
+      console.log('DEBUG DOM elements:', { presentListEl, absentListEl });
 
       if (!totalEl || !presentEl || !absentEl) return;
 
@@ -248,12 +256,52 @@
         totalEl.textContent = '--';
         presentEl.textContent = '--';
         absentEl.textContent = '--';
+        if (presentListEl) presentListEl.innerHTML = '';
+        if (absentListEl) absentListEl.innerHTML = '';
         return;
       }
 
       totalEl.textContent = String(summary.total_workers ?? 0);
       presentEl.textContent = String(summary.present ?? 0);
       absentEl.textContent = String(summary.absent ?? 0);
+
+      const getEmployeeDisplayName = (emp) => {
+        if (!emp) return '';
+        if (emp.name) return String(emp.name);
+        const first = emp.first_name ? String(emp.first_name) : '';
+        const middle = emp.middle_name ? String(emp.middle_name) : '';
+        const last = emp.last_name ? String(emp.last_name) : '';
+        return `${first} ${middle} ${last}`.replace(/\s+/g, ' ').trim();
+      };
+
+      const presentNamesFromSummary = Array.isArray(summary.present_names) ? summary.present_names : null;
+      const absentNamesFromSummary = Array.isArray(summary.absent_names) ? summary.absent_names : null;
+
+      const presentEmployees = presentNamesFromSummary && presentNamesFromSummary.length ? presentNamesFromSummary.map(n => ({ name: n })) : Array.isArray(currentEmployees) ? currentEmployees.filter(e => (e && e.time_in && !e.time_out) || (e && e.attendance_status === 'Present')) : [];
+      const absentEmployees = absentNamesFromSummary && absentNamesFromSummary.length ? absentNamesFromSummary.map(n => ({ name: n })) : Array.isArray(currentEmployees) ? currentEmployees.filter(e => e && e.attendance_status === 'Absent') : [];
+
+      const renderNameList = (el, list, totalCount) => {
+        if (!el) return;
+        if (!Array.isArray(list) || list.length === 0) {
+          el.innerHTML = '';
+          return;
+        }
+
+        const max = 5;
+        const names = list
+          .map(getEmployeeDisplayName)
+          .filter(Boolean)
+          .slice(0, max);
+
+        const extra = Math.max(0, (parseInt(totalCount, 10) || 0) - names.length);
+
+        const rows = names.map(n => `<div class="stat-list-item">${escapeHtml(n)}</div>`);
+        if (extra > 0) rows.push(`<div class="stat-list-more">and ${extra} more</div>`);
+        el.innerHTML = rows.join('');
+      };
+
+      renderNameList(presentListEl, presentEmployees, summary.present);
+      renderNameList(absentListEl, absentEmployees, summary.absent);
     }
 
     // Function to update time display
@@ -910,7 +958,13 @@ function debugUndo() {
         }
 
         if (data.success) {
-          showSuccess(`${employeeName} time-in recorded (${data.time_in || ''})`);
+          if (data.auto_transferred) {
+            const fromBranch = data.from_branch || '--';
+            const toBranch = data.to_branch || branchName;
+            showSuccess(`${employeeName} time-in recorded (${data.time_in || ''}) — auto-transferred from ${fromBranch} to ${toBranch}`);
+          } else {
+            showSuccess(`${employeeName} time-in recorded (${data.time_in || ''})`);
+          }
           if (data.shift_id) {
             const actionObj = {
               type: 'clock_in',

@@ -464,6 +464,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $absentRow = mysqli_fetch_assoc($absentRes);
                 $summary['absent'] = intval($absentRow['cnt'] ?? 0);
 
+                // Add a small preview list of names for the stat cards (top 5)
+                $summary['present_names'] = [];
+                $summary['absent_names'] = [];
+
+                // Present name list: employees in this branch with an open shift today at this branch
+                if (attendanceHasTimeColumns($db)) {
+                    $presentNamesSql = "SELECT CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) AS name
+                                        FROM employees e
+                                        INNER JOIN (
+                                            SELECT a1.*
+                                            FROM attendance a1
+                                            INNER JOIN (
+                                                SELECT employee_id, MAX(id) AS max_id
+                                                FROM attendance
+                                                WHERE attendance_date = CURDATE()
+                                                  AND time_in IS NOT NULL
+                                                  AND time_out IS NULL
+                                                GROUP BY employee_id
+                                            ) t ON a1.id = t.max_id
+                                            WHERE a1.branch_name = ?
+                                        ) a ON e.id = a.employee_id
+                                        WHERE e.status = 'Active' AND e.position = 'Worker' AND e.branch_id = ?
+                                        ORDER BY e.last_name, e.first_name
+                                        LIMIT 5";
+                    $presentNamesStmt = mysqli_prepare($db, $presentNamesSql);
+                    if ($presentNamesStmt) {
+                        mysqli_stmt_bind_param($presentNamesStmt, 'si', $branch, $selectedBranchId);
+                        mysqli_stmt_execute($presentNamesStmt);
+                        $presentNamesRes = mysqli_stmt_get_result($presentNamesStmt);
+                        while ($presentNamesRes && ($n = mysqli_fetch_assoc($presentNamesRes))) {
+                            $name = trim((string)($n['name'] ?? ''));
+                            if ($name !== '') $summary['present_names'][] = $name;
+                        }
+                        mysqli_stmt_close($presentNamesStmt);
+                    }
+                } else {
+                    // Fallback for schema without time columns: use latest attendance status row
+                    $presentNamesSql = "SELECT CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) AS name
+                                        FROM employees e
+                                        INNER JOIN (
+                                            SELECT a1.*
+                                            FROM attendance a1
+                                            INNER JOIN (
+                                                SELECT employee_id, MAX(id) AS max_id
+                                                FROM attendance
+                                                WHERE attendance_date = CURDATE()
+                                                GROUP BY employee_id
+                                            ) t ON a1.id = t.max_id
+                                            WHERE a1.status = 'Present'
+                                              AND a1.branch_name = ?
+                                        ) a ON e.id = a.employee_id
+                                        WHERE e.status = 'Active' AND e.position = 'Worker' AND e.branch_id = ?
+                                        ORDER BY e.last_name, e.first_name
+                                        LIMIT 5";
+                    $presentNamesStmt = mysqli_prepare($db, $presentNamesSql);
+                    if ($presentNamesStmt) {
+                        mysqli_stmt_bind_param($presentNamesStmt, 'si', $branch, $selectedBranchId);
+                        mysqli_stmt_execute($presentNamesStmt);
+                        $presentNamesRes = mysqli_stmt_get_result($presentNamesStmt);
+                        while ($presentNamesRes && ($n = mysqli_fetch_assoc($presentNamesRes))) {
+                            $name = trim((string)($n['name'] ?? ''));
+                            if ($name !== '') $summary['present_names'][] = $name;
+                        }
+                        mysqli_stmt_close($presentNamesStmt);
+                    }
+                }
+
+                // Absent name list: employees in this branch whose latest attendance today is Absent
+                $absentNamesSql = "SELECT CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) AS name
+                                   FROM employees e
+                                   INNER JOIN (
+                                       SELECT a1.*
+                                       FROM attendance a1
+                                       INNER JOIN (
+                                           SELECT employee_id, MAX(id) AS max_id
+                                           FROM attendance
+                                           WHERE attendance_date = CURDATE()
+                                           GROUP BY employee_id
+                                       ) t ON a1.id = t.max_id
+                                       WHERE a1.status = 'Absent'
+                                   ) a ON e.id = a.employee_id
+                                   WHERE e.status = 'Active' AND e.position = 'Worker' AND e.branch_id = ?
+                                   ORDER BY e.last_name, e.first_name
+                                   LIMIT 5";
+                $absentNamesStmt = mysqli_prepare($db, $absentNamesSql);
+                if ($absentNamesStmt) {
+                    mysqli_stmt_bind_param($absentNamesStmt, 'i', $selectedBranchId);
+                    mysqli_stmt_execute($absentNamesStmt);
+                    $absentNamesRes = mysqli_stmt_get_result($absentNamesStmt);
+                    while ($absentNamesRes && ($n = mysqli_fetch_assoc($absentNamesRes))) {
+                        $name = trim((string)($n['name'] ?? ''));
+                        if ($name !== '') $summary['absent_names'][] = $name;
+                    }
+                    mysqli_stmt_close($absentNamesStmt);
+                }
+
                 $branchSummary = $summary;
             }
 

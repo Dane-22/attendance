@@ -39,6 +39,83 @@ $isTimeRunningSelect = $hasIsTimeRunning ? "COALESCE(a.is_time_running, 0)" : "0
 $totalOtHrsSelect = $hasTotalOtHrs ? "COALESCE(a.total_ot_hrs, '')" : "''";
 $isOvertimeRunningSelect = $hasIsOvertimeRunning ? "COALESCE(a.is_overtime_running, 0)" : "0";
 
+// Midnight auto-close logic: auto-close any open sessions from yesterday at 23:59:59
+function autoCloseYesterdayOpenSessions($db, $today) {
+    // Check if we already ran reset today
+    $resetCheckSql = "SELECT 1 FROM branch_reset_log WHERE reset_date = ? LIMIT 1";
+    $resetCheckStmt = mysqli_prepare($db, $resetCheckSql);
+    mysqli_stmt_bind_param($resetCheckStmt, 's', $today);
+    mysqli_stmt_execute($resetCheckStmt);
+    mysqli_stmt_store_result($resetCheckStmt);
+    $alreadyReset = mysqli_stmt_num_rows($resetCheckStmt) > 0;
+    mysqli_stmt_close($resetCheckStmt);
+    
+    if ($alreadyReset) {
+        return; // Already ran today
+    }
+    
+    // Calculate yesterday's date
+    $yesterday = date('Y-m-d', strtotime($today . ' -1 day'));
+    $yesterdayEnd = $yesterday . ' 23:59:59';
+    
+    // Check if attendance table has the required columns
+    $hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
+    $hasIsOvertimeRunning = attendanceHasColumn($db, 'is_overtime_running');
+    $hasUpdatedAt = attendanceHasColumn($db, 'updated_at');
+    
+    // Build update SQL based on available columns
+    $setParts = ["time_out = ?"];
+    $types = 's';
+    $params = [$yesterdayEnd];
+    
+    if ($hasIsTimeRunning) {
+        $setParts[] = "is_time_running = 0";
+    }
+    if ($hasIsOvertimeRunning) {
+        $setParts[] = "is_overtime_running = 0";
+    }
+    if ($hasUpdatedAt) {
+        $setParts[] = "updated_at = NOW()";
+    }
+    
+    $setClause = implode(', ', $setParts);
+    
+    // Find and close open sessions from yesterday
+    // Open session = time_in is not NULL AND time_out IS NULL (or is_time_running = 1 if column exists)
+    if ($hasIsTimeRunning) {
+        $updateSql = "UPDATE attendance SET {$setClause} 
+                      WHERE attendance_date = ? 
+                        AND (is_time_running = 1 OR (time_in IS NOT NULL AND time_out IS NULL))";
+    } else {
+        $updateSql = "UPDATE attendance SET {$setClause} 
+                      WHERE attendance_date = ? 
+                        AND time_in IS NOT NULL 
+                        AND time_out IS NULL";
+    }
+    
+    $updateStmt = mysqli_prepare($db, $updateSql);
+    if ($updateStmt) {
+        // Bind yesterday date as additional param
+        $types .= 's';
+        $params[] = $yesterday;
+        mysqli_stmt_bind_param($updateStmt, $types, ...$params);
+        mysqli_stmt_execute($updateStmt);
+        $affectedRows = mysqli_stmt_affected_rows($updateStmt);
+        mysqli_stmt_close($updateStmt);
+        
+        // Log the reset
+        $logSql = "INSERT INTO branch_reset_log (reset_date, employees_affected, created_at) VALUES (?, ?, NOW()) 
+                   ON DUPLICATE KEY UPDATE employees_affected = VALUES(employees_affected), created_at = VALUES(created_at)";
+        $logStmt = mysqli_prepare($db, $logSql);
+        mysqli_stmt_bind_param($logStmt, 'si', $today, $affectedRows);
+        mysqli_stmt_execute($logStmt);
+        mysqli_stmt_close($logStmt);
+    }
+}
+
+// Run the midnight auto-close check
+autoCloseYesterdayOpenSessions($db, $date_today);
+
 // Get ALL employees with their assigned branch (employees.branch_id -> branches) and latest attendance log for today
 $sql = "SELECT 
             e.id,
