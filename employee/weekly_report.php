@@ -1254,58 +1254,93 @@ if ($view_type === 'monthly') {
             wsData.push(['PAYROLL PERIOD: <?php echo ($view_type === "weekly") ? "WEEK $selected_week - " : ""; ?><?php echo strtoupper(date('F Y', strtotime($year . "-" . $month . "-01"))); ?>']);
             wsData.push([]);
             
-            // Headers
-            wsData.push(['EMPLOYEE', 'DAYS WORKED', '', 'DAILY RATE', 'BASIC PAY', 'OVERTIME', '', 'GROSS PAY', 'PERFORMANCE', '', 'GROSS +', '', 'CA', 'SSS', 'PHIC', 'HDMF', 'SSS LOAN', 'TOTAL', 'TAKE HOME', '', 'SIGNATURE']);
-            wsData.push(['', '', '', '', '', '', '', '', 'ALLOWANCE', '', 'ALLOWANCE', '', '', '', '', '', '', '', 'PAY', '', '']);
+            // Headers - must match data structure exactly (21 columns)
+            // Data structure: [EMPLOYEE, DAYS, HRS, RATE, BASIC, OT_HRS, OT_AMT, GROSS, PERF_ALLOW, '', GROSS_ALLOW, '', CA, SSS, PHIC, HDMF, SSS_LOAN, TOTAL, TAKE_HOME, '', SIGNATURE]
+            wsData.push(['EMPLOYEE', 'DAYS WORKED', '', 'DAILY RATE', 'BASIC PAY', 'OVERTIME', '', 'GROSS PAY', 'PERFORMANCE ALLOWANCE', '', 'GROSS + ALLOWANCE', '', 'CA', 'SSS', 'PHIC', 'HDMF', 'SSS LOAN', 'TOTAL DEDUCTIONS', 'TAKE HOME PAY', '', 'SIGNATURE']);
             wsData.push(['', 'days', 'hrs', '', '', 'hrs', 'amt', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+            wsData.push([]);
             
             // Data rows
-            dataRows.forEach(row => {
+            dataRows.forEach((row, rowIdx) => {
                 const cells = row.querySelectorAll('td');
-                if (cells.length < 17) return;
+                if (cells.length < 17) {
+                    console.log('Row', rowIdx, 'skipped - only', cells.length, 'cells');
+                    return;
+                }
                 
-                // Get allowance from input or text
+                // Debug: Log cell values
+                console.log('Row', rowIdx, 'Cell 7 (Gross Pay):', cells[7]?.textContent?.trim());
+                console.log('Row', rowIdx, 'Cell 9 (Gross+Allowance):', cells[9]?.textContent?.trim());
+                console.log('Row', rowIdx, 'Cell 16 (Take Home):', cells[16]?.textContent?.trim());
+                
+                // Get allowance from input or text (Performance Allowance)
                 const allowanceVal = cells[8].querySelector('input') ? cells[8].querySelector('input').value : cells[8].textContent.replace(/,/g, '').trim();
                 
-                wsData.push([
-                    cells[0].textContent.trim(),
-                    cells[1].textContent.trim(),
-                    cells[2].textContent.trim(),
-                    cells[3].textContent.replace(/,/g, ''),
-                    cells[4].textContent.replace(/,/g, ''),
-                    cells[5].textContent.trim(),
-                    cells[6].textContent.replace(/,/g, ''),
-                    cells[7].textContent.replace(/,/g, ''),
-                    allowanceVal,
-                    '',
-                    cells[9].textContent.replace(/,/g, ''),
-                    '',
-                    cells[10].querySelector('input') ? cells[10].querySelector('input').value : cells[10].textContent.replace(/,/g, '').trim(),
-                    cells[11].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    cells[12].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    cells[13].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    cells[14].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    cells[15].textContent.replace(/,/g, '').trim(),
-                    cells[16].textContent.replace(/,/g, '').trim(),
-                    '',
-                    ''
-                ]);
+                // Get CA from input or text
+                const caVal = cells[10].querySelector('input') ? cells[10].querySelector('input').value : cells[10].textContent.replace(/,/g, '').trim();
+                
+                // Map data to match header structure
+                // Header: [EMPLOYEE, DAYS WORKED, '', DAILY RATE, BASIC PAY, OVERTIME, '', GROSS PAY, PERFORMANCE, '', GROSS +, '', CA, SSS, PHIC, HDMF, SSS LOAN, TOTAL, TAKE HOME, '', SIGNATURE]
+                const rowData = [
+                    cells[0].textContent.trim(),           // 0: EMPLOYEE
+                    cells[1].textContent.trim(),           // 1: DAYS WORKED (days)
+                    cells[2].textContent.trim(),           // 2: DAYS WORKED (hrs)
+                    cells[3].textContent.replace(/,/g, '').trim(), // 3: DAILY RATE
+                    cells[4].textContent.replace(/,/g, '').trim(), // 4: BASIC PAY
+                    cells[5].textContent.trim(),           // 5: OVERTIME (hrs)
+                    cells[6].textContent.replace(/,/g, '').trim(), // 6: OVERTIME (amt)
+                    cells[7].textContent.replace(/,/g, '').trim(), // 7: GROSS PAY
+                    allowanceVal,                          // 8: PERFORMANCE ALLOWANCE
+                    '',                                    // 9: empty spacer
+                    cells[9].textContent.replace(/,/g, '').trim(), // 10: GROSS + ALLOWANCE
+                    '',                                    // 11: empty spacer
+                    caVal,                                 // 12: CA
+                    cells[11].textContent.replace(/,/g, '').replace('-', '0').trim(), // 13: SSS
+                    cells[12].textContent.replace(/,/g, '').replace('-', '0').trim(), // 14: PHIC
+                    cells[13].textContent.replace(/,/g, '').replace('-', '0').trim(), // 15: HDMF
+                    cells[14].textContent.replace(/,/g, '').replace('-', '0').trim(), // 16: SSS LOAN
+                    cells[15].textContent.replace(/,/g, '').trim(), // 17: TOTAL
+                    cells[16].textContent.replace(/,/g, '').trim(), // 18: TAKE HOME PAY
+                    '',                                    // 19: empty spacer
+                    ''                                     // 20: SIGNATURE
+                ];
+                
+                // Debug: Log the rowData being pushed
+                console.log('Row', rowIdx, 'rowData[7] (Gross Pay):', rowData[7]);
+                console.log('Row', rowIdx, 'rowData[10] (Gross+Allowance):', rowData[10]);
+                console.log('Row', rowIdx, 'rowData[18] (Take Home):', rowData[18]);
+                
+                wsData.push(rowData);
             });
             
             // Total row
             if (totalRow) {
                 const t = totalRow.querySelectorAll('td');
-                wsData.push([
-                    'TOTAL', t[1].textContent.trim(), t[2].textContent.trim(), '', t[4].textContent.replace(/,/g, ''),
-                    '', '', t[7].textContent.replace(/,/g, ''), t[8].textContent.replace(/,/g, ''),
-                    '', t[9].textContent.replace(/,/g, ''), '', t[10].textContent.replace(/,/g, '').trim(),
-                    t[11].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    t[12].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    t[13].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    t[14].textContent.replace(/,/g, '').replace('-', '0').trim(),
-                    t[15].textContent.replace(/,/g, '').trim(),
-                    t[16].textContent.replace(/,/g, '').trim(), '', ''
-                ]);
+                if (t.length >= 18) {
+                    wsData.push([
+                        'TOTAL',                                // 0
+                        t[1].textContent.trim(),                // 1: total days
+                        t[2].textContent.trim(),                // 2: total hours
+                        '',                                     // 3
+                        t[4].textContent.replace(/,/g, ''),    // 4: total gross
+                        t[5].textContent.trim(),                // 5: total OT hrs
+                        t[6].textContent.replace(/,/g, ''),    // 6: total OT amt
+                        t[7].textContent.replace(/,/g, ''),    // 7: gross + OT
+                        t[8].textContent.replace(/,/g, ''),    // 8: total allowance
+                        '',                                     // 9
+                        t[9].textContent.replace(/,/g, ''),    // 10: gross + allowance
+                        '',                                     // 11
+                        t[10].textContent.replace(/,/g, '').replace('-', '0').trim(), // 12: CA
+                        t[11].textContent.replace(/,/g, '').replace('-', '0').trim(), // 13: SSS
+                        t[12].textContent.replace(/,/g, '').replace('-', '0').trim(), // 14: PHIC
+                        t[13].textContent.replace(/,/g, '').replace('-', '0').trim(), // 15: HDMF
+                        t[14].textContent.replace(/,/g, '').replace('-', '0').trim(), // 16: SSS Loan
+                        t[15].textContent.replace(/,/g, '').trim(),                   // 17: Total Deductions
+                        t[16].textContent.replace(/,/g, '').trim(),                   // 18: Take Home
+                        '',                                     // 19
+                        ''                                      // 20
+                    ]);
+                }
             }
             
             // Create worksheet
