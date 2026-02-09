@@ -946,6 +946,10 @@ function debugUndo() {
         return;
       }
 
+      // Confirm before proceeding with Time In
+      const ok = confirm(`Confirm Time In for ${employeeName}?`);
+      if (!ok) return;
+
       const formData = new FormData();
       formData.append('employee_id', employeeId);
       formData.append('branch_name', branchName);

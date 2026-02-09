@@ -945,9 +945,6 @@ if ($view_type === 'monthly') {
                     </div>
                     <?php endif; ?>
                     
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-filter mr-2"></i>Apply Filter
-                    </button>
                     <button type="button" onclick="exportToExcel()" class="btn-secondary">
                         <i class="fas fa-file-excel mr-2"></i>Export Excel
                     </button>
