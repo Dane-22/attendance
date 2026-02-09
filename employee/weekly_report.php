@@ -205,6 +205,13 @@ $employee_payroll = array_filter($employee_payroll, function($p) {
 
 // Save report data to database
 function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch) {
+    // Check if weekly_payroll_reports table exists
+    $table_check = mysqli_query($db, "SHOW TABLES LIKE 'weekly_payroll_reports'");
+    if (mysqli_num_rows($table_check) == 0) {
+        // Table doesn't exist, skip saving
+        return;
+    }
+    
     $created_by = $_SESSION['user_id'] ?? null;
     $branch_id = ($selected_branch !== 'all' && is_numeric($selected_branch)) ? $selected_branch : null;
     
@@ -411,7 +418,7 @@ if ($view_type === 'monthly') {
         }
 
         .report-header {
-            background: linear-gradient(90deg, var(--gold), var(--black));
+            background: #FFD700;
             border-radius: 12px 12px 0 0;
             padding: 20px;
             margin: -24px -24px 20px -24px;
@@ -466,9 +473,9 @@ if ($view_type === 'monthly') {
         }
 
         .btn-primary {
-            background: linear-gradient(90deg, var(--gold), var(--black));
+            background: #FFD700;
             border: none;
-            color: white;
+            color: #000000;
             padding: 10px 20px;
             border-radius: 8px;
             cursor: pointer;
@@ -547,8 +554,8 @@ if ($view_type === 'monthly') {
         }
 
         .view-option.active {
-            background: linear-gradient(90deg, var(--gold), var(--black));
-            color: white;
+            background: #FFD700;
+            color: #000000;
         }
 
         .view-option:not(.active):hover {
@@ -628,18 +635,19 @@ if ($view_type === 'monthly') {
         }
 
         .branch-badge.active {
-            background: linear-gradient(90deg, var(--gold), #b8860b);
-            border-color: var(--gold);
-            color: var(--black);
+            background: #FFD700;
+            border-color: #FFD700;
+            color: #000000;
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
         }
 
         .branch-badge.all.active {
-            background: linear-gradient(90deg, #007bff, #0056b3);
-            border-color: #007bff;
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+            background: #FFD700;
+            border-color: #FFD700;
+            color: #000000;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
         }
 
         /* Responsive Styles */
@@ -902,23 +910,20 @@ if ($view_type === 'monthly') {
             <!-- Main Report Card -->
             <div class="report-card">
                 <div class="report-header">
-                    <h2 class="text-xl font-bold text-white">
+                    <h2 class="text-xl font-bold text-black">
                         <?php echo $date_range_label; ?>
                         <?php if ($selected_branch !== 'all'): ?>
-                        <span class="text-gold-300 block text-sm mt-1">
-                            <i class="fas fa-building mr-1"></i>Branch: <?php echo htmlspecialchars($selected_branch); ?>
-                        </span>
                         <?php endif; ?>
                     </h2>
                 </div>
 
                 <!-- Filters -->
-                <form method="GET" class="mb-6 flex flex-wrap gap-4 items-end filters">
-                    <input type="hidden" name="view" value="<?php echo $view_type; ?>">
+                <form method="GET" class="mb-6 flex flex-wrap gap-4 items-end filters" id="filterForm">
+                    <input type="hidden" name="view" id="viewInput" value="<?php echo $view_type; ?>">
                     
                     <div class="flex-1 min-w-[200px]">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Select Month</label>
-                        <select name="month" class="input-field">
+                        <select name="month" class="input-field" onchange="document.getElementById('filterForm').submit();">
                             <?php
                             for ($i = 0; $i < 12; $i++) {
                                 $month_option = date('Y-m', strtotime("-$i months", strtotime($current_month . '-01')));
@@ -932,7 +937,7 @@ if ($view_type === 'monthly') {
                     <?php if ($view_type === 'weekly'): ?>
                     <div class="flex-1 min-w-[150px]">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Select Week</label>
-                        <select name="week" class="input-field">
+                        <select name="week" class="input-field" onchange="document.getElementById('filterForm').submit();">
                             <?php for ($w = 1; $w <= ($has_week_5 ? 5 : 4); $w++): ?>
                                 <option value="<?php echo $w; ?>" <?php echo ($w == $selected_week) ? 'selected' : ''; ?>>Week <?php echo $w; ?></option>
                             <?php endfor; ?>
@@ -940,27 +945,12 @@ if ($view_type === 'monthly') {
                     </div>
                     <?php endif; ?>
                     
-                    <div class="flex-1 min-w-[200px]">
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Select Branch</label>
-                        <select name="branch" class="input-field">
-                            <option value="all" <?php echo ($selected_branch === 'all') ? 'selected' : ''; ?>>All Branches</option>
-                            <?php foreach ($all_branches_list as $branch): ?>
-                                <option value="<?php echo htmlspecialchars($branch['id']); ?>" 
-                                    <?php echo ($selected_branch === (string)$branch['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($branch['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="flex gap-2">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-filter mr-2"></i>Apply Filter
-                        </button>
-                        <button type="button" onclick="exportToExcel()" class="btn-secondary">
-                            <i class="fas fa-file-excel mr-2"></i>Export Excel
-                        </button>
-                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-filter mr-2"></i>Apply Filter
+                    </button>
+                    <button type="button" onclick="exportToExcel()" class="btn-secondary">
+                        <i class="fas fa-file-excel mr-2"></i>Export Excel
+                    </button>
                 </form>
 
                 <!-- Quick Branch Filter Links -->
@@ -979,30 +969,6 @@ if ($view_type === 'monthly') {
                         <?php endforeach; ?>
                     </div>
                 </div>
-
-                <!-- Weekly Breakdown for Monthly View -->
-                <?php if ($view_type === 'monthly' && !empty($weekly_breakdown)): ?>
-                <div class="weekly-breakdown mb-6">
-                    <h3 class="text-lg font-semibold text-gold-300 mb-3">Weekly Breakdown</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <?php foreach ($weekly_breakdown as $week_num => $week_dates): ?>
-                        <?php
-                        $week_start = reset($week_dates);
-                        $week_end = end($week_dates);
-                        ?>
-                        <div class="week-card">
-                            <div class="font-bold text-gold-300 mb-1">Week <?php echo $week_num; ?></div>
-                            <div class="text-sm">
-                                <?php echo date('M d', strtotime($week_start)); ?> - <?php echo date('M d', strtotime($week_end)); ?>
-                            </div>
-                            <div class="text-xs text-gray-400 mt-2">
-                                <?php echo count($week_dates); ?> days
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
 
                 <!-- Payroll Table -->
                 <div class="report-table overflow-x-auto mb-6">
@@ -1168,43 +1134,6 @@ if ($view_type === 'monthly') {
                             </tr>
                         </tbody>
                     </table>
-                </div>
-                
-                <!-- Payroll Summary Section -->
-                <div class="mt-8">
-                    <h3 class="text-lg font-semibold text-gold-300 mb-4">Payroll Summary</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div class="summary-card">
-                            <div class="summary-value">
-                                <?php echo $payroll_totals['total_employees']; ?>
-                            </div>
-                            <div class="summary-label">Active Employees</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-value">
-                                <?php echo $payroll_totals['total_days']; ?>
-                            </div>
-                            <div class="summary-label">Total Days Worked</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-value text-yellow-400">
-                                ₱<?php echo number_format($payroll_totals['total_gross'], 0); ?>
-                            </div>
-                            <div class="summary-label">Total Gross Pay</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-value text-red-400">
-                                ₱<?php echo number_format($payroll_totals['total_deductions'], 0); ?>
-                            </div>
-                            <div class="summary-label">Total Deductions</div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-value text-green-400">
-                                ₱<?php echo number_format($payroll_totals['total_net'], 0); ?>
-                            </div>
-                            <div class="summary-label">Total Net Pay</div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </main>

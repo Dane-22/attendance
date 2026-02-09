@@ -38,7 +38,7 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
 
   <!-- Admin/Super Admin Only: Reports -->
   <?php if ($isAdmin): ?>
-    <a href="weekly_report.php" class="menu-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php"><span class="icon">📅</span><span class="label">Reports</span></a>
+    <a href="weekly_report.php" class="menu-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php"><span class="icon">📅</span><span class="label">Payroll</span></a>
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Billing -->
