@@ -1,0 +1,530 @@
+
+        :root {
+            --gold: #FFD700;
+            --black: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #0a0a0a;
+        }
+
+        /* Header */
+        .header-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+            color: #FFD700;
+        }
+
+        .welcome {
+            font-size: 24px;
+            font-weight: 700;
+            color: #FFD700;
+            margin-bottom: 4px;
+        }
+
+        .text-sm {
+            font-size: 14px;
+        }
+
+        .text-gray {
+            color: #888;
+        }
+
+        /* Report Card */
+        .report-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .report-header {
+            background: #FFD700;
+            border-radius: 12px 12px 0 0;
+            padding: 20px;
+            margin: -24px -24px 20px -24px;
+        }
+
+        .report-table {
+            background: #0a0a0a;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .date-header {
+            background: rgba(255, 215, 0, 0.15);
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .branch-header {
+            background: #1a1a1a;
+            border-right: 1px solid #333;
+            color: #FFD700;
+        }
+
+        .employee-box {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 6px;
+            padding: 8px;
+            margin: 4px 0;
+            transition: all 0.2s ease;
+        }
+
+        .employee-box:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+        }
+
+        .input-field {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #ffffff;
+            padding: 10px 12px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #FFD700;
+        }
+
+        .btn-primary {
+            background: #FFD700;
+            border: none;
+            color: #000000;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-secondary:hover {
+            background: #3a3a3a;
+            border-color: #FFD700;
+        }
+
+        .btn-print {
+            background: #1a1a1a;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-print:hover {
+            background: var(--gold);
+            color: var(--black);
+            transform: translateY(-2px);
+        }
+
+        .empty-cell {
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-style: italic;
+            background: #1a1a1a;
+            border-radius: 6px;
+            margin: 4px 0;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .view-option {
+            flex: 1;
+            padding: 10px 16px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .view-option.active {
+            background: #FFD700;
+            color: #000000;
+        }
+
+        .view-option:not(.active):hover {
+            background: #3a3a3a;
+        }
+
+        /* Weekly Breakdown Section */
+        .weekly-breakdown {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 215, 0, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .week-card {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .week-card:hover {
+            background: rgba(255, 215, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Summary Cards */
+        .summary-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #FFD700;
+            margin-bottom: 8px;
+        }
+
+        .summary-label {
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* Branch Filter Badge */
+        .branch-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 6px 12px;
+            margin: 4px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .branch-badge.all {
+            background: rgba(0, 123, 255, 0.15);
+            border-color: rgba(0, 123, 255, 0.3);
+        }
+
+        .branch-badge:hover {
+            background: rgba(255, 215, 0, 0.25);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .branch-badge.all:hover {
+            background: rgba(0, 123, 255, 0.25);
+            border-color: rgba(0, 123, 255, 0.5);
+        }
+
+        .branch-badge.active {
+            background: #FFD700;
+            border-color: #FFD700;
+            color: #000000;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .branch-badge.all.active {
+            background: #FFD700;
+            border-color: #FFD700;
+            color: #000000;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .employee-box {
+                padding: 6px;
+                font-size: 0.9rem;
+            }
+            
+            .report-table {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-shell {
+                flex-direction: column;
+            }
+            
+            .main-content {
+                padding: 16px;
+            }
+
+            .header-card {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .filters {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn-primary, .btn-secondary, .btn-print {
+                width: 100%;
+                text-align: center;
+            }
+
+            .view-toggle {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .view-option {
+                width: 100%;
+            }
+
+            .report-table {
+                font-size: 0.85rem;
+            }
+
+            .employee-box {
+                padding: 4px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .main-content {
+                padding: 12px;
+            }
+
+            .report-card {
+                padding: 16px;
+            }
+
+            .summary-value {
+                font-size: 24px;
+            }
+        }
+
+        @media print {
+            @page {
+                size: landscape;
+                margin: 5mm 3mm;
+            }
+            
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 7pt !important;
+                line-height: 1 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            /* Hide web elements */
+            .sidebar, .menu-toggle, .view-toggle, form.filters, 
+            .btn-print, .btn-primary, .btn-secondary, .weekly-breakdown,
+            .mt-8, .summary-card, .branch-badge, .report-header,
+            .header-card, h4, .mb-6 {
+                display: none !important;
+            }
+            
+            /* Show main content */
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+            }
+            
+            .report-card {
+                background: white !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+            }
+            
+            /* Table container */
+            .report-table {
+                width: 100% !important;
+                overflow: visible !important;
+            }
+            
+            /* The table itself */
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 6.5pt !important;
+            }
+            
+            /* All cells */
+            th, td {
+                border: 0.5pt solid black !important;
+                padding: 1px 2px !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                font-size: 6.5pt !important;
+                color: black !important;
+                background: white !important;
+                height: 14px !important;
+                white-space: nowrap !important;
+            }
+            
+            /* First column - employee names */
+            th:first-child, td:first-child {
+                text-align: left !important;
+                padding-left: 3px !important;
+                font-weight: normal !important;
+            }
+            
+            /* Right align numbers */
+            td:nth-child(n+4) {
+                text-align: right !important;
+                padding-right: 3px !important;
+            }
+            
+            /* Header row */
+            thead tr {
+                background: #d0d0d0 !important;
+            }
+            
+            th {
+                background: #d0d0d0 !important;
+                font-weight: bold !important;
+                text-transform: uppercase !important;
+            }
+            
+            /* Total row */
+            tbody tr:last-child td {
+                font-weight: bold !important;
+                background: #e8e8e8 !important;
+                border-top: 1.5pt solid black !important;
+            }
+            
+            /* Inputs - show as text */
+            input.ca-input {
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                font-size: 6.5pt !important;
+                color: black !important;
+                width: auto !important;
+                text-align: right !important;
+            }
+            
+            /* Remove all colors */
+            .bg-gradient-to-r, .bg-gray-800, .bg-red-900\/20, .bg-red-900\/30,
+            .from-yellow-600, .to-yellow-800, .from-yellow-700, .to-yellow-900,
+            .hover\\:bg-gray-800\\/50:hover {
+                background: white !important;
+            }
+            
+            /* Text colors */
+            .text-white, .text-gray-400, .text-gray-300, .text-yellow-400,
+            .text-blue-400, .text-red-400, .text-green-400, .text-gold-300 {
+                color: black !important;
+            }
+            
+            /* Remove overflow restriction */
+            .min-w-\\[1200px\\], .min-w-[1200px] {
+                min-width: 0 !important;
+            }
+            
+            .overflow-x-auto {
+                overflow: visible !important;
+            }
+            
+            /* Fix layout */
+            .app-shell, main, .report-card {
+                display: block !important;
+            }
+            
+            /* Row styling */
+            tr {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Hide padding classes */
+            .px-3, .px-2, .py-3, .py-2, .py-1, .p-3, .p-2 {
+                padding: 1px 2px !important;
+            }
+        }
