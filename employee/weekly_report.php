@@ -69,14 +69,14 @@ while ($branch_row = mysqli_fetch_assoc($branch_result)) {
 }
 
 // Fetch attendance data for the date range - Get all employees and their attendance
-$attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name,
+$attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name, a.time_in, a.time_out, a.total_ot_hrs,
                             e.first_name, e.last_name, e.employee_code, e.daily_rate, e.position
                      FROM attendance a
                      JOIN employees e ON a.employee_id = e.id
                      WHERE a.attendance_date BETWEEN ? AND ?
-                     AND a.status IN ('Present', 'Late')
-                     AND e.status = 'Active'";
-                    
+                     AND e.status = 'Active'
+                     AND LOWER(e.position) = 'worker'";
+
 // Add branch filter if not 'all' - filter by branch_id
 if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
     $attendance_query .= " AND e.branch_id = ?";
@@ -125,7 +125,8 @@ $employee_payroll = [];
 $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name
                         FROM employees e
                         LEFT JOIN branches b ON e.branch_id = b.id
-                        WHERE e.status = 'Active'";
+                        WHERE e.status = 'Active'
+                        AND LOWER(e.position) = 'worker'";
 
 // Add branch filter if not 'all'
 $has_branch_filter = ($selected_branch !== 'all' && $selected_branch !== '' && is_numeric($selected_branch));
@@ -147,6 +148,8 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
     $employee_payroll[$emp_id] = [
         'employee' => $emp,
         'days_worked' => 0,
+        'total_hours' => 0,
+        'total_ot_hrs' => 0,
         'daily_rate' => floatval($emp['daily_rate']),
         'gross_pay' => 0,
         'sss_deduction' => $sss_deduction,
@@ -160,9 +163,32 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
 while ($row = mysqli_fetch_assoc($attendance_result)) {
     $emp_id = $row['employee_id'];
     
-    // Count days worked
     if (isset($employee_payroll[$emp_id])) {
-        $employee_payroll[$emp_id]['days_worked']++;
+        $attendance_date = $row['attendance_date'] ?? null;
+        if (!isset($employee_payroll[$emp_id]['_days_seen'])) {
+            $employee_payroll[$emp_id]['_days_seen'] = [];
+        }
+
+        // Count unique attendance_date as 1 day worked
+        if ($attendance_date && !isset($employee_payroll[$emp_id]['_days_seen'][$attendance_date])) {
+            $employee_payroll[$emp_id]['days_worked']++;
+            $employee_payroll[$emp_id]['_days_seen'][$attendance_date] = true;
+        }
+
+        // Sum realtime worked hours using time_in/time_out (if no time_out yet, use current time)
+        $time_in = $row['time_in'] ?? null;
+        if (!empty($time_in)) {
+            $time_out = $row['time_out'] ?? null;
+            $start_ts = strtotime($time_in);
+            $end_ts = !empty($time_out) ? strtotime($time_out) : time();
+            if ($start_ts !== false && $end_ts !== false && $end_ts > $start_ts) {
+                $employee_payroll[$emp_id]['total_hours'] += ($end_ts - $start_ts) / 3600;
+            }
+        }
+
+        // Sum up overtime hours
+        $ot_hours = floatval($row['total_ot_hrs'] ?? 0);
+        $employee_payroll[$emp_id]['total_ot_hrs'] += $ot_hours;
     }
 }
 
@@ -170,6 +196,7 @@ while ($row = mysqli_fetch_assoc($attendance_result)) {
 $payroll_totals = [
     'total_employees' => 0,
     'total_days' => 0,
+    'total_hours' => 0,
     'total_gross' => 0,
     'total_deductions' => 0,
     'total_net' => 0
@@ -192,6 +219,7 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
         $payroll_totals['total_employees']++;
     }
     $payroll_totals['total_days'] += $days_worked;
+    $payroll_totals['total_hours'] += $payroll['total_hours'];
     $payroll_totals['total_gross'] += $gross_pay;
     $payroll_totals['total_deductions'] += $payroll['total_deductions'];
     $payroll_totals['total_net'] += $payroll['net_pay'];
@@ -216,8 +244,8 @@ function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $m
     $branch_id = ($selected_branch !== 'all' && is_numeric($selected_branch)) ? $selected_branch : null;
     
     foreach ($employee_payroll as $emp_id => $payroll) {
-        $ot_hours = 0;
-        $ot_rate = $payroll['daily_rate'] / 8 * 1.25;
+        $ot_hours = $payroll['total_ot_hrs'];
+        $ot_rate = $payroll['daily_rate'] / 8;
         $ot_amount = $ot_hours * $ot_rate;
         $allowance = 0;
         $ca_deduction = 0;
@@ -257,7 +285,7 @@ function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $m
         
         $week_num = ($view_type === 'monthly') ? 0 : $selected_week;
         $view_str = $view_type;
-        $total_hours = $payroll['days_worked'] * 8;
+        $total_hours = $payroll['total_hours'];
         $status = 'Draft';
         
         $stmt = mysqli_prepare($db, $query);
@@ -944,6 +972,11 @@ if ($view_type === 'monthly') {
                         </select>
                     </div>
                     <?php endif; ?>
+
+                    <div class="flex-1 min-w-[220px]">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Search</label>
+                        <input type="text" id="employeeSearch" class="input-field" placeholder="Search employee...">
+                    </div>
                     
                     <button type="button" onclick="exportToExcel()" class="btn-secondary">
                         <i class="fas fa-file-excel mr-2"></i>Export Excel
@@ -996,7 +1029,7 @@ if ($view_type === 'monthly') {
                                 <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
                                     Gross + Allowance
                                 </th>
-                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600 bg-red-900/30" colspan="6">
+                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" colspan="6">
                                     Deductions
                                 </th>
                                 <th class="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
@@ -1022,10 +1055,10 @@ if ($view_type === 'monthly') {
                         <tbody>
                             <?php foreach ($employee_payroll as $emp_id => $payroll): ?>
                             <?php
-                                $ot_hours = 0;
-                                $ot_rate = $payroll['daily_rate'] / 8 * 1.25;
+                                $ot_hours = $payroll['total_ot_hrs'];
+                                $ot_rate = $payroll['daily_rate'] / 8;
                                 $ot_amount = $ot_hours * $ot_rate;
-                                $allowance = 0; // Placeholder for performance allowance
+                                $allowance = 0; // Placeholder for performance allowance - will be filled by user input
                                 $gross_plus_allowance = $payroll['gross_pay'] + $allowance;
                                 $ca_deduction = 0; // Placeholder for cash advance
                                 $sss_loan = 0; // Placeholder for SSS loan
@@ -1042,7 +1075,7 @@ if ($view_type === 'monthly') {
                                     <?php echo $payroll['days_worked']; ?>
                                 </td>
                                 <td class="px-2 py-2 text-center text-sm text-gray-400">
-                                    <?php echo number_format($payroll['days_worked'] * 8, 0); ?>
+                                    <?php echo number_format($payroll['total_hours'], 0); ?>
                                 </td>
                                 <td class="px-2 py-2 text-right text-sm text-gray-300">
                                     <?php echo number_format($payroll['daily_rate'], 0); ?>
@@ -1059,8 +1092,16 @@ if ($view_type === 'monthly') {
                                 <td class="px-2 py-2 text-right text-sm font-medium text-yellow-400">
                                     <?php echo number_format($payroll['gross_pay'] + $ot_amount, 0); ?>
                                 </td>
-                                <td class="px-2 py-2 text-right text-sm text-blue-400">
-                                    <?php echo number_format($allowance, 0); ?>
+                                <td class="px-2 py-2 text-right text-sm">
+                                    <input type="number" 
+                                           name="allowance_<?php echo $emp_id; ?>" 
+                                           id="allowance_<?php echo $emp_id; ?>"
+                                           value="0" 
+                                           min="0"
+                                           step="0.01"
+                                           class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-right text-blue-400 focus:border-yellow-500 focus:outline-none allowance-input"
+                                           data-emp-id="<?php echo $emp_id; ?>"
+                                           onchange="updateCalculations(<?php echo $emp_id; ?>)">
                                 </td>
                                 <td class="px-2 py-2 text-right text-sm font-medium text-white">
                                     <?php echo number_format($gross_plus_allowance + $ot_amount, 0); ?>
@@ -1102,31 +1143,39 @@ if ($view_type === 'monthly') {
                             
                             <!-- Total Row -->
                             <?php
+                            $total_ot_hours = 0;
                             $total_ot = 0;
                             $total_allowance = 0;
                             $total_ca = 0;
                             $total_sss_loan = 0;
+                            foreach ($employee_payroll as $payroll) {
+                                $emp_ot_hours = $payroll['total_ot_hrs'];
+                                $emp_ot_rate = $payroll['daily_rate'] / 8;
+                                $total_ot_hours += $emp_ot_hours;
+                                $total_ot += $emp_ot_hours * $emp_ot_rate;
+                            }
                             $grand_total_deductions = $payroll_totals['total_deductions'] + $total_ca + $total_sss_loan;
                             $grand_take_home = $payroll_totals['total_gross'] + $total_allowance + $total_ot - $grand_total_deductions;
                             ?>
-                            <tr class="bg-gray-800 font-bold border-t-2 border-yellow-500">
+                            <tr class="bg-gray-800 font-bold border-t-2 border-yellow-500" id="totalRow">
                                 <td class="px-3 py-3 text-white">TOTAL</td>
-                                <td class="px-2 py-3 text-center text-white"><?php echo $payroll_totals['total_days']; ?></td>
-                                <td class="px-2 py-3 text-center text-gray-400">-</td>
+                                <td class="px-2 py-3 text-center text-white" id="totalDays"><?php echo $payroll_totals['total_days']; ?></td>
+                                <td class="px-2 py-3 text-center text-gray-400" id="totalHours"><?php echo number_format($payroll_totals['total_hours'], 0); ?></td>
                                 <td class="px-2 py-3 text-right text-gray-400">-</td>
-                                <td class="px-2 py-3 text-right text-yellow-400"><?php echo number_format($payroll_totals['total_gross'], 0); ?></td>
-                                <td class="px-2 py-3 text-center text-gray-400">-</td>
-                                <td class="px-2 py-3 text-right text-gray-400">-</td>
-                                <td class="px-2 py-3 text-right text-yellow-400"><?php echo number_format($payroll_totals['total_gross'], 0); ?></td>
-                                <td class="px-2 py-3 text-right text-blue-400"><?php echo number_format($total_allowance, 0); ?></td>
-                                <td class="px-2 py-3 text-right text-white"><?php echo number_format($payroll_totals['total_gross'] + $total_allowance, 0); ?></td>
-                                <td class="px-2 py-3 text-right text-red-400"><?php echo ($total_ca > 0) ? number_format($total_ca, 0) : '-'; ?></td>
+                                <td class="px-2 py-3 text-right text-yellow-400" id="totalGross"><?php echo number_format($payroll_totals['total_gross'], 0); ?></td>
+                                <td class="px-2 py-3 text-center text-gray-400" id="totalOTHours"><?php echo number_format($total_ot_hours, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-gray-400" id="totalOTAmount"><?php echo number_format($total_ot, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-yellow-400" id="totalGrossPlusOT"><?php echo number_format($payroll_totals['total_gross'] + $total_ot, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-blue-400" id="totalAllowance"><?php echo number_format($total_allowance, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-white" id="totalGrossPlusAllowance"><?php echo number_format($payroll_totals['total_gross'] + $total_allowance + $total_ot, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-red-400" id="totalCA"><?php echo ($total_ca > 0) ? number_format($total_ca, 0) : '-'; ?></td>
                                 <td class="px-2 py-3 text-right text-red-400"><?php echo number_format($payroll_totals['total_deductions'], 0); ?></td>
-                                <td class="px-2 py-3 text-right text-gray-400">-</td>
-                                <td class="px-2 py-3 text-right text-gray-400">-</td>
-                                <td class="px-2 py-3 text-right text-gray-400">-</td>
-                                <td class="px-2 py-3 text-right text-red-400"><?php echo number_format($grand_total_deductions, 0); ?></td>
-                                <td class="px-3 py-3 text-right text-green-400"><?php echo number_format($grand_take_home, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-red-400">-</td>
+                                <td class="px-2 py-3 text-right text-red-400">-</td>
+                                <td class="px-2 py-3 text-right text-red-400">-</td>
+                                <td class="px-2 py-3 text-right text-red-400">-</td>
+                                <td class="px-2 py-3 text-right text-red-400" id="grandTotalDeductions"><?php echo number_format($grand_total_deductions, 0); ?></td>
+                                <td class="px-3 py-3 text-right text-green-400" id="grandTakeHome"><?php echo number_format($grand_take_home, 0); ?></td>
                                 <td class="px-3 py-3 text-center text-gray-400">-</td>
                             </tr>
                         </tbody>
@@ -1215,18 +1264,21 @@ if ($view_type === 'monthly') {
                 const cells = row.querySelectorAll('td');
                 if (cells.length < 17) return;
                 
+                // Get allowance from input or text
+                const allowanceVal = cells[8].querySelector('input') ? cells[8].querySelector('input').value : cells[8].textContent.replace(/,/g, '').trim();
+                
                 wsData.push([
                     cells[0].textContent.trim(),
                     cells[1].textContent.trim(),
                     cells[2].textContent.trim(),
-                    cells[3].textContent.replace(/,/g, '').trim(),
-                    cells[4].textContent.replace(/,/g, '').trim(),
+                    cells[3].textContent.replace(/,/g, ''),
+                    cells[4].textContent.replace(/,/g, ''),
                     cells[5].textContent.trim(),
-                    cells[6].textContent.replace(/,/g, '').trim(),
-                    cells[7].textContent.replace(/,/g, '').trim(),
-                    cells[8].textContent.replace(/,/g, '').trim(),
+                    cells[6].textContent.replace(/,/g, ''),
+                    cells[7].textContent.replace(/,/g, ''),
+                    allowanceVal,
                     '',
-                    cells[9].textContent.replace(/,/g, '').trim(),
+                    cells[9].textContent.replace(/,/g, ''),
                     '',
                     cells[10].querySelector('input') ? cells[10].querySelector('input').value : cells[10].textContent.replace(/,/g, '').trim(),
                     cells[11].textContent.replace(/,/g, '').replace('-', '0').trim(),
@@ -1244,9 +1296,9 @@ if ($view_type === 'monthly') {
             if (totalRow) {
                 const t = totalRow.querySelectorAll('td');
                 wsData.push([
-                    'TOTAL', t[1].textContent.trim(), '', '', t[4].textContent.replace(/,/g, '').trim(),
-                    '', '', t[7].textContent.replace(/,/g, '').trim(), t[8].textContent.replace(/,/g, '').trim(),
-                    '', t[9].textContent.replace(/,/g, '').trim(), '', t[10].textContent.replace(/,/g, '').trim(),
+                    'TOTAL', t[1].textContent.trim(), t[2].textContent.trim(), '', t[4].textContent.replace(/,/g, ''),
+                    '', '', t[7].textContent.replace(/,/g, ''), t[8].textContent.replace(/,/g, ''),
+                    '', t[9].textContent.replace(/,/g, ''), '', t[10].textContent.replace(/,/g, '').trim(),
                     t[11].textContent.replace(/,/g, '').replace('-', '0').trim(),
                     t[12].textContent.replace(/,/g, '').replace('-', '0').trim(),
                     t[13].textContent.replace(/,/g, '').replace('-', '0').trim(),
@@ -1326,6 +1378,22 @@ if ($view_type === 'monthly') {
                     form.submit();
                 });
             }
+
+            const employeeSearch = document.getElementById('employeeSearch');
+            if (employeeSearch) {
+                employeeSearch.addEventListener('input', function() {
+                    const q = (this.value || '').trim().toLowerCase();
+                    const tbody = document.querySelector('#reportTable tbody');
+                    if (!tbody) return;
+
+                    const rows = tbody.querySelectorAll('tr');
+                    rows.forEach((row, idx) => {
+                        if (idx === rows.length - 1) return;
+                        const text = (row.textContent || '').toLowerCase();
+                        row.style.display = !q || text.includes(q) ? '' : 'none';
+                    });
+                });
+            }
         });
 
         // Update calculations when CA input changes
@@ -1346,8 +1414,8 @@ if ($view_type === 'monthly') {
             const otAmountText = cells[6].textContent.replace(/,/g, '');
             const otAmount = parseFloat(otAmountText) || 0;
             
-            const allowanceText = cells[8].textContent.replace(/,/g, '');
-            const allowance = parseFloat(allowanceText) || 0;
+            const allowanceInput = document.getElementById('allowance_' + empId);
+            const allowance = parseFloat(allowanceInput.value) || 0;
             
             // Get deduction values
             const sssText = cells[11].textContent.replace(/,/g, '').replace('-', '0');
@@ -1385,22 +1453,51 @@ if ($view_type === 'monthly') {
         // Update grand total row
         function updateGrandTotals() {
             const allCAInputs = document.querySelectorAll('.ca-input');
+            const allAllowanceInputs = document.querySelectorAll('.allowance-input');
             let totalCA = 0;
+            let totalAllowance = 0;
             
             allCAInputs.forEach(input => {
                 totalCA += parseFloat(input.value) || 0;
             });
             
-            // Update total CA in grand total row if needed
-            const totalRow = document.querySelector('tbody tr:last-child');
-            if (totalRow) {
-                const totalCells = totalRow.querySelectorAll('td');
-                // CA total is at index 10
-                if (totalCA > 0) {
-                    totalCells[10].textContent = numberFormat(totalCA);
-                } else {
-                    totalCells[10].textContent = '-';
-                }
+            allAllowanceInputs.forEach(input => {
+                totalAllowance += parseFloat(input.value) || 0;
+            });
+            
+            // Get base totals from the total row
+            const totalGross = parseFloat(document.getElementById('totalGross')?.textContent.replace(/,/g, '')) || 0;
+            const totalOT = parseFloat(document.getElementById('totalOTAmount')?.textContent.replace(/,/g, '')) || 0;
+            const baseDeductions = parseFloat(document.getElementById('grandTotalDeductions')?.textContent.replace(/,/g, '')) || 0;
+            
+            // Calculate grand totals
+            const grandTotalDeductions = baseDeductions + totalCA;
+            const grandTakeHome = totalGross + totalAllowance + totalOT - grandTotalDeductions;
+            
+            // Update total row cells
+            const totalCAElement = document.getElementById('totalCA');
+            if (totalCAElement) {
+                totalCAElement.textContent = totalCA > 0 ? numberFormat(totalCA) : '-';
+            }
+            
+            const totalAllowanceElement = document.getElementById('totalAllowance');
+            if (totalAllowanceElement) {
+                totalAllowanceElement.textContent = numberFormat(totalAllowance);
+            }
+            
+            const totalGrossPlusAllowanceElement = document.getElementById('totalGrossPlusAllowance');
+            if (totalGrossPlusAllowanceElement) {
+                totalGrossPlusAllowanceElement.textContent = numberFormat(totalGross + totalAllowance + totalOT);
+            }
+            
+            const grandTotalDeductionsElement = document.getElementById('grandTotalDeductions');
+            if (grandTotalDeductionsElement) {
+                grandTotalDeductionsElement.textContent = numberFormat(grandTotalDeductions);
+            }
+            
+            const grandTakeHomeElement = document.getElementById('grandTakeHome');
+            if (grandTakeHomeElement) {
+                grandTakeHomeElement.textContent = numberFormat(grandTakeHome);
             }
         }
     </script>

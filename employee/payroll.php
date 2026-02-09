@@ -72,9 +72,9 @@ while ($row = mysqli_fetch_assoc($employee_result)) {
     $employees[$row['id']] = $row;
 }
 
-// Fetch attendance data for the date range
+// Fetch attendance data for the date range including OT hours
 $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name,
-                            e.daily_rate
+                            a.total_ot_hrs, e.daily_rate
                      FROM attendance a
                      JOIN employees e ON a.employee_id = e.id
                      WHERE a.attendance_date BETWEEN ? AND ?";
@@ -93,13 +93,15 @@ if ($selected_branch !== 'all') {
 mysqli_stmt_execute($stmt);
 $attendance_result = mysqli_stmt_get_result($stmt);
 
-// Organize attendance data by employee
+// Organize attendance data by employee and sum OT hours
 $attendance_by_employee = [];
 $branch_by_employee = [];
+$ot_hours_by_employee = [];
 
 while ($row = mysqli_fetch_assoc($attendance_result)) {
     $emp_id = $row['employee_id'];
     $status = $row['status'];
+    $ot_hrs = floatval($row['total_ot_hrs'] ?? 0);
     
     if (!isset($attendance_by_employee[$emp_id])) {
         $attendance_by_employee[$emp_id] = [
@@ -108,9 +110,11 @@ while ($row = mysqli_fetch_assoc($attendance_result)) {
             'late' => 0,
             'total_days' => 0
         ];
+        $ot_hours_by_employee[$emp_id] = 0;
     }
     
     $attendance_by_employee[$emp_id]['total_days']++;
+    $ot_hours_by_employee[$emp_id] += $ot_hrs;
     
     if ($status === 'Present') {
         $attendance_by_employee[$emp_id]['present']++;
@@ -174,10 +178,10 @@ foreach ($employees as $emp_id => $employee) {
     // Basic pay calculation
     $basic_pay = $days_present * $daily_rate;
     
-    // OT calculation (placeholder - would need OT hours from attendance)
-    $ot_hours = 0;
-    $ot_rate = $daily_rate / 8 * 1.25; // 25% overtime premium
-    $ot_pay = $ot_hours * $ot_rate;
+    // OT calculation - hourly rate = daily rate / 8, then multiply by total OT hours
+    $ot_hours = $ot_hours_by_employee[$emp_id] ?? 0;
+    $hourly_rate = $daily_rate / 8;
+    $ot_pay = $ot_hours * $hourly_rate;
     
     // Performance bonus
     $performance_bonus = $bonuses[$emp_id] ?? 0;
