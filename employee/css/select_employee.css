@@ -146,26 +146,51 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        max-height: 86px;
+        align-items: flex-start;
+        text-align: left;
+        max-height: 140px;
         overflow: auto;
         padding-top: 2px;
+        padding-left: 6px;
+        padding-right: 6px;
         border: 1px dashed rgba(255, 215, 0, 0.3); /* DEBUG: remove after testing */
     }
 
+    .stat-list[data-expanded="1"] {
+        max-height: 240px;
+    }
+
     .stat-list-item {
-        font-size: 12px;
-        color: #cfcfcf;
-        line-height: 1.2;
+        font-size: 13px;
+        color: #e8e8e8;
+        line-height: 1.35;
+        width: 100%;
+        padding-left: 1.6em;
+        text-indent: -1.6em;
+        font-variant-numeric: tabular-nums;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
+    .stat-list[data-expanded="1"] .stat-list-item {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-word;
+    }
+
     .stat-list-more {
-        font-size: 11px;
-        color: #888;
+        font-size: 12px;
+        color: #FFD700;
         font-weight: 700;
         letter-spacing: 0.2px;
+        background: transparent;
+        border: none;
+        padding: 0;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
     }
 
     /* Time Alert */

@@ -57,76 +57,225 @@ if ($view_type === 'weekly') {
     $date_range_label = "Monthly View: " . date('F Y', strtotime($start_date));
 }
 
-// Fetch all branches for dropdown
-$branch_query = "SELECT DISTINCT branch_name FROM attendance WHERE branch_name IS NOT NULL AND branch_name != '' ORDER BY branch_name";
+// Fetch all branches for dropdown using branches table
+$branch_query = "SELECT id, branch_name FROM branches WHERE is_active = 1 ORDER BY branch_name";
 $branch_result = mysqli_query($db, $branch_query);
 $all_branches_list = [];
 while ($branch_row = mysqli_fetch_assoc($branch_result)) {
-    $all_branches_list[] = $branch_row['branch_name'];
+    $all_branches_list[] = [
+        'id' => $branch_row['id'],
+        'name' => $branch_row['branch_name']
+    ];
 }
 
-// Fetch attendance data for the date range - Get all present employees
+// Fetch attendance data for the date range - Get all employees and their attendance
 $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name,
-                            e.first_name, e.last_name, e.employee_code
+                            e.first_name, e.last_name, e.employee_code, e.daily_rate, e.position
                      FROM attendance a
                      JOIN employees e ON a.employee_id = e.id
-                     WHERE a.attendance_date BETWEEN ? AND ? 
-                     AND a.status = 'Present'";
+                     WHERE a.attendance_date BETWEEN ? AND ?
+                     AND a.status IN ('Present', 'Late')
+                     AND e.status = 'Active'";
                     
-// Add branch filter if not 'all'
-if ($selected_branch !== 'all') {
-    $attendance_query .= " AND a.branch_name = ?";
-    $attendance_query .= " ORDER BY a.attendance_date, a.branch_name";
-    
-    $stmt = mysqli_prepare($db, $attendance_query);
-    mysqli_stmt_bind_param($stmt, 'sss', $start_date, $end_date, $selected_branch);
+// Add branch filter if not 'all' - filter by branch_id
+if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
+    $attendance_query .= " AND e.branch_id = ?";
+}
+$attendance_query .= " ORDER BY a.attendance_date, a.branch_name";
+
+$stmt = mysqli_prepare($db, $attendance_query);
+if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
+    mysqli_stmt_bind_param($stmt, 'ssi', $start_date, $end_date, $selected_branch);
 } else {
-    $attendance_query .= " ORDER BY a.attendance_date, a.branch_name";
-    $stmt = mysqli_prepare($db, $attendance_query);
     mysqli_stmt_bind_param($stmt, 'ss', $start_date, $end_date);
 }
 
 mysqli_stmt_execute($stmt);
 $attendance_result = mysqli_stmt_get_result($stmt);
 
-// Organize data by date and branch
-$attendance_by_date_branch = [];
-$all_branches = [];
-$all_dates = [];
+// Government deduction constants (monthly)
+$MONTHLY_PHILHEALTH = 250.00;
+$MONTHLY_SSS = 450.00;
+$MONTHLY_PAGIBIG = 200.00;
+
+// Calculate deductions based on view type
+if ($view_type === 'monthly') {
+    // Monthly view: Use full monthly deduction amounts
+    $sss_deduction = $MONTHLY_SSS;
+    $philhealth_deduction = $MONTHLY_PHILHEALTH;
+    $pagibig_deduction = $MONTHLY_PAGIBIG;
+} else {
+    // Weekly view: Divide monthly deductions by 3 (for weeks 1-3), zero for week 4
+    if ($selected_week === 4) {
+        $sss_deduction = 0.00;
+        $philhealth_deduction = 0.00;
+        $pagibig_deduction = 0.00;
+    } else {
+        $sss_deduction = $MONTHLY_SSS / 3;
+        $philhealth_deduction = $MONTHLY_PHILHEALTH / 3;
+        $pagibig_deduction = $MONTHLY_PAGIBIG / 3;
+    }
+}
+$total_deductions_amount = $sss_deduction + $philhealth_deduction + $pagibig_deduction;
+
+// Organize data by employee for payroll calculation
+$employee_payroll = [];
+
+// Also fetch employees with no attendance (for complete payroll)
+$all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name
+                        FROM employees e
+                        LEFT JOIN branches b ON e.branch_id = b.id
+                        WHERE e.status = 'Active'";
+
+// Add branch filter if not 'all'
+$has_branch_filter = ($selected_branch !== 'all' && $selected_branch !== '' && is_numeric($selected_branch));
+if ($has_branch_filter) {
+    $all_employees_query .= " AND e.branch_id = ?";
+}
+
+$all_employees_query .= " ORDER BY e.last_name, e.first_name";
+
+$emp_stmt = mysqli_prepare($db, $all_employees_query);
+if ($has_branch_filter) {
+    mysqli_stmt_bind_param($emp_stmt, 'i', $selected_branch);
+}
+mysqli_stmt_execute($emp_stmt);
+$all_employees_result = mysqli_stmt_get_result($emp_stmt);
+
+while ($emp = mysqli_fetch_assoc($all_employees_result)) {
+    $emp_id = $emp['id'];
+    $employee_payroll[$emp_id] = [
+        'employee' => $emp,
+        'days_worked' => 0,
+        'daily_rate' => floatval($emp['daily_rate']),
+        'gross_pay' => 0,
+        'sss_deduction' => $sss_deduction,
+        'philhealth_deduction' => $philhealth_deduction,
+        'pagibig_deduction' => $pagibig_deduction,
+        'total_deductions' => $total_deductions_amount,
+        'net_pay' => 0
+    ];
+}
 
 while ($row = mysqli_fetch_assoc($attendance_result)) {
-    $date = $row['attendance_date'];
-    $branch = $row['branch_name'];
-    $employee_name = $row['first_name'] . ' ' . $row['last_name'];
-    $employee_code = $row['employee_code'];
+    $emp_id = $row['employee_id'];
     
-    // Store data
-    $attendance_by_date_branch[$date][$branch][] = [
-        'name' => $employee_name,
-        'code' => $employee_code
-    ];
-    
-    // Collect unique branches
-    if (!in_array($branch, $all_branches)) {
-        $all_branches[] = $branch;
-    }
-    
-    // Collect unique dates
-    if (!in_array($date, $all_dates)) {
-        $all_dates[] = $date;
+    // Count days worked
+    if (isset($employee_payroll[$emp_id])) {
+        $employee_payroll[$emp_id]['days_worked']++;
     }
 }
 
-// If branch filter is selected, only show that branch
-if ($selected_branch !== 'all') {
-    $all_branches = [$selected_branch];
-} else {
-    // Sort branches alphabetically
-    sort($all_branches);
+// Calculate payroll for each employee
+$payroll_totals = [
+    'total_employees' => 0,
+    'total_days' => 0,
+    'total_gross' => 0,
+    'total_deductions' => 0,
+    'total_net' => 0
+];
+
+foreach ($employee_payroll as $emp_id => &$payroll) {
+    $daily_rate = $payroll['daily_rate'];
+    $days_worked = $payroll['days_worked'];
+    
+    // Calculate gross pay
+    $gross_pay = $daily_rate * $days_worked;
+    $payroll['gross_pay'] = $gross_pay;
+    
+    // Calculate net pay
+    $net_pay = $gross_pay - $payroll['total_deductions'];
+    $payroll['net_pay'] = max(0, $net_pay); // Ensure no negative net pay
+    
+    // Update totals
+    if ($days_worked > 0) {
+        $payroll_totals['total_employees']++;
+    }
+    $payroll_totals['total_days'] += $days_worked;
+    $payroll_totals['total_gross'] += $gross_pay;
+    $payroll_totals['total_deductions'] += $payroll['total_deductions'];
+    $payroll_totals['total_net'] += $payroll['net_pay'];
+}
+unset($payroll); // Break reference
+
+// Filter to show only Active employees (removed days_worked filter to show all)
+$employee_payroll = array_filter($employee_payroll, function($p) {
+    return $p['employee']['status'] === 'Active';
+});
+
+// Save report data to database
+function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch) {
+    $created_by = $_SESSION['user_id'] ?? null;
+    $branch_id = ($selected_branch !== 'all' && is_numeric($selected_branch)) ? $selected_branch : null;
+    
+    foreach ($employee_payroll as $emp_id => $payroll) {
+        $ot_hours = 0;
+        $ot_rate = $payroll['daily_rate'] / 8 * 1.25;
+        $ot_amount = $ot_hours * $ot_rate;
+        $allowance = 0;
+        $ca_deduction = 0;
+        $sss_loan = 0;
+        $gross_plus_allowance = $payroll['gross_pay'] + $allowance + $ot_amount;
+        $total_deductions = $payroll['sss_deduction'] + $payroll['philhealth_deduction'] + $payroll['pagibig_deduction'] + $ca_deduction + $sss_loan;
+        $take_home = $gross_plus_allowance - $total_deductions;
+        
+        $query = "INSERT INTO weekly_payroll_reports (
+            employee_id, report_year, report_month, week_number, view_type, branch_id,
+            days_worked, total_hours, daily_rate, basic_pay,
+            ot_hours, ot_rate, ot_amount,
+            performance_allowance, gross_pay, gross_plus_allowance,
+            ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
+            take_home_pay, status, created_by
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ) ON DUPLICATE KEY UPDATE
+            days_worked = VALUES(days_worked),
+            total_hours = VALUES(total_hours),
+            daily_rate = VALUES(daily_rate),
+            basic_pay = VALUES(basic_pay),
+            ot_hours = VALUES(ot_hours),
+            ot_rate = VALUES(ot_rate),
+            ot_amount = VALUES(ot_amount),
+            performance_allowance = VALUES(performance_allowance),
+            gross_pay = VALUES(gross_pay),
+            gross_plus_allowance = VALUES(gross_plus_allowance),
+            ca_deduction = VALUES(ca_deduction),
+            sss_deduction = VALUES(sss_deduction),
+            philhealth_deduction = VALUES(philhealth_deduction),
+            pagibig_deduction = VALUES(pagibig_deduction),
+            sss_loan = VALUES(sss_loan),
+            total_deductions = VALUES(total_deductions),
+            take_home_pay = VALUES(take_home_pay),
+            updated_at = CURRENT_TIMESTAMP";
+        
+        $week_num = ($view_type === 'monthly') ? 0 : $selected_week;
+        $view_str = $view_type;
+        $total_hours = $payroll['days_worked'] * 8;
+        $status = 'Draft';
+        
+        $stmt = mysqli_prepare($db, $query);
+        mysqli_stmt_bind_param($stmt, 'iiisssiddddddddddddddddss',
+            $emp_id, $year, $month, $week_num, $view_str, $branch_id,
+            $payroll['days_worked'], $total_hours, $payroll['daily_rate'], $payroll['gross_pay'],
+            $ot_hours, $ot_rate, $ot_amount,
+            $allowance, $payroll['gross_pay'], $gross_plus_allowance,
+            $ca_deduction, $payroll['sss_deduction'], $payroll['philhealth_deduction'], $payroll['pagibig_deduction'], $sss_loan, $total_deductions,
+            $take_home, $status, $created_by
+        );
+        
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+}
+
+// Save the report data (only if report is being viewed, not on every page load)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($employee_payroll)) {
+    saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch);
 }
 
 // Generate date array for the selected range
 $dates = [];
+$all_dates = []; // Initialize to prevent undefined variable error
 if ($view_type === 'weekly') {
     // For weekly view
     $current_date = strtotime($start_date);
@@ -460,11 +609,37 @@ if ($view_type === 'monthly') {
             padding: 6px 12px;
             margin: 4px;
             font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
 
         .branch-badge.all {
             background: rgba(0, 123, 255, 0.15);
             border-color: rgba(0, 123, 255, 0.3);
+        }
+
+        .branch-badge:hover {
+            background: rgba(255, 215, 0, 0.25);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .branch-badge.all:hover {
+            background: rgba(0, 123, 255, 0.25);
+            border-color: rgba(0, 123, 255, 0.5);
+        }
+
+        .branch-badge.active {
+            background: linear-gradient(90deg, var(--gold), #b8860b);
+            border-color: var(--gold);
+            color: var(--black);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .branch-badge.all.active {
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-color: #007bff;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
         }
 
         /* Responsive Styles */
@@ -538,28 +713,151 @@ if ($view_type === 'monthly') {
         }
 
         @media print {
-            body * {
-                visibility: hidden;
+            @page {
+                size: landscape;
+                margin: 5mm 3mm;
             }
-            .report-card, .report-card * {
-                visibility: visible;
+            
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
-            .report-card {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                border: none;
-                background: white;
-                color: black;
+            
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 7pt !important;
+                line-height: 1 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            .btn-print, .input-field, .btn-primary, .sidebar, .top-nav,
-            .view-toggle, .filters, .btn-secondary {
-                display: none;
+            
+            /* Hide web elements */
+            .sidebar, .menu-toggle, .view-toggle, form.filters, 
+            .btn-print, .btn-primary, .btn-secondary, .weekly-breakdown,
+            .mt-8, .summary-card, .branch-badge, .report-header,
+            .header-card, h4, .mb-6 {
+                display: none !important;
             }
+            
+            /* Show main content */
             .main-content {
-                margin-left: 0;
-                background: white;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+            }
+            
+            .report-card {
+                background: white !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+            }
+            
+            /* Table container */
+            .report-table {
+                width: 100% !important;
+                overflow: visible !important;
+            }
+            
+            /* The table itself */
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 6.5pt !important;
+            }
+            
+            /* All cells */
+            th, td {
+                border: 0.5pt solid black !important;
+                padding: 1px 2px !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                font-size: 6.5pt !important;
+                color: black !important;
+                background: white !important;
+                height: 14px !important;
+                white-space: nowrap !important;
+            }
+            
+            /* First column - employee names */
+            th:first-child, td:first-child {
+                text-align: left !important;
+                padding-left: 3px !important;
+                font-weight: normal !important;
+            }
+            
+            /* Right align numbers */
+            td:nth-child(n+4) {
+                text-align: right !important;
+                padding-right: 3px !important;
+            }
+            
+            /* Header row */
+            thead tr {
+                background: #d0d0d0 !important;
+            }
+            
+            th {
+                background: #d0d0d0 !important;
+                font-weight: bold !important;
+                text-transform: uppercase !important;
+            }
+            
+            /* Total row */
+            tbody tr:last-child td {
+                font-weight: bold !important;
+                background: #e8e8e8 !important;
+                border-top: 1.5pt solid black !important;
+            }
+            
+            /* Inputs - show as text */
+            input.ca-input {
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                font-size: 6.5pt !important;
+                color: black !important;
+                width: auto !important;
+                text-align: right !important;
+            }
+            
+            /* Remove all colors */
+            .bg-gradient-to-r, .bg-gray-800, .bg-red-900\/20, .bg-red-900\/30,
+            .from-yellow-600, .to-yellow-800, .from-yellow-700, .to-yellow-900,
+            .hover\\:bg-gray-800\\/50:hover {
+                background: white !important;
+            }
+            
+            /* Text colors */
+            .text-white, .text-gray-400, .text-gray-300, .text-yellow-400,
+            .text-blue-400, .text-red-400, .text-green-400, .text-gold-300 {
+                color: black !important;
+            }
+            
+            /* Remove overflow restriction */
+            .min-w-\\[1200px\\], .min-w-[1200px] {
+                min-width: 0 !important;
+            }
+            
+            .overflow-x-auto {
+                overflow: visible !important;
+            }
+            
+            /* Fix layout */
+            .app-shell, main, .report-card {
+                display: block !important;
+            }
+            
+            /* Row styling */
+            tr {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Hide padding classes */
+            .px-3, .px-2, .py-3, .py-2, .py-1, .p-3, .p-2 {
+                padding: 1px 2px !important;
             }
         }
     </style>
@@ -574,7 +872,7 @@ if ($view_type === 'monthly') {
                 <div class="header-left">
                     <div>
                         <div class="welcome">
-                            <?php echo ($view_type === 'weekly') ? 'Weekly' : 'Monthly'; ?> Deployment Report
+                            <?php echo ($view_type === 'weekly') ? 'Weekly' : 'Monthly'; ?> Payroll Report
                         </div>
                         <div class="text-sm text-gray">
                             Admin Panel | <?php echo ($view_type === 'weekly') ? "Week $selected_week Report" : "Monthly Report"; ?>
@@ -646,10 +944,10 @@ if ($view_type === 'monthly') {
                         <label class="block text-sm font-medium text-gray-300 mb-2">Select Branch</label>
                         <select name="branch" class="input-field">
                             <option value="all" <?php echo ($selected_branch === 'all') ? 'selected' : ''; ?>>All Branches</option>
-                            <?php foreach ($all_branches_list as $branch_name): ?>
-                                <option value="<?php echo htmlspecialchars($branch_name); ?>" 
-                                    <?php echo ($selected_branch === $branch_name) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($branch_name); ?>
+                            <?php foreach ($all_branches_list as $branch): ?>
+                                <option value="<?php echo htmlspecialchars($branch['id']); ?>" 
+                                    <?php echo ($selected_branch === (string)$branch['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($branch['name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -658,9 +956,6 @@ if ($view_type === 'monthly') {
                     <div class="flex gap-2">
                         <button type="submit" class="btn-primary">
                             <i class="fas fa-filter mr-2"></i>Apply Filter
-                        </button>
-                        <button type="button" onclick="window.print()" class="btn-print">
-                            <i class="fas fa-print mr-2"></i>Print Report
                         </button>
                         <button type="button" onclick="exportToExcel()" class="btn-secondary">
                             <i class="fas fa-file-excel mr-2"></i>Export Excel
@@ -676,13 +971,11 @@ if ($view_type === 'monthly') {
                            class="branch-badge all <?php echo ($selected_branch === 'all') ? 'active' : ''; ?>">
                             <i class="fas fa-layer-group mr-1"></i>All Branches
                         </a>
-                        <?php foreach ($all_branches_list as $branch_name): ?>
-                            <?php if ($branch_name): ?>
-                            <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($branch_name); ?>" 
-                               class="branch-badge <?php echo ($selected_branch === $branch_name) ? 'active' : ''; ?>">
-                                <i class="fas fa-building mr-1"></i><?php echo htmlspecialchars($branch_name); ?>
+                        <?php foreach ($all_branches_list as $branch): ?>
+                            <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($branch['id']); ?>" 
+                               class="branch-badge <?php echo ($selected_branch === (string)$branch['id']) ? 'active' : ''; ?>">
+                                <i class="fas fa-building mr-1"></i><?php echo htmlspecialchars($branch['name']); ?>
                             </a>
-                            <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -711,159 +1004,213 @@ if ($view_type === 'monthly') {
                 </div>
                 <?php endif; ?>
 
-                <!-- Report Table -->
+                <!-- Payroll Table -->
                 <div class="report-table overflow-x-auto mb-6">
-                    <?php if ($view_type === 'monthly' && count($dates) > 20): ?>
-                    <div class="text-center py-4 text-sm text-gray-400">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Showing <?php echo count($dates); ?> days. Scroll horizontally to view all data.
-                    </div>
-                    <?php endif; ?>
-                    
-                    <table class="w-full border-collapse min-w-[600px]" id="reportTable">
+                    <table class="w-full border-collapse min-w-[1200px]" id="reportTable">
                         <thead>
-                            <tr>
-                                <!-- Date row header -->
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
-                                    Date / Branch
+                            <tr class="bg-gradient-to-r from-yellow-600 to-yellow-800">
+                                <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Employee
                                 </th>
-                                <!-- Branch names as column headers -->
-                                <?php if ($selected_branch === 'all'): ?>
-                                    <?php foreach ($all_branches as $branch): ?>
-                                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600 branch-header">
-                                            <?php echo htmlspecialchars($branch); ?>
-                                        </th>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <!-- Single branch view -->
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600 branch-header">
-                                        <?php echo htmlspecialchars($selected_branch); ?>
-                                    </th>
-                                <?php endif; ?>
+                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" colspan="2">
+                                    Days Worked
+                                </th>
+                                <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Daily Rate
+                                </th>
+                                <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Basic Pay
+                                </th>
+                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" colspan="2">
+                                    Overtime
+                                </th>
+                                <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Gross Pay
+                                </th>
+                                <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Performance Allowance
+                                </th>
+                                <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Gross + Allowance
+                                </th>
+                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600 bg-red-900/30" colspan="6">
+                                    Deductions
+                                </th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Take Home Pay
+                                </th>
+                                <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Signature
+                                </th>
+                            </tr>
+                            <tr class="bg-gradient-to-r from-yellow-700 to-yellow-900">
+                                <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">Days</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">Hrs</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">Hrs</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">Amt</th>
+                                <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">CA</th>
+                                <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">SSS</th>
+                                <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">PHIC</th>
+                                <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">HDMF</th>
+                                <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">SSS Loan</th>
+                                <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Each date as a row -->
-                            <?php foreach ($dates as $date): ?>
-                            <?php 
-                            // Highlight weekends
-                            $day_of_week = date('w', strtotime($date));
-                            $is_weekend = ($day_of_week == 0 || $day_of_week == 6);
+                            <?php foreach ($employee_payroll as $emp_id => $payroll): ?>
+                            <?php
+                                $ot_hours = 0;
+                                $ot_rate = $payroll['daily_rate'] / 8 * 1.25;
+                                $ot_amount = $ot_hours * $ot_rate;
+                                $allowance = 0; // Placeholder for performance allowance
+                                $gross_plus_allowance = $payroll['gross_pay'] + $allowance;
+                                $ca_deduction = 0; // Placeholder for cash advance
+                                $sss_loan = 0; // Placeholder for SSS loan
+                                $total_deductions = $payroll['sss_deduction'] + $payroll['philhealth_deduction'] + $payroll['pagibig_deduction'] + $ca_deduction + $sss_loan;
+                                $take_home = $gross_plus_allowance - $total_deductions;
                             ?>
-                            <tr class="border-b border-gray-700 <?php echo $is_weekend ? 'bg-gray-800/30' : ''; ?>">
-                                <!-- Date column -->
-                                <td class="px-4 py-3 date-header whitespace-nowrap">
-                                    <div class="font-semibold"><?php echo date('D', strtotime($date)); ?></div>
-                                    <div class="text-sm"><?php echo date('M d, Y', strtotime($date)); ?></div>
-                                    <?php if ($is_weekend): ?>
-                                    <div class="text-xs text-gold-300 mt-1">
-                                        <i class="fas fa-flag mr-1"></i>Weekend
+                            <tr class="border-b border-gray-700 hover:bg-gray-800/50">
+                                <td class="px-3 py-2">
+                                    <div class="font-medium text-white text-sm">
+                                        <?php echo htmlspecialchars(strtoupper($payroll['employee']['last_name'] . ', ' . $payroll['employee']['first_name'])); ?>
                                     </div>
-                                    <?php endif; ?>
                                 </td>
-                                
-                                <!-- Employee boxes for each branch -->
-                                <?php if ($selected_branch === 'all'): ?>
-                                    <?php foreach ($all_branches as $branch): ?>
-                                        <td class="px-3 py-3 align-top min-w-[180px]">
-                                            <div class="employee-container">
-                                                <?php if (isset($attendance_by_date_branch[$date][$branch]) && !empty($attendance_by_date_branch[$date][$branch])): ?>
-                                                    <?php foreach ($attendance_by_date_branch[$date][$branch] as $employee): ?>
-                                                        <div class="employee-box">
-                                                            <div class="font-medium text-sm text-white">
-                                                                <?php echo htmlspecialchars($employee['name']); ?>
-                                                            </div>
-                                                            <div class="text-xs text-gray-300 mt-1">
-                                                                ID: <?php echo htmlspecialchars($employee['code']); ?>
-                                                            </div>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    <div class="empty-cell text-sm">
-                                                        No Deployment
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
-                                        </td>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <!-- Single branch view -->
-                                    <td class="px-3 py-3 align-top min-w-[180px]">
-                                        <div class="employee-container">
-                                            <?php if (isset($attendance_by_date_branch[$date][$selected_branch]) && !empty($attendance_by_date_branch[$date][$selected_branch])): ?>
-                                                <?php foreach ($attendance_by_date_branch[$date][$selected_branch] as $employee): ?>
-                                                    <div class="employee-box">
-                                                        <div class="font-medium text-sm text-white">
-                                                            <?php echo htmlspecialchars($employee['name']); ?>
-                                                        </div>
-                                                        <div class="text-xs text-gray-300 mt-1">
-                                                            ID: <?php echo htmlspecialchars($employee['code']); ?>
-                                                        </div>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <div class="empty-cell text-sm">
-                                                    No Deployment
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                <?php endif; ?>
+                                <td class="px-2 py-2 text-center text-sm text-white">
+                                    <?php echo $payroll['days_worked']; ?>
+                                </td>
+                                <td class="px-2 py-2 text-center text-sm text-gray-400">
+                                    <?php echo number_format($payroll['days_worked'] * 8, 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm text-gray-300">
+                                    <?php echo number_format($payroll['daily_rate'], 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm font-medium text-white">
+                                    <?php echo number_format($payroll['gross_pay'], 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-center text-sm text-gray-400">
+                                    <?php echo $ot_hours; ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm text-gray-400">
+                                    <?php echo number_format($ot_amount, 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm font-medium text-yellow-400">
+                                    <?php echo number_format($payroll['gross_pay'] + $ot_amount, 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm text-blue-400">
+                                    <?php echo number_format($allowance, 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm font-medium text-white">
+                                    <?php echo number_format($gross_plus_allowance + $ot_amount, 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm">
+                                    <input type="number" 
+                                           name="ca_<?php echo $emp_id; ?>" 
+                                           id="ca_<?php echo $emp_id; ?>"
+                                           value="0" 
+                                           min="0"
+                                           step="0.01"
+                                           class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-right text-red-400 focus:border-yellow-500 focus:outline-none ca-input"
+                                           data-emp-id="<?php echo $emp_id; ?>"
+                                           onchange="updateCalculations(<?php echo $emp_id; ?>)">
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm text-red-400">
+                                    <?php echo ($payroll['sss_deduction'] > 0) ? number_format($payroll['sss_deduction'], 0) : '-'; ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm text-red-400">
+                                    <?php echo ($payroll['philhealth_deduction'] > 0) ? number_format($payroll['philhealth_deduction'], 0) : '-'; ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm text-red-400">
+                                    <?php echo ($payroll['pagibig_deduction'] > 0) ? number_format($payroll['pagibig_deduction'], 0) : '-'; ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm text-red-400">
+                                    <?php echo ($sss_loan > 0) ? number_format($sss_loan, 0) : '-'; ?>
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm font-medium text-red-400">
+                                    <?php echo number_format($total_deductions, 0); ?>
+                                </td>
+                                <td class="px-3 py-2 text-right text-sm font-bold text-green-400">
+                                    <?php echo number_format($take_home, 0); ?>
+                                </td>
+                                <td class="px-3 py-2 text-center text-sm text-gray-400">
+                                    <!-- Signature -->
+                                </td>
                             </tr>
                             <?php endforeach; ?>
+                            
+                            <!-- Total Row -->
+                            <?php
+                            $total_ot = 0;
+                            $total_allowance = 0;
+                            $total_ca = 0;
+                            $total_sss_loan = 0;
+                            $grand_total_deductions = $payroll_totals['total_deductions'] + $total_ca + $total_sss_loan;
+                            $grand_take_home = $payroll_totals['total_gross'] + $total_allowance + $total_ot - $grand_total_deductions;
+                            ?>
+                            <tr class="bg-gray-800 font-bold border-t-2 border-yellow-500">
+                                <td class="px-3 py-3 text-white">TOTAL</td>
+                                <td class="px-2 py-3 text-center text-white"><?php echo $payroll_totals['total_days']; ?></td>
+                                <td class="px-2 py-3 text-center text-gray-400">-</td>
+                                <td class="px-2 py-3 text-right text-gray-400">-</td>
+                                <td class="px-2 py-3 text-right text-yellow-400"><?php echo number_format($payroll_totals['total_gross'], 0); ?></td>
+                                <td class="px-2 py-3 text-center text-gray-400">-</td>
+                                <td class="px-2 py-3 text-right text-gray-400">-</td>
+                                <td class="px-2 py-3 text-right text-yellow-400"><?php echo number_format($payroll_totals['total_gross'], 0); ?></td>
+                                <td class="px-2 py-3 text-right text-blue-400"><?php echo number_format($total_allowance, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-white"><?php echo number_format($payroll_totals['total_gross'] + $total_allowance, 0); ?></td>
+                                <td class="px-2 py-3 text-right text-red-400"><?php echo ($total_ca > 0) ? number_format($total_ca, 0) : '-'; ?></td>
+                                <td class="px-2 py-3 text-right text-red-400"><?php echo number_format($payroll_totals['total_deductions'], 0); ?></td>
+                                <td class="px-2 py-3 text-right text-gray-400">-</td>
+                                <td class="px-2 py-3 text-right text-gray-400">-</td>
+                                <td class="px-2 py-3 text-right text-gray-400">-</td>
+                                <td class="px-2 py-3 text-right text-red-400"><?php echo number_format($grand_total_deductions, 0); ?></td>
+                                <td class="px-3 py-3 text-right text-green-400"><?php echo number_format($grand_take_home, 0); ?></td>
+                                <td class="px-3 py-3 text-center text-gray-400">-</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
                 
-                <!-- Summary Section -->
+                <!-- Payroll Summary Section -->
                 <div class="mt-8">
-                    <h3 class="text-lg font-semibold text-gold-300 mb-4">Report Summary</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <h3 class="text-lg font-semibold text-gold-300 mb-4">Payroll Summary</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div class="summary-card">
                             <div class="summary-value">
-                                <?php echo count($all_branches); ?>
+                                <?php echo $payroll_totals['total_employees']; ?>
                             </div>
-                            <div class="summary-label">
-                                <?php echo ($selected_branch === 'all') ? 'Total Branches' : 'Selected Branch'; ?>
-                            </div>
+                            <div class="summary-label">Active Employees</div>
                         </div>
                         <div class="summary-card">
                             <div class="summary-value">
-                                <?php echo count($dates); ?>
+                                <?php echo $payroll_totals['total_days']; ?>
                             </div>
-                            <div class="summary-label">
-                                <?php echo ($view_type === 'weekly') ? 'Days in Week' : 'Days in Month'; ?>
-                            </div>
+                            <div class="summary-label">Total Days Worked</div>
                         </div>
                         <div class="summary-card">
-                            <?php
-                            // Count total deployments
-                            $total_deployments = 0;
-                            foreach ($attendance_by_date_branch as $date => $branches) {
-                                foreach ($branches as $branch => $employees) {
-                                    $total_deployments += count($employees);
-                                }
-                            }
-                            ?>
-                            <div class="summary-value">
-                                <?php echo $total_deployments; ?>
+                            <div class="summary-value text-yellow-400">
+                                ₱<?php echo number_format($payroll_totals['total_gross'], 0); ?>
                             </div>
-                            <div class="summary-label">Total Deployments</div>
+                            <div class="summary-label">Total Gross Pay</div>
                         </div>
-                        <?php if ($view_type === 'monthly'): ?>
                         <div class="summary-card">
-                            <div class="summary-value">
-                                <?php echo count($weekly_breakdown); ?>
+                            <div class="summary-value text-red-400">
+                                ₱<?php echo number_format($payroll_totals['total_deductions'], 0); ?>
                             </div>
-                            <div class="summary-label">Weeks in Month</div>
+                            <div class="summary-label">Total Deductions</div>
                         </div>
-                        <?php endif; ?>
+                        <div class="summary-card">
+                            <div class="summary-value text-green-400">
+                                ₱<?php echo number_format($payroll_totals['total_net'], 0); ?>
+                            </div>
+                            <div class="summary-label">Total Net Pay</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script>
         // Toggle sidebar on mobile
         const menuToggle = document.querySelector('.menu-toggle');
@@ -917,42 +1264,131 @@ if ($view_type === 'monthly') {
             window.location.href = url.toString();
         }
 
-        // Export to Excel functionality
+        // Export to Excel functionality with borders
         function exportToExcel() {
-            // Create a simple Excel export by converting table to CSV
             const table = document.getElementById('reportTable');
-            const rows = table.querySelectorAll('tr');
-            let csv = [];
+            const tbody = table.querySelector('tbody');
+            const dataRows = tbody.querySelectorAll('tr:not(:last-child)');
+            const totalRow = tbody.querySelector('tr:last-child');
             
-            for (let i = 0; i < rows.length; i++) {
-                const row = [], cols = rows[i].querySelectorAll('td, th');
+            // Build worksheet data
+            let wsData = [];
+            
+            // Title rows
+            wsData.push(['JAJR SECURITY SERVICES, INC.']);
+            wsData.push(['PAYROLL PERIOD: <?php echo ($view_type === "weekly") ? "WEEK $selected_week - " : ""; ?><?php echo strtoupper(date('F Y', strtotime($year . "-" . $month . "-01"))); ?>']);
+            wsData.push([]);
+            
+            // Headers
+            wsData.push(['EMPLOYEE', 'DAYS WORKED', '', 'DAILY RATE', 'BASIC PAY', 'OVERTIME', '', 'GROSS PAY', 'PERFORMANCE', '', 'GROSS +', '', 'CA', 'SSS', 'PHIC', 'HDMF', 'SSS LOAN', 'TOTAL', 'TAKE HOME', '', 'SIGNATURE']);
+            wsData.push(['', '', '', '', '', '', '', '', 'ALLOWANCE', '', 'ALLOWANCE', '', '', '', '', '', '', '', 'PAY', '', '']);
+            wsData.push(['', 'days', 'hrs', '', '', 'hrs', 'amt', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+            
+            // Data rows
+            dataRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 17) return;
                 
-                for (let j = 0; j < cols.length; j++) {
-                    // Clean text content
-                    let text = cols[j].innerText;
-                    // Remove newlines and extra spaces
-                    text = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-                    // Handle quotes for CSV
-                    text = text.replace(/"/g, '""');
-                    // Wrap in quotes if contains comma
-                    if (text.includes(',')) {
-                        text = '"' + text + '"';
-                    }
-                    row.push(text);
-                }
-                
-                csv.push(row.join(','));
+                wsData.push([
+                    cells[0].textContent.trim(),
+                    cells[1].textContent.trim(),
+                    cells[2].textContent.trim(),
+                    cells[3].textContent.replace(/,/g, '').trim(),
+                    cells[4].textContent.replace(/,/g, '').trim(),
+                    cells[5].textContent.trim(),
+                    cells[6].textContent.replace(/,/g, '').trim(),
+                    cells[7].textContent.replace(/,/g, '').trim(),
+                    cells[8].textContent.replace(/,/g, '').trim(),
+                    '',
+                    cells[9].textContent.replace(/,/g, '').trim(),
+                    '',
+                    cells[10].querySelector('input') ? cells[10].querySelector('input').value : cells[10].textContent.replace(/,/g, '').trim(),
+                    cells[11].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    cells[12].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    cells[13].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    cells[14].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    cells[15].textContent.replace(/,/g, '').trim(),
+                    cells[16].textContent.replace(/,/g, '').trim(),
+                    '',
+                    ''
+                ]);
+            });
+            
+            // Total row
+            if (totalRow) {
+                const t = totalRow.querySelectorAll('td');
+                wsData.push([
+                    'TOTAL', t[1].textContent.trim(), '', '', t[4].textContent.replace(/,/g, '').trim(),
+                    '', '', t[7].textContent.replace(/,/g, '').trim(), t[8].textContent.replace(/,/g, '').trim(),
+                    '', t[9].textContent.replace(/,/g, '').trim(), '', t[10].textContent.replace(/,/g, '').trim(),
+                    t[11].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    t[12].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    t[13].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    t[14].textContent.replace(/,/g, '').replace('-', '0').trim(),
+                    t[15].textContent.replace(/,/g, '').trim(),
+                    t[16].textContent.replace(/,/g, '').trim(), '', ''
+                ]);
             }
             
-            // Download CSV file
-            const csvContent = "data:text/csv;charset=utf-8," + csv.join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "deployment_report_<?php echo $selected_month; ?><?php echo ($selected_branch !== 'all') ? '_' . $selected_branch : ''; ?>.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Define border style
+            const borderStyle = {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } }
+            };
+            
+            const boldBorderStyle = {
+                top: { style: 'medium', color: { rgb: '000000' } },
+                bottom: { style: 'medium', color: { rgb: '000000' } },
+                left: { style: 'medium', color: { rgb: '000000' } },
+                right: { style: 'medium', color: { rgb: '000000' } }
+            };
+            
+            // Apply borders to all cells
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = 3; R <= range.e.r; R++) {
+                for (let C = 0; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = { v: '' };
+                    if (!ws[cellRef].s) ws[cellRef].s = {};
+                    
+                    // Bold header rows
+                    if (R === 3 || R === 4 || R === 5) {
+                        ws[cellRef].s.font = { bold: true };
+                        ws[cellRef].s.border = boldBorderStyle;
+                    } else if (R === range.e.r) {
+                        // Bold total row
+                        ws[cellRef].s.font = { bold: true };
+                        ws[cellRef].s.border = borderStyle;
+                    } else {
+                        ws[cellRef].s.border = borderStyle;
+                    }
+                }
+            }
+            
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 25 }, // Employee
+                { wch: 8 }, { wch: 6 }, // Days worked
+                { wch: 10 }, // Daily rate
+                { wch: 10 }, // Basic pay
+                { wch: 6 }, { wch: 8 }, // Overtime
+                { wch: 10 }, // Gross pay
+                { wch: 10 }, { wch: 2 }, // Performance allowance
+                { wch: 10 }, { wch: 2 }, // Gross + allowance
+                { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, // Deductions
+                { wch: 12 }, { wch: 2 }, // Take home pay
+                { wch: 12 } // Signature
+            ];
+            
+            // Create workbook and download
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Payroll Report');
+            XLSX.writeFile(wb, 'payroll_report_<?php echo $selected_month; ?>_week<?php echo $selected_week; ?><?php echo ($selected_branch !== "all") ? "_" . $selected_branch : ""; ?>.xlsx');
         }
 
         // Auto-refresh on view change
@@ -965,6 +1401,82 @@ if ($view_type === 'monthly') {
                 });
             }
         });
+
+        // Update calculations when CA input changes
+        function updateCalculations(empId) {
+            const caInput = document.getElementById('ca_' + empId);
+            const caValue = parseFloat(caInput.value) || 0;
+            
+            // Get base values from the row (stored as data attributes)
+            const row = caInput.closest('tr');
+            
+            // Find all cells in the row
+            const cells = row.querySelectorAll('td');
+            
+            // Get values from cells (indices based on table structure)
+            const grossPayText = cells[4].textContent.replace(/,/g, '');
+            const grossPay = parseFloat(grossPayText) || 0;
+            
+            const otAmountText = cells[6].textContent.replace(/,/g, '');
+            const otAmount = parseFloat(otAmountText) || 0;
+            
+            const allowanceText = cells[8].textContent.replace(/,/g, '');
+            const allowance = parseFloat(allowanceText) || 0;
+            
+            // Get deduction values
+            const sssText = cells[11].textContent.replace(/,/g, '').replace('-', '0');
+            const sss = parseFloat(sssText) || 0;
+            
+            const phicText = cells[12].textContent.replace(/,/g, '').replace('-', '0');
+            const phic = parseFloat(phicText) || 0;
+            
+            const hdmfText = cells[13].textContent.replace(/,/g, '').replace('-', '0');
+            const hdmf = parseFloat(hdmfText) || 0;
+            
+            const sssLoanText = cells[14].textContent.replace(/,/g, '').replace('-', '0');
+            const sssLoan = parseFloat(sssLoanText) || 0;
+            
+            // Calculate totals
+            const grossPlusAllowance = grossPay + allowance + otAmount;
+            const totalDeductions = sss + phic + hdmf + caValue + sssLoan;
+            const takeHome = grossPlusAllowance - totalDeductions;
+            
+            // Update Total Deductions cell (index 15)
+            cells[15].textContent = numberFormat(totalDeductions);
+            
+            // Update Take Home cell (index 16)
+            cells[16].textContent = numberFormat(takeHome);
+            
+            // Update the grand totals
+            updateGrandTotals();
+        }
+        
+        // Format number helper
+        function numberFormat(num) {
+            return Math.round(num).toLocaleString();
+        }
+        
+        // Update grand total row
+        function updateGrandTotals() {
+            const allCAInputs = document.querySelectorAll('.ca-input');
+            let totalCA = 0;
+            
+            allCAInputs.forEach(input => {
+                totalCA += parseFloat(input.value) || 0;
+            });
+            
+            // Update total CA in grand total row if needed
+            const totalRow = document.querySelector('tbody tr:last-child');
+            if (totalRow) {
+                const totalCells = totalRow.querySelectorAll('td');
+                // CA total is at index 10
+                if (totalCA > 0) {
+                    totalCells[10].textContent = numberFormat(totalCA);
+                } else {
+                    totalCells[10].textContent = '-';
+                }
+            }
+        }
     </script>
 </body>
 </html>

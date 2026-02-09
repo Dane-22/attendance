@@ -288,16 +288,34 @@
         }
 
         const max = 5;
-        const names = list
+        const allNames = list
           .map(getEmployeeDisplayName)
-          .filter(Boolean)
-          .slice(0, max);
+          .filter(Boolean);
 
-        const extra = Math.max(0, (parseInt(totalCount, 10) || 0) - names.length);
+        const isExpanded = String(el.dataset.expanded || '0') === '1';
+        const visibleNames = isExpanded ? allNames : allNames.slice(0, max);
 
-        const rows = names.map(n => `<div class="stat-list-item">${escapeHtml(n)}</div>`);
-        if (extra > 0) rows.push(`<div class="stat-list-more">and ${extra} more</div>`);
+        const extra = Math.max(0, allNames.length - visibleNames.length);
+
+        const rows = visibleNames.map((n, idx) => `<div class="stat-list-item">${idx + 1}. ${escapeHtml(n)}</div>`);
+        if (extra > 0) {
+          rows.push(`<button type="button" class="stat-list-more" data-action="expand">and ${extra} more</button>`);
+        } else if (isExpanded && allNames.length > max) {
+          rows.push(`<button type="button" class="stat-list-more" data-action="collapse">show less</button>`);
+        }
+
         el.innerHTML = rows.join('');
+
+        const moreBtn = el.querySelector('.stat-list-more[data-action]');
+        if (moreBtn) {
+          moreBtn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            const action = String(moreBtn.getAttribute('data-action') || '');
+            if (action === 'expand') el.dataset.expanded = '1';
+            if (action === 'collapse') el.dataset.expanded = '0';
+            renderNameList(el, list, totalCount);
+          }, { once: true });
+        }
       };
 
       renderNameList(presentListEl, presentEmployees, summary.present);
