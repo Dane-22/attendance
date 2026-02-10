@@ -335,7 +335,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
-   <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
+  <link rel="stylesheet" href="css/light-theme.css">
+  <script src="js/theme.js"></script>
+  <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
 
   <style>
     /* DARK ENGINEERING THEME - SETTINGS PAGE */
@@ -839,6 +841,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
         position: relative;
     }
     
+    /* Theme Toggle Button Styles */
+    .theme-toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background: var(--input-dark);
+        border-radius: var(--radius);
+        border: 1px solid var(--border-dark);
+        margin-bottom: 20px;
+    }
+    
+    .theme-toggle-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .theme-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent-gold), #ff8c42);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: var(--charcoal);
+    }
+    
+    .theme-text-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .theme-text-info p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    
+    #themeToggleBtn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, var(--accent-gold), #ff8c42);
+        color: var(--charcoal);
+        border: none;
+        border-radius: var(--radius);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+    }
+    
+    #themeToggleBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(212, 175, 55, 0.3);
+    }
+    
+    #themeToggleBtn i {
+        font-size: 16px;
+    }
+    
+    /* Light mode specific button styles */
+    body.light-mode #themeToggleBtn {
+        background: linear-gradient(135deg, #4a5568, #2d3748);
+        color: #ffffff;
+    }
+    
+    body.light-mode #themeToggleBtn:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    
     /* Danger Zone */
     .danger-zone {
         background: rgba(220, 53, 69, 0.05);
@@ -895,7 +974,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
       <div class="settings-header">
         <div class="header-left">
           <button id="sidebarToggle" class="menu-toggle" aria-label="Toggle sidebar">
-            <i class="fas fa-bars"></i>
           </button>
           <div>
             <div class="welcome">Settings & Account</div>
@@ -918,12 +996,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
             <i class="fas fa-shield-alt tab-icon"></i>
             <span>Security</span>
           </a>
+          <!-- <a href="#appearance" class="tab-link" onclick="switchTab('appearance', event)">
+            <i class="fas fa-palette tab-icon"></i>
+            <span>Appearance</span>
+          </a> -->
           
           <?php if ($can_access_system_tools): ?>
           <a href="#system" class="tab-link admin-only" onclick="switchTab('system', event)">
             <i class="fas fa-cogs tab-icon"></i>
             <span>System Tools</span>
-            <span style="font-size: 10px; margin-left: 8px; color: var(--accent-orange);">(Admin)</span>
+            <span style="font-size: 10px; margin-left: 8px; color: var(--accent-orange);"></span>
           </a>
           <?php endif; ?>
         </div>
@@ -1087,6 +1169,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
               <button class="btn btn-danger" onclick="showDeleteConfirmation()">
                 <i class="fas fa-trash-alt"></i> Delete Account
               </button>
+            </div>
+          </div>
+
+          <!-- Appearance Tab -->
+          <!-- <div id="appearance-tab" class="tab-pane">
+            <div class="section-title">Appearance Settings</div>
+            <div class="section-subtitle">Customize your dashboard look and feel</div> -->
+            
+            <!-- Theme Toggle -->
+            <!-- <div class="theme-toggle-container">
+              <div class="theme-toggle-info">
+                <div class="theme-icon">
+                  <i class="fas fa-moon"></i>
+                </div>
+                <div class="theme-text-info">
+                  <h4>Dark / Light Mode</h4>
+                  <p>Switch between dark and light theme for your dashboard</p>
+                </div>
+              </div>
+              <button id="themeToggleBtn">
+                <i class="fas fa-sun"></i>
+                <span class="theme-text">Switch to Light Mode</span>
+              </button>
+            </div> -->
+            
+            <!-- Theme Preview Info -->
+            <div class="tool-card" style="margin-top: 24px;">
+              <div class="tool-icon">
+                <i class="fas fa-info-circle"></i>
+              </div>
+              <div class="tool-content">
+                <div class="tool-title">Theme Information</div>
+                <div class="tool-description">
+                  Your theme preference is saved automatically and will persist across sessions. 
+                  The light mode provides better visibility in bright environments, while dark mode 
+                  reduces eye strain in low-light conditions.
+                </div>
+              </div>
             </div>
           </div>
 

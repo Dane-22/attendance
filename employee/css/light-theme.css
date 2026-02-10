@@ -1,0 +1,2051 @@
+/* Light Theme - PURE BLACK & WHITE */
+/* No other colors - strictly monochrome */
+
+/* Base */
+body.light-mode {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.light-mode .app-shell {
+  background: #ffffff !important;
+}
+
+body.light-mode .main-content {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Sidebar - Light Mode (White bg, Black text) */
+body.light-mode .sidebar {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.15) !important;
+  border-right: 1px solid #000000 !important;
+}
+
+body.light-mode .sidebar .sidebar-brand {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .sidebar .sidebar-brand div:first-child {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+body.light-mode .sidebar .sidebar-brand div:last-child {
+  color: #666666 !important;
+  font-size: 12px !important;
+}
+
+body.light-mode .menu-item,
+body.light-mode .sidebar a {
+  color: #000000 !important;
+  background: transparent !important;
+  border-left: 3px solid transparent !important;
+}
+
+body.light-mode .menu-item:hover,
+body.light-mode .sidebar a:hover {
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .menu-item.active,
+body.light-mode .sidebar a.active {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-left: 3px solid #000000 !important;
+}
+
+body.light-mode .menu-item.active .label,
+body.light-mode .menu-item.active .icon {
+  color: #ffffff !important;
+}
+
+body.light-mode .menu-item .icon,
+body.light-mode .menu-item span:first-child,
+body.light-mode .sidebar i {
+  color: #000000 !important;
+}
+
+body.light-mode .menu-item .label,
+body.light-mode .menu-item span:last-child {
+  color: #000000 !important;
+}
+
+body.light-mode .menu-item.logout {
+  border-top: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .mobile-open-btn {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Sidebar Backdrop */
+body.light-mode .sidebar-backdrop {
+  background: rgba(0,0,0,0.3) !important;
+}
+
+/* Headers & Text */
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6,
+body.light-mode .welcome,
+body.light-mode .page-title,
+body.light-mode .header-title {
+  color: #000000 !important;
+}
+
+body.light-mode .text-muted,
+body.light-mode .muted,
+body.light-mode .subtext,
+body.light-mode .description {
+  color: #666666 !important;
+}
+
+/* Universal Contrast Rule: Black BG = White Text, White BG = Black Text */
+
+/* White backgrounds - Black text */
+body.light-mode .card,
+body.light-mode .summary-card,
+body.light-mode .stat-card,
+body.light-mode .employee-card,
+body.light-mode .document-card,
+body.light-mode .info-card,
+body.light-mode .tool-card,
+body.light-mode .analytics-card,
+body.light-mode .monitoring-card,
+body.light-mode .payroll-card,
+body.light-mode .billing-card,
+body.light-mode .ca-summary,
+body.light-mode .ca-transaction-card,
+body.light-mode .branch-table-container,
+body.light-mode .emp-list-card,
+body.light-mode .emp-item,
+body.light-mode .task-card,
+body.light-mode .glass-card,
+body.light-mode .log-card,
+body.light-mode .stats-card,
+body.light-mode .settings-container,
+body.light-mode .quick-actions-section,
+body.light-mode .personal-stat-card,
+body.light-mode .recent-activity,
+body.light-mode .headcount-section,
+body.light-mode .modal-content,
+body.light-mode .modal-panel,
+body.light-mode .upload-area,
+body.light-mode .activity-item,
+body.light-mode .log-item,
+body.light-mode .list-item,
+body.light-mode .alert,
+body.light-mode table,
+body.light-mode .table,
+body.light-mode .data-table,
+body.light-mode .tab-content,
+body.light-mode .settings-panel,
+body.light-mode .section-content,
+body.light-mode [class*="card"],
+body.light-mode [class*="container"]:not(.sidebar):not(.sidebar-backdrop) {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+/* Black backgrounds - White text */
+body.light-mode .sidebar,
+body.light-mode .section-header,
+body.light-mode .card-header,
+body.light-mode .panel-header,
+body.light-mode .modal-header,
+body.light-mode .table-header,
+body.light-mode .welcome-banner,
+body.light-mode .header-banner,
+body.light-mode .page-header,
+body.light-mode .section-title-bar,
+body.light-mode thead,
+body.light-mode th,
+body.light-mode .menu-item.active,
+body.light-mode .sidebar a.active,
+body.light-mode .btn-primary,
+body.light-mode .btn,
+body.light-mode button:not(.btn-secondary):not(.btn-outline),
+body.light-mode .badge,
+body.light-mode .tag,
+body.light-mode .status-badge:not(.outline):not(.light),
+body.light-mode .progress-fill,
+body.light-mode .dark-section,
+body.light-mode .black-bar,
+body.light-mode [class*="header"]:not(.card-header):not(.section-header),
+body.light-mode [class*="active"],
+body.light-mode [class*="primary"] {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #000000 !important;
+}
+
+/* Force all text in white containers to be black */
+body.light-mode .card *,
+body.light-mode .summary-card *,
+body.light-mode .stat-card *,
+body.light-mode .employee-card *,
+body.light-mode .document-card *,
+body.light-mode .info-card *,
+body.light-mode .tool-card *,
+body.light-mode .analytics-card *,
+body.light-mode .monitoring-card *,
+body.light-mode .payroll-card *,
+body.light-mode .billing-card *,
+body.light-mode .modal-content *,
+body.light-mode .recent-activity *,
+body.light-mode .headcount-section *,
+body.light-mode .emp-list-card *,
+body.light-mode .task-card *,
+body.light-mode .activity-item *,
+body.light-mode .log-item *,
+body.light-mode table *:not(thead):not(th),
+body.light-mode .table *:not(thead):not(th) {
+  color: #000000 !important;
+}
+
+/* Force all text in black containers to be white */
+body.light-mode .sidebar *,
+body.light-mode .section-header *,
+body.light-mode .card-header *,
+body.light-mode .panel-header *,
+body.light-mode .modal-header *,
+body.light-mode .table-header *,
+body.light-mode .welcome-banner *,
+body.light-mode .header-banner *,
+body.light-mode .page-header *,
+body.light-mode thead *,
+body.light-mode th *,
+body.light-mode .menu-item.active *,
+body.light-mode .sidebar a.active *,
+body.light-mode .btn-primary *,
+body.light-mode .btn:not(.btn-secondary):not(.btn-outline) *,
+body.light-mode button:not(.btn-secondary):not(.btn-outline) *,
+body.light-mode .badge:not(.outline):not(.light) *,
+body.light-mode .tag:not(.outline):not(.light) * {
+  color: #ffffff !important;
+}
+
+/* Secondary buttons - white bg, black text, black border */
+body.light-mode .btn-secondary,
+body.light-mode .btn-outline,
+body.light-mode .btn-absent,
+body.light-mode .badge.outline,
+body.light-mode .badge.light,
+body.light-mode .status-badge.outline,
+body.light-mode .status-badge.light {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Inputs */
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea,
+body.light-mode .search-input,
+body.light-mode .form-input,
+body.light-mode .form-control {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode input::placeholder,
+body.light-mode textarea::placeholder {
+  color: #888888 !important;
+}
+
+/* Progress bars */
+body.light-mode .progress-bar,
+body.light-mode .progress-track {
+  background: #e0e0e0 !important;
+}
+
+body.light-mode .progress-fill,
+body.light-mode .progress-bar-fill {
+  background: #000000 !important;
+}
+
+/* Avatars */
+body.light-mode .avatar,
+body.light-mode .profile-image,
+body.light-mode .user-avatar,
+body.light-mode .avatar-initials {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Links */
+body.light-mode a,
+body.light-mode .link {
+  color: #000000 !important;
+  text-decoration: underline !important;
+}
+
+/* Scrollbar */
+body.light-mode ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body.light-mode ::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+body.light-mode ::-webkit-scrollbar-thumb {
+  background: #000000;
+  border-radius: 4px;
+}
+
+/* Animations */
+body.light-mode,
+body.light-mode * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+}
+
+/* ================= SELECT_EMPLOYEE.PHP SPECIFIC - LIGHT MODE ================= */
+
+/* Welcome Banner */
+body.light-mode .welcome-banner {
+  background: transparent !important;
+  border: none !important;
+}
+
+body.light-mode .welcome-banner-left {
+  color: #000000 !important;
+}
+
+body.light-mode .welcome-banner-right {
+  color: #666666 !important;
+}
+
+body.light-mode .welcome-banner-time {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+body.light-mode .welcome-banner-date {
+  color: #000000 !important;
+}
+
+/* Stat Cards */
+body.light-mode .stat-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .stat-label {
+  color: #666666 !important;
+}
+
+body.light-mode .stat-value {
+  color: #000000 !important;
+}
+
+body.light-mode .stat-list {
+  background: #f5f5f5 !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .stat-list-item {
+  color: #000000 !important;
+}
+
+body.light-mode .stat-list-more {
+  color: #000000 !important;
+}
+
+/* Branch Selection */
+body.light-mode .branch-selection {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .branch-title {
+  color: #000000 !important;
+}
+
+body.light-mode .branch-search-input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .branch-search-input::placeholder {
+  color: #888888 !important;
+}
+
+/* Branch Cards */
+body.light-mode .branch-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .branch-card:hover {
+  background: #f5f5f5 !important;
+  border-color: #000000 !important;
+}
+
+body.light-mode .branch-card.selected {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+
+body.light-mode .branch-card.selected .branch-name {
+  color: #ffffff !important;
+}
+
+body.light-mode .branch-card.selected .branch-desc {
+  color: #cccccc !important;
+}
+
+body.light-mode .branch-name {
+  color: #000000 !important;
+}
+
+body.light-mode .branch-desc {
+  color: #666666 !important;
+}
+
+body.light-mode .btn-remove-branch {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-remove-branch:hover {
+  background: #333333 !important;
+}
+
+body.light-mode .btn-add-branch {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-add-branch:hover {
+  background: #333333 !important;
+}
+
+/* Filter Options */
+body.light-mode .filter-options-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .filter-options-title {
+  color: #000000 !important;
+}
+
+/* Status Pills */
+body.light-mode .status-pill {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .status-pill:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .status-pill.active {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Toggle Switch */
+body.light-mode .toggle-label {
+  color: #666666 !important;
+}
+
+body.light-mode .slider {
+  background-color: #cccccc !important;
+}
+
+body.light-mode input:checked + .slider {
+  background-color: #000000 !important;
+}
+
+body.light-mode .slider:before {
+  background-color: #ffffff !important;
+}
+
+/* Status Filter Select */
+body.light-mode .status-filter-select {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .status-filter-select option {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Search */
+body.light-mode .search-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .search-input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .search-input::placeholder {
+  color: #888888 !important;
+}
+
+/* Undo Button */
+body.light-mode .undo-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-global-undo {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .btn-global-undo:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Employee Cards (List View) */
+body.light-mode .employee-card-list {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .employee-card-list:hover {
+  border-color: #333333 !important;
+}
+
+body.light-mode .employee-card-list .employee-name {
+  color: #000000 !important;
+}
+
+body.light-mode .employee-card-list .employee-code {
+  color: #666666 !important;
+}
+
+body.light-mode .employee-card-list .employee-position {
+  color: #888888 !important;
+}
+
+/* Employee Table */
+body.light-mode .employee-table-wrap {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .employee-table thead th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #000000 !important;
+}
+
+body.light-mode .employee-table tbody td {
+  color: #000000 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .employee-table tbody tr:hover {
+  background: #f5f5f5 !important;
+}
+
+/* Employee Avatar */
+body.light-mode .employee-avatar {
+  background: #f5f5f5 !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .employee-sub {
+  color: #666666 !important;
+}
+
+body.light-mode .employee-branch-label {
+  color: #666666 !important;
+}
+
+body.light-mode .employee-branch-value {
+  color: #000000 !important;
+}
+
+/* Kebab Menu */
+body.light-mode .kebab-btn {
+  background: transparent !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .kebab-btn:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .kebab-dropdown {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+}
+
+body.light-mode .kebab-item {
+  color: #000000 !important;
+}
+
+body.light-mode .kebab-item:hover {
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .kebab-logs-title {
+  color: #000000 !important;
+}
+
+body.light-mode .kebab-logs-body {
+  color: #000000 !important;
+}
+
+body.light-mode .kebab-log-row {
+  background: #f5f5f5 !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .kebab-log-sep {
+  color: #666666 !important;
+}
+
+/* Status Badges */
+body.light-mode .status-available {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .status-present {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .status-absent-auto,
+body.light-mode .status-absent-manual {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Buttons */
+body.light-mode .btn-present {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-present:hover:not(:disabled) {
+  background: #333333 !important;
+}
+
+body.light-mode .btn-present-late {
+  background: #666666 !important;
+  color: #ffffff !important;
+  border: 1px solid #666666 !important;
+}
+
+body.light-mode .btn-absent {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-absent:hover:not(:disabled) {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .btn-transfer {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-transfer:disabled {
+  background: #cccccc !important;
+  color: #666666 !important;
+  border-color: #cccccc !important;
+}
+
+/* Loading and Messages */
+body.light-mode .loading {
+  color: #666666 !important;
+}
+
+body.light-mode .no-employees {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #666666 !important;
+}
+
+body.light-mode .no-employees i {
+  color: #000000 !important;
+}
+
+body.light-mode .all-marked {
+  background: #f5f5f5 !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .success-message {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .error-message {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Undo Snackbar */
+body.light-mode .undo-snackbar {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2) !important;
+  color: #000000 !important;
+}
+
+body.light-mode .undo-snackbar-text {
+  color: #000000 !important;
+}
+
+body.light-mode .undo-snackbar-btn {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+body.light-mode .undo-snackbar-btn:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .undo-snackbar-close {
+  color: #666666 !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .undo-snackbar-close:hover {
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+/* Modal */
+body.light-mode .modal-backdrop {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+body.light-mode .modal-panel {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+}
+
+body.light-mode .modal-panel h3 {
+  color: #000000 !important;
+}
+
+body.light-mode .modal-panel button[onclick*="close"] {
+  color: #666666 !important;
+}
+
+body.light-mode .modal-panel button[onclick*="close"]:hover {
+  color: #000000 !important;
+}
+
+/* Time Logs */
+body.light-mode .time-logs-body {
+  color: #000000 !important;
+}
+
+body.light-mode .time-log-row {
+  background: #f5f5f5 !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .time-log-sep {
+  color: #666666 !important;
+}
+
+/* Form Row */
+body.light-mode .form-row label {
+  color: #000000 !important;
+}
+
+body.light-mode .form-row input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .form-row small {
+  color: #666666 !important;
+}
+
+/* Branch Messages */
+body.light-mode #branchMessage.success {
+  background: #000000 !important;
+  border: 1px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode #branchMessage.error {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+/* Pagination */
+body.light-mode .pagination-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .pagination-info {
+  color: #666666 !important;
+}
+
+body.light-mode .pagination-info strong {
+  color: #000000 !important;
+}
+
+body.light-mode .page-size-label {
+  color: #666666 !important;
+}
+
+body.light-mode .page-size-select {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .page-jump-input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .page-jump-btn {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* View Options */
+body.light-mode .view-option-btn {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #666666 !important;
+}
+
+body.light-mode .view-option-btn:hover {
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+}
+
+/* Quick Tips */
+body.light-mode .quick-tips-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .quick-tips-header {
+  color: #000000 !important;
+}
+
+body.light-mode .quick-tips-header i {
+  color: #000000 !important;
+}
+
+body.light-mode .quick-tips-list {
+  color: #000000 !important;
+}
+
+body.light-mode .quick-tips-list li {
+  color: #000000 !important;
+}
+
+body.light-mode .quick-tips-list strong {
+  color: #000000 !important;
+}
+
+body.light-mode .quick-tips-list span {
+  color: #000000 !important;
+}
+
+/* ================= EMPLOYEES.PHP SPECIFIC - LIGHT MODE ================= */
+
+/* Message Card */
+body.light-mode .card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Header */
+body.light-mode .header h1 {
+  color: #000000 !important;
+}
+
+body.light-mode .header .text-muted {
+  color: #666666 !important;
+}
+
+/* Add Button */
+body.light-mode .add-btn {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .add-btn:hover {
+  background: #333333 !important;
+}
+
+/* FAB Button */
+body.light-mode .fab {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Search Container */
+body.light-mode .search-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .search-icon {
+  color: #666666 !important;
+}
+
+body.light-mode .search-input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .search-input::placeholder {
+  color: #888888 !important;
+}
+
+body.light-mode .clear-search-btn {
+  color: #666666 !important;
+}
+
+body.light-mode .clear-search-btn:hover {
+  color: #000000 !important;
+  background: #f5f5f5 !important;
+}
+
+/* Section Title */
+body.light-mode section h2 {
+  color: #000000 !important;
+}
+
+/* Employees List View */
+body.light-mode .employees-list-view {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Employee Row */
+body.light-mode .employee-row {
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .employee-row:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .employee-row-name {
+  color: #000000 !important;
+}
+
+body.light-mode .employee-row-email {
+  color: #666666 !important;
+}
+
+body.light-mode .employee-row-code,
+body.light-mode .employee-row-position,
+body.light-mode .employee-row-status {
+  color: #333333 !important;
+}
+
+/* Employee Avatar */
+body.light-mode .employee-row-avatar {
+  border: 2px solid #000000 !important;
+}
+
+body.light-mode .employee-row-avatar .initials {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Row Action Buttons */
+body.light-mode .row-action-btn {
+  color: #666666 !important;
+  background: transparent !important;
+}
+
+body.light-mode .row-action-btn:hover {
+  color: #000000 !important;
+  background: #f5f5f5 !important;
+}
+
+/* Pagination Container */
+body.light-mode .pagination-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .pagination-info {
+  color: #666666 !important;
+}
+
+body.light-mode .pagination-info strong {
+  color: #000000 !important;
+}
+
+body.light-mode .page-size-label {
+  color: #666666 !important;
+}
+
+body.light-mode .page-size-select {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .page-btn {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .page-btn:hover:not(:disabled):not(.active) {
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .page-btn.active {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .page-btn:disabled {
+  background: #f5f5f5 !important;
+  border-color: #cccccc !important;
+  color: #999999 !important;
+}
+
+body.light-mode .page-dots {
+  color: #666666 !important;
+}
+
+body.light-mode .page-jump-input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .page-jump-btn {
+  background: #000000 !important;
+  border: 1px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Edit Form Modal */
+body.light-mode .edit-form-modal {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+body.light-mode .edit-form-container {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
+}
+
+body.light-mode .edit-form-header {
+  background: #f5f5f5 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .edit-form-header h3 {
+  color: #000000 !important;
+}
+
+body.light-mode .employee-id-display {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .form-section {
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .form-section .section-title {
+  color: #000000 !important;
+  border-bottom: 1px solid #000000 !important;
+}
+
+body.light-mode .form-label {
+  color: #000000 !important;
+}
+
+body.light-mode .form-label.required::after {
+  color: #ff0000 !important;
+}
+
+body.light-mode .form-input,
+body.light-mode .form-select {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .form-input:focus,
+body.light-mode .form-select:focus {
+  border-color: #000000 !important;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.1) !important;
+}
+
+body.light-mode .form-select option {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Profile Image Upload */
+body.light-mode .profile-image-preview {
+  border: 3px solid #000000 !important;
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .file-input-label {
+  background: #f5f5f5 !important;
+  border: 2px dashed #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .file-input-label:hover {
+  background: #e0e0e0 !important;
+  border-color: #000000 !important;
+}
+
+body.light-mode .file-info {
+  color: #666666 !important;
+}
+
+/* Form Actions */
+body.light-mode .form-actions {
+  border-top: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .btn-cancel {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .btn-cancel:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .btn-save {
+  background: #000000 !important;
+  border: 1px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .btn-save:hover {
+  background: #333333 !important;
+}
+
+body.light-mode .close-btn {
+  color: #666666 !important;
+}
+
+body.light-mode .close-btn:hover {
+  color: #000000 !important;
+  background: #f5f5f5 !important;
+}
+
+/* Action Buttons */
+body.light-mode .action-btn-edit {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .action-btn-edit:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .action-btn-delete {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .action-btn-delete:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Add Modal */
+body.light-mode #addModal .modal-panel {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode #addModal h3 {
+  color: #000000 !important;
+}
+
+body.light-mode #addModal input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode #closeAdd {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+/* ================= BILLING.PHP SPECIFIC - LIGHT MODE ================= */
+
+/* Header Card */
+body.light-mode .header-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+}
+
+body.light-mode .header-card::before {
+  background: #000000 !important;
+}
+
+body.light-mode .header-icon {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .welcome {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  background: none !important;
+}
+
+body.light-mode .header-subtitle {
+  color: #666666 !important;
+}
+
+body.light-mode .date-display {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .date-display i {
+  color: #000000 !important;
+}
+
+body.light-mode .badge {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Stats Grid */
+body.light-mode .stats-grid .stat-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .stats-grid .stat-card:hover {
+  border-color: #000000 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+}
+
+body.light-mode .stats-grid .stat-icon {
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .stats-grid .stat-value {
+  color: #000000 !important;
+}
+
+body.light-mode .stats-grid .stat-label {
+  color: #666666 !important;
+}
+
+/* Table Container */
+body.light-mode .employee-table-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+}
+
+body.light-mode .table-header {
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .table-title {
+  color: #000000 !important;
+}
+
+/* Search Box */
+body.light-mode .search-box input {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .search-box i {
+  color: #000000 !important;
+}
+
+/* Table Styling */
+body.light-mode .table {
+  color: #000000 !important;
+}
+
+body.light-mode .table thead th {
+  background: #000000 !important;
+  border-bottom: 2px solid #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .table tbody tr {
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .table tbody tr:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .table tbody td {
+  color: #000000 !important;
+}
+
+body.light-mode .avatar-placeholder > div {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .table .text-muted {
+  color: #666666 !important;
+}
+
+body.light-mode .table .badge.bg-dark {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .table .badge.bg-danger {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .table .badge.bg-success {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Button Styles */
+body.light-mode .btn-gold {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-gold:hover {
+  background: #333333 !important;
+}
+
+body.light-mode .btn-outline-gold {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+body.light-mode .btn-outline-gold:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Modal Styling */
+body.light-mode .modal-content {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .modal-header {
+  background: #f5f5f5 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .modal-title {
+  color: #000000 !important;
+}
+
+body.light-mode .modal-title i {
+  color: #000000 !important;
+}
+
+body.light-mode .modal-title .text-warning {
+  color: #000000 !important;
+}
+
+body.light-mode .btn-close {
+  filter: none !important;
+  color: #000000 !important;
+}
+
+body.light-mode .modal-body {
+  color: #000000 !important;
+}
+
+body.light-mode .modal-footer {
+  border-top: 1px solid #e0e0e0 !important;
+}
+
+/* Receipt Styles */
+body.light-mode .receipt-container {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
+}
+
+body.light-mode .receipt-header {
+  border-bottom: 2px solid #000000 !important;
+}
+
+body.light-mode .receipt-header h4 {
+  color: #000000 !important;
+}
+
+body.light-mode .receipt-badge {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .receipt-item {
+  border-bottom: 1px dashed #e0e0e0 !important;
+}
+
+body.light-mode .receipt-item:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .receipt-item.total {
+  border-top: 2px solid #000000 !important;
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .receipt-left {
+  color: #666666 !important;
+}
+
+body.light-mode .receipt-right {
+  color: #000000 !important;
+}
+
+body.light-mode .receipt-right.total-amount {
+  color: #000000 !important;
+}
+
+body.light-mode .receipt-footer {
+  border-top: 1px solid #e0e0e0 !important;
+  color: #666666 !important;
+}
+
+/* View Type Selector */
+body.light-mode .view-type-selector {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .view-type-btn {
+  color: #666666 !important;
+}
+
+body.light-mode .view-type-btn.active {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Performance Editor */
+body.light-mode .performance-editor {
+  background: #f5f5f5 !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .performance-editor h6 {
+  color: #000000 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .form-label.small.text-white {
+  color: #000000 !important;
+}
+
+body.light-mode .form-control.bg-dark {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .form-control.bg-dark:focus {
+  background: #ffffff !important;
+  border-color: #000000 !important;
+  box-shadow: 0 0 0 0.25rem rgba(0,0,0,0.1) !important;
+  color: #000000 !important;
+}
+
+body.light-mode .input-group-text.bg-dark {
+  background: #f5f5f5 !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .form-text.text-muted {
+  color: #666666 !important;
+}
+
+/* Loading Animation */
+body.light-mode .loading-spinner p {
+  color: #666666 !important;
+}
+
+body.light-mode .spinner {
+  border-color: #e0e0e0 !important;
+  border-top-color: #000000 !important;
+}
+
+/* Notification */
+body.light-mode .notification {
+  color: #000000 !important;
+}
+
+/* ================= DOCUMENTS.PHP SPECIFIC - LIGHT MODE ================= */
+
+/* Glass Card */
+body.light-mode .glass-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Gold Gradient Button */
+body.light-mode .gold-gradient {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .gold-gradient:hover {
+  background: #333333 !important;
+}
+
+/* Gold Text */
+body.light-mode .gold-text {
+  color: #000000 !important;
+}
+
+body.light-mode .text-muted {
+  color: #666666 !important;
+}
+
+/* View Options Container */
+body.light-mode .view-options-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .view-options-title {
+  color: #000000 !important;
+}
+
+body.light-mode .view-option-btn {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #666666 !important;
+}
+
+body.light-mode .view-option-btn:hover {
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .view-option-btn.active {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Pagination */
+body.light-mode .pagination-container {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .pagination-info {
+  color: #666666 !important;
+}
+
+body.light-mode .pagination-btn {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .pagination-btn:hover:not(.disabled) {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .pagination-btn.disabled {
+  background: #f5f5f5 !important;
+  color: #999999 !important;
+  border-color: #cccccc !important;
+}
+
+body.light-mode .page-number {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .page-number:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .page-number.active {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .limit-selector {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .rate-limit-info {
+  color: #666666 !important;
+}
+
+/* Employee Cards */
+body.light-mode .employee-card,
+body.light-mode .employee-card-list,
+body.light-mode .employee-card-details {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .employee-card:hover,
+body.light-mode .employee-card-list:hover,
+body.light-mode .employee-card-details:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+}
+
+body.light-mode .employee-card .name,
+body.light-mode .employee-card-list .name {
+  color: #000000 !important;
+}
+
+body.light-mode .employee-card .sub,
+body.light-mode .employee-card-list .sub {
+  color: #666666 !important;
+}
+
+/* Avatar Initials */
+body.light-mode .avatar-initials {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Detail Items */
+body.light-mode .detail-label {
+  color: #666666 !important;
+}
+
+body.light-mode .detail-value {
+  color: #000000 !important;
+}
+
+/* Document Cards */
+body.light-mode .document-card,
+body.light-mode .document-card-list,
+body.light-mode .document-card-details {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .document-card:hover,
+body.light-mode .document-card-list:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+}
+
+/* Status Present/Missing */
+body.light-mode .status-present {
+  color: #000000 !important;
+}
+
+body.light-mode .status-missing {
+  color: #666666 !important;
+}
+
+/* FAB Button */
+body.light-mode .fab {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Section Headers */
+body.light-mode section h2 {
+  color: #000000 !important;
+}
+
+/* Top Actions */
+body.light-mode .top-actions .text-muted {
+  color: #666666 !important;
+}
+
+/* Empty State */
+body.light-mode .glass-card.text-center h3 {
+  color: #666666 !important;
+}
+
+body.light-mode .glass-card.text-center p {
+  color: #999999 !important;
+}
+
+body.light-mode .glass-card.text-center i {
+  color: #cccccc !important;
+}
+
+/* Document Type Badges */
+body.light-mode .doc-type-badge {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Upload Area */
+body.light-mode .upload-area {
+  background: #f5f5f5 !important;
+  border: 2px dashed #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .upload-area:hover {
+  background: #e0e0e0 !important;
+}
+
+/* File Cards */
+body.light-mode .file-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .file-card .file-name {
+  color: #000000 !important;
+}
+
+body.light-mode .file-card .file-meta {
+  color: #666666 !important;
+}
+
+/* Modal Styles */
+body.light-mode .modal-header {
+  background: #f5f5f5 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode .modal-title {
+  color: #000000 !important;
+}
+
+body.light-mode .modal-body {
+  color: #000000 !important;
+}
+
+body.light-mode .modal-footer {
+  border-top: 1px solid #e0e0e0 !important;
+}
+
+/* Document Preview */
+body.light-mode .doc-preview {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Filter Button */
+body.light-mode .btn.gold-border {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+/* Employee Profile Header */
+body.light-mode .glass-card .text-sm {
+  color: #666666 !important;
+}
+
+body.light-mode .glass-card p {
+  color: #000000 !important;
+}
+
+/* Required Documents Status */
+body.light-mode .glass-card.text-center p {
+  color: #666666 !important;
+}
+
+body.light-mode .glass-card.text-center .text-lg {
+  color: #000000 !important;
+}
+
+/* ================= LOGS.PHP SPECIFIC - LIGHT MODE ================= */
+
+/* Log Card */
+body.light-mode .log-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .log-header {
+  background: #000000 !important;
+}
+
+/* Log Table */
+body.light-mode .log-table {
+  background: #ffffff !important;
+}
+
+body.light-mode .log-row:hover {
+  background: #f5f5f5 !important;
+}
+
+/* Input Fields */
+body.light-mode .input-field {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .input-field:focus {
+  border-color: #000000 !important;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1) !important;
+}
+
+body.light-mode .input-field::placeholder {
+  color: #888888 !important;
+}
+
+/* Buttons */
+body.light-mode .btn-primary {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .btn-primary:hover {
+  background: #333333 !important;
+}
+
+body.light-mode .btn-secondary {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .btn-secondary:hover {
+  background: #f5f5f5 !important;
+}
+
+/* Pagination */
+body.light-mode .pagination-btn {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .pagination-btn:hover {
+  background: #f5f5f5 !important;
+}
+
+body.light-mode .pagination-btn.active {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #000000 !important;
+}
+
+/* Action Badges */
+body.light-mode .action-badge {
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .action-login {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .action-logout {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.light-mode .action-create {
+  background: #666666 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode .action-update {
+  background: #999999 !important;
+  color: #000000 !important;
+}
+
+body.light-mode .action-delete {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.light-mode .action-system {
+  background: #cccccc !important;
+  color: #000000 !important;
+}
+
+/* Table Container Scrollbar */
+body.light-mode .table-container::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+body.light-mode .table-container::-webkit-scrollbar-thumb {
+  background: #000000;
+}
+
+/* Stats Cards */
+body.light-mode .stats-card {
+  background: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .text-gray-400 {
+  color: #666666 !important;
+}
+
+body.light-mode .text-gray-300 {
+  color: #333333 !important;
+}
+
+body.light-mode .text-white {
+  color: #000000 !important;
+}
+
+body.light-mode .text-orange-500 {
+  color: #000000 !important;
+}
+
+/* Export Button */
+body.light-mode .export-btn {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #000000 !important;
+}
+
+body.light-mode .export-btn:hover {
+  background: #333333 !important;
+}
+
+/* Table Header */
+body.light-mode thead tr.bg-gray-800 {
+  background: #000000 !important;
+}
+
+body.light-mode th.text-gray-300 {
+  color: #ffffff !important;
+}
+
+/* Table Body */
+body.light-mode tbody tr.log-row {
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+body.light-mode tbody tr.log-row td {
+  color: #000000 !important;
+}
+
+body.light-mode tbody tr.log-row .text-gray-300 {
+  color: #666666 !important;
+}
+
+body.light-mode tbody tr.log-row .text-gray-400 {
+  color: #888888 !important;
+}
+
+body.light-mode tbody tr.log-row .text-white {
+  color: #000000 !important;
+}
+
+body.light-mode tbody tr.bg-gray-800\/50 {
+  background: #f9f9f9 !important;
+}
+
+/* Empty State */
+body.light-mode td.text-center.text-gray-400 {
+  color: #666666 !important;
+}
+
+body.light-mode td.text-center i.fa-inbox {
+  color: #cccccc !important;
+}
+
+/* Pagination Text */
+body.light-mode div.text-gray-300 {
+  color: #666666 !important;
+}
+
+/* IP Address Badge */
+body.light-mode span.bg-gray-900 {
+  background: #f5f5f5 !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}

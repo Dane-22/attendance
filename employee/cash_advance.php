@@ -192,39 +192,50 @@ foreach ($employeeList as $emp) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="css/select_employee.css">
+    <link rel="stylesheet" href="css/light-theme.css">
+    <script src="js/theme.js"></script>
     <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
     <style>
         .cash-advance-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            padding: 0 20px;
         }
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
         }
         
         .stat-box {
             background: #1a1a1a;
             border: 1px solid #333;
-            border-radius: 8px;
-            padding: 16px;
+            border-radius: 10px;
+            padding: 20px;
             text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.1);
         }
         
         .stat-box h4 {
             color: #888;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
         }
         
         .stat-box .amount {
             color: #FFD700;
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
         }
         
         .request-form {
@@ -287,17 +298,18 @@ foreach ($employeeList as $emp) {
         .data-table th {
             background: linear-gradient(to right, #FFD700, #FFA500);
             color: #000;
-            padding: 12px;
+            padding: 14px 16px;
             text-align: left;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 13px;
+            white-space: nowrap;
         }
         
         .data-table td {
-            padding: 12px;
+            padding: 14px 16px;
             border-bottom: 1px solid #333;
             color: #e8e8e8;
-            font-size: 13px;
+            font-size: 14px;
         }
         
         .data-table tr:hover {
@@ -354,10 +366,10 @@ foreach ($employeeList as $emp) {
             color: #F44336;
         }
         
-        .view-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .view-tab { background: #2a2a2a; border: 1px solid #444; color: #888; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
-        .view-tab:hover { background: #333; color: #fff; }
-        .view-tab.active { background: #FFD700; color: #000; border-color: #FFD700; }
+        .view-tabs { display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid #333; padding-bottom: 12px; }
+        .view-tab { background: #2a2a2a; border: 1px solid #444; color: #888; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s ease; }
+        .view-tab:hover { background: #333; color: #fff; border-color: #666; }
+        .view-tab.active { background: #FFD700; color: #000; border-color: #FFD700; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
         .view-content { display: none; }
         .view-content.active { display: block; }
     </style>
@@ -402,13 +414,6 @@ foreach ($employeeList as $emp) {
                         <h4>Outstanding Balance</h4>
                         <div class="amount">₱<?php echo number_format($totalOutstanding, 2); ?></div>
                     </div>
-                </div>
-                
-                <!-- View Tabs -->
-                <div class="view-tabs">
-                    <button class="view-tab active" onclick="switchView('employee')" id="tab-employee">
-                        <i class="fas fa-users mr-2"></i>Employee View
-                    </button>
                 </div>
                 
                 <!-- Employee View -->
@@ -790,7 +795,7 @@ foreach ($employeeList as $emp) {
     
     <!-- Employee History Modal -->
     <div id="transactionModal" class="modal-backdrop" style="display: none;">
-        <div class="modal-panel" style="max-width: 700px;">
+        <div class="modal-panel" style="max-width: 900px; width: 90%;">
             <div class="modal-header">
                 <h3 class="text-yellow-400">
                     <i class="fas fa-history mr-2"></i>Cash Advance History

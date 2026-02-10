@@ -25,6 +25,8 @@ include __DIR__ . '/function/report.php';
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="css/report.css">
+    <link rel="stylesheet" href="css/light-theme.css">
+    <script src="js/theme.js"></script>
      <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
  
 </head>

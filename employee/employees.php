@@ -23,6 +23,8 @@ if (!isset($_SESSION['employee_code'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="css/employees.css">
+  <link rel="stylesheet" href="css/light-theme.css">
+  <script src="js/theme.js"></script>
   <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
  
 </head>
@@ -42,13 +44,7 @@ if (!isset($_SESSION['employee_code'])) {
         </div>
       <?php endif; ?>
 
-      <!-- Debug info -->
-      <div style="background: rgba(255,0,0,0.2); border: 1px solid red; padding: 10px; margin-bottom: 12px; color: white;">
-          Position: <?php echo $_SESSION['position'] ?? 'NOT SET'; ?><br>
-          Role: <?php echo $_SESSION['role'] ?? 'NOT SET'; ?><br>
-          User Role: <?php echo $_SESSION['user_role'] ?? 'NOT SET'; ?><br>
-          Is Super Admin: <?php echo $isSuperAdmin ? 'Yes' : 'No'; ?>
-      </div>
+
 
       <div class="top-actions">
         <div class="text-muted">Total Employees: <strong><?php echo $totalEmployees; ?></strong></div>

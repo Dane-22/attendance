@@ -72,6 +72,8 @@ if ($currentPayrollWeek === 4) {
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
     <link rel="stylesheet" href="css/billing.css">
+    <link rel="stylesheet" href="css/light-theme.css">
+    <script src="js/theme.js"></script>
 </head>
 <body>
     <div class="app-shell">

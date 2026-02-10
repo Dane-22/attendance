@@ -33,6 +33,8 @@ require('function/attendance.php');
   <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="css/select_employee.css">
+  <link rel="stylesheet" href="css/light-theme.css">
+  <script src="js/theme.js"></script>
 
 </head>
 <body>
