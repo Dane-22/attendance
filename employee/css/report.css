@@ -494,7 +494,7 @@
             /* Remove all colors */
             .bg-gradient-to-r, .bg-gray-800, .bg-red-900\/20, .bg-red-900\/30,
             .from-yellow-600, .to-yellow-800, .from-yellow-700, .to-yellow-900,
-            .hover\\:bg-gray-800\\/50:hover {
+            .hover\\:bg-gray-800\\\50:hover {
                 background: white !important;
             }
             
@@ -505,7 +505,7 @@
             }
             
             /* Remove overflow restriction */
-            .min-w-\\[1200px\\], .min-w-[1200px] {
+            .min-w-\\\[1200px\\\], .min-w-\\\[1200px\\\] {
                 min-width: 0 !important;
             }
             
