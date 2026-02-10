@@ -41,6 +41,10 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
     <a href="weekly_report.php" class="menu-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php"><span class="icon">📅</span><span class="label">Payroll</span></a>
   <?php endif; ?>
 
+  <?php if ($isAdmin): ?>
+   <a href="cash_advance.php" class="menu-item <?= $current === 'cash_advance.php' ? 'active' : '' ?>" data-target="cash_advance.php"><span class="icon">💵</span><span class="label">Cash Advance</span></a>
+  <?php endif; ?>
+
   <!-- Admin/Super Admin Only: Billing -->
   <?php if ($isAdmin): ?>
     <a href="billing.php" class="menu-item <?= $current === 'billing.php' ? 'active' : '' ?>" data-target="billing.php"><span class="icon">💰</span><span class="label">Billing</span></a>

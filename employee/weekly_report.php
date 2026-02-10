@@ -166,7 +166,7 @@ include __DIR__ . '/function/report.php';
                                     Take Home Pay
                                 </th>
                                 <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
-                                    Signature
+                                    Actions
                                 </th>
                             </tr>
                             <tr class="bg-gradient-to-r from-yellow-700 to-yellow-900">
@@ -265,8 +265,12 @@ include __DIR__ . '/function/report.php';
                                 <td class="px-3 py-2 text-right text-sm font-bold text-green-400">
                                     <?php echo number_format($take_home, 0); ?>
                                 </td>
-                                <td class="px-3 py-2 text-center text-sm text-gray-400">
-                                    <!-- Signature -->
+                                <td class="px-3 py-2 text-center text-sm">
+                                    <button type="button" 
+                                            onclick="openPayslipModal(<?php echo $emp_id; ?>, '<?php echo htmlspecialchars($payroll['employee']['last_name'] . ', ' . $payroll['employee']['first_name']); ?>', <?php echo $payroll['days_worked']; ?>, <?php echo $payroll['daily_rate']; ?>, <?php echo $payroll['gross_pay']; ?>, <?php echo $ot_hours; ?>, <?php echo $ot_amount; ?>, <?php echo $payroll['sss_deduction']; ?>, <?php echo $payroll['philhealth_deduction']; ?>, <?php echo $payroll['pagibig_deduction']; ?>, <?php echo $total_deductions; ?>, <?php echo $take_home; ?>)"
+                                            class="btn-payslip">
+                                        <i class="fas fa-file-invoice mr-1"></i>Payslip
+                                    </button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -318,9 +322,162 @@ include __DIR__ . '/function/report.php';
         </main>
     </div>
 
+    <!-- Payslip Modal -->
+    <div id="payslipModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-panel payslip-modal">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold text-yellow-400">
+                    <i class="fas fa-file-invoice mr-2"></i>Employee Payslip
+                </h3>
+                <button type="button" onclick="closePayslipModal()" class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="payslipContent">
+                <!-- Payslip content will be dynamically inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="printPayslip()" class="btn-primary">
+                    <i class="fas fa-print mr-2"></i>Print
+                </button>
+                <button type="button" onclick="closePayslipModal()" class="btn-secondary">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="js/report.js"></script>
     <script>
+        // Payslip Modal Functions
+        let currentPayslipData = null;
+        
+        function openPayslipModal(empId, empName, daysWorked, dailyRate, grossPay, otHours, otAmount, sss, philhealth, pagibig, totalDeductions, takeHome) {
+            currentPayslipData = {
+                empId, empName, daysWorked, dailyRate, grossPay, otHours, otAmount, sss, philhealth, pagibig, totalDeductions, takeHome
+            };
+            
+            const allowance = parseFloat(document.getElementById('allowance_' + empId)?.value || 0);
+            const ca = parseFloat(document.getElementById('ca_' + empId)?.value || 0);
+            const grossPlusAllowance = grossPay + allowance + otAmount;
+            const finalDeductions = totalDeductions + ca;
+            const finalTakeHome = grossPlusAllowance - finalDeductions;
+            
+            const content = document.getElementById('payslipContent');
+            content.innerHTML = `
+                <div class="payslip-container">
+                    <div class="payslip-header">
+                        <h4 class="text-white font-bold text-lg">${empName}</h4>
+                        <p class="text-gray-400 text-sm">Employee ID: ${empId}</p>
+                        <p class="text-gray-400 text-sm">Period: <?php echo $date_range_label; ?></p>
+                    </div>
+                    <div class="payslip-section">
+                        <h5 class="text-yellow-400 font-semibold mb-2">Earnings</h5>
+                        <div class="payslip-row">
+                            <span class="text-gray-300">Days Worked</span>
+                            <span class="text-white">${daysWorked} days</span>
+                        </div>
+                        <div class="payslip-row">
+                            <span class="text-gray-300">Daily Rate</span>
+                            <span class="text-white">₱${numberFormat(dailyRate)}</span>
+                        </div>
+                        <div class="payslip-row">
+                            <span class="text-gray-300">Basic Pay</span>
+                            <span class="text-white">₱${numberFormat(grossPay)}</span>
+                        </div>
+                        <div class="payslip-row">
+                            <span class="text-gray-300">Overtime (${otHours} hrs)</span>
+                            <span class="text-white">₱${numberFormat(otAmount)}</span>
+                        </div>
+                        ${allowance > 0 ? `<div class="payslip-row"><span class="text-gray-300">Performance Allowance</span><span class="text-white">₱${numberFormat(allowance)}</span></div>` : ''}
+                        <div class="payslip-row total">
+                            <span class="text-yellow-400 font-bold">Gross Pay</span>
+                            <span class="text-yellow-400 font-bold">₱${numberFormat(grossPlusAllowance)}</span>
+                        </div>
+                    </div>
+                    <div class="payslip-section">
+                        <h5 class="text-red-400 font-semibold mb-2">Deductions</h5>
+                        ${ca > 0 ? `<div class="payslip-row"><span class="text-gray-300">Cash Advance</span><span class="text-red-400">-₱${numberFormat(ca)}</span></div>` : ''}
+                        ${sss > 0 ? `<div class="payslip-row"><span class="text-gray-300">SSS</span><span class="text-red-400">-₱${numberFormat(sss)}</span></div>` : ''}
+                        ${philhealth > 0 ? `<div class="payslip-row"><span class="text-gray-300">PhilHealth</span><span class="text-red-400">-₱${numberFormat(philhealth)}</span></div>` : ''}
+                        ${pagibig > 0 ? `<div class="payslip-row"><span class="text-gray-300">Pag-IBIG</span><span class="text-red-400">-₱${numberFormat(pagibig)}</span></div>` : ''}
+                        <div class="payslip-row total">
+                            <span class="text-red-400 font-bold">Total Deductions</span>
+                            <span class="text-red-400 font-bold">-₱${numberFormat(finalDeductions)}</span>
+                        </div>
+                    </div>
+                    <div class="payslip-footer">
+                        <div class="payslip-row grand-total">
+                            <span class="text-green-400 font-bold text-lg">NET PAY</span>
+                            <span class="text-green-400 font-bold text-lg">₱${numberFormat(finalTakeHome)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('payslipModal').style.display = 'flex';
+        }
+        
+        function closePayslipModal() {
+            document.getElementById('payslipModal').style.display = 'none';
+            currentPayslipData = null;
+        }
+        
+        function printPayslip() {
+            if (!currentPayslipData) return;
+            const printWindow = window.open('', '_blank');
+            const content = document.getElementById('payslipContent').innerHTML;
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Payslip - ${currentPayslipData.empName}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+                        .payslip-container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
+                        .payslip-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #FFD700; }
+                        .payslip-section { margin-bottom: 20px; }
+                        .payslip-row { display: flex; justify-content: space-between; padding: 8px 0; }
+                        .payslip-row.total { border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
+                        .payslip-row.grand-total { border-top: 2px solid #4CAF50; margin-top: 15px; padding-top: 15px; }
+                        h5 { margin: 0 0 10px 0; }
+                        h4 { margin: 0; color: #333; }
+                        p { margin: 5px 0; color: #666; }
+                        .signature-section { margin-top: 40px; padding-top: 20px; }
+                        .signature-line { border-top: 1px solid #333; width: 200px; margin-top: 50px; margin-bottom: 8px; }
+                        .signature-label { font-size: 12px; color: #666; }
+                        .signature-row { display: flex; justify-content: space-between; margin-top: 30px; }
+                        .signature-box { text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                    <div class="signature-section">
+                        <div class="signature-row">
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div class="signature-label">Employee Signature</div>
+                            </div>
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div class="signature-label">Authorized Signature</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 30px; font-size: 11px; color: #999; text-align: center;">
+                            I hereby acknowledge receipt of the above amount and that all deductions are correct.
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        function numberFormat(num) {
+            return num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
         // Auto-export when triggered from Admin Quick Actions
         document.addEventListener('DOMContentLoaded', function () {
             var autoExport = '<?php echo isset($_GET['auto_export']) ? $_GET['auto_export'] : ""; ?>';

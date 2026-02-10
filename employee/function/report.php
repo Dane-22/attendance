@@ -147,10 +147,10 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
         'total_ot_hrs' => 0,
         'daily_rate' => floatval($emp['daily_rate']),
         'gross_pay' => 0,
-        'sss_deduction' => $sss_deduction,
-        'philhealth_deduction' => $philhealth_deduction,
-        'pagibig_deduction' => $pagibig_deduction,
-        'total_deductions' => $total_deductions_amount,
+        'sss_deduction' => 0,
+        'philhealth_deduction' => 0,
+        'pagibig_deduction' => 0,
+        'total_deductions' => 0,
         'net_pay' => 0
     ];
 }
@@ -204,6 +204,14 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
     // Calculate gross pay
     $gross_pay = $daily_rate * $days_worked;
     $payroll['gross_pay'] = $gross_pay;
+    
+    // Apply deductions only if employee has attendance records
+    if ($days_worked > 0) {
+        $payroll['sss_deduction'] = $sss_deduction;
+        $payroll['philhealth_deduction'] = $philhealth_deduction;
+        $payroll['pagibig_deduction'] = $pagibig_deduction;
+        $payroll['total_deductions'] = $total_deductions_amount;
+    }
     
     // Calculate net pay
     $net_pay = $gross_pay - $payroll['total_deductions'];
