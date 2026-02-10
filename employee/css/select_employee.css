@@ -114,46 +114,49 @@
         background: #1a1a1a;
         border: 1px solid #333;
         border-radius: 8px;
-        padding: 12px 14px;
+        padding: 16px 14px;
         flex: 1;
         min-width: 160px;
+        min-height: 140px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         text-align: center;
     }
 
     .stat-label {
-        font-size: 15px;
+        font-size: 14px;
         color: #888;
         font-weight: 600;
         letter-spacing: 0.2px;
+        text-transform: uppercase;
     }
 
     .stat-value {
-        font-size: 32px;
+        font-size: 36px;
         font-weight: 800;
         color: #FFD700;
         line-height: 1;
+        margin: 4px 0;
     }
 
     .stat-list {
         width: 100%;
         max-width: 100%;
-        margin-top: 6px;
+        margin-top: 4px;
         display: flex;
         flex-direction: column;
         gap: 4px;
         align-items: flex-start;
         text-align: left;
-        max-height: 140px;
+        max-height: 120px;
         overflow: auto;
-        padding-top: 2px;
-        padding-left: 6px;
-        padding-right: 6px;
-        border: 1px dashed rgba(255, 215, 0, 0.3); /* DEBUG: remove after testing */
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+        border: 1px solid rgba(255, 215, 0, 0.1);
     }
 
     .stat-list[data-expanded="1"] {
@@ -1685,4 +1688,46 @@
         .employee-position {
             font-size: 10px;
         }
+    }
+
+    /* ===== REMARK BADGE STYLES ===== */
+    .remark-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+
+    .remark-badge i {
+        font-size: 12px;
+    }
+
+    .remark-present {
+        background: rgba(22, 163, 74, 0.15);
+        color: #16a34a;
+        border: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+    .remark-absent {
+        background: rgba(220, 38, 38, 0.15);
+        color: #dc2626;
+        border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+    .remark-timeout {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .remark-available {
+        background: rgba(255, 215, 0, 0.15);
+        color: #FFD700;
+        border: 1px solid rgba(255, 215, 0, 0.3);
     }

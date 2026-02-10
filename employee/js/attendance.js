@@ -519,6 +519,7 @@
       const escapeJsString = (s) => String(s ?? '').replace(/'/g, "\\'");
 
       const showNotesColumn = currentStatusFilter === 'absent';
+      const isSummaryView = currentStatusFilter === 'all';
 
       let html = `
         <div class="employee-table-wrap">
@@ -531,7 +532,7 @@
                 <th>Time Out</th>
                 <th>Total Hours</th>
                 ${showNotesColumn ? '<th>Notes</th>' : ''}
-                <th>Actions</th>
+                <th>${isSummaryView ? 'Remarks' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody>
@@ -576,6 +577,31 @@
               </button>
             </td>` : ''}
             <td>
+              ${isSummaryView ? (() => {
+                let remarkClass = 'remark-badge';
+                let remarkText = '';
+                let remarkIcon = '';
+                
+                if (isAbsent) {
+                  remarkClass += ' remark-absent';
+                  remarkText = 'Absent';
+                  remarkIcon = 'fa-user-times';
+                } else if (hasOpenShift) {
+                  remarkClass += ' remark-present';
+                  remarkText = 'Present';
+                  remarkIcon = 'fa-check-circle';
+                } else if (timeOut !== '--') {
+                  remarkClass += ' remark-timeout';
+                  remarkText = 'Time Out';
+                  remarkIcon = 'fa-sign-out-alt';
+                } else {
+                  remarkClass += ' remark-available';
+                  remarkText = 'Available';
+                  remarkIcon = 'fa-clock';
+                }
+                
+                return `<span class="${remarkClass}"><i class="fas ${remarkIcon}"></i> ${remarkText}</span>`;
+              })() : `
               <div class="actions-cell">
                 ${!hasAttendanceToday ? `
                 <button class="btn-absent"
@@ -607,6 +633,7 @@
                   </div>
                 </div>
               </div>
+              `}
             </td>
           </tr>
         `;

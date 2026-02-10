@@ -928,7 +928,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 $summary['absent'] = intval($absentRow['cnt'] ?? 0);
 
+                // Get present employee names for stat card display
+                $presentNamesSql = "SELECT DISTINCT CONCAT(e.first_name, ' ', COALESCE(e.middle_name, ''), ' ', e.last_name) as full_name
+                                    FROM employees e
+                                    INNER JOIN (
+                                        SELECT a1.*
+                                        FROM attendance a1
+                                        INNER JOIN (
+                                            SELECT employee_id, MAX(id) AS max_id
+                                            FROM attendance
+                                            WHERE attendance_date = CURDATE()
+                                              AND time_in IS NOT NULL
+                                              AND time_out IS NULL
+                                            GROUP BY employee_id
+                                        ) t ON a1.id = t.max_id
+                                        WHERE a1.branch_name = ?
+                                    ) a ON e.id = a.employee_id
+                                    WHERE e.status = 'Active' AND e.position = 'Worker' AND e.branch_id = ?
+                                    ORDER BY e.last_name, e.first_name";
+                $presentNamesStmt = mysqli_prepare($db, $presentNamesSql);
+                mysqli_stmt_bind_param($presentNamesStmt, 'si', $branch, $selectedBranchId);
+                mysqli_stmt_execute($presentNamesStmt);
+                $presentNamesResult = mysqli_stmt_get_result($presentNamesStmt);
+                $summary['present_names'] = [];
+                while ($nameRow = mysqli_fetch_assoc($presentNamesResult)) {
+                    $name = trim(preg_replace('/\s+/', ' ', $nameRow['full_name']));
+                    if ($name) $summary['present_names'][] = $name;
+                }
+                mysqli_stmt_close($presentNamesStmt);
 
+                // Get absent employee names for stat card display
+                $absentNamesSql = "SELECT DISTINCT CONCAT(e.first_name, ' ', COALESCE(e.middle_name, ''), ' ', e.last_name) as full_name
+                                   FROM employees e
+                                   INNER JOIN (
+                                       SELECT a1.*
+                                       FROM attendance a1
+                                       INNER JOIN (
+                                           SELECT employee_id, MAX(id) AS max_id
+                                           FROM attendance
+                                           WHERE attendance_date = CURDATE()
+                                           GROUP BY employee_id
+                                       ) t ON a1.id = t.max_id
+                                   ) a ON e.id = a.employee_id
+                                   WHERE e.status = 'Active' AND e.position = 'Worker'
+                                     AND e.branch_id = ?
+                                     AND a.status = 'Absent'
+                                   ORDER BY e.last_name, e.first_name";
+                $absentNamesStmt = mysqli_prepare($db, $absentNamesSql);
+                mysqli_stmt_bind_param($absentNamesStmt, 'i', $selectedBranchId);
+                mysqli_stmt_execute($absentNamesStmt);
+                $absentNamesResult = mysqli_stmt_get_result($absentNamesStmt);
+                $summary['absent_names'] = [];
+                while ($nameRow = mysqli_fetch_assoc($absentNamesResult)) {
+                    $name = trim(preg_replace('/\s+/', ' ', $nameRow['full_name']));
+                    if ($name) $summary['absent_names'][] = $name;
+                }
+                mysqli_stmt_close($absentNamesStmt);
 
                 $branchSummary = $summary;
 
