@@ -517,38 +517,30 @@
                 <head>
                     <title>${currentViewType === 'weekly' ? 'Weekly' : 'Monthly'} Payslip for ${currentEmpName}</title>
                     <style>
-                        body { font-family: Arial, sans-serif; padding: 30px; background: white; color: black; }
-                        .receipt-container { border: 2px solid #000; padding: 30px; margin-bottom: 30px; }
-                        .receipt-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 25px; }
-                        .receipt-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #ccc; }
-                        .receipt-item.total { border-top: 2px solid #000; font-weight: bold; margin-top: 20px; padding-top: 20px; }
-                        .total-amount { font-size: 24px; color: #000; font-weight: bold; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-                        th, td { border: 1px solid #000; padding: 10px; text-align: left; }
-                        th { background-color: #f2f2f2; font-weight: bold; }
+                        @page { margin: 10mm; }
+                        body { font-family: Arial, sans-serif; font-size: 12px; padding: 5mm; background: white; color: black; }
+                        .receipt-container { border: 2px solid #000; padding: 10mm; margin: 0 auto; page-break-inside: avoid; }
+                        .receipt-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+                        .receipt-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #ccc; }
+                        .receipt-item.total { border-top: 2px solid #000; font-weight: bold; margin-top: 12px; padding-top: 12px; }
+                        .total-amount { font-size: 18px; color: #000; font-weight: bold; }
+                        .signature-block { margin-top: 15px; text-align: center; }
                         @media print { 
-                            body { margin: 0; padding: 20px; }
+                            body { margin: 0; padding: 5mm; }
                             .no-print { display: none; }
                         }
                         .text-center { text-align: center; }
-                        .mt-4 { margin-top: 30px; }
                     </style>
                 </head>
                 <body>
                     <div class="receipt-container">
                         ${receiptContent}
-                    </div>
-                    
-                    <div class="mt-4">
-                        <h4 class="text-center">Detailed Attendance Record</h4>
-                        ${detailsContent}
-                    </div>
-                    
-                    <div class="mt-4 text-center">
-                        <hr>
-                        <p><strong>Authorized Signature:</strong></p>
-                        <p>_________________________</p>
-                        <p>Date: ${new Date().toLocaleDateString()}</p>
+                        <div class="signature-block">
+                            <hr>
+                            <p><strong>Authorized Signature:</strong></p>
+                            <p>_________________________</p>
+                            <p>Date: ${new Date().toLocaleDateString()}</p>
+                        </div>
                     </div>
                     
                     <script>

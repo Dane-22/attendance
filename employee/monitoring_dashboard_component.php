@@ -75,7 +75,10 @@ while ($branch = mysqli_fetch_assoc($allBranchesResult)) {
     $headcountRow = mysqli_fetch_assoc($headcountRes);
     
     // Get total employees in this branch
-    $totalBranchQuery = "SELECT COUNT(*) as count FROM employees WHERE status = 'Active' AND branch_name = ?";
+    $totalBranchQuery = "SELECT COUNT(*) as count
+                        FROM employees e
+                        JOIN branches b ON e.branch_id = b.id
+                        WHERE e.status = 'Active' AND b.branch_name = ?";
     $totalBranchStmt = mysqli_prepare($db, $totalBranchQuery);
     mysqli_stmt_bind_param($totalBranchStmt, 's', $branchName);
     mysqli_stmt_execute($totalBranchStmt);
@@ -624,10 +627,17 @@ while ($row = mysqli_fetch_assoc($recentActivityResult)) {
     <div class="md-activity-ticker-container">
         <?php if (!empty($recentActivity)): ?>
             <?php foreach ($recentActivity as $activity): ?>
+                <?php
+                $activityStatus = $activity['status'] ?? '';
+                $activityBranchName = $activity['branch_name'] ?? '';
+                $activityFirstName = $activity['first_name'] ?? '';
+                $activityLastName = $activity['last_name'] ?? '';
+                $activityCreatedAt = $activity['created_at'] ?? '';
+                ?>
                 <div class="md-activity-item">
-                    <div class="md-activity-status-icon <?php echo strtolower($activity['status']); ?>">
+                    <div class="md-activity-status-icon <?php echo strtolower($activityStatus); ?>">
                         <?php 
-                        if ($activity['status'] === 'Present') {
+                        if ($activityStatus === 'Present') {
                             echo '<i class="fas fa-circle-check"></i>';
                         } else {
                             echo '<i class="fas fa-circle-xmark"></i>';
@@ -636,33 +646,33 @@ while ($row = mysqli_fetch_assoc($recentActivityResult)) {
                     </div>
                     <div class="md-activity-content">
                         <div class="md-activity-employee-name">
-                            <?php echo htmlspecialchars($activity['first_name'] . ' ' . $activity['last_name']); ?>
+                            <?php echo htmlspecialchars(trim($activityFirstName . ' ' . $activityLastName)); ?>
                         </div>
                         <div class="md-activity-meta">
                             <div class="md-activity-meta-item">
                                 <i class="fas fa-building"></i>
-                                <span><?php echo htmlspecialchars($activity['branch_name']); ?></span>
+                                <span><?php echo htmlspecialchars($activityBranchName); ?></span>
                             </div>
                             <div class="md-activity-meta-item">
                                 <i class="fas fa-check"></i>
-                                <span><?php echo htmlspecialchars($activity['status']); ?></span>
+                                <span><?php echo htmlspecialchars($activityStatus); ?></span>
                             </div>
                         </div>
                         <div class="md-activity-time">
                             <i class="fas fa-clock"></i>
                             <?php 
-                            $createdTime = strtotime($activity['created_at']);
+                            $createdTime = $activityCreatedAt !== '' ? strtotime($activityCreatedAt) : false;
                             $now = time();
-                            $diff = $now - $createdTime;
+                            $diff = ($createdTime !== false) ? ($now - $createdTime) : null;
                             
-                            if ($diff < 60) {
+                            if ($diff !== null && $diff < 60) {
                                 echo "Just now";
-                            } elseif ($diff < 3600) {
+                            } elseif ($diff !== null && $diff < 3600) {
                                 echo round($diff / 60) . " minutes ago";
-                            } elseif ($diff < 86400) {
+                            } elseif ($diff !== null && $diff < 86400) {
                                 echo round($diff / 3600) . " hours ago";
                             } else {
-                                echo date('M d, Y H:i', $createdTime);
+                                echo $createdTime !== false ? date('M d, Y H:i', $createdTime) : '';
                             }
                             ?>
                         </div>

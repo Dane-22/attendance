@@ -320,5 +320,20 @@ include __DIR__ . '/function/report.php';
 
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="js/report.js"></script>
+    <script>
+        // Auto-export when triggered from Admin Quick Actions
+        document.addEventListener('DOMContentLoaded', function () {
+            var autoExport = '<?php echo isset($_GET['auto_export']) ? $_GET['auto_export'] : ""; ?>';
+            if (autoExport === '1' && typeof exportToExcel === 'function') {
+                // Try to pass the existing Export button if present, otherwise just submit the main form
+                var btn = document.querySelector('button[onclick*="exportToExcel"]');
+                try {
+                    exportToExcel(btn || null);
+                } catch (e) {
+                    console.error('Auto export failed:', e);
+                }
+            }
+        });
+    </script>
 </body>
 </html>

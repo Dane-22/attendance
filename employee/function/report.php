@@ -5,9 +5,14 @@ $current_month = date('Y-m');
 $current_year = date('Y');
 $current_month_num = date('m');
 
+// Calculate current week based on today's date (1-7=week1, 8-14=week2, 15-21=week3, 22-28=week4, 29+=week5)
+$current_day = intval(date('d'));
+$current_week = ceil($current_day / 7);
+if ($current_week > 5) $current_week = 5;
+
 // Handle filters
 $selected_month = $_GET['month'] ?? $current_month;
-$selected_week = intval($_GET['week'] ?? 1);
+$selected_week = intval($_GET['week'] ?? $current_week);
 $view_type = $_GET['view'] ?? 'weekly'; // 'weekly' or 'monthly'
 $selected_branch = $_GET['branch'] ?? 'all'; // 'all' or specific branch
 
