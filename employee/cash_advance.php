@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction_ajax'
         exit;
     }
     
-    $query = "INSERT INTO cash_advances (employee_id, amount, particular, reason, status, request_date) VALUES (?, ?, ?, ?, 'Approved', NOW())";
+    $query = "INSERT INTO cash_advances (employee_id, amount, particular, reason, request_date) VALUES (?, ?, ?, ?, NOW())";
     $stmt = mysqli_prepare($db, $query);
     mysqli_stmt_bind_param($stmt, 'idss', $empId, $amount, $particular, $reason);
     
