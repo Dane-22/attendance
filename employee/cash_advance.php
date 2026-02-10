@@ -547,6 +547,103 @@ foreach ($employeeList as $emp) {
             });
         }
         
+        // Print cash advance history
+        function printCashAdvanceHistory() {
+            const modalContent = document.getElementById('modalContent');
+            const signatureSection = modalContent.querySelector('.signature-section');
+            
+            // Show signature section for printing
+            if (signatureSection) {
+                signatureSection.style.display = 'block';
+            }
+            
+            // Create a new window for printing
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Cash Advance History - ${currentEmployeeNameForAdd}</title>
+                    <style>
+                        * { box-sizing: border-box; margin: 0; padding: 0; }
+                        body { font-family: Arial, sans-serif; padding: 20px; background: #fff; color: #333; }
+                        .print-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+                        .print-header h2 { color: #000; margin: 0 0 5px 0; font-size: 18px; }
+                        .print-header p { color: #666; margin: 3px 0; font-size: 12px; }
+                        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 12px; }
+                        th { background: #f5f5f5; font-weight: bold; color: #000; }
+                        td { color: #333; }
+                        td:last-child, th:last-child { text-align: right; }
+                        .balance-row { font-weight: bold; background: #f9f9f9; }
+                        .print-balance { margin-top: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+                        .print-balance .label { font-size: 14px; color: #666; }
+                        .print-balance .amount { font-size: 20px; font-weight: bold; color: #000; }
+                        .signature-section { margin-top: 40px; padding-top: 20px; }
+                        .signature-row { display: flex; justify-content: space-between; margin-top: 30px; }
+                        .signature-box { text-align: center; width: 45%; }
+                        .signature-box .line { border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; min-height: 40px; }
+                        .signature-box .label { color: #666; font-size: 11px; margin: 0; }
+                        .signature-box .name { color: #888; font-size: 10px; margin: 5px 0 0 0; }
+                        .footer-note { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
+                        .footer-note p { color: #999; font-size: 10px; margin: 0; }
+                        @media print {
+                            body { padding: 0; }
+                            .no-print { display: none !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <img src="http://localhost/main/assets/img/profile/jajr-logo.png" style="max-width: 80px; max-height: 80px;" alt="JAJR Company Logo">
+                    </div>
+                    <div class="print-header">
+                        <h2>JAJR Company - Cash Advance History</h2>
+                        ${modalContent.querySelector('.print-header').innerHTML}
+                    </div>
+                    <div class="printable-table">
+                        ${modalContent.querySelector('.printable-table table').outerHTML}
+                    </div>
+                    <div class="print-balance">
+                        <span class="label">Current Balance:</span>
+                        <span class="amount">${modalContent.querySelector('.print-balance span:last-child').textContent}</span>
+                    </div>
+                    <div class="signature-section">
+                        <div class="signature-row">
+                            <div class="signature-box">
+                                <div class="line"></div>
+                                <p class="label">Employee Signature</p>
+                                <p class="name">${currentEmployeeNameForAdd}</p>
+                            </div>
+                            <div class="signature-box">
+                                <div class="line"></div>
+                                <p class="label">Authorized By</p>
+                                <p class="name">HR / Admin</p>
+                            </div>
+                        </div>
+                        <div class="footer-note">
+                            <p>This document is computer generated and valid without signature.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.focus();
+            
+            // Delay print to allow styles to load
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+            
+            // Hide signature section after printing
+            if (signatureSection) {
+                signatureSection.style.display = 'none';
+            }
+        }
+        
         // Reload employee history after adding
         function reloadEmployeeHistory() {
             viewEmployeeHistory(currentEmployeeIdForAdd, currentEmployeeNameForAdd);
@@ -609,11 +706,12 @@ foreach ($employeeList as $emp) {
             });
             
             content.innerHTML = `
-                <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333;">
+                <div class="print-header">
                     <h4 style="color: #FFD700; margin: 0 0 10px 0;">${employee.last_name}, ${employee.first_name}</h4>
                     <p style="color: #888; margin: 0; font-size: 13px;">Code: ${employee.employee_code}</p>
+                    <p style="color: #888; margin: 5px 0 0 0; font-size: 12px;">Date Printed: ${new Date().toLocaleDateString()}</p>
                 </div>
-                <div style="max-height: 400px; overflow-y: auto;">
+                <div class="printable-table" style="max-height: 400px; overflow-y: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: #2a2a2a;">
@@ -628,9 +726,26 @@ foreach ($employeeList as $emp) {
                         </tbody>
                     </table>
                 </div>
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+                <div class="print-balance" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
                     <span style="color: #888;">Current Balance:</span>
                     <span style="color: #FFD700; font-size: 24px; font-weight: 700;">₱${parseFloat(employee.balance).toLocaleString('en-PH', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div class="signature-section" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #444; display: none;">
+                    <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                        <div style="text-align: center; width: 45%;">
+                            <div style="border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; min-height: 30px;"></div>
+                            <p style="color: #666; font-size: 12px; margin: 0;">Employee Signature</p>
+                            <p style="color: #888; font-size: 11px; margin: 5px 0 0 0;">${employee.first_name} ${employee.last_name}</p>
+                        </div>
+                        <div style="text-align: center; width: 45%;">
+                            <div style="border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; min-height: 30px;"></div>
+                            <p style="color: #666; font-size: 12px; margin: 0;">Authorized By</p>
+                            <p style="color: #888; font-size: 11px; margin: 5px 0 0 0;">HR / Admin</p>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 40px;">
+                        <p style="color: #666; font-size: 11px; margin: 0;">This document is computer generated and valid without signature.</p>
+                    </div>
                 </div>
             `;
             
@@ -688,10 +803,13 @@ foreach ($employeeList as $emp) {
                 <!-- Content will be dynamically inserted -->
             </div>
             <div class="modal-footer">
-                <button type="button" onclick="showAddTransactionForm()" class="btn-primary">
+                <button type="button" onclick="showAddTransactionForm()" class="btn-primary no-print">
                     <i class="fas fa-plus mr-2"></i>Add Transaction
                 </button>
-                <button type="button" onclick="closeModal()" class="btn-secondary">Close</button>
+                <button type="button" onclick="printCashAdvanceHistory()" class="btn-primary no-print" style="background: #4CAF50;">
+                    <i class="fas fa-print mr-2"></i>Print
+                </button>
+                <button type="button" onclick="closeModal()" class="btn-secondary no-print">Close</button>
             </div>
         </div>
     </div>
