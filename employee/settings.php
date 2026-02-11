@@ -1052,10 +1052,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
             <i class="fas fa-shield-alt tab-icon"></i>
             <span>Security</span>
           </a>
-          <!-- <a href="#appearance" class="tab-link" onclick="switchTab('appearance', event)">
+          <a href="#appearance" class="tab-link" onclick="switchTab('appearance', event)">
             <i class="fas fa-palette tab-icon"></i>
             <span>Appearance</span>
-          </a> -->
+          </a>
           
           <?php if ($can_access_system_tools): ?>
           <a href="#system" class="tab-link admin-only" onclick="switchTab('system', event)">
