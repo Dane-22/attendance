@@ -117,19 +117,83 @@ include __DIR__ . '/function/report.php';
 
                 <!-- Quick Branch Filter Links -->
                 <div class="mb-6">
-                    <h4 class="text-sm font-medium text-gray-300 mb-2">Quick Branch Filter:</h4>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=all" 
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-sm font-medium text-gray-300">Quick Branch Filter:</h4>
+                        <?php if ($total_branch_pages > 1): ?>
+                        <span class="text-xs text-gray-400">Page <?php echo $branch_page; ?> of <?php echo $total_branch_pages; ?> (<?php echo $total_branches; ?> branches)</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=all&branch_page=1" 
                            class="branch-badge all <?php echo ($selected_branch === 'all') ? 'active' : ''; ?>">
                             <i class="fas fa-layer-group mr-1"></i>All Branches
                         </a>
-                        <?php foreach ($all_branches_list as $branch): ?>
-                            <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($branch['id']); ?>" 
+                        <?php foreach ($paginated_branches as $branch): ?>
+                            <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($branch['id']); ?>&branch_page=<?php echo $branch_page; ?>" 
                                class="branch-badge <?php echo ($selected_branch === (string)$branch['id']) ? 'active' : ''; ?>">
                                 <i class="fas fa-building mr-1"></i><?php echo htmlspecialchars($branch['name']); ?>
                             </a>
                         <?php endforeach; ?>
                     </div>
+                    
+                    <!-- Branch Filter Pagination -->
+                    <?php if ($total_branch_pages > 1): ?>
+                    <div class="flex justify-center items-center gap-2 mt-3">
+                        <!-- Previous Page -->
+                        <?php if ($branch_page > 1): ?>
+                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($selected_branch); ?>&branch_page=<?php echo $branch_page - 1; ?>" 
+                           class="px-3 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-chevron-left mr-1"></i>Prev
+                        </a>
+                        <?php else: ?>
+                        <span class="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-900 border border-gray-700 rounded cursor-not-allowed">
+                            <i class="fas fa-chevron-left mr-1"></i>Prev
+                        </span>
+                        <?php endif; ?>
+                        
+                        <!-- Page Numbers -->
+                        <div class="flex gap-1">
+                            <?php
+                            $start_page = max(1, $branch_page - 2);
+                            $end_page = min($total_branch_pages, $branch_page + 2);
+                            
+                            if ($start_page > 1) {
+                                echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=1" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">1</a>';
+                                if ($start_page > 2) {
+                                    echo '<span class="px-2 py-1 text-xs text-gray-500">...</span>';
+                                }
+                            }
+                            
+                            for ($i = $start_page; $i <= $end_page; $i++) {
+                                if ($i == $branch_page) {
+                                    echo '<span class="px-2 py-1 text-xs font-medium text-black bg-yellow-500 border border-yellow-500 rounded">' . $i . '</span>';
+                                } else {
+                                    echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=' . $i . '" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">' . $i . '</a>';
+                                }
+                            }
+                            
+                            if ($end_page < $total_branch_pages) {
+                                if ($end_page < $total_branch_pages - 1) {
+                                    echo '<span class="px-2 py-1 text-xs text-gray-500">...</span>';
+                                }
+                                echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=' . $total_branch_pages . '" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">' . $total_branch_pages . '</a>';
+                            }
+                            ?>
+                        </div>
+                        
+                        <!-- Next Page -->
+                        <?php if ($branch_page < $total_branch_pages): ?>
+                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($selected_branch); ?>&branch_page=<?php echo $branch_page + 1; ?>" 
+                           class="px-3 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">
+                            Next<i class="fas fa-chevron-right ml-1"></i>
+                        </a>
+                        <?php else: ?>
+                        <span class="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-900 border border-gray-700 rounded cursor-not-allowed">
+                            Next<i class="fas fa-chevron-right ml-1"></i>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Payroll Table -->

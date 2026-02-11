@@ -63,6 +63,17 @@ while ($branch_row = mysqli_fetch_assoc($branch_result)) {
     ];
 }
 
+// Quick Branch Filter Pagination (Rate Limiter)
+$branches_per_page = 10; // Show 10 branches per page
+$branch_page = isset($_GET['branch_page']) ? intval($_GET['branch_page']) : 1;
+$branch_page = max(1, $branch_page);
+$total_branches = count($all_branches_list);
+$total_branch_pages = ceil($total_branches / $branches_per_page);
+
+// Slice the branches array for pagination
+$branch_offset = ($branch_page - 1) * $branches_per_page;
+$paginated_branches = array_slice($all_branches_list, $branch_offset, $branches_per_page);
+
 // Fetch attendance data for the date range - Get all employees and their attendance
 $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name, a.time_in, a.time_out, a.total_ot_hrs,
                             e.first_name, e.last_name, e.employee_code, e.daily_rate, e.position
