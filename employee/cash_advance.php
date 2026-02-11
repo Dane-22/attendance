@@ -372,6 +372,359 @@ foreach ($employeeList as $emp) {
         .view-tab.active { background: #FFD700; color: #000; border-color: #FFD700; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
         .view-content { display: none; }
         .view-content.active { display: block; }
+
+        .btn-action {
+            background: linear-gradient(180deg, #FFE680 0%, #FFD700 100%);
+            color: #0b0b0b;
+            border: 1px solid rgba(0, 0, 0, 0.25);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.18);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02);
+            box-shadow: 0 12px 26px rgba(255, 215, 0, 0.26);
+        }
+
+        .btn-action:active {
+            transform: translateY(0);
+            filter: brightness(0.98);
+            box-shadow: 0 8px 18px rgba(255, 215, 0, 0.18);
+        }
+
+        .btn-action:focus-visible {
+            outline: 2px solid rgba(255, 215, 0, 0.65);
+            outline-offset: 2px;
+        }
+
+        #transactionModal.modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        #transactionModal .modal-panel {
+            background: radial-gradient(1200px 500px at 20% 0%, rgba(255, 215, 0, 0.10), rgba(0, 0, 0, 0)) ,
+                        linear-gradient(180deg, #171717 0%, #101010 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+            overflow: hidden;
+        }
+
+        #transactionModal .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.20);
+        }
+
+        #transactionModal .modal-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 0.3px;
+            color: #FFD700;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #transactionModal .modal-close {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: #e5e5e5;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+
+        #transactionModal .modal-close:hover {
+            background: rgba(255, 255, 255, 0.10);
+            transform: translateY(-1px);
+        }
+
+        #transactionModal .modal-body {
+            padding: 18px;
+        }
+
+        #transactionModal .print-header {
+            padding: 14px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            margin-bottom: 14px;
+        }
+
+        #transactionModal .print-header h4 {
+            margin: 0 0 6px 0;
+            font-size: 15px;
+            font-weight: 900;
+            color: #FFD700;
+        }
+
+        #transactionModal .print-header p {
+            margin: 0;
+            color: #a3a3a3;
+        }
+
+        #transactionModal .printable-table {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.18);
+        }
+
+        #transactionModal .printable-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #transactionModal .printable-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: linear-gradient(180deg, rgba(255, 215, 0, 0.18) 0%, rgba(0, 0, 0, 0.22) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            color: #FFD700;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.35px;
+        }
+
+        #transactionModal .printable-table th,
+        #transactionModal .printable-table td {
+            padding: 11px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        #transactionModal .printable-table th:nth-child(3),
+        #transactionModal .printable-table td:nth-child(3) {
+            text-align: right;
+        }
+
+        #transactionModal .printable-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        #transactionModal .printable-table td {
+            color: #e5e5e5;
+            font-size: 13px;
+        }
+
+        #transactionModal .editable-particular,
+        #transactionModal .editable-amount {
+            width: 100%;
+            max-width: 220px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 10px;
+            color: #fff;
+            padding: 9px 10px;
+            font-size: 13px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        #transactionModal .editable-amount {
+            text-align: right;
+            margin-left: auto;
+            display: block;
+        }
+
+        #transactionModal .editable-particular:focus,
+        #transactionModal .editable-amount:focus {
+            outline: none;
+            border-color: rgba(255, 215, 0, 0.55);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.12);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        #transactionModal .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding: 14px 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.20);
+        }
+
+        #transactionModal .modal-footer .btn-primary,
+        #transactionModal .modal-footer .btn-secondary {
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #transactionModal .modal-footer .btn-primary {
+            background: linear-gradient(180deg, #FFE680 0%, #FFD700 100%);
+            color: #0b0b0b;
+            border-color: rgba(0, 0, 0, 0.25);
+            box-shadow: 0 10px 24px rgba(255, 215, 0, 0.16);
+        }
+
+        #transactionModal .modal-footer .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e5e5e5;
+        }
+
+        #transactionModal .modal-footer .btn-primary:hover,
+        #transactionModal .modal-footer .btn-secondary:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02);
+        }
+
+        #transactionModal .modal-footer .btn-primary:active,
+        #transactionModal .modal-footer .btn-secondary:active {
+            transform: translateY(0);
+            filter: brightness(0.98);
+        }
+
+        #transactionModal .ca-form-header {
+            margin-bottom: 16px;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        #transactionModal .ca-form-header h4 {
+            margin: 0 0 6px 0;
+            color: #FFD700;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        #transactionModal .ca-form-header p {
+            margin: 0;
+            color: #a3a3a3;
+            font-size: 13px;
+        }
+
+        #transactionModal .ca-form {
+            display: grid;
+            gap: 14px;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.16);
+        }
+
+        #transactionModal .ca-field {
+            display: grid;
+            gap: 8px;
+        }
+
+        #transactionModal .ca-label {
+            color: #b5b5b5;
+            font-size: 12.5px;
+            font-weight: 800;
+            letter-spacing: 0.25px;
+        }
+
+        #transactionModal .ca-input,
+        #transactionModal .ca-textarea,
+        #transactionModal .ca-select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 12px;
+            padding: 11px 12px;
+            color: #fff;
+            font-size: 14px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        #transactionModal .ca-textarea {
+            min-height: 84px;
+            resize: vertical;
+        }
+
+        #transactionModal .ca-input:focus,
+        #transactionModal .ca-textarea:focus,
+        #transactionModal .ca-select:focus {
+            outline: none;
+            border-color: rgba(255, 215, 0, 0.55);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.12);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        #transactionModal .ca-form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding-top: 6px;
+        }
+
+        #transactionModal .btn-ca-primary,
+        #transactionModal .btn-ca-secondary {
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        #transactionModal .btn-ca-primary {
+            background: linear-gradient(180deg, #FFE680 0%, #FFD700 100%);
+            color: #0b0b0b;
+            border-color: rgba(0, 0, 0, 0.25);
+            box-shadow: 0 10px 22px rgba(255, 215, 0, 0.14);
+            flex: 1;
+            justify-content: center;
+        }
+
+        #transactionModal .btn-ca-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e5e5e5;
+        }
+
+        #transactionModal .btn-ca-primary:hover,
+        #transactionModal .btn-ca-secondary:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02);
+        }
+
+        #transactionModal .btn-ca-primary:active,
+        #transactionModal .btn-ca-secondary:active {
+            transform: translateY(0);
+            filter: brightness(0.98);
+        }
     </style>
 </head>
 <body>
@@ -487,32 +840,32 @@ foreach ($employeeList as $emp) {
             const content = document.getElementById('modalContent');
             
             content.innerHTML = `
-                <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333;">
-                    <h4 style="color: #FFD700; margin: 0 0 10px 0;">Add New Transaction</h4>
-                    <p style="color: #888; margin: 0; font-size: 13px;">Employee: ${currentEmployeeNameForAdd}</p>
+                <div class="ca-form-header">
+                    <h4>Add New Transaction</h4>
+                    <p>Employee: ${currentEmployeeNameForAdd}</p>
                 </div>
-                <form id="addTransactionForm" style="display: grid; gap: 16px;">
-                    <div>
-                        <label style="display: block; color: #888; font-size: 13px; margin-bottom: 6px;">Particular</label>
-                        <select id="newParticular" style="width: 100%; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; padding: 10px 12px; color: #fff; font-size: 14px;">
+                <form id="addTransactionForm" class="ca-form">
+                    <div class="ca-field">
+                        <label class="ca-label">Particular</label>
+                        <select id="newParticular" class="ca-select">
                             <option value="Cash Advance">Cash Advance</option>
                             <option value="Payment">Payment</option>
                         </select>
                     </div>
-                    <div>
-                        <label style="display: block; color: #888; font-size: 13px; margin-bottom: 6px;">Amount (₱)</label>
-                        <input type="number" id="newAmount" min="0.01" step="0.01" required placeholder="Enter amount" style="width: 100%; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; padding: 10px 12px; color: #fff; font-size: 14px;">
+                    <div class="ca-field">
+                        <label class="ca-label">Amount (₱)</label>
+                        <input type="number" id="newAmount" min="0.01" step="0.01" required placeholder="Enter amount" class="ca-input">
                     </div>
-                    <div>
-                        <label style="display: block; color: #888; font-size: 13px; margin-bottom: 6px;">Notes / Reason (Optional)</label>
-                        <textarea id="newReason" rows="2" placeholder="Enter notes or reason" style="width: 100%; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; padding: 10px 12px; color: #fff; font-size: 14px;"></textarea>
+                    <div class="ca-field">
+                        <label class="ca-label">Notes / Reason (Optional)</label>
+                        <textarea id="newReason" rows="2" placeholder="Enter notes or reason" class="ca-textarea"></textarea>
                     </div>
-                    <div style="display: flex; gap: 12px; margin-top: 10px;">
-                        <button type="button" onclick="saveNewTransaction()" class="btn-primary" style="flex: 1;">
-                            <i class="fas fa-save mr-2"></i>Save Transaction
+                    <div class="ca-form-actions">
+                        <button type="button" onclick="saveNewTransaction()" class="btn-ca-primary">
+                            <i class="fas fa-save"></i>Save Transaction
                         </button>
-                        <button type="button" onclick="reloadEmployeeHistory()" class="btn-secondary">
-                            <i class="fas fa-times mr-2"></i>Cancel
+                        <button type="button" onclick="reloadEmployeeHistory()" class="btn-ca-secondary">
+                            <i class="fas fa-times"></i>Cancel
                         </button>
                     </div>
                 </form>
