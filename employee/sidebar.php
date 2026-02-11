@@ -62,7 +62,7 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
 
   <!-- Admin/Super Admin/Engineer Only: Procurement (External Link) -->
   <?php if ($isAdmin || $userRole === 'Engineer'): ?>
-    <a href="procurement_redirect.php" class="menu-item" style="color: var(--gold-2);"><span class="icon">🛒</span><span class="label">Procurement</span></a>
+    <a href="procurement_redirect.php" class="menu-item"><span class="icon">🛒</span><span class="label">Procurement</span></a>
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Settings -->
