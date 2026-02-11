@@ -92,14 +92,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_update'])) {
     exit;
 }
 
-// Fetch all employees
-$employees = [];
-if ($isAdmin) {
-    $empQuery = "SELECT id, first_name, last_name, employee_code FROM employees WHERE status = 'active' ORDER BY last_name, first_name";
-    $empResult = mysqli_query($db, $empQuery);
-    while ($row = mysqli_fetch_assoc($empResult)) {
-        $employees[] = $row;
-    }
+// Pagination settings
+$perPage = isset($_GET['per_page']) ? intval($_GET['per_page']) : 20;
+$perPage = max(10, min(100, $perPage));
+$currentPage = isset($_GET['page']) ? intval($_GET['page']) : 1;
+$currentPage = max(1, $currentPage);
+$offset = ($currentPage - 1) * $perPage;
+
+// Search functionality
+$searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
+$searchFilter = '';
+$searchParams = [];
+if ($searchTerm !== '') {
+    $searchFilter = " AND (first_name LIKE ? OR last_name LIKE ? OR employee_code LIKE ?)";
+    $like = '%' . $searchTerm . '%';
+    $searchParams = [$like, $like, $like];
 }
 
 // Fetch cash advance records with running balance calculation
@@ -108,12 +115,40 @@ $employeeList = [];
 
 // First, get all employees and calculate their balances
 if ($isAdmin) {
+    // Count total for pagination
+    $countQuery = "SELECT COUNT(*) as total FROM employees WHERE status = 'active'" . $searchFilter;
+    $countStmt = mysqli_prepare($db, $countQuery);
+    if ($searchTerm !== '') {
+        mysqli_stmt_bind_param($countStmt, 'sss', ...$searchParams);
+    }
+    mysqli_stmt_execute($countStmt);
+    $countResult = mysqli_stmt_get_result($countStmt);
+    $totalEmployeesAll = mysqli_fetch_assoc($countResult)['total'] ?? 0;
+    mysqli_stmt_close($countStmt);
+    $totalPages = ceil($totalEmployeesAll / $perPage);
+    
+    // Adjust current page if beyond total
+    if ($currentPage > $totalPages && $totalPages > 0) {
+        $currentPage = $totalPages;
+        $offset = ($currentPage - 1) * $perPage;
+    }
+    
     $empQuery = "SELECT id, first_name, last_name, employee_code, daily_rate, position 
                  FROM employees 
-                 WHERE status = 'active' 
-                 ORDER BY last_name, first_name";
-    $empResult = mysqli_query($db, $empQuery);
+                 WHERE status = 'active' " . $searchFilter . "
+                 ORDER BY last_name, first_name
+                 LIMIT ? OFFSET ?";
+    $stmt = mysqli_prepare($db, $empQuery);
+    if ($searchTerm !== '') {
+        mysqli_stmt_bind_param($stmt, 'sssii', ...[...$searchParams, $perPage, $offset]);
+    } else {
+        mysqli_stmt_bind_param($stmt, 'ii', $perPage, $offset);
+    }
+    mysqli_stmt_execute($stmt);
+    $empResult = mysqli_stmt_get_result($stmt);
 } else {
+    $totalEmployeesAll = 1;
+    $totalPages = 1;
     $empQuery = "SELECT id, first_name, last_name, employee_code, daily_rate, position 
                  FROM employees 
                  WHERE id = ? AND status = 'active'";
@@ -725,6 +760,240 @@ foreach ($employeeList as $emp) {
             transform: translateY(0);
             filter: brightness(0.98);
         }
+
+        /* Search Bar Styles */
+        .ca-search-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .ca-search-box {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+            max-width: 400px;
+        }
+        
+        .ca-search-box input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 12px;
+            padding: 12px 16px 12px 44px;
+            color: #fff;
+            font-size: 14px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        
+        .ca-search-box input::placeholder {
+            color: #888;
+        }
+        
+        .ca-search-box input:focus {
+            outline: none;
+            border-color: rgba(255, 215, 0, 0.55);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.12);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .ca-search-box i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+            font-size: 16px;
+        }
+        
+        .ca-search-btn {
+            background: linear-gradient(180deg, #FFE680 0%, #FFD700 100%);
+            color: #0b0b0b;
+            border: 1px solid rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.18);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ca-search-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02);
+            box-shadow: 0 12px 26px rgba(255, 215, 0, 0.26);
+        }
+        
+        .ca-clear-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e5e5e5;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ca-clear-btn:hover {
+            background: rgba(255, 255, 255, 0.10);
+            transform: translateY(-1px);
+        }
+        
+        /* Pagination Styles */
+        .ca-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.20);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .ca-pagination-info {
+            color: #a3a3a3;
+            font-size: 13px;
+        }
+        
+        .ca-pagination-info strong {
+            color: #FFD700;
+        }
+        
+        .ca-pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ca-page-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e5e5e5;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 36px;
+            justify-content: center;
+        }
+        
+        .ca-page-btn:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.10);
+            transform: translateY(-1px);
+        }
+        
+        .ca-page-btn.active {
+            background: linear-gradient(180deg, #FFE680 0%, #FFD700 100%);
+            color: #0b0b0b;
+            border-color: rgba(0, 0, 0, 0.25);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+        }
+        
+        .ca-page-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .ca-per-page-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .ca-per-page-select:focus {
+            outline: none;
+            border-color: rgba(255, 215, 0, 0.55);
+        }
+        
+        /* Enhanced Report Card */
+        .report-card {
+            background: radial-gradient(1200px 500px at 20% 0%, rgba(255, 215, 0, 0.08), rgba(0, 0, 0, 0)) ,
+                        linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .report-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 900;
+            letter-spacing: 0.3px;
+        }
+        
+        /* Enhanced Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .data-table th {
+            background: linear-gradient(180deg, rgba(255, 215, 0, 0.22) 0%, rgba(255, 165, 0, 0.15) 100%);
+            color: #FFD700;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 900;
+            font-size: 12px;
+            letter-spacing: 0.35px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .data-table th:first-child {
+            border-radius: 10px 0 0 0;
+        }
+        
+        .data-table th:last-child {
+            border-radius: 0 10px 0 0;
+        }
+        
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            color: #e5e5e5;
+            font-size: 14px;
+        }
+        
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        
+        .data-table tbody tr:last-child td:first-child {
+            border-radius: 0 0 0 10px;
+        }
+        
+        .data-table tbody tr:last-child td:last-child {
+            border-radius: 0 0 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -776,6 +1045,22 @@ foreach ($employeeList as $emp) {
                             <i class="fas fa-users mr-2"></i>Employee Cash Advance Summary
                         </h3>
                         
+                        <!-- Search Bar -->
+                        <form method="GET" class="ca-search-container">
+                            <div class="ca-search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" name="search" placeholder="Search by name or employee code..." value="<?php echo htmlspecialchars($searchTerm); ?>">
+                            </div>
+                            <button type="submit" class="ca-search-btn">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <?php if ($searchTerm !== ''): ?>
+                            <a href="?" class="ca-clear-btn">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                            <?php endif; ?>
+                        </form>
+                        
                         <div class="report-table" style="overflow-x: auto;">
                             <table class="data-table">
                                 <thead>
@@ -813,9 +1098,87 @@ foreach ($employeeList as $emp) {
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
+                                    <?php if (empty($employeeList)): ?>
+                                    <tr>
+                                        <td colspan="6" style="text-align: center; padding: 40px; color: #888;">
+                                            <i class="fas fa-search" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                                            No employees found matching your search.
+                                        </td>
+                                    </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Pagination -->
+                        <?php if ($isAdmin && $totalPages > 1): ?>
+                        <div class="ca-pagination">
+                            <div class="ca-pagination-info">
+                                Showing <strong><?php echo (($currentPage - 1) * $perPage) + 1; ?> - <?php echo min($currentPage * $perPage, $totalEmployeesAll); ?></strong> of <strong><?php echo $totalEmployeesAll; ?></strong> employees
+                            </div>
+                            <div class="ca-pagination-controls">
+                                <!-- Per Page Selector -->
+                                <select class="ca-per-page-select" onchange="window.location.href='?page=1&per_page='+this.value<?php echo $searchTerm !== '' ? "+'&search='+'" . urlencode($searchTerm) . "'" : ""; ?>">
+                                    <option value="10" <?php echo $perPage == 10 ? 'selected' : ''; ?>>10 per page</option>
+                                    <option value="20" <?php echo $perPage == 20 ? 'selected' : ''; ?>>20 per page</option>
+                                    <option value="50" <?php echo $perPage == 50 ? 'selected' : ''; ?>>50 per page</option>
+                                    <option value="100" <?php echo $perPage == 100 ? 'selected' : ''; ?>>100 per page</option>
+                                </select>
+                                
+                                <!-- Previous Button -->
+                                <?php if ($currentPage > 1): ?>
+                                <a href="?page=<?php echo $currentPage - 1; ?>&per_page=<?php echo $perPage; ?><?php echo $searchTerm !== '' ? '&search=' . urlencode($searchTerm) : ''; ?>" class="ca-page-btn">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                                <?php else: ?>
+                                <span class="ca-page-btn disabled"><i class="fas fa-chevron-left"></i></span>
+                                <?php endif; ?>
+                                
+                                <!-- Page Numbers -->
+                                <?php
+                                $startPage = max(1, $currentPage - 2);
+                                $endPage = min($totalPages, $currentPage + 2);
+                                
+                                if ($startPage > 1) {
+                                    echo '<a href="?page=1&per_page=' . $perPage . ($searchTerm !== '' ? '&search=' . urlencode($searchTerm) : '') . '" class="ca-page-btn">1</a>';
+                                    if ($startPage > 2) {
+                                        echo '<span class="ca-page-btn disabled">...</span>';
+                                    }
+                                }
+                                
+                                for ($i = $startPage; $i <= $endPage; $i++) {
+                                    if ($i == $currentPage) {
+                                        echo '<span class="ca-page-btn active">' . $i . '</span>';
+                                    } else {
+                                        echo '<a href="?page=' . $i . '&per_page=' . $perPage . ($searchTerm !== '' ? '&search=' . urlencode($searchTerm) : '') . '" class="ca-page-btn">' . $i . '</a>';
+                                    }
+                                }
+                                
+                                if ($endPage < $totalPages) {
+                                    if ($endPage < $totalPages - 1) {
+                                        echo '<span class="ca-page-btn disabled">...</span>';
+                                    }
+                                    echo '<a href="?page=' . $totalPages . '&per_page=' . $perPage . ($searchTerm !== '' ? '&search=' . urlencode($searchTerm) : '') . '" class="ca-page-btn">' . $totalPages . '</a>';
+                                }
+                                ?>
+                                
+                                <!-- Next Button -->
+                                <?php if ($currentPage < $totalPages): ?>
+                                <a href="?page=<?php echo $currentPage + 1; ?>&per_page=<?php echo $perPage; ?><?php echo $searchTerm !== '' ? '&search=' . urlencode($searchTerm) : ''; ?>" class="ca-page-btn">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                                <?php else: ?>
+                                <span class="ca-page-btn disabled"><i class="fas fa-chevron-right"></i></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php elseif ($isAdmin && $totalEmployeesAll > 0): ?>
+                        <div class="ca-pagination" style="justify-content: center;">
+                            <div class="ca-pagination-info">
+                                Showing <strong><?php echo $totalEmployeesAll; ?></strong> employee<?php echo $totalEmployeesAll > 1 ? 's' : ''; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -948,6 +1311,14 @@ foreach ($employeeList as $emp) {
                         @media print {
                             body { padding: 0; }
                             .no-print { display: none !important; }
+                            select.editable-particular, input.editable-amount {
+                                border: none !important;
+                                background: transparent !important;
+                                appearance: none !important;
+                                -webkit-appearance: none !important;
+                                padding: 0 !important;
+                                font-size: 12px !important;
+                            }
                         }
                     </style>
                 </head>
