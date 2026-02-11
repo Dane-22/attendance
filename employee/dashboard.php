@@ -1,449 +1,420 @@
 <?php
-require_once('../conn/db_connection.php');
-session_start();
-require_once('function/dashboard_function.php');
+/**
+ * Admin Dashboard - Attendance Monitoring System
+ * Features: Summary Cards, Quick Actions, Data Monitoring
+ */
 
+// Start session and include database connection
+session_start();
+require_once __DIR__ . '/../conn/db_connection.php';
+
+// Check if user is admin
+$userRole = isset($_SESSION['position']) ? $_SESSION['position'] : '';
+if (!in_array($userRole, ['Admin', 'Super Admin'])) {
+    header('Location: select_employee.php');
+    exit();
+}
+
+// Get current user info
+$currentUserId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
+$currentUserName = isset($_SESSION['username']) ? $_SESSION['username'] : 'Admin';
+$currentUserAvatar = isset($_SESSION['profile_image']) ? $_SESSION['profile_image'] : '';
+
+// Initialize variables
+$totalEmployees = 0;
+$activeBranches = 0;
+$transfersToday = 0;
+$pendingPayroll = 0;
+$recentTransfers = [];
+$recentActivity = [];
+$dbError = null;
+
+try {
+    // 1. Total Employees Count
+    $result = mysqli_query($db, "SELECT COUNT(*) as count FROM employees WHERE status = 'Active'");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $totalEmployees = $row['count'];
+        mysqli_free_result($result);
+    }
+
+    // 2. Active Branches Count
+    $result = mysqli_query($db, "SELECT COUNT(*) as count FROM branches WHERE is_active = 1");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $activeBranches = $row['count'];
+        mysqli_free_result($result);
+    }
+
+    // 3. Transfers Today Count
+    $today = date('Y-m-d');
+    $result = mysqli_query($db, "SELECT COUNT(*) as count FROM employee_transfers WHERE DATE(transfer_date) = CURDATE()");
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        $transfersToday = $row['count'];
+        mysqli_free_result($result);
+    }
+
+    // 4. Pending Payroll Count - check if table exists first
+    $tableCheck = mysqli_query($db, "SHOW TABLES LIKE 'payroll_records'");
+    if ($tableCheck && mysqli_num_rows($tableCheck) > 0) {
+        $result = mysqli_query($db, "SELECT COUNT(*) as count FROM payroll_records WHERE status = 'Draft'");
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            $pendingPayroll = $row['count'];
+            mysqli_free_result($result);
+        }
+    }
+    if ($tableCheck) {
+        mysqli_free_result($tableCheck);
+    }
+
+    // 5. Recent Transfers (Last 5)
+    $query = "SELECT 
+                e.id,
+                e.first_name,
+                e.middle_name,
+                e.last_name,
+                et.from_branch,
+                et.to_branch,
+                et.transfer_date
+              FROM employee_transfers et
+              LEFT JOIN employees e ON et.employee_id = e.id
+              ORDER BY et.transfer_date DESC, et.id DESC
+              LIMIT 5";
+    $result = mysqli_query($db, $query);
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $recentTransfers[] = $row;
+        }
+        mysqli_free_result($result);
+    }
+
+    // 6. Recent Activity Logs (Last 5)
+    $query = "SELECT 
+                id,
+                user_id,
+                action,
+                details,
+                created_at
+              FROM activity_logs
+              ORDER BY created_at DESC
+              LIMIT 5";
+    $result = mysqli_query($db, $query);
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $recentActivity[] = $row;
+        }
+        mysqli_free_result($result);
+    }
+
+} catch (Exception $e) {
+    $dbError = "Database error: " . $e->getMessage();
+}
+
+// Helper function to format date
+function formatDate($date) {
+    return date('M d, Y h:i A', strtotime($date));
+}
+
+function formatDateShort($date) {
+    return date('M d, Y', strtotime($date));
+}
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Employee Dashboard — JAJR</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="../assets/css/style.css">
-  <link rel="stylesheet" href="css/dashboard.css">
-  <link rel="stylesheet" href="css/light-theme.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="js/theme.js"></script>
-  <script>
-    // PHP data exposed to JavaScript
-    window.dashboardData = {
-      overviewData: <?php echo json_encode($overviewData); ?>,
-      weeklyPattern: <?php echo json_encode($weeklyPattern); ?>,
-      monthlyTrend: <?php echo json_encode($monthlyTrend); ?>,
-      isAdmin: <?php echo (isset($_SESSION['position']) && in_array($_SESSION['position'], ['Admin', 'Super Admin'])) ? 'true' : 'false'; ?>
-    };
-  </script>
-  <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
- 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Attendance Monitoring</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="dashboard.css">
+
+
+    
+   
 </head>
-<body class="employee-bg">
-  <div class="app-shell">
-    <?php include __DIR__ . '/sidebar.php'; ?>
-
-    <main class="main-content">
-      <!-- Attendance Notification -->
-      <?php if (isset($attendance_message)): ?>
-      <div class="attendance-notification">
-        <div class="notification-content">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-          </svg>
-          <span><?php echo htmlspecialchars($attendance_message); ?></span>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <!-- MONITORING DASHBOARD COMPONENT -->
-      <?php include __DIR__ . '/monitoring_dashboard_component.php'; ?>
-
-      <!-- Debug Info (Remove this after testing) -->
-      <!-- <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; color: #6b7280; border: 1px solid #d1d5db;">
-        <strong>Summary:</strong><br>
-        Today: <?php echo $today; ?><br> -->
-        <!-- Monthly Rate:%<br> -->
-         <!-- <?php echo $employeeAttendanceStats['attendance_rate']; ?>
-        <br>
-        Present Today: <?php echo $presentCount; ?><br>
-        Total Employees: <?php echo $totalEmployees; ?>
-      </div>  -->
-
-      <div class="header-card">
-        <div class="header-left">
-          <button id="sidebarToggle" class="menu-toggle" aria-label="Toggle sidebar">☰</button>
-          <div>
-            <div class="welcome">Welcome back, <?php echo htmlspecialchars($_SESSION['first_name']); ?>!</div>
-            <div class="text-sm text-gray-500">
-                Employee Code: <strong><?php echo htmlspecialchars($employeeCode); ?></strong> | 
-                Position: <?php echo htmlspecialchars($position); ?>
-            </div>
-          </div>
-        </div>
-        <div class="text-sm text-gray-500">
-            Today: <?php echo date('F d, Y'); ?>
-        </div>
-      </div>
-
-
-      <!-- Personal Attendance Stats -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-title">Your Monthly Attendance Rate</div>
-          <div class="stat-value"><?php echo $employeeAttendanceStats['attendance_rate']; ?>%</div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: <?php echo $employeeAttendanceStats['attendance_rate']; ?>%"></div>
-          </div>
-        </div>
+<body>
+    <div class="app-shell">
+        <?php include 'sidebar.php'; ?>
         
-        <div class="stat-card">
-          <div class="stat-title">Days Present (This Month)</div>
-          <div class="stat-value"><?php echo $employeeAttendanceStats['total_present']; ?></div>
-          <div class="stat-change positive">
-            <?php echo $employeeAttendanceStats['consecutive_days']; ?> consecutive days present
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-title">Days Absent (This Month)</div>
-          <div class="stat-value"><?php echo $employeeAttendanceStats['total_absent']; ?></div>
-          <div class="stat-change <?php echo $employeeAttendanceStats['total_absent'] > 0 ? 'negative' : 'positive'; ?>">
-            <?php echo $employeeAttendanceStats['total_absent'] > 0 ? 'Needs improvement' : 'Perfect!'; ?>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-title">Today's Company Rate</div>
-          <div class="stat-value"><?php echo $attendanceRate; ?>%</div>
-          <div class="stat-change positive">
-            <?php echo $presentCount; ?> of <?php echo $totalEmployees; ?> employees present
-          </div>
-        </div>
-      </div>
-
-      <?php if (isset($_SESSION['position']) && in_array($_SESSION['position'], ['Admin', 'Super Admin'])): ?>
-      <!-- Admin Quick Actions -->
-      <div class="quick-actions-section">
-        <div class="quick-actions-title">
-          <i class="fas fa-bolt"></i>
-          Admin Quick Actions
-        </div>
-        <div class="quick-actions-grid">
-          <button class="quick-action-btn" onclick="quickActionInstantExport()">
-            <span class="action-number">1</span>
-            <div class="action-icon"><i class="fas fa-file-excel"></i></div>
-            <span class="action-label">Instant Payroll Export</span>
-            <span class="action-desc">Export current week payroll</span>
-          </button>
-          
-          <button class="quick-action-btn" onclick="quickActionSearchAttendance()">
-            <span class="action-number">2</span>
-            <div class="action-icon"><i class="fas fa-user-clock"></i></div>
-            <span class="action-label">Search & Log Attendance</span>
-            <span class="action-desc">Find employee & time in/out</span>
-          </button>
-          
-          <button class="quick-action-btn" onclick="quickActionMissingLogs()">
-            <span class="action-number">3</span>
-            <div class="action-icon"><i class="fas fa-user-times"></i></div>
-            <span class="action-label">View Missing Logs</span>
-            <span class="action-desc">Employees not timed in today</span>
-          </button>
-          
-          <button class="quick-action-btn" onclick="quickActionRecentActivity()">
-            <span class="action-number">4</span>
-            <div class="action-icon"><i class="fas fa-history"></i></div>
-            <span class="action-label">Recent Activity Logs</span>
-            <span class="action-desc">Top 5 recent system logs</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick Action Modals -->
-      <div id="modal-search-attendance" class="quick-action-modal">
-        <div class="quick-action-modal-content">
-          <div class="quick-action-modal-header">
-            <h3><i class="fas fa-user-clock"></i> Search & Log Attendance</h3>
-            <button class="quick-action-modal-close" onclick="closeQuickActionModal('modal-search-attendance')">&times;</button>
-          </div>
-          <div class="quick-action-modal-body">
-            <input type="text" class="quick-action-search" id="search-attendance-input" placeholder="Search employee by name or code..." oninput="searchEmployees(this.value)">
-            <div class="quick-action-list" id="search-attendance-results">
-              <!-- Results will be populated here -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="modal-missing-logs" class="quick-action-modal">
-        <div class="quick-action-modal-content">
-          <div class="quick-action-modal-header">
-            <h3><i class="fas fa-user-times"></i> Missing Logs - <?php echo date('F d, Y'); ?></h3>
-            <button class="quick-action-modal-close" onclick="closeQuickActionModal('modal-missing-logs')">&times;</button>
-          </div>
-          <div class="quick-action-modal-body">
-            <div class="quick-action-list" id="missing-logs-results">
-              <div style="text-align: center; color: #808080; padding: 20px;">Loading...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="modal-recent-activity" class="quick-action-modal">
-        <div class="quick-action-modal-content">
-          <div class="quick-action-modal-header">
-            <h3><i class="fas fa-history"></i> Recent Activity Logs</h3>
-            <button class="quick-action-modal-close" onclick="closeQuickActionModal('modal-recent-activity')">&times;</button>
-          </div>
-          <div class="quick-action-modal-body">
-            <div id="recent-activity-results">
-              <div style="text-align: center; color: #808080; padding: 20px;">Loading...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <!-- Analytics Section -->
-      <div class="analytics-section">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Attendance Analytics</div>
-            <div class="section-subtitle">Detailed reports and insights about your attendance</div>
-          </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-          <div class="tab active" onclick="switchTab('overview')">Overview</div>
-          <div class="tab" onclick="switchTab('detailed')">Detailed Report</div>
-          <div class="tab" onclick="switchTab('ranking')">Ranking</div>
-          <div class="tab" onclick="switchTab('trends')">Trends</div>
-        </div>
-
-        <!-- Overview Tab -->
-        <div id="overview-tab" class="tab-content active">
-          <div class="insight-card">
-            <div class="insight-title">📊 Attendance Insight</div>
-            <div class="insight-text">
-              <?php
-              $rate = $employeeAttendanceStats['attendance_rate'];
-              if ($rate >= 95) {
-                  echo "Excellent attendance! You're setting a great example with " . $rate . "% attendance rate.";
-              } elseif ($rate >= 85) {
-                  echo "Good attendance at " . $rate . "%. Keep up the consistency!";
-              } else {
-                  echo "Your attendance rate is " . $rate . "%. Consider improving consistency.";
-              }
-              ?>
-            </div>
-          </div>
-
-          <!-- Charts Row -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div class="chart-container">
-              <canvas id="attendanceChart"></canvas>
-            </div>
-            <div class="chart-container">
-              <canvas id="weeklyPatternChart"></canvas>
-            </div>
-          </div>
-
-          <!-- Quick Stats -->
-          <?php if (!empty($weeklyPattern)): ?>
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Day of Week</th>
-                  <th>Attendance Rate</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($weeklyPattern as $day): ?>
-                <tr>
-                  <td><?php echo $day['day']; ?></td>
-                  <td>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span><?php echo $day['rate']; ?>%</span>
-                      <div class="progress-bar" style="flex: 1;">
-                        <div class="progress-fill" style="width: <?php echo $day['rate']; ?>%"></div>
-                      </div>
+        <div class="main-content">
+            <!-- Top Navbar -->
+            <div class="top-navbar">
+                <div class="navbar-brand">
+                    <i class="fas fa-chart-line" style="color: var(--gold-2); font-size: 1.75rem;"></i>
+                    <h1>Admin Dashboard</h1>
+                </div>
+                <div class="navbar-user">
+                    <div class="user-info">
+                        <div class="user-name"><?php echo htmlspecialchars($currentUserName); ?></div>
+                        <div class="user-role"><?php echo htmlspecialchars($userRole); ?></div>
                     </div>
-                  </td>
-                  <td>
-                    <?php if ($day['rate'] >= 90): ?>
-                      <span class="badge badge-present">Consistent</span>
-                    <?php elseif ($day['rate'] >= 70): ?>
-                      <span class="badge badge-warning">Average</span>
-                    <?php else: ?>
-                      <span class="badge badge-absent">Low</span>
-                    <?php endif; ?>
-                  </td>
-                </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-          <?php else: ?>
-          <div style="text-align: center; padding: 40px; color: #6b7280; background: #f9fafb; border-radius: 8px;">
-            No weekly pattern data available yet. Mark more attendance to see patterns.
-          </div>
-          <?php endif; ?>
-        </div>
-
-        <!-- Detailed Report Tab -->
-        <div id="detailed-tab" class="tab-content">
-          <?php if (!empty($detailedReport)): ?>
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Day</th>
-                  <th>Status</th>
-                  <th>Marked At</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($detailedReport as $record): ?>
-                <tr>
-                  <td><?php echo date('M d, Y', strtotime($record['attendance_date'])); ?></td>
-                  <td><?php echo date('D', strtotime($record['attendance_date'])); ?></td>
-                  <td>
-                    <?php if ($record['status'] == 'Present'): ?>
-                      <span class="badge badge-present">Present</span>
-                    <?php else: ?>
-                      <span class="badge badge-absent">Absent</span>
-                    <?php endif; ?>
-                  </td>
-                  <td><?php echo date('h:i A', strtotime($record['created_at'])); ?></td>
-                </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-          <?php else: ?>
-          <div style="text-align: center; padding: 40px; color: #6b7280; background: #f9fafb; border-radius: 8px;">
-            No attendance records found for this month. Mark your attendance to see detailed reports.
-          </div>
-          <?php endif; ?>
-        </div>
-
-        <!-- Ranking Tab -->
-        <div id="ranking-tab" class="tab-content">
-          <?php if (!empty($attendanceRanking)): ?>
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Employee</th>
-                  <th>Position</th>
-                  <th>Present Days</th>
-                  <th>Absent Days</th>
-                  <th>Attendance Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php 
-                $userRank = 0;
-                foreach ($attendanceRanking as $index => $employee):
-                $rank = $index + 1;
-                $isCurrentUser = $employee['id'] == $employeeId;
-                if ($isCurrentUser) $userRank = $rank;
-                ?>
-                <tr style="<?php echo $isCurrentUser ? 'background: #f0f9ff; font-weight: 600;' : ''; ?>">
-                  <td>
-                    <span class="rank-badge <?php echo 'rank-' . min($rank, 3); ?>">
-                      <?php echo $rank; ?>
-                    </span>
-                    <?php if ($isCurrentUser): ?>
-                      <span style="font-size: 12px; color: #3b82f6; margin-left: 4px;">(You)</span>
-                    <?php endif; ?>
-                  </td>
-                  <td><?php echo htmlspecialchars($employee['name']); ?></td>
-                  <td><?php echo htmlspecialchars($employee['position']); ?></td>
-                  <td><?php echo $employee['present_days']; ?></td>
-                  <td><?php echo $employee['absent_days']; ?></td>
-                  <td>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span><?php echo $employee['attendance_rate']; ?>%</span>
-                      <div class="progress-bar" style="flex: 1;">
-                        <div class="progress-fill" style="width: <?php echo $employee['attendance_rate']; ?>%"></div>
-                      </div>
+                    <div class="user-avatar">
+                        <?php if ($currentUserAvatar && file_exists(__DIR__ . '/../' . $currentUserAvatar)): ?>
+                            <img src="../<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Profile">
+                        <?php else: ?>
+                            <i class="fas fa-user"></i>
+                        <?php endif; ?>
                     </div>
-                  </td>
-                </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
-            <?php if ($userRank > 0): ?>
-            <div style="padding: 16px; background: #f8fafc; border-top: 1px solid #e5e7eb; text-align: center;">
-              <strong>Your Rank:</strong> #<?php echo $userRank; ?> out of <?php echo count($attendanceRanking); ?> employees
+                </div>
             </div>
+
+            <!-- Dashboard Title -->
+            <div class="dashboard-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard Overview
+            </div>
+
+            <?php if ($dbError): ?>
+                <div class="db-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <?php echo htmlspecialchars($dbError); ?>
+                </div>
             <?php endif; ?>
-          </div>
-          <?php else: ?>
-          <div style="text-align: center; padding: 40px; color: #6b7280; background: #f9fafb; border-radius: 8px;">
-            No ranking data available for this month. Mark attendance to see rankings.
-          </div>
-          <?php endif; ?>
-        </div>
 
-        <!-- Trends Tab -->
-        <div id="trends-tab" class="tab-content">
-          <?php if (!empty($monthlyTrend)): ?>
-          <div class="chart-container" style="height: 400px;">
-            <canvas id="trendChart"></canvas>
-          </div>
-          
-          <div class="data-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Month</th>
-                  <th>Present Days</th>
-                  <th>Absent Days</th>
-                  <th>Attendance Rate</th>
-                  <th>Trend</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($monthlyTrend as $month): ?>
-                <?php 
-                $trendIcon = '';
-                $trendClass = '';
-                $rate = $month['rate'];
-                
-                if ($rate >= 95) {
-                    $trendIcon = '📈';
-                    $trendClass = 'positive';
-                } elseif ($rate >= 85) {
-                    $trendIcon = '➡️';
-                    $trendClass = 'positive';
-                } else {
-                    $trendIcon = '📉';
-                    $trendClass = 'negative';
-                }
-                ?>
-                <tr>
-                  <td><?php echo $month['month']; ?></td>
-                  <td><?php echo $month['present']; ?></td>
-                  <td><?php echo $month['absent']; ?></td>
-                  <td><?php echo $rate; ?>%</td>
-                  <td class="<?php echo $trendClass; ?>">
-                    <?php echo $trendIcon; ?> 
-                    <?php echo $rate >= 95 ? 'Excellent' : ($rate >= 85 ? 'Good' : 'Needs Improvement'); ?>
-                  </td>
-                </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-          <?php else: ?>
-          <div style="text-align: center; padding: 40px; color: #6b7280; background: #f9fafb; border-radius: 8px;">
-            No trend data available yet. Mark more attendance to see trends.
-          </div>
-          <?php endif; ?>
-        </div>
-      </div>
-    </main>
-  </div>
+            <!-- Summary Cards -->
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-icon employees">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="summary-number"><?php echo number_format($totalEmployees); ?></div>
+                    <div class="summary-label">Total Employees</div>
+                    <div class="summary-change">
+                        <i class="fas fa-arrow-up"></i>
+                        Active workforce
+                    </div>
+                </div>
 
-  <script src="../assets/js/employee.js"></script>
-  <script src="js/dashboard.js"></script>
+                <div class="summary-card">
+                    <div class="summary-icon branches">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="summary-number"><?php echo number_format($activeBranches); ?></div>
+                    <div class="summary-label">Active Branches</div>
+                    <div class="summary-change">
+                        <i class="fas fa-check-circle"></i>
+                        Operational sites
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon transfers">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="summary-number"><?php echo number_format($transfersToday); ?></div>
+                    <div class="summary-label">Transfers Today</div>
+                    <div class="summary-change">
+                        <i class="fas fa-calendar-day"></i>
+                        <?php echo date('M d, Y'); ?>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon payroll">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="summary-number"><?php echo number_format($pendingPayroll); ?></div>
+                    <div class="summary-label">Pending Payroll</div>
+                    <div class="summary-change">
+                        <i class="fas fa-clock"></i>
+                        Awaiting approval
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Section -->
+            <div class="quick-actions-section">
+                <div class="section-header">
+                    <i class="fas fa-bolt"></i>
+                    <h2>Quick Action Command Center</h2>
+                </div>
+                <div class="quick-actions-grid">
+                    <a href="../send_branches.php" class="quick-action-btn">
+                        <div class="action-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <span class="action-label">Sync to Procurement</span>
+                        <span class="action-desc">Update branch data</span>
+                    </a>
+
+                    <a href="transfer_module.php" class="quick-action-btn">
+                        <div class="action-icon">
+                            <i class="fas fa-people-arrows"></i>
+                        </div>
+                        <span class="action-label">Staff Transfer</span>
+                        <span class="action-desc">Move employees</span>
+                    </a>
+
+                    <a href="cash_advance.php" class="quick-action-btn">
+                        <div class="action-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <span class="action-label">Cash Advance</span>
+                        <span class="action-desc">Print receipts <i class="fas fa-print" style="font-size: 0.7rem;"></i></span>
+                    </a>
+
+                    <a href="signature_settings.php" class="quick-action-btn">
+                        <div class="action-icon">
+                            <i class="fas fa-signature"></i>
+                        </div>
+                        <span class="action-label">E-Signature</span>
+                        <span class="action-desc">Manage signatures</span>
+                    </a>
+
+                    <a href="settings.php" class="quick-action-btn">
+                        <div class="action-icon">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <span class="action-label">Profile Settings</span>
+                        <span class="action-desc">Avatar & profile</span>
+                    </a>
+
+                    <a href="view_logs.php" class="quick-action-btn">
+                        <div class="action-icon">
+                            <i class="fas fa-terminal"></i>
+                        </div>
+                        <span class="action-label">System Logs</span>
+                        <span class="action-desc">View api_debug.log</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Data Monitoring Section -->
+            <div class="monitoring-section">
+                <!-- Recent Transfers -->
+                <div class="monitoring-card">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-exchange-alt"></i>
+                            Recent Transfers
+                        </h5>
+                        <a href="transfer_module.php" class="view-all-btn">
+                            View All <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i>
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php if (!empty($recentTransfers)): ?>
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Transfer</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($recentTransfers as $transfer): 
+                                        $firstName = $transfer['first_name'] ?? '';
+                                        $lastName = $transfer['last_name'] ?? '';
+                                        $employeeName = trim($firstName . ' ' . $lastName) ?: 'Unknown';
+                                    ?>
+                                        <tr>
+                                            <td class="emp-name"><?php echo htmlspecialchars($employeeName); ?></td>
+                                            <td>
+                                                <span class="branch-from"><?php echo htmlspecialchars($transfer['from_branch'] ?? 'N/A'); ?></span>
+                                                <i class="fas fa-arrow-right arrow-icon"></i>
+                                                <span class="branch-to"><?php echo htmlspecialchars($transfer['to_branch'] ?? 'N/A'); ?></span>
+                                            </td>
+                                            <td><?php echo formatDateShort($transfer['transfer_date']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>No recent transfers found</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- System Activity -->
+                <div class="monitoring-card">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-clipboard-list"></i>
+                            System Activity
+                        </h5>
+                        <a href="logs.php" class="view-all-btn">
+                            View All <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i>
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <?php if (!empty($recentActivity)): ?>
+                            <ul class="activity-list">
+                                <?php foreach ($recentActivity as $activity): 
+                                    // Determine icon based on action
+                                    $action = strtolower($activity['action']);
+                                    $iconClass = 'default';
+                                    $icon = 'fa-circle';
+                                    
+                                    if (strpos($action, 'login') !== false) {
+                                        $iconClass = 'login';
+                                        $icon = 'fa-sign-in-alt';
+                                    } elseif (strpos($action, 'transfer') !== false) {
+                                        $iconClass = 'transfer';
+                                        $icon = 'fa-exchange-alt';
+                                    } elseif (strpos($action, 'attendance') !== false || strpos($action, 'present') !== false || strpos($action, 'absent') !== false) {
+                                        $iconClass = 'attendance';
+                                        $icon = 'fa-calendar-check';
+                                    } elseif (strpos($action, 'payroll') !== false || strpos($action, 'payment') !== false) {
+                                        $iconClass = 'payroll';
+                                        $icon = 'fa-dollar-sign';
+                                    }
+                                ?>
+                                    <li class="activity-item">
+                                        <div class="activity-icon <?php echo $iconClass; ?>">
+                                            <i class="fas <?php echo $icon; ?>"></i>
+                                        </div>
+                                        <div class="activity-content">
+                                            <div class="activity-text">
+                                                <?php 
+                                                // Extract username from details (e.g., "User Super Admin logged in...")
+                                                $details = $activity['details'] ?? '';
+                                                if (preg_match('/User\s+(.+?)\s+logged/', $details, $matches)) {
+                                                    $userDisplay = $matches[1];
+                                                } else {
+                                                    $userDisplay = 'User #' . ($activity['user_id'] ?? 'Unknown');
+                                                }
+                                                ?>
+                                                <strong><?php echo htmlspecialchars($userDisplay); ?></strong>
+                                                <?php echo htmlspecialchars($activity['action']); ?>
+                                            </div>
+                                            <div class="activity-time">
+                                                <i class="far fa-clock" style="margin-right: 4px;"></i>
+                                                <?php echo formatDate($activity['created_at']); ?>
+                                            </div>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <div class="empty-state">
+                                <i class="fas fa-clipboard"></i>
+                                <p>No recent activity found</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/dashboard.js"></script>
+    
+ 
 </body>
 </html>
