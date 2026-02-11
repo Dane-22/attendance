@@ -8,6 +8,13 @@ $userRole = isset($_SESSION['position']) ? $_SESSION['position'] : 'Employee';
 
 // Check if user is Admin or Super Admin
 $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
+
+// Detect if we're being included from outside the employee folder
+$scriptDir = dirname($_SERVER['PHP_SELF']);
+$isInEmployeeFolder = strpos($scriptDir, '/employee') !== false || $scriptDir === '/main' || $scriptDir === '/main/';
+
+// Set base path for links
+$basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains($scriptDir, 'employee') && !str_contains($scriptDir, 'procurement'))) ? 'employee/' : '';
 ?>
 <aside class="sidebar" id="sidebar">
   <div style="display:flex;align-items:center;gap:10px;padding:8px 6px;">
@@ -28,49 +35,60 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
   <!-- Admin/Super Admin Only: Dashboard -->
   <?php if ($isAdmin): ?>
     <a href="dashboard.php" class="menu-item <?= $current === 'dashboard.php' ? 'active' : '' ?>" data-target="dashboard.php"><span class="icon">🏠</span><span class="label">Dashboard</span></a>
+
   <?php endif; ?>
 
   <!-- All Users: Site Attendance -->
   <a href="select_employee.php" class="menu-item <?= $current === 'select_employee.php' ? 'active' : '' ?>" data-target="select_employee.php"><span class="icon">📋</span><span class="label">Site Attendance</span></a>
 
+
   <!-- All Users: Employee List -->
   <a href="employees.php" class="menu-item <?= $current === 'employees.php' ? 'active' : '' ?>" data-target="employees.php"><span class="icon">👥</span><span class="label">Employee List</span></a>
+
 
   <!-- Admin/Super Admin Only: Reports -->
   <?php if ($isAdmin): ?>
     <a href="weekly_report.php" class="menu-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php"><span class="icon">📅</span><span class="label">Payroll</span></a>
+
   <?php endif; ?>
 
   <?php if ($isAdmin): ?>
    <a href="cash_advance.php" class="menu-item <?= $current === 'cash_advance.php' ? 'active' : '' ?>" data-target="cash_advance.php"><span class="icon">💵</span><span class="label">Cash Advance</span></a>
+
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Billing -->
   <?php if ($isAdmin): ?>
     <a href="billing.php" class="menu-item <?= $current === 'billing.php' ? 'active' : '' ?>" data-target="billing.php"><span class="icon">💰</span><span class="label">Billing</span></a>
+
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Documents -->
   <?php if ($isAdmin): ?>
     <a href="documents.php" class="menu-item <?= $current === 'documents.php' ? 'active' : '' ?>" data-target="documents.php"><span class="icon">🏥</span><span class="label">Documents</span></a>
+
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Activity Logs -->
   <?php if ($isAdmin): ?>
     <a href="logs.php" class="menu-item <?= $current === 'logs.php' ? 'active' : '' ?>" data-target="logs.php"><span class="icon">🗂️</span><span class="label">Activity Logs</span></a>
+
   <?php endif; ?>
 
   <!-- Admin/Super Admin/Engineer Only: Procurement (External Link) -->
   <?php if ($isAdmin || $userRole === 'Engineer'): ?>
-    <a href="procurement_redirect.php" class="menu-item"><span class="icon">🛒</span><span class="label">Procurement</span></a>
+    <a href="<?php echo $basePath; ?>procurement_redirect.php" class="menu-item"><span class="icon">🛒</span><span class="label">Procurement</span></a>
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Settings -->
-   <!-- ALL USERS: Settings (Visible to Everyone) -->
+  <!-- ALL USERS: Settings (Visible to Everyone) -->
   <a href="settings.php" class="menu-item <?= $current === 'settings.php' ? 'active' : '' ?>" data-target="settings.php"><span class="icon">⚙️</span><span class="label">Settings</span></a>
+
 
 
   <div style="flex:1"></div>
   <a href="../logout.php" class="menu-item logout"><span class="icon">🚪</span><span class="label">Log Out</span></a>
+
   </aside>
   <script src="../assets/js/main.js"></script>
+

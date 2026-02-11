@@ -1,6 +1,9 @@
 <?php
-// send_branches.php - Procurement Sync Interface with JSON API
-require_once 'conn/db_connection.php';
+// api/send_branches.php - Procurement Sync Interface
+session_start();
+
+// Include database connection
+require_once __DIR__ . '/../conn/db_connection.php';
 
 // Fetch all branches
 $sql = "SELECT id, branch_name, branch_address, created_at, is_active FROM branches ORDER BY branch_name";
@@ -14,22 +17,12 @@ if ($result) {
 
 mysqli_close($db);
 
-// Check if request wants JSON (API call) or HTML (browser)
-$acceptHeader = $_SERVER['HTTP_ACCEPT'] ?? '';
-$isApiRequest = strpos($acceptHeader, 'application/json') !== false || isset($_GET['api']);
-
-// If API request, return JSON
-if ($isApiRequest) {
-    header('Content-Type: application/json');
-    echo json_encode($branches);
-    exit;
-}
-
-// Otherwise, show HTML interface
+// Helper function to format date
 function formatDate($date) {
     return date('M d, Y', strtotime($date));
 }
 
+// Helper function to get status badge
 function getStatusBadge($isActive) {
     if ($isActive == 1) {
         return '<span class="badge bg-success">Active</span>';
@@ -46,7 +39,7 @@ function getStatusBadge($isActive) {
     
     <!-- FontAwesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
     
     <style>
         /* Sync to Procurement - Dark Engineering Theme */
@@ -54,7 +47,6 @@ function getStatusBadge($isActive) {
             background: var(--bg-page);
             color: var(--soft-white);
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-            margin: 0;
         }
         
         /* App Shell */
@@ -376,14 +368,6 @@ function getStatusBadge($isActive) {
             word-break: break-word;
         }
         
-        code {
-            background: rgba(255,255,255,0.1);
-            padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 0.9rem;
-        }
-        
         /* Utilities */
         .d-flex {
             display: flex !important;
@@ -417,7 +401,7 @@ function getStatusBadge($isActive) {
 <body>
     <div class="app-shell">
         <!-- Include Sidebar -->
-        <?php include 'employee/sidebar.php'; ?>
+        <?php include __DIR__ . '/../employee/sidebar.php'; ?>
         
         <!-- Main Content -->
         <div class="main-content">
@@ -429,7 +413,7 @@ function getStatusBadge($isActive) {
                         <p>View and sync branch data for procurement system</p>
                     </div>
                     <div class="d-flex gap-2">
-                        <a href="employee/dashboard.php" class="btn btn-secondary">
+                        <a href="../employee/dashboard.php" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                         </a>
                         <button class="btn btn-gold" onclick="refreshData()">
@@ -442,7 +426,7 @@ function getStatusBadge($isActive) {
             <!-- Info Alert -->
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                <strong>API Endpoint:</strong> This data is available as JSON at <code>send_branches.php?api=1</code> for system integration.
+                <strong>API Endpoint:</strong> This data is available as JSON at <code>send_branches.php</code> for system integration.
             </div>
             
             <!-- Statistics Row -->

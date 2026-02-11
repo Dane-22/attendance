@@ -279,7 +279,7 @@ function formatDateShort($date) {
                         <span class="action-desc">Avatar & profile</span>
                     </a>
 
-                    <a href="view_logs.php" class="quick-action-btn">
+                    <a href="logs.php" class="quick-action-btn">
                         <div class="action-icon">
                             <i class="fas fa-terminal"></i>
                         </div>
