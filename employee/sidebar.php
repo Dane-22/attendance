@@ -60,6 +60,11 @@ $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
     <a href="logs.php" class="menu-item <?= $current === 'logs.php' ? 'active' : '' ?>" data-target="logs.php"><span class="icon">🗂️</span><span class="label">Activity Logs</span></a>
   <?php endif; ?>
 
+  <!-- Admin/Super Admin/Engineer Only: Procurement (External Link) -->
+  <?php if ($isAdmin || $userRole === 'Engineer'): ?>
+    <a href="procurement_redirect.php" class="menu-item" style="color: var(--gold-2);"><span class="icon">🛒</span><span class="label">Procurement</span></a>
+  <?php endif; ?>
+
   <!-- Admin/Super Admin Only: Settings -->
    <!-- ALL USERS: Settings (Visible to Everyone) -->
   <a href="settings.php" class="menu-item <?= $current === 'settings.php' ? 'active' : '' ?>" data-target="settings.php"><span class="icon">⚙️</span><span class="label">Settings</span></a>
