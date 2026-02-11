@@ -49,6 +49,163 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction_ajax'
     exit;
 }
 
+// Handle signature upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_signature'])) {
+    header('Content-Type: application/json');
+    
+    $empId = intval($_POST['employee_id'] ?? 0);
+    $signatureData = $_POST['signature_data'] ?? '';
+    $signatureType = $_POST['signature_type'] ?? 'employee';
+    
+    if ($empId <= 0 || empty($signatureData)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid data']);
+        exit;
+    }
+    
+    // Extract base64 image data
+    if (preg_match('/^data:image\/(\w+);base64,/', $signatureData, $matches)) {
+        $imageType = $matches[1];
+        $base64Data = substr($signatureData, strlen($matches[0]));
+        $imageData = base64_decode($base64Data);
+        
+        if ($imageData === false) {
+            echo json_encode(['success' => false, 'message' => 'Invalid image data']);
+            exit;
+        }
+        
+        // Create upload directory
+        $uploadDir = __DIR__ . '/../uploads/signatures/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        
+        // Generate filename
+        $filename = 'sig_' . $empId . '_' . $signatureType . '_' . time() . '.' . $imageType;
+        $filepath = $uploadDir . $filename;
+        
+        if (file_put_contents($filepath, $imageData)) {
+            // Save to database
+            $dbPath = 'uploads/signatures/' . $filename;
+            $query = "INSERT INTO e_signatures (employee_id, signature_type, signature_image, signature_data) 
+                      VALUES (?, ?, ?, ?) 
+                      ON DUPLICATE KEY UPDATE 
+                      signature_image = VALUES(signature_image), 
+                      signature_data = VALUES(signature_data),
+                      updated_at = CURRENT_TIMESTAMP";
+            $stmt = mysqli_prepare($db, $query);
+            mysqli_stmt_bind_param($stmt, 'isss', $empId, $signatureType, $dbPath, $signatureData);
+            
+            if (mysqli_stmt_execute($stmt)) {
+                echo json_encode(['success' => true, 'path' => $dbPath]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Database error']);
+            }
+            mysqli_stmt_close($stmt);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to save file']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid image format']);
+    }
+    exit;
+}
+
+// Handle signature file upload (from file input)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_signature_file'])) {
+    header('Content-Type: application/json');
+    
+    $empId = intval($_POST['employee_id'] ?? 0);
+    $signatureType = $_POST['signature_type'] ?? 'employee';
+    
+    if ($empId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid employee']);
+        exit;
+    }
+    
+    if (!isset($_FILES['signature_file']) || $_FILES['signature_file']['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['success' => false, 'message' => 'File upload failed']);
+        exit;
+    }
+    
+    $file = $_FILES['signature_file'];
+    
+    // Validate file type
+    $validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!in_array($file['type'], $validTypes)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid file type. Only PNG and JPG allowed.']);
+        exit;
+    }
+    
+    // Validate file size (max 2MB)
+    if ($file['size'] > 2 * 1024 * 1024) {
+        echo json_encode(['success' => false, 'message' => 'File too large. Maximum size is 2MB.']);
+        exit;
+    }
+    
+    // Create upload directory
+    $uploadDir = __DIR__ . '/../uploads/signatures/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    // Get file extension
+    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = 'sig_' . $empId . '_' . $signatureType . '_' . time() . '.' . $ext;
+    $filepath = $uploadDir . $filename;
+    
+    if (move_uploaded_file($file['tmp_name'], $filepath)) {
+        // Convert to base64 for storage
+        $imageData = file_get_contents($filepath);
+        $base64Data = base64_encode($imageData);
+        $signatureDataUrl = 'data:image/' . ($ext === 'png' ? 'png' : 'jpeg') . ';base64,' . $base64Data;
+        
+        // Save to database
+        $dbPath = 'uploads/signatures/' . $filename;
+        $query = "INSERT INTO e_signatures (employee_id, signature_type, signature_image, signature_data) 
+                  VALUES (?, ?, ?, ?) 
+                  ON DUPLICATE KEY UPDATE 
+                  signature_image = VALUES(signature_image), 
+                  signature_data = VALUES(signature_data),
+                  updated_at = CURRENT_TIMESTAMP";
+        $stmt = mysqli_prepare($db, $query);
+        mysqli_stmt_bind_param($stmt, 'isss', $empId, $signatureType, $dbPath, $signatureDataUrl);
+        
+        if (mysqli_stmt_execute($stmt)) {
+            echo json_encode(['success' => true, 'path' => $dbPath]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Database error']);
+        }
+        mysqli_stmt_close($stmt);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to move uploaded file']);
+    }
+    exit;
+}
+
+// Get signature API
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['get_signature'])) {
+    header('Content-Type: application/json');
+    
+    $empId = intval($_GET['employee_id'] ?? 0);
+    $signatureType = $_GET['signature_type'] ?? 'employee';
+    
+    $query = "SELECT signature_image, signature_data FROM e_signatures 
+              WHERE employee_id = ? AND signature_type = ? AND is_active = 1 
+              ORDER BY updated_at DESC LIMIT 1";
+    $stmt = mysqli_prepare($db, $query);
+    mysqli_stmt_bind_param($stmt, 'is', $empId, $signatureType);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    
+    if ($row = mysqli_fetch_assoc($result)) {
+        echo json_encode(['success' => true, 'signature' => $row]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'No signature found']);
+    }
+    mysqli_stmt_close($stmt);
+    exit;
+}
+
 // Handle AJAX update requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_update'])) {
     header('Content-Type: application/json');
@@ -1095,6 +1252,9 @@ foreach ($employeeList as $emp) {
                                             <button class="btn-action" onclick="viewEmployeeHistory(<?php echo $emp['id']; ?>, '<?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>')">
                                                 <i class="fas fa-money-bill-wave mr-1"></i> Cash Advance Record
                                             </button>
+                                            <button class="btn-print-action" onclick="quickPrintEmployee(<?php echo $emp['id']; ?>, '<?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>')">
+                                                <i class="fas fa-print mr-1"></i> Print
+                                            </button>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -1270,6 +1430,14 @@ foreach ($employeeList as $emp) {
         
         // Print cash advance history
         function printCashAdvanceHistory() {
+            // Check if signature exists first
+            if (!currentEmployeeSignature) {
+                if (confirm('No e-signature uploaded yet. Would you like to upload your signature first?\n\nClick OK to upload signature, or Cancel to print without signature.')) {
+                    openSignatureModal();
+                    return;
+                }
+            }
+            
             const modalContent = document.getElementById('modalContent');
             const signatureSection = modalContent.querySelector('.signature-section');
             
@@ -1280,6 +1448,15 @@ foreach ($employeeList as $emp) {
             
             // Create a new window for printing
             const printWindow = window.open('', '_blank');
+            
+            // Build signature HTML - show e-signature if available, otherwise show line
+            let employeeSignatureHtml = '';
+            if (currentEmployeeSignature) {
+                employeeSignatureHtml = `<img src="${currentEmployeeSignature}" style="max-width: 150px; max-height: 60px;" alt="Employee Signature">`;
+            } else {
+                employeeSignatureHtml = `<div class="line"></div>`;
+            }
+            
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -1287,44 +1464,40 @@ foreach ($employeeList as $emp) {
                     <title>Cash Advance History - ${currentEmployeeNameForAdd}</title>
                     <style>
                         * { box-sizing: border-box; margin: 0; padding: 0; }
-                        body { font-family: Arial, sans-serif; padding: 20px; background: #fff; color: #333; }
-                        .print-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
-                        .print-header h2 { color: #000; margin: 0 0 5px 0; font-size: 18px; }
-                        .print-header p { color: #666; margin: 3px 0; font-size: 12px; }
-                        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-                        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 12px; }
+                        @page { size: auto; margin: 10mm; }
+                        body { font-family: Arial, sans-serif; padding: 10px; background: #fff; color: #333; font-size: 10px; }
+                        .print-header { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #333; }
+                        .print-header h2 { color: #000; margin: 0 0 3px 0; font-size: 14px; }
+                        .print-header h4 { color: #000; margin: 0 0 2px 0; font-size: 12px; }
+                        .print-header p { color: #666; margin: 1px 0; font-size: 9px; }
+                        table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                        th, td { padding: 4px 6px; text-align: left; border-bottom: 1px solid #ddd; font-size: 9px; }
                         th { background: #f5f5f5; font-weight: bold; color: #000; }
                         td { color: #333; }
                         td:last-child, th:last-child { text-align: right; }
                         .balance-row { font-weight: bold; background: #f9f9f9; }
-                        .print-balance { margin-top: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-                        .print-balance .label { font-size: 14px; color: #666; }
-                        .print-balance .amount { font-size: 20px; font-weight: bold; color: #000; }
-                        .signature-section { margin-top: 40px; padding-top: 20px; }
-                        .signature-row { display: flex; justify-content: space-between; margin-top: 30px; }
+                        .print-balance { margin-top: 10px; padding: 8px 10px; background: #f5f5f5; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+                        .print-balance .label { font-size: 10px; color: #666; }
+                        .print-balance .amount { font-size: 14px; font-weight: bold; color: #000; }
+                        .signature-section { margin-top: 15px; padding-top: 10px; }
+                        .signature-row { display: flex; justify-content: space-between; margin-top: 15px; }
                         .signature-box { text-align: center; width: 45%; }
-                        .signature-box .line { border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; min-height: 40px; }
-                        .signature-box .label { color: #666; font-size: 11px; margin: 0; }
-                        .signature-box .name { color: #888; font-size: 10px; margin: 5px 0 0 0; }
-                        .footer-note { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
-                        .footer-note p { color: #999; font-size: 10px; margin: 0; }
+                        .signature-box .line { border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 3px; min-height: 30px; }
+                        .signature-box .label { color: #666; font-size: 9px; margin: 0; }
+                        .signature-box .name { color: #888; font-size: 8px; margin: 3px 0 0 0; }
+                        .signature-image { max-width: 120px; max-height: 40px; margin-bottom: 3px; }
+                        .footer-note { text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; }
+                        .footer-note p { color: #999; font-size: 8px; margin: 0; }
+                        .logo-img { max-width: 50px; max-height: 50px; margin-bottom: 5px; }
                         @media print {
-                            body { padding: 0; }
+                            body { padding: 0; margin: 0; }
                             .no-print { display: none !important; }
-                            select.editable-particular, input.editable-amount {
-                                border: none !important;
-                                background: transparent !important;
-                                appearance: none !important;
-                                -webkit-appearance: none !important;
-                                padding: 0 !important;
-                                font-size: 12px !important;
-                            }
                         }
                     </style>
                 </head>
                 <body>
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <img src="http://localhost/main/assets/img/profile/jajr-logo.png" style="max-width: 80px; max-height: 80px;" alt="JAJR Company Logo">
+                    <div style="text-align: center; margin-bottom: 8px;">
+                        <img src="http://localhost/main/assets/img/profile/jajr-logo.png" class="logo-img" alt="JAJR Company Logo">
                     </div>
                     <div class="print-header">
                         <h2>JAJR Company - Cash Advance History</h2>
@@ -1340,7 +1513,7 @@ foreach ($employeeList as $emp) {
                     <div class="signature-section">
                         <div class="signature-row">
                             <div class="signature-box">
-                                <div class="line"></div>
+                                ${employeeSignatureHtml}
                                 <p class="label">Employee Signature</p>
                                 <p class="name">${currentEmployeeNameForAdd}</p>
                             </div>
@@ -1376,6 +1549,164 @@ foreach ($employeeList as $emp) {
         // Reload employee history after adding
         function reloadEmployeeHistory() {
             viewEmployeeHistory(currentEmployeeIdForAdd, currentEmployeeNameForAdd);
+        }
+        
+        // Quick print employee cash advance (direct from list)
+        function quickPrintEmployee(empId, empName) {
+            // Load signature first
+            loadEmployeeSignature(empId).then(() => {
+                // Check if signature exists
+                if (!currentEmployeeSignature) {
+                    // Set current employee for signature upload
+                    currentEmployeeIdForAdd = empId;
+                    currentEmployeeNameForAdd = empName;
+                    
+                    if (confirm('No e-signature uploaded yet for this employee. Would you like to upload the signature first?\n\nClick OK to upload signature, or Cancel to print without signature.')) {
+                        openSignatureModal();
+                        return;
+                    }
+                }
+                
+                // Fetch employee data
+                fetch('api/get_employee_ca.php?emp_id=' + empId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            printEmployeeDataDirectly(data.employee, data.transactions, empName);
+                        } else {
+                            alert('Error loading employee data');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error loading employee data');
+                    });
+            });
+        }
+        
+        // Print employee data directly without opening modal
+        function printEmployeeDataDirectly(employee, transactions, empName) {
+            let transactionsHtml = '';
+            let runningBalance = 0;
+            
+            // Calculate from oldest to newest
+            const sorted = [...transactions].reverse();
+            sorted.forEach(t => {
+                if (t.particular === 'Payment') {
+                    runningBalance -= parseFloat(t.amount);
+                } else {
+                    runningBalance += parseFloat(t.amount);
+                }
+                
+                transactionsHtml += `
+                    <tr>
+                        <td>${new Date(t.request_date).toLocaleDateString()}</td>
+                        <td>${t.particular}</td>
+                        <td style="text-align: right;">₱${parseFloat(t.amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}</td>
+                        <td style="text-align: right; font-weight: bold;">₱${runningBalance.toLocaleString('en-PH', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            });
+            
+            // Build signature HTML
+            let employeeSignatureHtml = '';
+            if (currentEmployeeSignature) {
+                employeeSignatureHtml = `<img src="${currentEmployeeSignature}" style="max-width: 150px; max-height: 60px;" alt="Employee Signature">`;
+            } else {
+                employeeSignatureHtml = `<div class="line"></div>`;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Cash Advance History - ${empName}</title>
+                    <style>
+                        * { box-sizing: border-box; margin: 0; padding: 0; }
+                        @page { size: auto; margin: 10mm; }
+                        body { font-family: Arial, sans-serif; padding: 10px; background: #fff; color: #333; font-size: 10px; }
+                        .print-header { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #333; }
+                        .print-header h2 { color: #000; margin: 0 0 3px 0; font-size: 14px; }
+                        .print-header h4 { color: #333; margin: 0 0 2px 0; font-size: 12px; }
+                        .print-header p { color: #666; margin: 1px 0; font-size: 9px; }
+                        table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                        th, td { padding: 4px 6px; text-align: left; border-bottom: 1px solid #ddd; font-size: 9px; }
+                        th { background: #f5f5f5; font-weight: bold; color: #000; }
+                        td { color: #333; }
+                        td:last-child, th:last-child { text-align: right; }
+                        .print-balance { margin-top: 10px; padding: 8px 10px; background: #f5f5f5; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+                        .print-balance .label { font-size: 10px; color: #666; }
+                        .print-balance .amount { font-size: 14px; font-weight: bold; color: #000; }
+                        .signature-section { margin-top: 15px; padding-top: 10px; }
+                        .signature-row { display: flex; justify-content: space-between; margin-top: 15px; }
+                        .signature-box { text-align: center; width: 45%; }
+                        .signature-box .line { border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 3px; min-height: 30px; }
+                        .signature-box .label { color: #666; font-size: 9px; margin: 0; }
+                        .signature-box .name { color: #888; font-size: 8px; margin: 3px 0 0 0; }
+                        .logo-img { max-width: 50px; max-height: 50px; margin-bottom: 5px; }
+                        .footer-note { text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; }
+                        .footer-note p { color: #999; font-size: 8px; margin: 0; }
+                        @media print {
+                            body { padding: 0; margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div style="text-align: center; margin-bottom: 8px;">
+                        <img src="http://localhost/main/assets/img/profile/jajr-logo.png" class="logo-img" alt="JAJR Company Logo">
+                    </div>
+                    <div class="print-header">
+                        <h2>JAJR Company - Cash Advance History</h2>
+                        <h4>${employee.last_name}, ${employee.first_name}</h4>
+                        <p>Code: ${employee.employee_code}</p>
+                        <p>Date Printed: ${new Date().toLocaleDateString()}</p>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Particular</th>
+                                <th style="text-align: right;">Amount</th>
+                                <th style="text-align: right;">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${transactionsHtml || '<tr><td colspan="4" style="text-align: center; padding: 10px;">No transactions found</td></tr>'}
+                        </tbody>
+                    </table>
+                    <div class="print-balance">
+                        <span class="label">Current Balance:</span>
+                        <span class="amount">₱${parseFloat(employee.balance).toLocaleString('en-PH', {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="signature-section">
+                        <div class="signature-row">
+                            <div class="signature-box">
+                                ${employeeSignatureHtml}
+                                <p class="label">Employee Signature</p>
+                                <p class="name">${empName}</p>
+                            </div>
+                            <div class="signature-box">
+                                <div class="line"></div>
+                                <p class="label">Authorized By</p>
+                                <p class="name">HR / Admin</p>
+                            </div>
+                        </div>
+                        <div class="footer-note">
+                            <p>This document is computer generated and valid without signature.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.focus();
+            
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
         }
         
         // View employee history
@@ -1535,6 +1866,9 @@ foreach ($employeeList as $emp) {
                 <button type="button" onclick="showAddTransactionForm()" class="btn-primary no-print">
                     <i class="fas fa-plus mr-2"></i>Add Transaction
                 </button>
+                <button type="button" onclick="openSignatureModal()" class="btn-primary no-print" style="background: #2196F3;" id="signatureBtn">
+                    <i class="fas fa-signature mr-2"></i>Upload Signature
+                </button>
                 <button type="button" onclick="printCashAdvanceHistory()" class="btn-primary no-print" style="background: #4CAF50;">
                     <i class="fas fa-print mr-2"></i>Print
                 </button>
@@ -1542,6 +1876,424 @@ foreach ($employeeList as $emp) {
             </div>
         </div>
     </div>
+
+<!-- Signature Modal -->
+<div id="signatureModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-panel" style="max-width: 650px; width: 90%;">
+        <div class="modal-header">
+            <h3 class="text-yellow-400">
+                <i class="fas fa-signature mr-2"></i>E-Signature
+            </h3>
+            <button type="button" onclick="closeSignatureModal()" class="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Signature Method Tabs -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px;">
+                <button type="button" id="tabDrawSig" onclick="switchSignatureTab('draw')" class="sig-tab active" style="flex: 1; padding: 10px; background: #FFD700; color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-pen mr-2"></i>Draw Signature
+                </button>
+                <button type="button" id="tabUploadSig" onclick="switchSignatureTab('upload')" class="sig-tab" style="flex: 1; padding: 10px; background: #333; color: #fff; border: 1px solid #444; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-upload mr-2"></i>Upload Image
+                </button>
+            </div>
+            
+            <!-- Draw Signature Section -->
+            <div id="drawSigSection" style="display: block;">
+                <div style="margin-bottom: 15px;">
+                    <p style="color: #888; font-size: 13px; margin: 0;">
+                        Please draw your signature in the box below using your mouse or touch device.
+                    </p>
+                </div>
+                <div style="border: 2px solid #444; border-radius: 8px; background: #fff; overflow: hidden;">
+                    <canvas id="signatureCanvas" width="600" height="200" style="display: block; cursor: crosshair;"></canvas>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" onclick="clearSignature()" class="btn-secondary">
+                        <i class="fas fa-eraser mr-1"></i>Clear
+                    </button>
+                    <button type="button" onclick="uploadSignature()" class="btn-primary" style="background: #4CAF50;">
+                        <i class="fas fa-save mr-1"></i>Save Signature
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Upload Image Section -->
+            <div id="uploadSigSection" style="display: none;">
+                <div style="margin-bottom: 15px;">
+                    <p style="color: #888; font-size: 13px; margin: 0;">
+                        Upload an existing signature image file (PNG, JPG, or JPEG).
+                    </p>
+                </div>
+                <div style="border: 2px dashed #555; border-radius: 8px; padding: 30px; text-align: center; background: rgba(255,255,255,0.03);">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #FFD700; margin-bottom: 15px;"></i>
+                    <p style="color: #888; margin-bottom: 15px;">Drag and drop your signature image here, or click to browse</p>
+                    <input type="file" id="signatureFileInput" accept="image/png,image/jpeg,image/jpg" style="display: none;" onchange="handleSignatureFileUpload(this)">
+                    <button type="button" onclick="document.getElementById('signatureFileInput').click()" class="btn-primary" style="background: #2196F3;">
+                        <i class="fas fa-folder-open mr-1"></i>Choose File
+                    </button>
+                    <div id="filePreviewContainer" style="margin-top: 15px; display: none;">
+                        <p style="color: #4CAF50; font-size: 12px; margin-bottom: 5px;"><i class="fas fa-check mr-1"></i>File selected</p>
+                        <img id="filePreview" style="max-width: 200px; max-height: 80px; border: 1px solid #ddd; border-radius: 4px; background: #fff; padding: 5px;">
+                    </div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" onclick="clearFileSelection()" class="btn-secondary">
+                        <i class="fas fa-times mr-1"></i>Clear
+                    </button>
+                    <button type="button" onclick="uploadSignatureFile()" class="btn-primary" style="background: #4CAF50;">
+                        <i class="fas fa-upload mr-1"></i>Upload Signature
+                    </button>
+                </div>
+            </div>
+            
+            <div id="signatureStatus" style="margin-top: 15px; text-align: center; font-size: 13px;"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Signature Modal Styles */
+    #signatureModal .modal-panel {
+        background: radial-gradient(1200px 500px at 20% 0%, rgba(255, 215, 0, 0.10), rgba(0, 0, 0, 0)),
+                    linear-gradient(180deg, #171717 0%, #101010 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+    }
+    
+    #signatureCanvas {
+        touch-action: none;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    
+    .btn-print-action {
+        background: linear-gradient(180deg, #4CAF50 0%, #45a049 100%);
+        color: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-print-action:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.02);
+    }
+    
+    .signature-preview {
+        max-width: 150px;
+        max-height: 60px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #fff;
+    }
+</style>
+
+<script>
+    // Signature canvas variables
+    let signatureCanvas, signatureCtx;
+    let isDrawing = false;
+    let currentSignatureType = 'employee';
+    
+    // Initialize signature canvas when modal opens
+    function initSignatureCanvas() {
+        signatureCanvas = document.getElementById('signatureCanvas');
+        if (!signatureCanvas) return;
+        
+        signatureCtx = signatureCanvas.getContext('2d');
+        signatureCtx.strokeStyle = '#000';
+        signatureCtx.lineWidth = 2;
+        signatureCtx.lineCap = 'round';
+        signatureCtx.lineJoin = 'round';
+        
+        // Mouse events
+        signatureCanvas.addEventListener('mousedown', startDrawing);
+        signatureCanvas.addEventListener('mousemove', draw);
+        signatureCanvas.addEventListener('mouseup', stopDrawing);
+        signatureCanvas.addEventListener('mouseout', stopDrawing);
+        
+        // Touch events
+        signatureCanvas.addEventListener('touchstart', handleTouch);
+        signatureCanvas.addEventListener('touchmove', handleTouch);
+        signatureCanvas.addEventListener('touchend', stopDrawing);
+    }
+    
+    function startDrawing(e) {
+        isDrawing = true;
+        const rect = signatureCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        signatureCtx.beginPath();
+        signatureCtx.moveTo(x, y);
+    }
+    
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = signatureCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        signatureCtx.lineTo(x, y);
+        signatureCtx.stroke();
+    }
+    
+    function stopDrawing() {
+        isDrawing = false;
+    }
+    
+    function handleTouch(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = signatureCanvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        if (e.type === 'touchstart') {
+            isDrawing = true;
+            signatureCtx.beginPath();
+            signatureCtx.moveTo(x, y);
+        } else if (isDrawing) {
+            signatureCtx.lineTo(x, y);
+            signatureCtx.stroke();
+        }
+    }
+    
+    function clearSignature() {
+        if (signatureCtx) {
+            signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        }
+        document.getElementById('signatureStatus').innerHTML = '';
+    }
+    
+    function openSignatureModal(type = 'employee') {
+        currentSignatureType = type;
+        const modal = document.getElementById('signatureModal');
+        modal.style.display = 'flex';
+        
+        // Initialize canvas after modal is visible
+        setTimeout(() => {
+            initSignatureCanvas();
+            clearSignature();
+        }, 100);
+    }
+    
+    function closeSignatureModal() {
+        document.getElementById('signatureModal').style.display = 'none';
+        // Reset to draw tab when closing
+        switchSignatureTab('draw');
+        clearFileSelection();
+    }
+    
+    // Tab switching for signature methods
+    function switchSignatureTab(tab) {
+        const drawSection = document.getElementById('drawSigSection');
+        const uploadSection = document.getElementById('uploadSigSection');
+        const tabDraw = document.getElementById('tabDrawSig');
+        const tabUpload = document.getElementById('tabUploadSig');
+        
+        if (tab === 'draw') {
+            drawSection.style.display = 'block';
+            uploadSection.style.display = 'none';
+            tabDraw.style.background = '#FFD700';
+            tabDraw.style.color = '#000';
+            tabDraw.style.border = 'none';
+            tabUpload.style.background = '#333';
+            tabUpload.style.color = '#fff';
+            tabUpload.style.border = '1px solid #444';
+        } else {
+            drawSection.style.display = 'none';
+            uploadSection.style.display = 'block';
+            tabDraw.style.background = '#333';
+            tabDraw.style.color = '#fff';
+            tabDraw.style.border = '1px solid #444';
+            tabUpload.style.background = '#FFD700';
+            tabUpload.style.color = '#000';
+            tabUpload.style.border = 'none';
+        }
+        document.getElementById('signatureStatus').innerHTML = '';
+    }
+    
+    // File upload handling
+    let selectedSignatureFile = null;
+    
+    function handleSignatureFileUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        // Validate file type
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">Invalid file type. Please upload PNG or JPG image.</span>';
+            return;
+        }
+        
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">File too large. Maximum size is 2MB.</span>';
+            return;
+        }
+        
+        selectedSignatureFile = file;
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('filePreview').src = e.target.result;
+            document.getElementById('filePreviewContainer').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        
+        document.getElementById('signatureStatus').innerHTML = '';
+    }
+    
+    function clearFileSelection() {
+        selectedSignatureFile = null;
+        document.getElementById('signatureFileInput').value = '';
+        document.getElementById('filePreviewContainer').style.display = 'none';
+        document.getElementById('filePreview').src = '';
+        document.getElementById('signatureStatus').innerHTML = '';
+    }
+    
+    function uploadSignatureFile() {
+        if (!selectedSignatureFile) {
+            document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">Please select a file first</span>';
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('upload_signature_file', '1');
+        formData.append('employee_id', currentEmployeeIdForAdd);
+        formData.append('signature_type', currentSignatureType);
+        formData.append('signature_file', selectedSignatureFile);
+        
+        fetch('', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('signatureStatus').innerHTML = '<span style="color: #4CAF50;">Signature uploaded successfully!</span>';
+                setTimeout(() => {
+                    closeSignatureModal();
+                    reloadEmployeeHistory();
+                }, 1000);
+            } else {
+                document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">Error: ' + (data.message || 'Failed to upload') + '</span>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">Error uploading signature</span>';
+        });
+    }
+    
+    function uploadSignature() {
+        if (!signatureCanvas) return;
+        
+        // Check if canvas is empty
+        const imageData = signatureCtx.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height);
+        const isEmpty = !imageData.data.some(channel => channel !== 0);
+        
+        if (isEmpty) {
+            document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">Please draw your signature first</span>';
+            return;
+        }
+        
+        const signatureData = signatureCanvas.toDataURL('image/png');
+        
+        fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'upload_signature=1&employee_id=' + currentEmployeeIdForAdd + '&signature_type=' + currentSignatureType + '&signature_data=' + encodeURIComponent(signatureData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('signatureStatus').innerHTML = '<span style="color: #4CAF50;">Signature saved successfully!</span>';
+                setTimeout(() => {
+                    closeSignatureModal();
+                    // Reload to show signature in print view
+                    reloadEmployeeHistory();
+                }, 1000);
+            } else {
+                document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">Error: ' + (data.message || 'Failed to save') + '</span>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('signatureStatus').innerHTML = '<span style="color: #F44336;">Error saving signature</span>';
+        });
+    }
+    
+    // Store current employee signature for printing
+    let currentEmployeeSignature = null;
+    
+    // Load employee signature before showing history
+    function loadEmployeeSignature(empId) {
+        return fetch('?get_signature=1&employee_id=' + empId + '&signature_type=employee')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentEmployeeSignature = data.signature.signature_data;
+                } else {
+                    currentEmployeeSignature = null;
+                }
+                return data;
+            })
+            .catch(() => {
+                currentEmployeeSignature = null;
+            });
+    }
+    
+    // Override viewEmployeeHistory to load signature first
+    const originalViewEmployeeHistory = viewEmployeeHistory;
+    viewEmployeeHistory = function(empId, empName) {
+        currentEmployeeIdForAdd = empId;
+        currentEmployeeNameForAdd = empName;
+        
+        // Load signature first, then load history
+        loadEmployeeSignature(empId).then(() => {
+            // Update signature button label
+            updateSignatureButtonLabel();
+            
+            fetch('api/get_employee_ca.php?emp_id=' + empId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showEmployeeHistoryModal(data.employee, data.transactions);
+                    } else {
+                        alert('Error loading history');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading history');
+                });
+        });
+    };
+    
+    // Update signature button label based on signature status
+    function updateSignatureButtonLabel() {
+        const btn = document.getElementById('signatureBtn');
+        if (btn) {
+            if (currentEmployeeSignature) {
+                btn.innerHTML = '<i class="fas fa-signature mr-2"></i>Update Signature';
+            } else {
+                btn.innerHTML = '<i class="fas fa-signature mr-2"></i>Upload Signature';
+            }
+        }
+    }
+</script>
 </body>
 </html>
 <?php

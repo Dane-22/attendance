@@ -5,6 +5,57 @@ require_once __DIR__ . '/functions.php';
 
 session_start();
 $errors = [];
+$warnings = [];
+
+function procurementApiLogin(string $employeeNo, string $password): array {
+    $url = 'https://procurement-api.xandree.com/api/auth/login';
+    $payload = json_encode([
+        'employee_no' => $employeeNo,
+        'password' => $password,
+    ]);
+
+    if ($payload === false) {
+        return ['ok' => false, 'error' => 'Failed to encode procurement login payload'];
+    }
+
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return ['ok' => false, 'error' => 'Failed to initialize HTTP client'];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ],
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_CONNECTTIMEOUT => 4,
+    ]);
+
+    $raw = curl_exec($ch);
+    $curlErr = curl_error($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($raw === false) {
+        return ['ok' => false, 'error' => $curlErr ?: 'Unknown procurement API network error'];
+    }
+
+    $json = json_decode($raw, true);
+    if (!is_array($json)) {
+        return ['ok' => false, 'error' => 'Invalid JSON response from procurement API', 'http_status' => $status, 'raw' => $raw];
+    }
+
+    if ($status < 200 || $status >= 300) {
+        $msg = (string)($json['message'] ?? $json['error'] ?? ('Procurement API HTTP ' . $status));
+        return ['ok' => false, 'error' => $msg, 'http_status' => $status, 'response' => $json];
+    }
+
+    return ['ok' => true, 'http_status' => $status, 'response' => $json];
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $identifier = trim($_POST['identifier'] ?? '');
@@ -66,6 +117,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['position'] = $user['position']; // CRITICAL!
                 $_SESSION['logged_in'] = true;
                 $_SESSION['login_time'] = date('Y-m-d H:i:s');
+
+                // 1.1 PROCUREMENT SSO (BEST-EFFORT)
+                // Attempt to login to procurement system using the local employee_code + same password.
+                // This will NOT block local login if it fails.
+                $_SESSION['procurement_auth'] = null;
+                $_SESSION['procurement_auth_error'] = null;
+
+                $procResult = procurementApiLogin((string)$user['employee_code'], (string)$password);
+                if (!($procResult['ok'] ?? false)) {
+                    $_SESSION['procurement_auth_error'] = $procResult;
+                    $warnings[] = 'Logged in successfully, but procurement login failed. You may need to login again when opening Procurement.';
+                } else {
+                    $_SESSION['procurement_auth'] = $procResult['response'] ?? null;
+
+                    $token = null;
+                    if (is_array($_SESSION['procurement_auth'])) {
+                        $token = $_SESSION['procurement_auth']['token']
+                            ?? $_SESSION['procurement_auth']['access_token']
+                            ?? ($_SESSION['procurement_auth']['data']['token'] ?? null)
+                            ?? ($_SESSION['procurement_auth']['data']['access_token'] ?? null);
+                    }
+                    if ($token) {
+                        $_SESSION['procurement_token'] = $token;
+                    }
+                }
                 
                 // 2. BRANCH INFORMATION
                 // Daily branch (where working today - hardcoded to Main Branch)
@@ -322,6 +398,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if (!empty($errors)): ?>
           <div class="mt-4 text-red-300 bg-red-900/20 p-3 rounded">
             <?php foreach($errors as $err) echo '<div>'.htmlspecialchars($err).'</div>'; ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if (!empty($warnings)): ?>
+          <div class="mt-4 text-yellow-200 bg-yellow-900/20 p-3 rounded">
+            <?php foreach($warnings as $warn) echo '<div>'.htmlspecialchars($warn).'</div>'; ?>
           </div>
         <?php endif; ?>
 

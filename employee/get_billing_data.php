@@ -1,8 +1,14 @@
 <?php
-// filepath: c:\wamp64\www\attendance_web\employee\get_billing_data.php
+// filepath: c:\wamp64\www\main\employee\get_billing_data.php
+session_start();
+
+// Ensure errors are logged, not sent in the JSON response
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
-session_start();
 
 if (empty($_SESSION['logged_in'])) {
     header('HTTP/1.1 401 Unauthorized');
@@ -23,7 +29,13 @@ $MONTHLY_SSS = 450.00;
 $MONTHLY_PAGIBIG = 200.00;
 
 // Get employee details - daily_rate ang column name
-$stmt = $conn->prepare("SELECT daily_rate FROM employees WHERE id = ?");
+$stmt = $db->prepare("SELECT daily_rate FROM employees WHERE id = ?");
+if (!$stmt) {
+    error_log('get_billing_data.php prepare error (employee): ' . $db->error);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Database error preparing employee query']);
+    exit;
+}
 $stmt->bind_param("i", $empId);
 $stmt->execute();
 $employee = $stmt->get_result()->fetch_assoc();
@@ -68,13 +80,19 @@ function getDateRange($viewType) {
 $dateRange = getDateRange($viewType);
 
 // Get attendance records - exclude Sundays (Monday to Saturday only)
-$stmt = $conn->prepare("
+$stmt = $db->prepare("
     SELECT attendance_date, status, time_in, time_out, total_ot_hrs
     FROM attendance 
     WHERE employee_id = ? 
     AND attendance_date BETWEEN ? AND ?
     AND DAYOFWEEK(attendance_date) BETWEEN 2 AND 7 -- Monday (2) to Saturday (7)
 ");
+if (!$stmt) {
+    error_log('get_billing_data.php prepare error (attendance): ' . $db->error);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Database error preparing attendance query']);
+    exit;
+}
 $stmt->bind_param("iss", $empId, $dateRange['start'], $dateRange['end']);
 $stmt->execute();
 $attendance = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -115,7 +133,7 @@ function computeSalary($attendance, $dailyRate) {
         }
     }
 
-    $gross = $totalHours * (float)$dailyRate;
+    $gross = $presentDays * (float)$dailyRate;
 
     return [
         'totalDays' => $presentDays,
@@ -170,24 +188,16 @@ $deductions = computeDeductions($computation['gross'], $MONTHLY_SSS, $MONTHLY_PH
     'Viewed payslip for employee_id=' . $empId . ' (' . $dateRange['start'] . ' to ' . $dateRange['end'] . ')'
 );
 
-// Check for saved performance adjustments
-$savedPerformance = getSavedPerformance($conn, $empId, $viewType, $dateRange);
+// Simple default performance block (performance editor removed from UI)
+$performance = [
+    'performanceScore' => 0,
+    'performanceBonus' => 0.00,
+    'performanceRating' => '',
+    'remarks' => ''
+];
 
-if ($savedPerformance) {
-    // Use saved performance instead of computed
-    $performance = [
-        'performanceScore' => $savedPerformance['performance_score'],
-        'performanceBonus' => $savedPerformance['bonus_amount'],
-        'performanceRating' => getPerformanceRating($savedPerformance['performance_score']),
-        'remarks' => $savedPerformance['remarks'] ?? ''
-    ];
-} else {
-    // Compute performance normally
-    $performance = computePerformanceBonus($attendance, $computation['gross']);
-}
-
-// Calculate net pay
-$netPay = $computation['gross'] - $deductions['totalDeductions'] + $performance['performanceBonus'];
+// Calculate net pay (no performance bonus applied)
+$netPay = $computation['gross'] - $deductions['totalDeductions'];
 
 // Determine current payroll week for response
 $todayResp = date('Y-m-d');

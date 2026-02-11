@@ -499,21 +499,65 @@ include __DIR__ . '/function/report.php';
                 <head>
                     <title>Payslip - ${currentPayslipData.empName}</title>
                     <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-                        .payslip-container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }
-                        .payslip-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #FFD700; }
-                        .payslip-section { margin-bottom: 20px; }
-                        .payslip-row { display: flex; justify-content: space-between; padding: 8px 0; }
-                        .payslip-row.total { border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
-                        .payslip-row.grand-total { border-top: 2px solid #4CAF50; margin-top: 15px; padding-top: 15px; }
-                        h5 { margin: 0 0 10px 0; }
-                        h4 { margin: 0; color: #333; }
-                        p { margin: 5px 0; color: #666; }
-                        .signature-section { margin-top: 40px; padding-top: 20px; }
-                        .signature-line { border-top: 1px solid #333; width: 200px; margin-top: 50px; margin-bottom: 8px; }
-                        .signature-label { font-size: 12px; color: #666; }
-                        .signature-row { display: flex; justify-content: space-between; margin-top: 30px; }
+                        @page {
+                            size: 4in 7in;
+                            margin: 0.15in;
+                        }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 0; 
+                            margin: 0;
+                            background: white;
+                            font-size: 9pt;
+                            width: 3.7in;
+                        }
+                        .payslip-container { 
+                            width: 3.7in; 
+                            background: white; 
+                            padding: 0.1in;
+                            box-sizing: border-box;
+                        }
+                        .payslip-header { 
+                            text-align: center; 
+                            margin-bottom: 8px; 
+                            padding-bottom: 6px; 
+                            border-bottom: 1px solid #FFD700; 
+                        }
+                        .payslip-header h4 { font-size: 11pt; margin: 0; }
+                        .payslip-header p { font-size: 7pt; margin: 2px 0; color: #666; }
+                        .payslip-section { margin-bottom: 8px; }
+                        .payslip-row { 
+                            display: flex; 
+                            justify-content: space-between; 
+                            padding: 2px 0;
+                            font-size: 8pt;
+                        }
+                        .payslip-row.total { 
+                            border-top: 1px solid #ddd; 
+                            margin-top: 4px; 
+                            padding-top: 4px;
+                            font-weight: bold;
+                        }
+                        .payslip-row.grand-total { 
+                            border-top: 1px solid #4CAF50; 
+                            margin-top: 6px; 
+                            padding-top: 6px;
+                            font-weight: bold;
+                            font-size: 9pt;
+                        }
+                        h5 { margin: 0 0 4px 0; font-size: 9pt; }
+                        .signature-section { margin-top: 12px; padding-top: 8px; font-size: 7pt; }
+                        .signature-line { border-top: 1px solid #333; width: 1.2in; margin-top: 20px; margin-bottom: 2px; }
+                        .signature-label { font-size: 6pt; color: #666; }
+                        .signature-row { display: flex; justify-content: space-between; margin-top: 10px; }
                         .signature-box { text-align: center; }
+                        .acknowledgment {
+                            margin-top: 8px; 
+                            font-size: 6pt; 
+                            color: #999; 
+                            text-align: center;
+                            line-height: 1.2;
+                        }
                     </style>
                 </head>
                 <body>
@@ -529,7 +573,7 @@ include __DIR__ . '/function/report.php';
                                 <div class="signature-label">Authorized Signature</div>
                             </div>
                         </div>
-                        <div style="margin-top: 30px; font-size: 11px; color: #999; text-align: center;">
+                        <div class="acknowledgment">
                             I hereby acknowledge receipt of the above amount and that all deductions are correct.
                         </div>
                     </div>

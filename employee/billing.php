@@ -5,6 +5,11 @@ session_start();
 // ===== SET PHILIPPINE TIME ZONE =====
 date_default_timezone_set('Asia/Manila'); // Philippine Time (UTC+8)
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     // Check if this is an AJAX request
@@ -27,6 +32,27 @@ $MONTHLY_PHILHEALTH = 250.00;
 $MONTHLY_SSS = 450.00;
 $MONTHLY_PAGIBIG = 200.00;
 
+// Create payroll_payments table if not exists
+$createPaymentsTable = "CREATE TABLE IF NOT EXISTS payroll_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    payroll_week INT NOT NULL,
+    payroll_year INT NOT NULL,
+    payroll_start_date DATE NOT NULL,
+    payroll_end_date DATE NOT NULL,
+    gross_pay DECIMAL(10,2) NOT NULL,
+    net_pay DECIMAL(10,2) NOT NULL,
+    status ENUM('Pending', 'Paid') DEFAULT 'Pending',
+    paid_at DATETIME NULL,
+    paid_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_payroll (employee_id, payroll_week, payroll_year, payroll_start_date)
+)";
+
+if (!mysqli_query($db, $createPaymentsTable)) {
+    error_log('Failed to create payroll_payments table: ' . mysqli_error($db));
+}
+
 // Determine current payroll week of the month (Week 1 to Week 4)
 $dayOfMonth = (int)date('j');
 $currentPayrollWeek = (int)ceil($dayOfMonth / 7);
@@ -40,6 +66,68 @@ $weekStart = date('Y-m-d', strtotime($monthStart . ' +' . (($currentPayrollWeek 
 $weekEndCandidate = date('Y-m-d', strtotime($weekStart . ' +6 days'));
 $monthEnd = date('Y-m-t');
 $weekEnd = (strtotime($weekEndCandidate) > strtotime($monthEnd)) ? $monthEnd : $weekEndCandidate;
+
+// Check if user is admin
+$isAdmin = isset($_SESSION['position']) && in_array(strtolower($_SESSION['position']), ['admin', 'hr', 'supervisor', 'super admin']);
+
+// Handle mark as paid API
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_as_paid'])) {
+    header('Content-Type: application/json');
+    
+    if (!$isAdmin) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit;
+    }
+    
+    $empId = intval($_POST['employee_id'] ?? 0);
+    $payrollWeek = intval($_POST['payroll_week'] ?? $currentPayrollWeek);
+    $payrollYear = intval($_POST['payroll_year'] ?? date('Y'));
+    $weekStart = $_POST['week_start'] ?? $weekStart;
+    $weekEnd = $_POST['week_end'] ?? $weekEnd;
+    $grossPay = floatval($_POST['gross_pay'] ?? 0);
+    $netPay = floatval($_POST['net_pay'] ?? 0);
+    $paidBy = intval($_SESSION['employee_id'] ?? 0);
+    
+    if ($empId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid employee']);
+        exit;
+    }
+    
+    // Insert or update payment record
+    $query = "INSERT INTO payroll_payments 
+              (employee_id, payroll_week, payroll_year, payroll_start_date, payroll_end_date, gross_pay, net_pay, status, paid_at, paid_by)
+              VALUES (?, ?, ?, ?, ?, ?, ?, 'Paid', NOW(), ?)
+              ON DUPLICATE KEY UPDATE 
+              status = 'Paid', paid_at = NOW(), paid_by = VALUES(paid_by),
+              gross_pay = VALUES(gross_pay), net_pay = VALUES(net_pay)";
+    
+    $stmt = mysqli_prepare($db, $query);
+    mysqli_stmt_bind_param($stmt, 'iiissddi', $empId, $payrollWeek, $payrollYear, $weekStart, $weekEnd, $grossPay, $netPay, $paidBy);
+    
+    if (mysqli_stmt_execute($stmt)) {
+        echo json_encode(['success' => true, 'message' => 'Payment marked as paid']);
+    } else {
+        $error = mysqli_stmt_error($stmt);
+        error_log('payroll_payments error: ' . $error);
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $error]);
+    }
+    mysqli_stmt_close($stmt);
+    exit;
+}
+
+// Function to check if payment has been made
+function getPaymentStatus($db, $empId, $weekStart, $weekEnd) {
+    $query = "SELECT status, paid_at FROM payroll_payments 
+              WHERE employee_id = ? AND payroll_start_date = ? AND payroll_end_date = ?
+              ORDER BY id DESC LIMIT 1";
+    $stmt = mysqli_prepare($db, $query);
+    mysqli_stmt_bind_param($stmt, 'iss', $empId, $weekStart, $weekEnd);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    return $row ?: ['status' => 'Pending', 'paid_at' => null];
+}
 
 // Weekly deductions logic
 if ($currentPayrollWeek === 4) {
@@ -128,15 +216,25 @@ if ($currentPayrollWeek === 4) {
                     </div>
                     <div class="stat-value">
                         <?php
-                            $totalMonthly = 0;
-                            $employees->data_seek(0);
-                            while ($emp = $employees->fetch_assoc()) {
-                                $totalMonthly += getMonthlySalary($emp['daily_rate']);
+                            // Get employees marked as paid for current week
+                            $paidQuery = "SELECT employee_id, gross_pay FROM payroll_payments 
+                                         WHERE status = 'Paid' 
+                                         AND payroll_start_date = ? AND payroll_end_date = ?";
+                            $stmtPaid = mysqli_prepare($db, $paidQuery);
+                            mysqli_stmt_bind_param($stmtPaid, 'ss', $weekStart, $weekEnd);
+                            mysqli_stmt_execute($stmtPaid);
+                            $paidResult = mysqli_stmt_get_result($stmtPaid);
+                            
+                            $totalMonthlyPaid = 0;
+                            while ($paid = mysqli_fetch_assoc($paidResult)) {
+                                $totalMonthlyPaid += $paid['gross_pay'];
                             }
-                            echo "₱" . number_format($totalMonthly, 2);
+                            mysqli_stmt_close($stmtPaid);
+                            
+                            echo "₱" . number_format($totalMonthlyPaid, 2);
                         ?>
                     </div>
-                    <div class="stat-label">Total Monthly Salary</div>
+                    <div class="stat-label">Total Paid (Current Week)</div>
                 </div>
                 
                 <div class="stat-card">
@@ -145,15 +243,53 @@ if ($currentPayrollWeek === 4) {
                     </div>
                     <div class="stat-value">
                         <?php
-                            $employees->data_seek(0);
-                            $totalWeekly = 0;
-                            while ($emp = $employees->fetch_assoc()) {
-                                $totalWeekly += getWeeklySalary($emp['daily_rate']);
+                            // Get paid employee IDs for current week
+                            $paidIdsQuery = "SELECT employee_id FROM payroll_payments 
+                                            WHERE status = 'Paid' 
+                                            AND payroll_start_date = ? AND payroll_end_date = ?";
+                            $stmtPaidIds = mysqli_prepare($db, $paidIdsQuery);
+                            mysqli_stmt_bind_param($stmtPaidIds, 'ss', $weekStart, $weekEnd);
+                            mysqli_stmt_execute($stmtPaidIds);
+                            $paidIdsResult = mysqli_stmt_get_result($stmtPaidIds);
+                            $paidEmployeeIds = [];
+                            while ($row = mysqli_fetch_assoc($paidIdsResult)) {
+                                $paidEmployeeIds[] = $row['employee_id'];
                             }
-                            echo "₱" . number_format($totalWeekly, 2);
+                            mysqli_stmt_close($stmtPaidIds);
+                            
+                            // Get all active employees and calculate pending total
+                            $totalPending = 0;
+                            $empQuery = "SELECT id, daily_rate FROM employees WHERE status = 'Active'";
+                            $empResult = mysqli_query($db, $empQuery);
+                            
+                            if ($empResult) {
+                                while ($emp = mysqli_fetch_assoc($empResult)) {
+                                    if (!in_array($emp['id'], $paidEmployeeIds)) {
+                                        // Get present days for this employee in current week
+                                        $presentDaysQuery = "SELECT COUNT(*) as present_count 
+                                                            FROM attendance 
+                                                            WHERE employee_id = ? 
+                                                            AND attendance_date BETWEEN ? AND ?
+                                                            AND status IN ('Present', 'Late', 'Early Out')
+                                                            AND DAYOFWEEK(attendance_date) BETWEEN 2 AND 7";
+                                        $stmtPresent = mysqli_prepare($db, $presentDaysQuery);
+                                        mysqli_stmt_bind_param($stmtPresent, 'iss', $emp['id'], $weekStart, $weekEnd);
+                                        mysqli_stmt_execute($stmtPresent);
+                                        $presentResult = mysqli_stmt_get_result($stmtPresent);
+                                        $presentData = mysqli_fetch_assoc($presentResult);
+                                        $presentDays = intval($presentData['present_count'] ?? 0);
+                                        mysqli_stmt_close($stmtPresent);
+                                        
+                                        $empGross = floatval($emp['daily_rate']) * $presentDays;
+                                        $totalPending += $empGross;
+                                    }
+                                }
+                            }
+                            
+                            echo "₱" . number_format($totalPending, 2);
                         ?>
                     </div>
-                    <div class="stat-label">Total Weekly Salary</div>
+                    <div class="stat-label">Total Pending (Current Week)</div>
                 </div>
             </div>
 
@@ -219,13 +355,67 @@ if ($currentPayrollWeek === 4) {
                                     while ($row = mysqli_fetch_assoc($payrollResult)) {
                                         $empName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
                                         $empNameJs = json_encode($empName);
-                                        $grossPay = (float)$row['daily_rate'] * (float)$row['total_hours'];
+                                        
+                                        // Check payment status first
+                                        $paymentStatus = getPaymentStatus($db, $row['id'], $weekStart, $weekEnd);
+                                        $isPaid = ($paymentStatus['status'] === 'Paid');
+                                        
+                                        // Get stored payment data if paid
+                                        $storedGross = 0;
+                                        $storedNet = 0;
+                                        if ($isPaid) {
+                                            $storedQuery = "SELECT gross_pay, net_pay FROM payroll_payments 
+                                                           WHERE employee_id = ? AND payroll_start_date = ? AND payroll_end_date = ? AND status = 'Paid'
+                                                           LIMIT 1";
+                                            $stmtStored = mysqli_prepare($db, $storedQuery);
+                                            mysqli_stmt_bind_param($stmtStored, 'iss', $row['id'], $weekStart, $weekEnd);
+                                            mysqli_stmt_execute($stmtStored);
+                                            $storedResult = mysqli_stmt_get_result($stmtStored);
+                                            $storedData = mysqli_fetch_assoc($storedResult);
+                                            if ($storedData) {
+                                                $storedGross = floatval($storedData['gross_pay']);
+                                                $storedNet = floatval($storedData['net_pay']);
+                                            }
+                                            mysqli_stmt_close($stmtStored);
+                                        }
+                                        
+                                        // Use stored gross if paid, otherwise calculate from attendance
+                                        if ($isPaid && $storedGross > 0) {
+                                            $grossPay = $storedGross;
+                                            $netPay = $storedNet;
+                                        } else {
+                                            // Calculate from attendance (pending employees)
+                                            $grossPay = (float)$row['daily_rate'] * (float)$row['total_hours'];
+                                            $sssDeduction = (float)$weeklySss;
+                                            $philhealthDeduction = (float)$weeklyPhilhealth;
+                                            $pagibigDeduction = (float)$weeklyPagibig;
+                                            $netPay = $grossPay - $sssDeduction - $philhealthDeduction - $pagibigDeduction;
+                                        }
 
                                         $sssDeduction = (float)$weeklySss;
                                         $philhealthDeduction = (float)$weeklyPhilhealth;
                                         $pagibigDeduction = (float)$weeklyPagibig;
-
-                                        $netPay = $grossPay - $sssDeduction - $philhealthDeduction - $pagibigDeduction;
+                                        
+                                        // Format values based on payment status
+                                        if ($isPaid) {
+                                            $grossDisplay = '₱' . number_format($grossPay, 2);
+                                            $sssDisplay = '-₱' . number_format($sssDeduction, 2);
+                                            $philDisplay = '-₱' . number_format($philhealthDeduction, 2);
+                                            $pagDisplay = '-₱' . number_format($pagibigDeduction, 2);
+                                            $netDisplay = '₱' . number_format($netPay, 2);
+                                            $statusBadge = '<span class="badge" style="background: #28a745; color: white; font-size: 10px; padding: 4px 8px; border-radius: 4px; margin-top: 4px; display: inline-block;">PAID</span>';
+                                            $btnText = 'View Receipt';
+                                            $btnClass = 'btn-gold';
+                                        } else {
+                                            $grossDisplay = '<span class="text-muted">***</span>';
+                                            $sssDisplay = '<span class="text-muted">***</span>';
+                                            $philDisplay = '<span class="text-muted">***</span>';
+                                            $pagDisplay = '<span class="text-muted">***</span>';
+                                            $netDisplay = '<span class="text-muted">***</span>';
+                                            $statusBadge = '<span class="badge" style="background: #ffc107; color: #000; font-size: 10px; padding: 4px 8px; border-radius: 4px; margin-top: 4px; display: inline-block;">PENDING</span>';
+                                            $btnText = 'View Details';
+                                            $btnClass = 'btn-outline-light';
+                                        }
                             ?>
                                         <tr>
                                             <td>
@@ -238,39 +428,27 @@ if ($currentPayrollWeek === 4) {
                                                     <div>
                                                         <div class="fw-medium"><?php echo htmlspecialchars($empName); ?></div>
                                                         <div class="text-muted small"><?php echo htmlspecialchars($row['employee_code'] ?? ''); ?></div>
+                                                        <div class="mt-1"><?php echo $statusBadge; ?></div>
                                                     </div>
                                                 </div>
                                             </td>
+                                            <td><?php echo $grossDisplay; ?></td>
+                                            <td><?php echo $sssDisplay; ?></td>
+                                            <td><?php echo $philDisplay; ?></td>
+                                            <td><?php echo $pagDisplay; ?></td>
+                                            <td><?php echo $netDisplay; ?></td>
                                             <td>
-                                                <span class="badge bg-dark p-2">
-                                                    ₱<?php echo number_format($grossPay, 2); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-danger p-2">
-                                                    -₱<?php echo number_format($sssDeduction, 2); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-danger p-2">
-                                                    -₱<?php echo number_format($philhealthDeduction, 2); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-danger p-2">
-                                                    -₱<?php echo number_format($pagibigDeduction, 2); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-success p-2">
-                                                    ₱<?php echo number_format($netPay, 2); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button class="btn-gold" onclick='openBillingModal(<?php echo (int)$row['id']; ?>, <?php echo htmlspecialchars($empNameJs, ENT_QUOTES, 'UTF-8'); ?>, <?php echo (float)$row['daily_rate']; ?>, 0, 0)'>
-                                                    <i class="fas fa-receipt me-2"></i>
-                                                    View Receipt
-                                                </button>
+                                                <?php if ($isAdmin && !$isPaid): ?>
+                                                    <button class="btn-mark-paid" onclick='markAsPaid(<?php echo (int)$row['id']; ?>, <?php echo $grossPay; ?>, <?php echo $netPay; ?>)'>
+                                                        <i class="fas fa-check-circle"></i>
+                                                        <span>Mark as Paid</span>
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button class="<?php echo $btnClass; ?> btn-sm" onclick='openBillingModal(<?php echo (int)$row['id']; ?>, <?php echo htmlspecialchars($empNameJs, ENT_QUOTES, 'UTF-8'); ?>, <?php echo (float)$row['daily_rate']; ?>)'>
+                                                        <i class="fas fa-receipt me-1"></i>
+                                                        <?php echo $btnText; ?>
+                                                    </button>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                             <?php
@@ -304,51 +482,6 @@ if ($currentPayrollWeek === 4) {
                     
                     <!-- Content -->
                     <div id="billingContent" style="display: none;">
-                        <!-- Performance Editor Section -->
-                        <div class="performance-editor mb-4">
-                            <h6 class="mb-3">
-                                <i class="fas fa-edit me-2"></i>
-                                Performance Adjustment (Editable by Supervisor)
-                            </h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label small text-white">Performance Score (%)</label>
-                                        <input type="number" id="performanceScore" class="form-control bg-dark border-light text-white" 
-                                               min="0" max="100" step="1" value="85">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label small text-white">Performance Bonus/Deduction</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-dark border-light">₱</span>
-                                            <input type="number" id="performanceBonus" class="form-control bg-dark border-light text-white" 
-                                                   step="0.01" value="0">
-                                        </div>
-                                        <div class="form-text text-muted small">Positive for bonus, negative for deduction</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="mb-3">
-                                        <label class="form-label small text-white">Remarks/Notes</label>
-                                        <textarea id="performanceRemarks" class="form-control bg-dark border-light text-white" 
-                                                  rows="2" placeholder="Optional notes..."></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-gold" onclick="applyPerformance()">
-                                    <i class="fas fa-check me-1"></i> Apply Changes
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="resetPerformance()">
-                                    <i class="fas fa-undo me-1"></i> Reset
-                                </button>
-                            </div>
-                        </div>
-                        
                         <!-- View Type Selector -->
                         <div class="view-type-selector">
                             <button class="view-type-btn active" onclick="changeViewType('weekly')">

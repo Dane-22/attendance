@@ -162,7 +162,9 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
         'philhealth_deduction' => 0,
         'pagibig_deduction' => 0,
         'total_deductions' => 0,
-        'net_pay' => 0
+        'net_pay' => 0,
+        '_daily' => [],
+        '_branches' => []  // Track per-branch totals: [branch_name => ['days'=>x, 'hours'=>y, 'ot_hours'=>z]]
     ];
 }
 
@@ -171,32 +173,92 @@ while ($row = mysqli_fetch_assoc($attendance_result)) {
     
     if (isset($employee_payroll[$emp_id])) {
         $attendance_date = $row['attendance_date'] ?? null;
-        if (!isset($employee_payroll[$emp_id]['_days_seen'])) {
-            $employee_payroll[$emp_id]['_days_seen'] = [];
+        $status = strtolower(trim($row['status'] ?? ''));
+        $branch_name = trim($row['branch_name'] ?? '');
+
+        if (!$attendance_date) {
+            continue;
         }
 
-        // Count unique attendance_date as 1 day worked
-        if ($attendance_date && !isset($employee_payroll[$emp_id]['_days_seen'][$attendance_date])) {
-            $employee_payroll[$emp_id]['days_worked']++;
-            $employee_payroll[$emp_id]['_days_seen'][$attendance_date] = true;
+        if (!isset($employee_payroll[$emp_id]['_daily'][$attendance_date])) {
+            $employee_payroll[$emp_id]['_daily'][$attendance_date] = [];
         }
 
-        // Sum realtime worked hours using time_in/time_out (if no time_out yet, use current time)
+        // Only include attendance in report totals AFTER employee has timed out
         $time_in = $row['time_in'] ?? null;
-        if (!empty($time_in)) {
-            $time_out = $row['time_out'] ?? null;
-            $start_ts = strtotime($time_in);
-            $end_ts = !empty($time_out) ? strtotime($time_out) : time();
-            if ($start_ts !== false && $end_ts !== false && $end_ts > $start_ts) {
-                $employee_payroll[$emp_id]['total_hours'] += ($end_ts - $start_ts) / 3600;
-            }
+        $time_out = $row['time_out'] ?? null;
+        if (empty($time_in) || empty($time_out)) {
+            continue;
         }
 
-        // Sum up overtime hours
-        $ot_hours = floatval($row['total_ot_hrs'] ?? 0);
-        $employee_payroll[$emp_id]['total_ot_hrs'] += $ot_hours;
+        // Calculate worked hours from time_in/time_out
+        $start_ts = strtotime($time_in);
+        $end_ts = strtotime($time_out);
+        $worked_hours = 0;
+        if ($start_ts !== false && $end_ts !== false && $end_ts > $start_ts) {
+            $worked_hours = ($end_ts - $start_ts) / 3600;
+        }
+
+        if (!isset($employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name])) {
+            $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name] = [
+                'status' => $status,
+                'hours' => 0,
+                'ot_hours' => 0
+            ];
+        }
+
+        $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name]['status'] = $status;
+        $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name]['hours'] += $worked_hours;
+        $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name]['ot_hours'] += floatval($row['total_ot_hrs'] ?? 0);
     }
 }
+
+// Finalize day/hour totals from per-day/per-branch attendance
+foreach ($employee_payroll as $emp_id => &$payroll) {
+    if (empty($payroll['_daily']) || !is_array($payroll['_daily'])) {
+        continue;
+    }
+
+    foreach ($payroll['_daily'] as $attendance_date => $branches) {
+        if (!is_array($branches) || empty($branches)) {
+            continue;
+        }
+
+        // If employee worked at exactly 2 branches on the same date (transfer scenario),
+        // split day=0.5 for each branch
+        if (count($branches) === 2) {
+            foreach ($branches as $bName => $bData) {
+                if (!isset($payroll['_branches'][$bName])) {
+                    $payroll['_branches'][$bName] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
+                }
+                $payroll['_branches'][$bName]['days'] += 0.5;
+                $payroll['_branches'][$bName]['hours'] += floatval($bData['hours'] ?? 0);
+                $payroll['_branches'][$bName]['ot_hours'] += floatval($bData['ot_hours'] ?? 0);
+            }
+            $payroll['days_worked'] += 1.0;
+            foreach ($branches as $bData) {
+                $payroll['total_hours'] += floatval($bData['hours'] ?? 0);
+                $payroll['total_ot_hrs'] += floatval($bData['ot_hours'] ?? 0);
+            }
+            continue;
+        }
+
+        // Default: count 1 day if any timed-out attendance exists for the date
+        // Assign full day to each branch that has attendance
+        $payroll['days_worked'] += 1.0;
+        foreach ($branches as $bName => $bData) {
+            if (!isset($payroll['_branches'][$bName])) {
+                $payroll['_branches'][$bName] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
+            }
+            $payroll['_branches'][$bName]['days'] += 1.0;
+            $payroll['_branches'][$bName]['hours'] += floatval($bData['hours'] ?? 0);
+            $payroll['_branches'][$bName]['ot_hours'] += floatval($bData['ot_hours'] ?? 0);
+            $payroll['total_hours'] += floatval($bData['hours'] ?? 0);
+            $payroll['total_ot_hrs'] += floatval($bData['ot_hours'] ?? 0);
+        }
+    }
+}
+unset($payroll);
 
 // Calculate payroll for each employee
 $payroll_totals = [
@@ -255,65 +317,115 @@ function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $m
     }
     
     $created_by = $_SESSION['user_id'] ?? null;
-    $branch_id = ($selected_branch !== 'all' && is_numeric($selected_branch)) ? $selected_branch : null;
+    $filter_branch_id = ($selected_branch !== 'all' && is_numeric($selected_branch)) ? $selected_branch : null;
     
     foreach ($employee_payroll as $emp_id => $payroll) {
-        $ot_hours = $payroll['total_ot_hrs'];
-        $ot_rate = $payroll['daily_rate'] / 8;
-        $ot_amount = $ot_hours * $ot_rate;
-        $allowance = 0;
-        $ca_deduction = 0;
-        $sss_loan = 0;
-        $gross_plus_allowance = $payroll['gross_pay'] + $allowance + $ot_amount;
-        $total_deductions = $payroll['sss_deduction'] + $payroll['philhealth_deduction'] + $payroll['pagibig_deduction'] + $ca_deduction + $sss_loan;
-        $take_home = $gross_plus_allowance - $total_deductions;
+        $daily_rate = $payroll['daily_rate'];
         
-        $query = "INSERT INTO weekly_payroll_reports (
-            employee_id, report_year, report_month, week_number, view_type, branch_id,
-            days_worked, total_hours, daily_rate, basic_pay,
-            ot_hours, ot_rate, ot_amount,
-            performance_allowance, gross_pay, gross_plus_allowance,
-            ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
-            take_home_pay, status, created_by
-        ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-        ) ON DUPLICATE KEY UPDATE
-            days_worked = VALUES(days_worked),
-            total_hours = VALUES(total_hours),
-            daily_rate = VALUES(daily_rate),
-            basic_pay = VALUES(basic_pay),
-            ot_hours = VALUES(ot_hours),
-            ot_rate = VALUES(ot_rate),
-            ot_amount = VALUES(ot_amount),
-            performance_allowance = VALUES(performance_allowance),
-            gross_pay = VALUES(gross_pay),
-            gross_plus_allowance = VALUES(gross_plus_allowance),
-            ca_deduction = VALUES(ca_deduction),
-            sss_deduction = VALUES(sss_deduction),
-            philhealth_deduction = VALUES(philhealth_deduction),
-            pagibig_deduction = VALUES(pagibig_deduction),
-            sss_loan = VALUES(sss_loan),
-            total_deductions = VALUES(total_deductions),
-            take_home_pay = VALUES(take_home_pay),
-            updated_at = CURRENT_TIMESTAMP";
+        // If no per-branch data (no attendance), optionally save a single empty row
+        if (empty($payroll['_branches'])) {
+            // Skip saving empty records - don't clutter DB with zero rows
+            continue;
+        }
         
-        $week_num = ($view_type === 'monthly') ? 0 : $selected_week;
-        $view_str = $view_type;
-        $total_hours = $payroll['total_hours'];
-        $status = 'Draft';
-        
-        $stmt = mysqli_prepare($db, $query);
-        mysqli_stmt_bind_param($stmt, 'iiisssiddddddddddddddddss',
-            $emp_id, $year, $month, $week_num, $view_str, $branch_id,
-            $payroll['days_worked'], $total_hours, $payroll['daily_rate'], $payroll['gross_pay'],
-            $ot_hours, $ot_rate, $ot_amount,
-            $allowance, $payroll['gross_pay'], $gross_plus_allowance,
-            $ca_deduction, $payroll['sss_deduction'], $payroll['philhealth_deduction'], $payroll['pagibig_deduction'], $sss_loan, $total_deductions,
-            $take_home, $status, $created_by
-        );
-        
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+        // Save a row for EACH branch the employee worked at
+        foreach ($payroll['_branches'] as $branch_name => $branch_data) {
+            // Get branch_id from branch_name
+            $branch_id = null;
+            $branch_lookup = mysqli_query($db, "SELECT id FROM branches WHERE branch_name = '" . mysqli_real_escape_string($db, $branch_name) . "' LIMIT 1");
+            if ($branch_lookup && $row = mysqli_fetch_assoc($branch_lookup)) {
+                $branch_id = $row['id'];
+            }
+            
+            // Skip if a specific branch filter is active and this isn't that branch
+            if ($filter_branch_id !== null && $branch_id !== $filter_branch_id) {
+                continue;
+            }
+            
+            $days_worked = $branch_data['days'];
+            $total_hours = floatval($branch_data['hours']);
+            $ot_hours = floatval($branch_data['ot_hours']);
+            $ot_rate = $daily_rate / 8;
+            $ot_amount = $ot_hours * $ot_rate;
+            $gross_pay = $daily_rate * $days_worked;
+            $allowance = 0;
+            $ca_deduction = 0;
+            $sss_loan = 0;
+            $gross_plus_allowance = $gross_pay + $allowance + $ot_amount;
+            
+            // Deductions apply per employee, not per branch - assign full deductions to primary branch only
+            // or split proportionally. Here we assign to each branch row (may over-count if not careful)
+            // Better: only apply deductions to the branch with most days, or split by days ratio
+            $sss_deduction = 0;
+            $philhealth_deduction = 0;
+            $pagibig_deduction = 0;
+            $total_deductions = 0;
+            
+            // Apply deductions only to the first/main branch to avoid double-counting in summaries
+            // Check if this is the primary branch (most days worked)
+            $max_days = 0;
+            $primary_branch = null;
+            foreach ($payroll['_branches'] as $bn => $bd) {
+                if ($bd['days'] > $max_days) {
+                    $max_days = $bd['days'];
+                    $primary_branch = $bn;
+                }
+            }
+            if ($branch_name === $primary_branch && $days_worked > 0) {
+                $sss_deduction = $payroll['sss_deduction'];
+                $philhealth_deduction = $payroll['philhealth_deduction'];
+                $pagibig_deduction = $payroll['pagibig_deduction'];
+                $total_deductions = $payroll['total_deductions'];
+            }
+            
+            $take_home = $gross_plus_allowance - $total_deductions;
+            
+            $query = "INSERT INTO weekly_payroll_reports (
+                employee_id, report_year, report_month, week_number, view_type, branch_id,
+                days_worked, total_hours, daily_rate, basic_pay,
+                ot_hours, ot_rate, ot_amount,
+                performance_allowance, gross_pay, gross_plus_allowance,
+                ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
+                take_home_pay, status, created_by
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ) ON DUPLICATE KEY UPDATE
+                days_worked = VALUES(days_worked),
+                total_hours = VALUES(total_hours),
+                daily_rate = VALUES(daily_rate),
+                basic_pay = VALUES(basic_pay),
+                ot_hours = VALUES(ot_hours),
+                ot_rate = VALUES(ot_rate),
+                ot_amount = VALUES(ot_amount),
+                performance_allowance = VALUES(performance_allowance),
+                gross_pay = VALUES(gross_pay),
+                gross_plus_allowance = VALUES(gross_plus_allowance),
+                ca_deduction = VALUES(ca_deduction),
+                sss_deduction = VALUES(sss_deduction),
+                philhealth_deduction = VALUES(philhealth_deduction),
+                pagibig_deduction = VALUES(pagibig_deduction),
+                sss_loan = VALUES(sss_loan),
+                total_deductions = VALUES(total_deductions),
+                take_home_pay = VALUES(take_home_pay),
+                updated_at = CURRENT_TIMESTAMP";
+            
+            $week_num = ($view_type === 'monthly') ? 0 : $selected_week;
+            $view_str = $view_type;
+            $status = 'Draft';
+            
+            $stmt = mysqli_prepare($db, $query);
+            mysqli_stmt_bind_param($stmt, 'iiisssiddddddddddddddddss',
+                $emp_id, $year, $month, $week_num, $view_str, $branch_id,
+                $days_worked, $total_hours, $daily_rate, $gross_pay,
+                $ot_hours, $ot_rate, $ot_amount,
+                $allowance, $gross_pay, $gross_plus_allowance,
+                $ca_deduction, $sss_deduction, $philhealth_deduction, $pagibig_deduction, $sss_loan, $total_deductions,
+                $take_home, $status, $created_by
+            );
+            
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
     }
 }
 

@@ -611,3 +611,36 @@
                 display: none;
             }
         }
+
+        /* Mark as Paid Button - Green Gradient */
+        .btn-mark-paid {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-mark-paid:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+        }
+
+        .btn-mark-paid:active {
+            transform: translateY(0);
+        }
+
+        .btn-mark-paid i {
+            font-size: 14px;
+        }

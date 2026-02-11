@@ -70,11 +70,6 @@
                 // Store original performance data for reset functionality
                 originalPerformanceData = { ...data.performance };
                 
-                // Update form fields with current performance data
-                document.getElementById('performanceScore').value = data.performance.performanceScore || 85;
-                document.getElementById('performanceBonus').value = data.performance.performanceBonus || 0;
-                document.getElementById('performanceRemarks').value = data.performance.remarks || '';
-                
                 document.getElementById('loadingSpinner').style.display = 'none';
                 document.getElementById('billingContent').style.display = 'block';
                 
@@ -165,11 +160,6 @@
             // Store original performance data
             originalPerformanceData = { ...performance };
             
-            // Update form fields
-            document.getElementById('performanceScore').value = performance.performanceScore;
-            document.getElementById('performanceBonus').value = performance.performanceBonus;
-            document.getElementById('performanceRemarks').value = performance.remarks || '';
-            
             document.getElementById('loadingSpinner').style.display = 'none';
             document.getElementById('billingContent').style.display = 'block';
             
@@ -178,60 +168,11 @@
         }
 
         function applyPerformance() {
-            const score = parseInt(document.getElementById('performanceScore').value) || 85;
-            const bonus = parseFloat(document.getElementById('performanceBonus').value) || 0;
-            const remarks = document.getElementById('performanceRemarks').value;
-            
-            // Update current billing data
-            if (currentBillingData && currentBillingData.performance) {
-                // Update performance data
-                currentBillingData.performance.performanceScore = score;
-                currentBillingData.performance.performanceBonus = bonus;
-                currentBillingData.performance.remarks = remarks;
-                
-                // Calculate performance rating based on score
-                currentBillingData.performance.performanceRating = getPerformanceRating(score);
-                
-                // Update net pay with new bonus
-                const newNetPay = currentBillingData.computation.gross - 
-                                 currentBillingData.deductions.totalDeductions + 
-                                 bonus;
-                currentBillingData.netPay = newNetPay;
-                
-                // Save to database (optional)
-                savePerformanceToDatabase(currentEmpId, {
-                    score: score,
-                    bonus: bonus,
-                    remarks: remarks,
-                    viewType: currentViewType
-                });
-                
-                // Re-render receipt
-                renderDigitalReceipt(currentBillingData);
-                
-                // Show success message
-                showNotification('Performance updated successfully!', 'success');
-            }
+            showNotification('Performance adjustments are disabled', 'info');
         }
 
         function resetPerformance() {
-            if (originalPerformanceData) {
-                // Restore original performance data
-                currentBillingData.performance = { ...originalPerformanceData };
-                currentBillingData.netPay = currentBillingData.computation.gross - 
-                                           currentBillingData.deductions.totalDeductions + 
-                                           originalPerformanceData.performanceBonus;
-                
-                // Update form fields
-                document.getElementById('performanceScore').value = originalPerformanceData.performanceScore;
-                document.getElementById('performanceBonus').value = originalPerformanceData.performanceBonus;
-                document.getElementById('performanceRemarks').value = originalPerformanceData.remarks || '';
-                
-                // Re-render receipt
-                renderDigitalReceipt(currentBillingData);
-                
-                showNotification('Performance reset to original values', 'info');
-            }
+            showNotification('Performance adjustments are disabled', 'info');
         }
 
         function getPerformanceRating(score) {
@@ -565,7 +506,7 @@
             const tr = table.getElementsByTagName('tr');
             
             for (let i = 0; i < tr.length; i++) {
-                const td = tr[i].getElementsByTagName('td')[1];
+                const td = tr[i].getElementsByTagName('td')[0];
                 if (td) {
                     const txtValue = td.textContent || td.innerText;
                     if (txtValue.toUpperCase().indexOf(filter) > -1) {
@@ -574,6 +515,51 @@
                         tr[i].style.display = 'none';
                     }
                 }
+            }
+        }
+
+        // Mark employee payment as paid
+        async function markAsPaid(empId, grossPay, netPay) {
+            if (!confirm('Are you sure you want to mark this payment as paid?')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('mark_as_paid', '1');
+                formData.append('employee_id', empId);
+                formData.append('gross_pay', grossPay);
+                formData.append('net_pay', netPay);
+                
+                const response = await fetch('', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const responseText = await response.text();
+                console.log('Response:', responseText);
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    showNotification('Invalid server response: ' + responseText.substring(0, 100), 'danger');
+                    return;
+                }
+                
+                if (data.success) {
+                    showNotification('Payment marked as paid successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showNotification(data.message || 'Failed to mark payment as paid', 'danger');
+                    console.error('Server error:', data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error: ' + error.message, 'danger');
             }
         }
 
