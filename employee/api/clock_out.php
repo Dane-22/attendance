@@ -27,6 +27,24 @@ function attendanceHasIsTimeRunningColumn($db) {
     return $cached;
 }
 
+function attendanceHasStatusColumn($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME = 'status'";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 1;
+    return $cached;
+}
+
 $shiftId = $_POST['shift_id'] ?? null;
 $employeeId = $_POST['employee_id'] ?? $_SESSION['employee_id'] ?? null;
 $employeeCode = $_POST['employee_code'] ?? $_SESSION['employee_code'] ?? null;
@@ -45,9 +63,17 @@ if ($action === 'undo_clock_out') {
         exit();
     }
 
-    $sql = attendanceHasIsTimeRunningColumn($db)
-        ? "UPDATE attendance SET time_out = NULL, is_time_running = 1 WHERE id = ? AND employee_id = ? AND time_out IS NOT NULL"
-        : "UPDATE attendance SET time_out = NULL WHERE id = ? AND employee_id = ? AND time_out IS NOT NULL";
+    $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
+    $hasStatusCol = attendanceHasStatusColumn($db);
+    if ($hasRunningCol) {
+        $sql = $hasStatusCol
+            ? "UPDATE attendance SET time_out = NULL, status = 'Present', is_time_running = 1 WHERE id = ? AND employee_id = ? AND time_out IS NOT NULL"
+            : "UPDATE attendance SET time_out = NULL, is_time_running = 1 WHERE id = ? AND employee_id = ? AND time_out IS NOT NULL";
+    } else {
+        $sql = $hasStatusCol
+            ? "UPDATE attendance SET time_out = NULL, status = 'Present' WHERE id = ? AND employee_id = ? AND time_out IS NOT NULL"
+            : "UPDATE attendance SET time_out = NULL WHERE id = ? AND employee_id = ? AND time_out IS NOT NULL";
+    }
     $stmt = mysqli_prepare($db, $sql);
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error (prepare undo)']);
@@ -87,9 +113,17 @@ if (!$shiftId) {
 }
 
 // Clock out
-$sql = attendanceHasIsTimeRunningColumn($db)
-    ? "UPDATE attendance SET time_out = NOW(), is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL"
-    : "UPDATE attendance SET time_out = NOW() WHERE id = ? AND employee_id = ? AND time_out IS NULL";
+$hasRunningCol = attendanceHasIsTimeRunningColumn($db);
+$hasStatusCol = attendanceHasStatusColumn($db);
+if ($hasRunningCol) {
+    $sql = $hasStatusCol
+        ? "UPDATE attendance SET time_out = NOW(), status = NULL, is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL"
+        : "UPDATE attendance SET time_out = NOW(), is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL";
+} else {
+    $sql = $hasStatusCol
+        ? "UPDATE attendance SET time_out = NOW(), status = NULL WHERE id = ? AND employee_id = ? AND time_out IS NULL"
+        : "UPDATE attendance SET time_out = NOW() WHERE id = ? AND employee_id = ? AND time_out IS NULL";
+}
 $stmt = mysqli_prepare($db, $sql);
 mysqli_stmt_bind_param($stmt, "ii", $shiftId, $employeeId);
 

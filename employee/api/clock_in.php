@@ -75,6 +75,24 @@ function attendanceHasTotalOtHrsColumn($db) {
     return $cached;
 }
 
+function attendanceHasStatusColumn($db) {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $sql = "SELECT COUNT(*) as cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'attendance'
+              AND COLUMN_NAME = 'status'";
+    $result = mysqli_query($db, $sql);
+    if (!$result) {
+        $cached = false;
+        return $cached;
+    }
+    $row = mysqli_fetch_assoc($result);
+    $cached = intval($row['cnt'] ?? 0) === 1;
+    return $cached;
+}
+
 function employeesHasColumn($db, $columnName) {
     $safe = mysqli_real_escape_string($db, $columnName);
     $sql = "SHOW COLUMNS FROM `employees` LIKE '{$safe}'";
@@ -110,9 +128,16 @@ if ($action === 'undo_clock_in') {
     }
 
     $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
-    $sql = $hasRunningCol
-        ? "UPDATE attendance SET time_in = NULL, is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL"
-        : "UPDATE attendance SET time_in = NULL WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL";
+    $hasStatusCol = attendanceHasStatusColumn($db);
+    if ($hasRunningCol) {
+        $sql = $hasStatusCol
+            ? "UPDATE attendance SET time_in = NULL, status = NULL, is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL"
+            : "UPDATE attendance SET time_in = NULL, is_time_running = 0 WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL";
+    } else {
+        $sql = $hasStatusCol
+            ? "UPDATE attendance SET time_in = NULL, status = NULL WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL"
+            : "UPDATE attendance SET time_in = NULL WHERE id = ? AND employee_id = ? AND time_out IS NULL AND time_in IS NOT NULL";
+    }
     $stmt = mysqli_prepare($db, $sql);
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error (prepare undo)']);
@@ -233,16 +258,29 @@ if ($existingStmt) {
         $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
         $hasOvertimeRunningCol = attendanceHasIsOvertimeRunningColumn($db);
         $hasTotalOtHrsCol = attendanceHasTotalOtHrsColumn($db);
+        $hasStatusCol = attendanceHasStatusColumn($db);
 
         if ($branchName !== null && $branchName !== '') {
             if ($hasRunningCol) {
-                $updateSql = $hasOvertimeRunningCol
-                    ? "UPDATE attendance SET time_in = NOW(), branch_name = ?, is_time_running = 1, is_overtime_running = 0 WHERE id = ?"
-                    : "UPDATE attendance SET time_in = NOW(), branch_name = ?, is_time_running = 1 WHERE id = ?";
+                if ($hasOvertimeRunningCol) {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), branch_name = ?, status = 'Present', is_time_running = 1, is_overtime_running = 0 WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW(), branch_name = ?, is_time_running = 1, is_overtime_running = 0 WHERE id = ?";
+                } else {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), branch_name = ?, status = 'Present', is_time_running = 1 WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW(), branch_name = ?, is_time_running = 1 WHERE id = ?";
+                }
             } else {
-                $updateSql = $hasOvertimeRunningCol
-                    ? "UPDATE attendance SET time_in = NOW(), branch_name = ?, is_overtime_running = 0 WHERE id = ?"
-                    : "UPDATE attendance SET time_in = NOW(), branch_name = ? WHERE id = ?";
+                if ($hasOvertimeRunningCol) {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), branch_name = ?, status = 'Present', is_overtime_running = 0 WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW(), branch_name = ?, is_overtime_running = 0 WHERE id = ?";
+                } else {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), branch_name = ?, status = 'Present' WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW(), branch_name = ? WHERE id = ?";
+                }
             }
             $updateStmt = mysqli_prepare($db, $updateSql);
             if (!$updateStmt) {
@@ -252,13 +290,25 @@ if ($existingStmt) {
             mysqli_stmt_bind_param($updateStmt, "si", $branchName, $existingId);
         } else {
             if ($hasRunningCol) {
-                $updateSql = $hasOvertimeRunningCol
-                    ? "UPDATE attendance SET time_in = NOW(), is_time_running = 1, is_overtime_running = 0 WHERE id = ?"
-                    : "UPDATE attendance SET time_in = NOW(), is_time_running = 1 WHERE id = ?";
+                if ($hasOvertimeRunningCol) {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), status = 'Present', is_time_running = 1, is_overtime_running = 0 WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW(), is_time_running = 1, is_overtime_running = 0 WHERE id = ?";
+                } else {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), status = 'Present', is_time_running = 1 WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW(), is_time_running = 1 WHERE id = ?";
+                }
             } else {
-                $updateSql = $hasOvertimeRunningCol
-                    ? "UPDATE attendance SET time_in = NOW(), is_overtime_running = 0 WHERE id = ?"
-                    : "UPDATE attendance SET time_in = NOW() WHERE id = ?";
+                if ($hasOvertimeRunningCol) {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), status = 'Present', is_overtime_running = 0 WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW(), is_overtime_running = 0 WHERE id = ?";
+                } else {
+                    $updateSql = $hasStatusCol
+                        ? "UPDATE attendance SET time_in = NOW(), status = 'Present' WHERE id = ?"
+                        : "UPDATE attendance SET time_in = NOW() WHERE id = ?";
+                }
             }
             $updateStmt = mysqli_prepare($db, $updateSql);
             if (!$updateStmt) {
@@ -303,27 +353,52 @@ if ($existingStmt) {
 $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
 $hasOvertimeRunningCol = attendanceHasIsOvertimeRunningColumn($db);
 $hasTotalOtHrsCol = attendanceHasTotalOtHrsColumn($db);
+$hasStatusCol = attendanceHasStatusColumn($db);
 
 if ($branchName !== null && $branchName !== '') {
     if ($hasRunningCol) {
         if ($hasOvertimeRunningCol) {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, 0, 0)"
-                : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 1, 0)";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, 0, 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, 0)";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, 0, 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 1, 0)";
+            }
         } else {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, 0)"
-                : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running) VALUES (?, ?, CURDATE(), NOW(), 1)";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1)";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running) VALUES (?, ?, CURDATE(), NOW(), 1)";
+            }
         }
     } else {
         if ($hasOvertimeRunningCol) {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 0, 0)"
-                : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 0)";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 0, 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 'Present', 0)";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 0, 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 0)";
+            }
         } else {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 0)"
-                : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in) VALUES (?, ?, CURDATE(), NOW())";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status) VALUES (?, ?, CURDATE(), NOW(), 'Present')";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 0)"
+                    : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in) VALUES (?, ?, CURDATE(), NOW())";
+            }
         }
     }
     $stmt = mysqli_prepare($db, $sql);
@@ -335,23 +410,47 @@ if ($branchName !== null && $branchName !== '') {
 } else {
     if ($hasRunningCol) {
         if ($hasOvertimeRunningCol) {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 1, 0, 0)"
-                : "INSERT INTO attendance (employee_id, time_in, is_time_running, is_overtime_running) VALUES (?, NOW(), 1, 0)";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, status, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 1, 0, 0)"
+                    : "INSERT INTO attendance (employee_id, time_in, status, is_time_running, is_overtime_running) VALUES (?, NOW(), 'Present', 1, 0)";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 1, 0, 0)"
+                    : "INSERT INTO attendance (employee_id, time_in, is_time_running, is_overtime_running) VALUES (?, NOW(), 1, 0)";
+            }
         } else {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, time_in, is_time_running, total_ot_hrs) VALUES (?, NOW(), 1, 0)"
-                : "INSERT INTO attendance (employee_id, time_in, is_time_running) VALUES (?, NOW(), 1)";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, status, is_time_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 1, 0)"
+                    : "INSERT INTO attendance (employee_id, time_in, status, is_time_running) VALUES (?, NOW(), 'Present', 1)";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, is_time_running, total_ot_hrs) VALUES (?, NOW(), 1, 0)"
+                    : "INSERT INTO attendance (employee_id, time_in, is_time_running) VALUES (?, NOW(), 1)";
+            }
         }
     } else {
         if ($hasOvertimeRunningCol) {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, time_in, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 0, 0)"
-                : "INSERT INTO attendance (employee_id, time_in, is_overtime_running) VALUES (?, NOW(), 0)";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, status, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 0, 0)"
+                    : "INSERT INTO attendance (employee_id, time_in, status, is_overtime_running) VALUES (?, NOW(), 'Present', 0)";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 0, 0)"
+                    : "INSERT INTO attendance (employee_id, time_in, is_overtime_running) VALUES (?, NOW(), 0)";
+            }
         } else {
-            $sql = $hasTotalOtHrsCol
-                ? "INSERT INTO attendance (employee_id, time_in, total_ot_hrs) VALUES (?, NOW(), 0)"
-                : "INSERT INTO attendance (employee_id, time_in) VALUES (?, NOW())";
+            if ($hasStatusCol) {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, status, total_ot_hrs) VALUES (?, NOW(), 'Present', 0)"
+                    : "INSERT INTO attendance (employee_id, time_in, status) VALUES (?, NOW(), 'Present')";
+            } else {
+                $sql = $hasTotalOtHrsCol
+                    ? "INSERT INTO attendance (employee_id, time_in, total_ot_hrs) VALUES (?, NOW(), 0)"
+                    : "INSERT INTO attendance (employee_id, time_in) VALUES (?, NOW())";
+            }
         }
     }
     $stmt = mysqli_prepare($db, $sql);
