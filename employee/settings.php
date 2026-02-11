@@ -16,7 +16,7 @@ require('../conn/db_connection.php');
 $employeeName = $_SESSION['first_name'] . ' ' . $_SESSION['last_name'];
 $employeeCode = $_SESSION['employee_code'];
 $position = $_SESSION['position'] ?? 'Employee';
-$employeeId = $_SESSION['id'] ?? 0;
+$employeeId = $_SESSION['employee_id'] ?? $_SESSION['id'] ?? 0;
 
 // Check user role/type for system tools access
 $user_role = $_SESSION['user_type'] ?? $_SESSION['role'] ?? $_SESSION['position'] ?? 'Employee';
@@ -79,7 +79,24 @@ $userData['position'] = $userData['position'] ?? 'Employee';
 error_log("User Data Fetched: " . print_r($userData, true));
 
 // Set default profile image if none exists
-$profile_image = !empty($userData['profile_image']) ? '../' . $userData['profile_image'] : '../assets/images/default-avatar.png';
+$profile_image_path = $userData['profile_image'] ?? '';
+if (!empty($profile_image_path) && file_exists('../' . $profile_image_path)) {
+    $profile_image = '../' . $profile_image_path;
+} else {
+    // Check multiple possible default avatar locations
+    $possible_defaults = [
+        '../assets/images/default-avatar.png',
+        '../assets/img/default-avatar.png',
+        '../assets/img/profile/jajr-logo.png'
+    ];
+    $profile_image = '../assets/images/default-avatar.png'; // Default fallback
+    foreach ($possible_defaults as $default) {
+        if (file_exists($default)) {
+            $profile_image = $default;
+            break;
+        }
+    }
+}
 
 // ============ PROFILE UPDATE HANDLING ============
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
@@ -173,54 +190,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
 
 // ============ PROFILE IMAGE UPLOAD HANDLING ============
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image'])) {
+    // Debug: Check file upload
+    error_log("File upload attempt: " . print_r($_FILES['profile_image'], true));
+    
     $upload_dir = '../uploads/profile_images/';
     
     // Create directory if it doesn't exist
     if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
+        if (!mkdir($upload_dir, 0777, true)) {
+            $error_message = "Failed to create upload directory. Check permissions.";
+            error_log("Upload Error: Cannot create directory $upload_dir");
+        }
     }
     
-    $file_name = basename($_FILES['profile_image']['name']);
-    $file_tmp = $_FILES['profile_image']['tmp_name'];
-    $file_size = $_FILES['profile_image']['size'];
-    $file_error = $_FILES['profile_image']['error'];
-    
-    // Get file extension
-    $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-    
-    // Allowed extensions
-    $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
-    
-    // Check if file is an image
-    if (!in_array($file_ext, $allowed_ext)) {
-        $error_message = "Only JPG, JPEG, PNG & GIF files are allowed!";
-    } elseif ($file_size > 2097152) { // 2MB limit
-        $error_message = "File size must be less than 2MB!";
-    } elseif ($file_error === 0) {
-        // Generate unique filename
-        $new_file_name = "profile_" . $employeeId . "_" . time() . "." . $file_ext;
-        $file_destination = $upload_dir . $new_file_name;
+    // Check if directory is writable
+    if (!is_writable($upload_dir)) {
+        $error_message = "Upload directory is not writable.";
+        error_log("Upload Error: Directory $upload_dir is not writable");
+    } else {
+        $file_name = basename($_FILES['profile_image']['name']);
+        $file_tmp = $_FILES['profile_image']['tmp_name'];
+        $file_size = $_FILES['profile_image']['size'];
+        $file_error = $_FILES['profile_image']['error'];
         
-        // Move uploaded file
-        if (move_uploaded_file($file_tmp, $file_destination)) {
-            // Update database with image path
-            $image_path = 'uploads/profile_images/' . $new_file_name;
-            $updateImageQuery = "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?";
-            $stmt = mysqli_prepare($db, $updateImageQuery);
-            mysqli_stmt_bind_param($stmt, "si", $image_path, $employeeId);
-            
-            if (mysqli_stmt_execute($stmt)) {
-                $_SESSION['profile_image'] = $image_path;
-                $userData['profile_image'] = $image_path;
-                $profile_image = '../' . $image_path;
-                $success_message = "Profile image uploaded successfully!";
-            } else {
-                $error_message = "Failed to update profile image in database.";
-            }
-            
-            mysqli_stmt_close($stmt);
+        // Check for upload errors
+        if ($file_error !== UPLOAD_ERR_OK) {
+            $upload_errors = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds server upload limit',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds form upload limit',
+                UPLOAD_ERR_PARTIAL => 'File was partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'PHP extension stopped the upload'
+            ];
+            $error_message = $upload_errors[$file_error] ?? "Upload error: $file_error";
+            error_log("Upload Error Code: $file_error");
         } else {
-            $error_message = "Failed to upload file. Please try again.";
+            // Get file extension
+            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            
+            // Allowed extensions
+            $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
+            
+            // Check if file is an image
+            if (!in_array($file_ext, $allowed_ext)) {
+                $error_message = "Only JPG, JPEG, PNG & GIF files are allowed!";
+            } elseif ($file_size > 2097152) { // 2MB limit
+                $error_message = "File size must be less than 2MB!";
+            } else {
+                // Generate unique filename
+                $new_file_name = "profile_" . $employeeId . "_" . time() . "." . $file_ext;
+                $file_destination = $upload_dir . $new_file_name;
+                
+                // Move uploaded file
+                if (move_uploaded_file($file_tmp, $file_destination)) {
+                    // Update database with image path
+                    $image_path = 'uploads/profile_images/' . $new_file_name;
+                    
+                    // Check if profile_image column exists
+                    $col_check = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'profile_image'");
+                    if (mysqli_num_rows($col_check) == 0) {
+                        // Column doesn't exist, create it
+                        mysqli_query($db, "ALTER TABLE employees ADD COLUMN profile_image VARCHAR(255) NULL");
+                        error_log("Created profile_image column");
+                    }
+                    
+                    $updateImageQuery = "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?";
+                    $stmt = mysqli_prepare($db, $updateImageQuery);
+                    mysqli_stmt_bind_param($stmt, "si", $image_path, $employeeId);
+                    
+                    if (mysqli_stmt_execute($stmt)) {
+                        $_SESSION['profile_image'] = $image_path;
+                        $userData['profile_image'] = $image_path;
+                        $profile_image = '../' . $image_path;
+                        $success_message = "Profile image uploaded successfully!";
+                        error_log("Profile image uploaded: $image_path");
+                    } else {
+                        $error_message = "Failed to update profile image in database.";
+                        error_log("Database error: " . mysqli_error($db));
+                    }
+                    
+                    mysqli_stmt_close($stmt);
+                } else {
+                    $error_message = "Failed to move uploaded file. Check permissions.";
+                    error_log("Failed to move file to: $file_destination");
+                }
+            }
         }
     }
 }
@@ -1195,25 +1251,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
             </div> -->
             
             <!-- Theme Preview Info -->
-            <div class="tool-card" style="margin-top: 24px;">
-              <div class="tool-icon">
-                <i class="fas fa-info-circle"></i>
-              </div>
-              <div class="tool-content">
-                <div class="tool-title">Theme Information</div>
-                <div class="tool-description">
-                  Your theme preference is saved automatically and will persist across sessions. 
-                  The light mode provides better visibility in bright environments, while dark mode 
-                  reduces eye strain in low-light conditions.
-                </div>
-              </div>
-            </div>
+            
           </div>
+          
 
           <!-- System Tools Tab (Admin Only) -->
           <?php if ($can_access_system_tools): ?>
           <div id="system-tab" class="tab-pane">
-            <div class="section-title">System Tools (Admin Only)</div>
+            <div class="section-title">System Tools</div>
             <div class="section-subtitle">Database maintenance and system utilities</div>
             
             <div class="system-tools">
@@ -1261,6 +1306,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
                     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-dark);">
                       <strong>Current User Role:</strong> <?php echo htmlspecialchars($user_role); ?>
                     </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Theme Information -->
+              <div class="tool-card">
+                <div class="tool-icon">
+                  <i class="fas fa-palette"></i>
+                </div>
+                <div class="tool-content">
+                  <div class="tool-title">Theme Information</div>
+                  <div class="tool-description">
+                    Your theme preference is saved automatically and will persist across sessions. 
+                    The light mode provides better visibility in bright environments, while dark mode 
+                    reduces eye strain in low-light conditions.
                   </div>
                 </div>
               </div>
