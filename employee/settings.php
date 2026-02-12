@@ -13,6 +13,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
 require('../conn/db_connection.php');
 
+// Include procurement API sync function
+require('../procurement-api.php');
+
 $employeeName = $_SESSION['first_name'] . ' ' . $_SESSION['last_name'];
 $employeeCode = $_SESSION['employee_code'];
 $position = $_SESSION['position'] ?? 'Employee';
@@ -154,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
         $error_message = "New password must be at least 6 characters long!";
     } else {
         // Get current password hash from database
-        $passwordQuery = "SELECT password_hash FROM employees WHERE id = ?";
+        $passwordQuery = "SELECT password_hash, employee_code FROM employees WHERE id = ?";
         $stmt = mysqli_prepare($db, $passwordQuery);
         mysqli_stmt_bind_param($stmt, "i", $employeeId);
         mysqli_stmt_execute($stmt);
@@ -162,18 +165,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
         $user = mysqli_fetch_assoc($result);
         
         if ($user) {
-            // Verify current password (MD5)
-            $current_password_md5 = md5($current_password);
+            $employee_code = $user['employee_code'];
+            $stored_hash = $user['password_hash'];
             
-            if ($current_password_md5 === $user['password_hash']) {
-                // Update with new MD5 password
-                $new_password_md5 = md5($new_password);
+            // DEBUG: Log password verification details
+            error_log("Password Change Debug - Employee ID: $employeeId, Employee Code: $employee_code");
+            error_log("Stored hash type: " . (strpos($stored_hash, '$2y$') === 0 ? 'bcrypt' : 'md5'));
+            error_log("Stored hash (first 20 chars): " . substr($stored_hash, 0, 20));
+            
+            // Verify current password (support both MD5 and bcrypt)
+            $password_verified = false;
+            
+            // Check if it's a password_hash() format (starts with $2y$)
+            if (strpos($stored_hash, '$2y$') === 0) {
+                // It's bcrypt - use password_verify()
+                $password_verified = password_verify($current_password, $stored_hash);
+                error_log("Using bcrypt verification - Result: " . ($password_verified ? 'true' : 'false'));
+            } else {
+                // It's MD5 - compare MD5 hashes
+                $current_md5 = md5($current_password);
+                $password_verified = ($current_md5 === $stored_hash);
+                error_log("Using MD5 verification - Current MD5: $current_md5, Stored: $stored_hash, Result: " . ($password_verified ? 'true' : 'false'));
+            }
+            
+            if ($password_verified) {
+                // Update with new bcrypt password (consistent with login.php auto-upgrade)
+                $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
                 $updatePasswordQuery = "UPDATE employees SET password_hash = ?, updated_at = NOW() WHERE id = ?";
                 $updateStmt = mysqli_prepare($db, $updatePasswordQuery);
-                mysqli_stmt_bind_param($updateStmt, "si", $new_password_md5, $employeeId);
+                mysqli_stmt_bind_param($updateStmt, "si", $new_password_hash, $employeeId);
                 
                 if (mysqli_stmt_execute($updateStmt)) {
-                    $success_message = "Password updated successfully!";
+                    // Sync password to procurement system
+                    $sync_result = syncPasswordToProcurement($employee_code, $new_password);
+                    
+                    if ($sync_result['success']) {
+                        $success_message = "Password updated successfully and synced to procurement system!";
+                    } else {
+                        $success_message = "Password updated locally. Sync to procurement system failed: " . $sync_result['message'];
+                    }
                 } else {
                     $error_message = "Failed to update password. Please try again.";
                 }
