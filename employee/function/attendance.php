@@ -2561,13 +2561,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 
 
-    if ($_POST['action'] === 'save_overtime') {
+    if ($_POST['action'] === 'request_overtime') {
 
         $employeeId = isset($_POST['employee_id']) ? intval($_POST['employee_id']) : 0;
 
         $branch = isset($_POST['branch']) ? trim($_POST['branch']) : '';
 
         $totalOtHrs = isset($_POST['total_ot_hrs']) ? trim($_POST['total_ot_hrs']) : '';
+
+        $overtimeReason = isset($_POST['overtime_reason']) ? trim($_POST['overtime_reason']) : '';
 
 
 
@@ -2591,13 +2593,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 
 
-        // Overtime is stored on today's latest attendance record.
+        if ($totalOtHrs === '' || !is_numeric($totalOtHrs) || floatval($totalOtHrs) <= 0) {
 
-        $checkSql = "SELECT id FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() ORDER BY id DESC LIMIT 1";
+            echo json_encode(['success' => false, 'message' => 'Please enter valid overtime hours']);
 
-        $checkStmt = mysqli_prepare($db, $checkSql);
+            exit();
 
-        if (!$checkStmt) {
+        }
+
+
+
+        if ($overtimeReason === '') {
+
+            echo json_encode(['success' => false, 'message' => 'Please provide a reason for overtime']);
+
+            exit();
+
+        }
+
+
+
+        // Check if there's already a pending request for this employee today
+
+        $checkPendingSql = "SELECT id FROM overtime_requests WHERE employee_id = ? AND request_date = CURDATE() AND status = 'pending' LIMIT 1";
+
+        $checkPendingStmt = mysqli_prepare($db, $checkPendingSql);
+
+        if (!$checkPendingStmt) {
 
             echo json_encode(['success' => false, 'message' => 'Database error']);
 
@@ -2605,21 +2627,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         }
 
-        mysqli_stmt_bind_param($checkStmt, 'i', $employeeId);
-
-        mysqli_stmt_execute($checkStmt);
-
-        $checkRes = mysqli_stmt_get_result($checkStmt);
-
-        $existing = ($checkRes && mysqli_num_rows($checkRes) > 0) ? mysqli_fetch_assoc($checkRes) : null;
-
-        mysqli_stmt_close($checkStmt);
 
 
+        mysqli_stmt_bind_param($checkPendingStmt, 'i', $employeeId);
 
-        if (!$existing) {
+        mysqli_stmt_execute($checkPendingStmt);
 
-            echo json_encode(['success' => false, 'message' => 'No attendance record for today. Please mark attendance first.']);
+        $checkPendingRes = mysqli_stmt_get_result($checkPendingStmt);
+
+        $existingPending = ($checkPendingRes && mysqli_num_rows($checkPendingRes) > 0) ? mysqli_fetch_assoc($checkPendingRes) : null;
+
+        mysqli_stmt_close($checkPendingStmt);
+
+
+
+        if ($existingPending) {
+
+            echo json_encode(['success' => false, 'message' => 'A pending overtime request already exists for this employee today']);
+
+            exit();
+
+        }
+
+
+
+        // Get employee name
+
+        $empSql = "SELECT CONCAT(first_name, ' ', last_name) as full_name FROM employees WHERE id = ? LIMIT 1";
+
+        $empStmt = mysqli_prepare($db, $empSql);
+
+        if (!$empStmt) {
+
+            echo json_encode(['success' => false, 'message' => 'Database error']);
 
             exit();
 
@@ -2627,33 +2667,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 
 
-        $attendanceId = intval($existing['id']);
+        mysqli_stmt_bind_param($empStmt, 'i', $employeeId);
+
+        mysqli_stmt_execute($empStmt);
+
+        $empRes = mysqli_stmt_get_result($empStmt);
+
+        $employeeName = ($empRes && mysqli_num_rows($empRes) > 0) ? mysqli_fetch_assoc($empRes)['full_name'] : 'Unknown';
+
+        mysqli_stmt_close($empStmt);
 
 
 
-        $updateSql = "UPDATE attendance SET total_ot_hrs = ?, updated_at = NOW() WHERE id = ?";
+        // Insert overtime request
 
-        $updateStmt = mysqli_prepare($db, $updateSql);
+        $insertSql = "INSERT INTO overtime_requests (employee_id, branch_name, request_date, requested_hours, overtime_reason, status, requested_by, requested_by_user_id, requested_at) VALUES (?, ?, CURDATE(), ?, ?, 'pending', ?, ?, NOW())";
 
-        if (!$updateStmt) {
+        $insertStmt = mysqli_prepare($db, $insertSql);
 
-            echo json_encode(['success' => false, 'message' => 'Database error (prepare update)']);
+        if (!$insertStmt) {
+
+            echo json_encode(['success' => false, 'message' => 'Database error (prepare insert)']);
 
             exit();
 
         }
 
-        mysqli_stmt_bind_param($updateStmt, 'si', $totalOtHrs, $attendanceId);
 
-        if (!mysqli_stmt_execute($updateStmt)) {
 
-            echo json_encode(['success' => false, 'message' => 'Failed to save overtime']);
+        $requesterId = $_SESSION['employee_id'] ?? 0;
+
+        mysqli_stmt_bind_param($insertStmt, 'isdssi', $employeeId, $branch, $totalOtHrs, $overtimeReason, $employeeName, $requesterId);
+
+
+
+        if (!mysqli_stmt_execute($insertStmt)) {
+
+            echo json_encode(['success' => false, 'message' => 'Failed to create overtime request']);
 
             exit();
 
         }
 
-        mysqli_stmt_close($updateStmt);
+
+
+        $requestId = mysqli_insert_id($db);
+
+        mysqli_stmt_close($insertStmt);
 
 
 
@@ -2661,9 +2721,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             'success' => true,
 
-            'message' => 'Overtime saved',
+            'message' => 'Overtime request sent to Super Admin for approval',
 
-            'total_ot_hrs' => $totalOtHrs
+            'request_id' => $requestId
 
         ]);
 

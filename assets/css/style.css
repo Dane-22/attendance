@@ -348,3 +348,29 @@ button, a[role="button"]{ touch-action:manipulation; }
   .table-wrapper table td{ padding:8px; }
 }
 
+/* Notification Badge for Sidebar */
+.notification-badge {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    margin-left: auto;
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.4);
+}
+
+.menu-item .notification-badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+

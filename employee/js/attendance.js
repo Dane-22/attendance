@@ -1266,14 +1266,18 @@ function debugUndo() {
 
       modal.innerHTML = `
         <div style="background: #222; padding: 24px 32px; border-radius: 12px; box-shadow: 0 2px 32px #000; min-width: 360px; max-width: 96vw;">
-          <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Overtime — ${escapeHtml(employeeName)}</h3>
+          <h3 style="color: #FFD700; font-size: 18px; margin-bottom: 16px;">Request Overtime — ${escapeHtml(employeeName)}</h3>
           <div style="margin-bottom: 16px;">
             <label for="overtimeInput" style="color: #fff; font-size: 14px;">Total overtime hours:</label>
-            <input id="overtimeInput" type="text" value="${escapeHtml(safeValue)}" style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px;" placeholder="e.g. 2 or 2.5" />
+            <input id="overtimeInput" type="text" value="${escapeHtml(safeValue)}" style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px; color: #000;" placeholder="e.g. 2 or 2.5" />
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label for="overtimeReason" style="color: #fff; font-size: 14px;">Reason for overtime:</label>
+            <textarea id="overtimeReason" style="width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px; min-height: 80px; resize: vertical; color: #000;" placeholder="e.g. Project deadline, Urgent task..."></textarea>
           </div>
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
             <button id="cancelOvertimeBtn" style="background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 6px;">Cancel</button>
-            <button id="saveOvertimeBtn" style="background: #FFD700; color: #222; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Save</button>
+            <button id="saveOvertimeBtn" style="background: #FFD700; color: #222; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Request Overtime</button>
           </div>
         </div>
       `;
@@ -1288,22 +1292,28 @@ function debugUndo() {
       document.getElementById('cancelOvertimeBtn').onclick = () => modal.remove();
       document.getElementById('saveOvertimeBtn').onclick = async () => {
         const totalOt = (document.getElementById('overtimeInput')?.value ?? '').trim();
-        await saveOvertime(employeeId, totalOt);
+        const reason = (document.getElementById('overtimeReason')?.value ?? '').trim();
+        if (!reason) {
+          alert('Please provide a reason for overtime');
+          return;
+        }
+        await requestOvertime(employeeId, totalOt, reason);
         modal.remove();
       };
     }
 
-    async function saveOvertime(employeeId, totalOtHrs) {
+    async function requestOvertime(employeeId, totalOtHrs, overtimeReason) {
       if (!selectedBranch) {
         showError('Please select a project first');
         return;
       }
 
       const formData = new FormData();
-      formData.append('action', 'save_overtime');
+      formData.append('action', 'request_overtime');
       formData.append('employee_id', String(employeeId));
       formData.append('branch', String(selectedBranch));
       formData.append('total_ot_hrs', String(totalOtHrs));
+      formData.append('overtime_reason', String(overtimeReason));
 
       try {
         const resp = await fetch('select_employee.php', {
@@ -1314,16 +1324,18 @@ function debugUndo() {
           body: formData
         });
         const text = await resp.text();
+        console.log('DEBUG: Raw response:', text);
         let data = null;
-        try { data = JSON.parse(text); } catch (e) { data = null; }
+        try { data = JSON.parse(text); } catch (e) { console.error('DEBUG: JSON parse error:', e); console.error('DEBUG: Response text:', text); throw new Error('Invalid JSON response from server'); }
         if (!resp.ok || !data) throw new Error(data?.message || `Request failed (HTTP ${resp.status})`);
-        if (!data.success) throw new Error(data.message || 'Failed to save overtime');
+        if (!data || !data.success) throw new Error(data?.message || 'Failed to request overtime');
 
-        showSuccess('Overtime saved');
+        showSuccess(data.message || 'Overtime request sent to Super Admin for approval');
+        alert('✅ Overtime request has been successfully sent to Super Admin for approval!');
         reloadEmployees();
       } catch (e) {
         console.error(e);
-        showError(e.message || 'Failed to save overtime');
+        showError(e.message || 'Failed to request overtime');
       }
     }
 

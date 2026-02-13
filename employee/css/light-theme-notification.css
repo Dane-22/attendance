@@ -1,0 +1,54 @@
+/* Notification Badge - Light Mode */
+body.light-mode .notification-badge {
+    background: #000000 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Notification Page - Light Mode */
+body.light-mode .notification-header {
+    background: #ffffff !important;
+    border: 1px solid #000000 !important;
+}
+
+body.light-mode .notification-header h1 {
+    color: #000000 !important;
+}
+
+body.light-mode .pending-badge {
+    background: #f5f5f5 !important;
+    border: 1px solid #000000 !important;
+}
+
+body.light-mode .badge-count {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+body.light-mode .tab-btn {
+    background: #ffffff !important;
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+}
+
+body.light-mode .tab-btn.active {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+body.light-mode .request-card {
+    background: #ffffff !important;
+    border: 1px solid #000000 !important;
+}
+
+body.light-mode .request-card.pending {
+    border-left-color: #FFC107 !important;
+}
+
+body.light-mode .request-card.approved {
+    border-left-color: #4CAF50 !important;
+}
+
+body.light-mode .request-card.rejected {
+    border-left-color: #f44336 !important;
+}

@@ -9,6 +9,37 @@ $userRole = isset($_SESSION['position']) ? $_SESSION['position'] : 'Employee';
 // Check if user is Admin or Super Admin
 $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
 
+// Get pending count for badge (function defined in notification.php if included)
+$pendingOvertimeCount = 0;
+if ($isAdmin && function_exists('getPendingOvertimeCount') && isset($db)) {
+    $pendingOvertimeCount = getPendingOvertimeCount($db);
+}
+
+// Helper function to get unread notification count for employees
+function getUnreadNotificationCount($db, $employeeId) {
+    if (!$db || !$employeeId) return 0;
+    // Check if table exists first
+    $checkTable = @mysqli_query($db, "SHOW TABLES LIKE 'employee_notifications'");
+    if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
+        return 0;
+    }
+    $sql = "SELECT COUNT(*) as cnt FROM employee_notifications WHERE employee_id = ? AND is_read = 0";
+    $stmt = mysqli_prepare($db, $sql);
+    if (!$stmt) return 0;
+    mysqli_stmt_bind_param($stmt, 'i', $employeeId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    return intval($row['cnt'] ?? 0);
+}
+
+// Get unread notification count for current user
+$unreadNotifCount = 0;
+if (isset($db) && isset($_SESSION['employee_id'])) {
+    $unreadNotifCount = getUnreadNotificationCount($db, $_SESSION['employee_id']);
+}
+
 // Detect if we're being included from outside the employee folder
 $scriptDir = dirname($_SERVER['PHP_SELF']);
 $isInEmployeeFolder = strpos($scriptDir, '/employee') !== false || $scriptDir === '/main' || $scriptDir === '/main/';
@@ -41,15 +72,30 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <!-- All Users: Site Attendance -->
   <a href="select_employee.php" class="menu-item <?= $current === 'select_employee.php' ? 'active' : '' ?>" data-target="select_employee.php"><span class="icon">📋</span><span class="label">Site Attendance</span></a>
 
-  <!-- Super Admin Only: Notifications -->
+  <!-- Super Admin Only: Overtime Request Management -->
   <?php if ($isAdmin): ?>
-    <a href="notification.php" class="menu-item <?= $current === 'notification.php' ? 'active' : '' ?>" data-target="notification.php"><span class="icon">🔔</span><span class="label">Notification</span></a>
+    <a href="notification.php" class="menu-item <?= $current === 'notification.php' ? 'active' : '' ?>" data-target="notification.php">
+      <span class="icon">🔔</span>
+      <span class="label">Overtime Requests</span>
+      <?php if ($pendingOvertimeCount > 0): ?>
+        <span class="notification-badge"><?php echo $pendingOvertimeCount; ?></span>
+      <?php endif; ?>
+    </a>
+  <?php endif; ?>
 
+  <!-- All Users: My Notifications (Non-Super Admin only) -->
+  <?php if (!$isAdmin): ?>
+    <a href="my_notifications.php" class="menu-item <?= $current === 'my_notifications.php' ? 'active' : '' ?>" data-target="my_notifications.php">
+      <span class="icon">📨</span>
+      <span class="label">My Notifications</span>
+      <?php if ($unreadNotifCount > 0): ?>
+        <span class="notification-badge"><?php echo $unreadNotifCount; ?></span>
+      <?php endif; ?>
+    </a>
   <?php endif; ?>
 
   <!-- All Users: Employee List -->
   <a href="employees.php" class="menu-item <?= $current === 'employees.php' ? 'active' : '' ?>" data-target="employees.php"><span class="icon">👥</span><span class="label">Employee List</span></a>
-
 
   <!-- Admin/Super Admin Only: Reports -->
   <?php if ($isAdmin): ?>
