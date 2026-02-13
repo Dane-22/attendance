@@ -41,6 +41,11 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <!-- All Users: Site Attendance -->
   <a href="select_employee.php" class="menu-item <?= $current === 'select_employee.php' ? 'active' : '' ?>" data-target="select_employee.php"><span class="icon">📋</span><span class="label">Site Attendance</span></a>
 
+  <!-- Super Admin Only: Notifications -->
+  <?php if ($isAdmin): ?>
+    <a href="notification.php" class="menu-item <?= $current === 'notification.php' ? 'active' : '' ?>" data-target="notification.php"><span class="icon">🔔</span><span class="label">Notification</span></a>
+
+  <?php endif; ?>
 
   <!-- All Users: Employee List -->
   <a href="employees.php" class="menu-item <?= $current === 'employees.php' ? 'active' : '' ?>" data-target="employees.php"><span class="icon">👥</span><span class="label">Employee List</span></a>
