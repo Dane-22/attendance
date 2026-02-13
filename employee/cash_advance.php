@@ -1151,6 +1151,140 @@ foreach ($employeeList as $emp) {
         .data-table tbody tr:last-child td:last-child {
             border-radius: 0 0 10px 0;
         }
+        
+        /* ============================================
+           MOBILE GRID VIEW - Cash Advance Cards
+           ============================================ */
+        @media (max-width: 767px) {
+            /* Stats grid - 2 columns on mobile */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+            
+            .stat-box {
+                padding: 16px 12px;
+            }
+            
+            .stat-box .amount {
+                font-size: 22px;
+            }
+            
+            .stat-box h4 {
+                font-size: 10px;
+            }
+            
+            /* Hide table header on mobile */
+            .data-table thead {
+                display: none !important;
+            }
+            
+            /* Convert table to block */
+            .data-table tbody {
+                display: block;
+            }
+            
+            .data-table tbody tr {
+                display: block;
+                background: #1a1a1a;
+                border: 1px solid #333;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 12px;
+                box-sizing: border-box;
+            }
+            
+            /* Style each cell as a row with label */
+            .data-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 0;
+                border-bottom: 1px solid #333;
+                font-size: 14px;
+            }
+            
+            .data-table td:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+            
+            /* Add labels before values */
+            .data-table td:nth-child(1)::before { content: "Last Transaction: "; color: #888; font-size: 12px; }
+            .data-table td:nth-child(2)::before { content: "Employee: "; color: #888; font-size: 12px; }
+            .data-table td:nth-child(3)::before { content: "Total CA: "; color: #888; font-size: 12px; }
+            .data-table td:nth-child(4)::before { content: "Total Paid: "; color: #888; font-size: 12px; }
+            .data-table td:nth-child(5)::before { content: "Balance: "; color: #888; font-size: 12px; }
+            
+            /* Actions cell - stack buttons vertically */
+            .data-table td:last-child {
+                flex-direction: column;
+                gap: 8px;
+                align-items: stretch;
+                margin-top: 8px;
+                padding-top: 12px;
+                border-top: 1px solid #444;
+            }
+            
+            .data-table td:last-child button {
+                width: 100%;
+                justify-content: center;
+                padding: 12px;
+                font-size: 13px;
+            }
+            
+            /* Employee name styling */
+            .data-table td:nth-child(2) strong {
+                font-size: 16px;
+                color: #FFD700;
+            }
+            
+            /* Amount styling */
+            .data-table td:nth-child(3),
+            .data-table td:nth-child(4),
+            .data-table td:nth-child(5) {
+                font-weight: 600;
+            }
+            
+            /* Search container adjustments */
+            .ca-search-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .ca-search-box {
+                min-width: 100%;
+                max-width: 100%;
+            }
+            
+            /* Pagination adjustments */
+            .ca-pagination {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+            
+            .ca-pagination-controls {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+        }
+        
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cash-advance-container {
+                padding: 0 10px;
+            }
+            
+            .data-table tbody tr {
+                padding: 12px;
+            }
+        }
     </style>
 </head>
 <body>
