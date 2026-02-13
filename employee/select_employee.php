@@ -187,7 +187,7 @@ require('function/attendance.php');
         </div>
       </div>
       
-      <div class="potanginamo" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="potanginamo">
       <!-- Filter Options -->
       <div class="filter-options-container">
         <div class="filter-options">
@@ -213,18 +213,20 @@ require('function/attendance.php');
         </div>
       </div>
 
-      <!-- Search Bar -->
-      <div class="search-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search employees by name or ID..." style="max-width: 100%;">
-      </div>
+      <!-- Search & Undo Row -->
+      <div class="search-undo-row">
+        <!-- Search Bar -->
+        <div class="search-container">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search employees by name or ID..." style="max-width: 100%;">
+        </div>
 
-      <!-- Global Undo Button -->
-      <div id="globalUndoContainer" class="undo-container" style="display: flex;">
-        <button id="btnGlobalUndo" class="btn-global-undo" title="Undo last action">
-          <i class="fas fa-rotate-left"></i>
-          <span>Undo</span>
-        </button>
-      </div>
+        <!-- Global Undo Button -->
+        <div id="globalUndoContainer" class="undo-container" style="display: flex;">
+          <button id="btnGlobalUndo" class="btn-global-undo" title="Undo last action">
+            <i class="fas fa-rotate-left"></i>
+            <span>Undo</span>
+          </button>
+        </div>
       </div>
 
       <!-- Pagination Top -->

@@ -1731,3 +1731,186 @@
         color: #FFD700;
         border: 1px solid rgba(255, 215, 0, 0.3);
     }
+
+/* ============================================
+   SEARCH & UNDO ROW LAYOUT
+   ============================================ */
+.potanginamo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Search and Undo row */
+.search-undo-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Search container takes available space */
+.search-undo-row .search-container {
+    flex: 1;
+    margin: 0;
+    min-width: 0;
+}
+
+/* Undo container */
+.search-undo-row .undo-container {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+/* Mobile: Stack search and undo vertically */
+@media (max-width: 767px) {
+    .search-undo-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .search-undo-row .search-container,
+    .search-undo-row .undo-container {
+        width: 100%;
+    }
+    
+    .search-undo-row .undo-container {
+        display: flex;
+        justify-content: flex-end;
+    }
+}
+
+/* ============================================
+   MOBILE TABLE FIX - Hide Time columns & Fit cards
+   ============================================ */
+@media (max-width: 767px) {
+    /* Prevent horizontal overflow on entire page */
+    html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+    
+    /* Hide Time In, Time Out, Total Hours columns on mobile */
+    .employee-table thead th:nth-child(3),
+    .employee-table thead th:nth-child(4),
+    .employee-table thead th:nth-child(5),
+    .employee-table tbody td:nth-child(3),
+    .employee-table tbody td:nth-child(4),
+    .employee-table tbody td:nth-child(5) {
+        display: none !important;
+    }
+    
+    /* Main content adjustments */
+    .main-content {
+        padding: 10px;
+        max-width: 100%;
+    }
+    
+    /* Table wrapper - remove overflow scroll */
+    .employee-table-wrap {
+        overflow-x: hidden;
+        border: none;
+        background: transparent;
+    }
+    
+    /* Convert table to block layout */
+    .employee-table {
+        display: block;
+        width: 100%;
+    }
+    
+    .employee-table tbody {
+        display: block;
+        width: 100%;
+    }
+    
+    /* Each row becomes a card */
+    .employee-table tbody tr {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+    
+    /* All cells become block elements */
+    .employee-table tbody td {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: none;
+    }
+    
+    /* Row number badge */
+    .employee-table tbody td:first-child {
+        display: inline-flex;
+        width: auto;
+        padding: 3px 8px;
+        background: rgba(255, 215, 0, 0.15);
+        border-radius: 12px;
+        font-size: 11px;
+        margin-bottom: 8px;
+        color: #FFD700;
+        font-weight: bold;
+    }
+    
+    /* Employee cell */
+    .employee-table tbody td:nth-child(2) {
+        padding: 0 0 10px 0;
+    }
+    
+    /* Actions cell */
+    .employee-table tbody td:last-child {
+        padding: 10px 0 0 0;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    /* Employee info layout */
+    .employee-cell {
+        min-width: 0 !important;
+        width: 100%;
+    }
+    
+    /* Ensure name doesn't overflow */
+    .employee-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: calc(100vw - 100px);
+    }
+    
+    /* Actions buttons */
+    .actions-cell {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        width: 100%;
+    }
+    
+    .actions-cell button {
+        flex: 1;
+        min-width: 0;
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 375px) {
+    .employee-table tbody tr {
+        padding: 10px;
+    }
+    
+    .employee-name {
+        font-size: 13px;
+    }
+    
+    .actions-cell button {
+        font-size: 10px;
+        padding: 5px 6px;
+    }
+}
