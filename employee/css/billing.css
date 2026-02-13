@@ -637,3 +637,253 @@ tfoot .total-row td {
     font-size: 10px;
     font-weight: bold;
 }
+
+/* ============================================
+   MOBILE GRID VIEW - Billing Cards
+   ============================================ */
+@media (max-width: 767px) {
+    /* Hide table headers */
+    .billing-table thead {
+        display: none !important;
+    }
+    
+    /* Convert table to block */
+    .billing-table tbody {
+        display: block;
+    }
+    
+    .billing-table tfoot {
+        display: block;
+    }
+    
+    /* Card styling for rows */
+    .billing-table tbody tr {
+        display: block;
+        background: var(--card-bg);
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+    
+    /* Total row special styling */
+    .billing-table tbody tr.total-row,
+    .billing-table tfoot tr {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+        border: 2px solid var(--gold-2);
+        box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
+    }
+    
+    /* All cells as block with labels */
+    .billing-table td {
+        display: block;
+        width: 100%;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        text-align: left !important;
+    }
+    
+    /* Remove border from last cell */
+    .billing-table td:last-child {
+        border-bottom: none;
+    }
+    
+    /* First cell (name/branch/employee code) styling */
+    .billing-table tbody tr td:first-child {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--gold-1);
+        border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+        margin-bottom: 8px;
+        padding-bottom: 12px;
+    }
+    
+    /* Add labels for cells - Site/Office Salary (7 columns) */
+    .billing-table[data-table-type="site_salary"] tbody tr td:nth-child(2)::before,
+    .billing-table[data-table-type="office_salary"] tbody tr td:nth-child(2)::before {
+        content: "Employees: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="site_salary"] tbody tr td:nth-child(3)::before,
+    .billing-table[data-table-type="office_salary"] tbody tr td:nth-child(3)::before {
+        content: "Basic Pay: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="site_salary"] tbody tr td:nth-child(4)::before,
+    .billing-table[data-table-type="office_salary"] tbody tr td:nth-child(4)::before {
+        content: "OT Pay: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="site_salary"] tbody tr td:nth-child(5)::before,
+    .billing-table[data-table-type="office_salary"] tbody tr td:nth-child(5)::before {
+        content: "Gross Pay: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="site_salary"] tbody tr td:nth-child(6)::before,
+    .billing-table[data-table-type="office_salary"] tbody tr td:nth-child(6)::before {
+        content: "Deductions: ";
+        color: var(--danger-red);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="site_salary"] tbody tr td:nth-child(7)::before,
+    .billing-table[data-table-type="office_salary"] tbody tr td:nth-child(7)::before {
+        content: "Net Pay: ";
+        color: var(--success-green);
+        font-weight: 600;
+    }
+    
+    /* Cash Advance labels (6 columns) */
+    .billing-table[data-table-type="cash_advance"] tbody tr td:nth-child(2)::before {
+        content: "Name: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="cash_advance"] tbody tr td:nth-child(3)::before {
+        content: "Branch: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="cash_advance"] tbody tr td:nth-child(4)::before {
+        content: "Total CA: ";
+        color: var(--gold-1);
+        font-weight: 600;
+    }
+    
+    .billing-table[data-table-type="cash_advance"] tbody tr td:nth-child(5)::before {
+        content: "Requests: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="cash_advance"] tbody tr td:nth-child(6)::before {
+        content: "Status: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    /* Employer Share labels (5 columns) */
+    .billing-table[data-table-type="employer_share"] tbody tr td:nth-child(2)::before {
+        content: "Employees: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="employer_share"] tbody tr td:nth-child(3)::before {
+        content: "Employee Share: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="employer_share"] tbody tr td:nth-child(4)::before {
+        content: "Employer Share: ";
+        color: var(--muted-white);
+        font-weight: 500;
+    }
+    
+    .billing-table[data-table-type="employer_share"] tbody tr td:nth-child(5)::before {
+        content: "Total: ";
+        color: var(--gold-1);
+        font-weight: 600;
+    }
+    
+    /* Amount styling */
+    .billing-table td.amount {
+        font-weight: 600;
+        color: var(--soft-white);
+    }
+    
+    .billing-table td.amount.net {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--gold-1);
+        background: rgba(212, 175, 55, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 8px;
+    }
+    
+    .billing-table td.amount.deduction {
+        color: var(--danger-red);
+    }
+    
+    /* Status badge sizing */
+    .status-badge {
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        font-size: 13px;
+        border-radius: 8px;
+    }
+    
+    /* Total row cells */
+    .billing-table tbody tr.total-row td,
+    .billing-table tfoot tr td {
+        font-weight: 700;
+        font-size: 16px;
+    }
+    
+    .billing-table tfoot tr td[colspan] {
+        text-align: left !important;
+    }
+    
+    /* Filter section adjustments */
+    .filter-form {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .filter-group {
+        min-width: 100% !important;
+    }
+    
+    .filter-btn {
+        width: 100%;
+        padding: 14px;
+    }
+    
+    /* Report section padding */
+    .report-section {
+        padding: 16px;
+    }
+    
+    .report-section h2 {
+        font-size: 1.25rem;
+    }
+    
+    /* Header adjustments */
+    .billing-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    /* Billing container padding */
+    .billing-container {
+        padding: 10px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    .billing-table tbody tr {
+        padding: 12px;
+    }
+    
+    .billing-table tbody tr td:first-child {
+        font-size: 15px;
+    }
+    
+    .billing-table td.amount.net {
+        font-size: 16px;
+    }
+}

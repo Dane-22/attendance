@@ -603,4 +603,210 @@
                 grid-template-columns: 1fr;
             }
         }
-    
+
+        /* ============================================
+           ENHANCED MOBILE STYLES - Dashboard
+           ============================================ */
+
+        /* Mobile: Convert transfers table to cards */
+        @media (max-width: 767px) {
+            /* Hide table header */
+            .custom-table thead {
+                display: none !important;
+            }
+            
+            /* Convert tbody to block */
+            .custom-table tbody {
+                display: block;
+            }
+            
+            /* Each row becomes a card */
+            .custom-table tbody tr {
+                display: block;
+                background: rgba(22, 22, 22, 0.8);
+                border: 1px solid rgba(212, 175, 55, 0.15);
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+            
+            /* Each cell as block with labels */
+            .custom-table tbody td {
+                display: block;
+                width: 100%;
+                padding: 8px 0;
+                border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+                font-size: 14px;
+            }
+            
+            .custom-table tbody td:last-child {
+                border-bottom: none;
+            }
+            
+            /* Employee name styling (first cell) */
+            .custom-table tbody td:first-child {
+                font-size: 16px;
+                font-weight: 700;
+                color: var(--soft-white);
+                border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+                margin-bottom: 8px;
+                padding-bottom: 12px;
+            }
+            
+            /* Branch transfer styling */
+            .custom-table tbody td:nth-child(2)::before {
+                content: "From: ";
+                color: var(--danger-red);
+                font-weight: 500;
+            }
+            
+            .custom-table tbody td:nth-child(3)::before {
+                content: "To: ";
+                color: var(--success-green);
+                font-weight: 500;
+            }
+            
+            .custom-table tbody td:nth-child(4)::before {
+                content: "Date: ";
+                color: var(--muted-white);
+                font-weight: 500;
+            }
+            
+            /* Activity list adjustments */
+            .activity-item {
+                padding: 12px 0;
+            }
+            
+            .activity-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            
+            .activity-text {
+                font-size: 0.85rem;
+            }
+            
+            .activity-time {
+                font-size: 0.7rem;
+            }
+            
+            /* Navbar improvements */
+            .navbar-user {
+                gap: 12px;
+            }
+            
+            .user-info {
+                display: none;
+            }
+            
+            .user-avatar {
+                width: 40px;
+                height: 40px;
+            }
+            
+            /* Section padding adjustments */
+            .quick-actions-section,
+            .monitoring-card {
+                padding: 16px;
+            }
+            
+            .section-header {
+                margin-bottom: 16px;
+            }
+            
+            .section-header h2 {
+                font-size: 1.1rem;
+            }
+            
+            /* Card header adjustments */
+            .monitoring-card .card-header {
+                padding-bottom: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .monitoring-card .card-title {
+                font-size: 1rem;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            /* Summary cards - more compact */
+            .summary-card {
+                padding: 16px;
+            }
+            
+            .summary-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+            
+            .summary-number {
+                font-size: 2rem;
+            }
+            
+            .summary-label {
+                font-size: 0.8rem;
+            }
+            
+            /* Quick action buttons - more compact */
+            .quick-action-btn {
+                padding: 16px 12px;
+            }
+            
+            .quick-action-btn .action-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+            
+            .quick-action-btn .action-label {
+                font-size: 0.85rem;
+            }
+            
+            .quick-action-btn .action-desc {
+                font-size: 0.7rem;
+            }
+            
+            /* Dashboard title smaller */
+            .dashboard-title {
+                font-size: 1.4rem;
+                margin-bottom: 16px;
+            }
+            
+            /* Transfers cards - tighter padding */
+            .custom-table tbody tr {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .custom-table tbody td {
+                padding: 6px 0;
+                font-size: 13px;
+            }
+            
+            .custom-table tbody td:first-child {
+                font-size: 15px;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 360px) {
+            .navbar-brand h1 {
+                font-size: 1.1rem;
+            }
+            
+            .dashboard-title {
+                font-size: 1.2rem;
+            }
+            
+            .summary-grid {
+                gap: 12px;
+            }
+            
+            .quick-actions-grid {
+                gap: 12px;
+            }
+        }

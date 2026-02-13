@@ -1021,6 +1021,239 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
         align-items: center;
         gap: 8px;
     }
+    
+    /* ============================================
+       MOBILE RESPONSIVE IMPROVEMENTS
+       ============================================ */
+    
+    @media (max-width: 767px) {
+        /* Main content padding */
+        .main-content {
+            padding: 16px;
+            margin-left: 0;
+        }
+        
+        /* Settings container - stack vertically */
+        .settings-container {
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        /* Tabs - horizontal scroll or stacked */
+        .settings-tabs {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid var(--border-dark);
+            padding: 12px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .tab-link {
+            padding: 10px 16px;
+            border-left: none;
+            border-bottom: 3px solid transparent;
+            justify-content: center;
+            flex: 1;
+            min-width: 100px;
+            max-width: 150px;
+        }
+        
+        .tab-link.active {
+            border-left-color: transparent;
+            border-bottom-color: var(--accent-gold);
+        }
+        
+        .tab-link.admin-only {
+            border-left: none;
+            border-bottom: 3px solid var(--accent-orange);
+        }
+        
+        /* Settings content */
+        .settings-content {
+            padding: 20px;
+        }
+        
+        /* Section titles */
+        .section-title {
+            font-size: 18px;
+        }
+        
+        .section-subtitle {
+            font-size: 13px;
+        }
+        
+        /* Profile image section */
+        .profile-image-section {
+            margin-bottom: 24px;
+        }
+        
+        .avatar-preview {
+            width: 120px;
+            height: 120px;
+        }
+        
+        .avatar-upload-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+        }
+        
+        /* Form grid - single column */
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            font-size: 13px;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            padding: 10px 14px;
+            font-size: 16px; /* Prevent zoom on iOS */
+        }
+        
+        /* Password wrapper adjustments */
+        .password-wrapper {
+            position: relative;
+        }
+        
+        .password-toggle {
+            right: 10px;
+            font-size: 14px;
+        }
+        
+        /* Buttons full width */
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 15px;
+        }
+        
+        /* Tool cards - stack vertically */
+        .tool-card {
+            flex-direction: column;
+            text-align: center;
+            gap: 12px;
+            padding: 16px;
+        }
+        
+        .tool-icon {
+            font-size: 28px;
+        }
+        
+        .tool-content {
+            text-align: center;
+        }
+        
+        .tool-description {
+            font-size: 12px;
+        }
+        
+        /* Danger zone */
+        .danger-zone {
+            padding: 20px;
+            margin-top: 24px;
+        }
+        
+        .danger-zone-title {
+            font-size: 15px;
+        }
+        
+        /* Header adjustments */
+        .settings-header {
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .welcome {
+            font-size: 20px;
+        }
+        
+        .menu-toggle {
+            font-size: 20px;
+            padding: 6px;
+        }
+    }
+    
+    /* Extra small screens */
+    @media (max-width: 480px) {
+        .main-content {
+            padding: 12px;
+        }
+        
+        .settings-content {
+            padding: 16px;
+        }
+        
+        /* Tabs - smaller text */
+        .tab-link {
+            padding: 8px 12px;
+            font-size: 13px;
+            min-width: 80px;
+        }
+        
+        .tab-icon {
+            font-size: 16px;
+            width: 20px;
+        }
+        
+        /* Avatar smaller */
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .avatar-upload-btn {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+            bottom: 5px;
+            right: 5px;
+        }
+        
+        /* Upload button full width */
+        .file-upload-wrapper {
+            display: block;
+            width: 100%;
+        }
+        
+        .file-upload-wrapper .btn {
+            width: 100%;
+        }
+        
+        /* Form inputs */
+        .form-input, .form-select, .form-textarea {
+            padding: 12px;
+        }
+        
+        /* Messages */
+        .message-alert {
+            padding: 12px;
+            font-size: 13px;
+        }
+    }
+    
+    /* Very small screens */
+    @media (max-width: 360px) {
+        .tab-link {
+            min-width: 70px;
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+        
+        .tab-icon {
+            display: none; /* Hide icons on very small screens */
+        }
+    }
   </style>
 </head>
 <body class="settings-page">

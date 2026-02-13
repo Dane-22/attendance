@@ -218,7 +218,7 @@ function formatCurrency($amount) {
                     <p>No data found for the selected period.</p>
                 </div>
             <?php else: ?>
-                <table class="billing-table">
+                <table class="billing-table" data-table-type="<?php echo $filter; ?>">
                     <thead>
                         <?php if ($filter === 'site_salary' || $filter === 'office_salary'): ?>
                             <tr>

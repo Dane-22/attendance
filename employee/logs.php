@@ -274,6 +274,161 @@ $total_pages = ceil($total_records / $per_page);
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
         }
+
+        /* ============================================
+           MOBILE GRID VIEW - Activity Log Cards
+           ============================================ */
+        @media (max-width: 767px) {
+            /* Hide table header on mobile */
+            .table-container table thead {
+                display: none !important;
+            }
+            
+            /* Convert table to block */
+            .table-container table tbody {
+                display: block;
+            }
+            
+            .table-container table {
+                display: block;
+                width: 100%;
+            }
+            
+            /* Card styling for each row */
+            .table-container tbody tr.log-row {
+                display: block;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 165, 0, 0.2);
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+            
+            /* Alternating background not needed on mobile */
+            .table-container tbody tr.log-row.bg-gray-800\/50 {
+                background: rgba(255, 255, 255, 0.05);
+            }
+            
+            /* All cells as block */
+            .table-container tbody tr td {
+                display: block;
+                width: 100%;
+                padding: 8px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            
+            /* Remove borders from last cell */
+            .table-container tbody tr td:last-child {
+                border-bottom: none;
+            }
+            
+            /* Timestamp styling (first cell) */
+            .table-container tbody tr td:first-child {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--orange);
+                border-bottom: 2px solid rgba(255, 165, 0, 0.3);
+                margin-bottom: 8px;
+                padding-bottom: 12px;
+            }
+            
+            .table-container tbody tr td:first-child .text-xs {
+                color: #9ca3af;
+                font-weight: 400;
+            }
+            
+            /* Add labels to cells */
+            .table-container tbody tr td:nth-child(2)::before { content: "User: "; color: #9ca3af; font-weight: 500; }
+            .table-container tbody tr td:nth-child(3)::before { content: "Action: "; color: #9ca3af; font-weight: 500; }
+            .table-container tbody tr td:nth-child(4)::before { content: "Details: "; color: #9ca3af; font-weight: 500; }
+            .table-container tbody tr td:nth-child(5)::before { content: "IP: "; color: #9ca3af; font-weight: 500; }
+            
+            /* User cell styling */
+            .table-container tbody tr td:nth-child(2) {
+                font-weight: 500;
+            }
+            
+            .table-container tbody tr td:nth-child(2) .text-xs {
+                color: #9ca3af;
+            }
+            
+            /* Action badge full width */
+            .table-container tbody tr td:nth-child(3) .action-badge {
+                display: inline-flex;
+                width: auto;
+                min-width: 120px;
+                justify-content: center;
+            }
+            
+            /* Details cell - remove truncation on mobile */
+            .table-container tbody tr td:nth-child(4) .truncate {
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+            }
+            
+            /* IP address styling */
+            .table-container tbody tr td:nth-child(5) .bg-gray-900 {
+                display: inline-block;
+            }
+            
+            /* No data message */
+            .table-container tbody tr td[colspan="5"] {
+                text-align: center;
+                padding: 40px 20px;
+            }
+            
+            /* Table container - remove max-height on mobile */
+            .table-container {
+                max-height: none;
+                overflow-y: visible;
+            }
+            
+            /* Stats cards - 1 column on mobile */
+            .grid.grid-cols-1.md\:grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Search form adjustments */
+            form.grid.grid-cols-1.md\:grid-cols-3 {
+                gap: 12px;
+            }
+            
+            /* Pagination adjustments */
+            .pagination-btn {
+                padding: 8px 12px;
+                min-width: 36px;
+                font-size: 14px;
+            }
+            
+            /* Page jump input */
+            .input-field.w-16 {
+                width: 50px;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            .table-container tbody tr.log-row {
+                padding: 12px;
+            }
+            
+            .table-container tbody tr td:first-child {
+                font-size: 13px;
+            }
+            
+            .main-content {
+                padding: 0.75rem;
+            }
+            
+            .log-card {
+                padding: 12px !important;
+            }
+            
+            .stats-card {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
