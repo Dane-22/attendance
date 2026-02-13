@@ -1,533 +1,537 @@
 <?php
-// employee/select_employee.php
 session_start();
-
-// ===== SET PHILIPPINE TIME ZONE =====
-date_default_timezone_set('Asia/Manila'); // Philippine Time (UTC+8)
-
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
+require_once '../conn/db_connection.php';
 
 // Check if user is logged in
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    // Check if this is an AJAX request
-    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => 'Session expired. Please refresh the page and login again.']);
-        exit();
-    } else {
-        header('Location: ../login.php');
-        exit();
-    }
-}
-
-require('../conn/db_connection.php');
-require_once __DIR__ . '/../functions.php';
-require('function/billing_function.php');
-
-// Government deduction constants (monthly)
-$MONTHLY_PHILHEALTH = 250.00;
-$MONTHLY_SSS = 450.00;
-$MONTHLY_PAGIBIG = 200.00;
-
-// Create payroll_payments table if not exists
-$createPaymentsTable = "CREATE TABLE IF NOT EXISTS payroll_payments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    employee_id INT NOT NULL,
-    payroll_week INT NOT NULL,
-    payroll_year INT NOT NULL,
-    payroll_start_date DATE NOT NULL,
-    payroll_end_date DATE NOT NULL,
-    gross_pay DECIMAL(10,2) NOT NULL,
-    net_pay DECIMAL(10,2) NOT NULL,
-    status ENUM('Pending', 'Paid') DEFAULT 'Pending',
-    paid_at DATETIME NULL,
-    paid_by INT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_payroll (employee_id, payroll_week, payroll_year, payroll_start_date)
-)";
-
-if (!mysqli_query($db, $createPaymentsTable)) {
-    error_log('Failed to create payroll_payments table: ' . mysqli_error($db));
-}
-
-// Determine current payroll week of the month (Week 1 to Week 4)
-$dayOfMonth = (int)date('j');
-$currentPayrollWeek = (int)ceil($dayOfMonth / 7);
-if ($currentPayrollWeek > 4) {
-    $currentPayrollWeek = 4;
-}
-
-// Get current week date range (within the current month)
-$monthStart = date('Y-m-01');
-$weekStart = date('Y-m-d', strtotime($monthStart . ' +' . (($currentPayrollWeek - 1) * 7) . ' days'));
-$weekEndCandidate = date('Y-m-d', strtotime($weekStart . ' +6 days'));
-$monthEnd = date('Y-m-t');
-$weekEnd = (strtotime($weekEndCandidate) > strtotime($monthEnd)) ? $monthEnd : $weekEndCandidate;
-
-// Check if user is admin
-$isAdmin = isset($_SESSION['position']) && in_array(strtolower($_SESSION['position']), ['admin', 'hr', 'supervisor', 'super admin']);
-
-// Handle mark as paid API
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_as_paid'])) {
-    header('Content-Type: application/json');
-    
-    if (!$isAdmin) {
-        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-        exit;
-    }
-    
-    $empId = intval($_POST['employee_id'] ?? 0);
-    $payrollWeek = intval($_POST['payroll_week'] ?? $currentPayrollWeek);
-    $payrollYear = intval($_POST['payroll_year'] ?? date('Y'));
-    $weekStart = $_POST['week_start'] ?? $weekStart;
-    $weekEnd = $_POST['week_end'] ?? $weekEnd;
-    $grossPay = floatval($_POST['gross_pay'] ?? 0);
-    $netPay = floatval($_POST['net_pay'] ?? 0);
-    $paidBy = intval($_SESSION['employee_id'] ?? 0);
-    
-    if ($empId <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Invalid employee']);
-        exit;
-    }
-    
-    // Insert or update payment record
-    $query = "INSERT INTO payroll_payments 
-              (employee_id, payroll_week, payroll_year, payroll_start_date, payroll_end_date, gross_pay, net_pay, status, paid_at, paid_by)
-              VALUES (?, ?, ?, ?, ?, ?, ?, 'Paid', NOW(), ?)
-              ON DUPLICATE KEY UPDATE 
-              status = 'Paid', paid_at = NOW(), paid_by = VALUES(paid_by),
-              gross_pay = VALUES(gross_pay), net_pay = VALUES(net_pay)";
-    
-    $stmt = mysqli_prepare($db, $query);
-    mysqli_stmt_bind_param($stmt, 'iiissddi', $empId, $payrollWeek, $payrollYear, $weekStart, $weekEnd, $grossPay, $netPay, $paidBy);
-    
-    if (mysqli_stmt_execute($stmt)) {
-        echo json_encode(['success' => true, 'message' => 'Payment marked as paid']);
-    } else {
-        $error = mysqli_stmt_error($stmt);
-        error_log('payroll_payments error: ' . $error);
-        echo json_encode(['success' => false, 'message' => 'Database error: ' . $error]);
-    }
-    mysqli_stmt_close($stmt);
+if (!isset($_SESSION['employee_id'])) {
+    header('Location: ../login.php');
     exit;
 }
 
-// Function to check if payment has been made
-function getPaymentStatus($db, $empId, $weekStart, $weekEnd) {
-    $query = "SELECT status, paid_at FROM payroll_payments 
-              WHERE employee_id = ? AND payroll_start_date = ? AND payroll_end_date = ?
-              ORDER BY id DESC LIMIT 1";
-    $stmt = mysqli_prepare($db, $query);
-    mysqli_stmt_bind_param($stmt, 'iss', $empId, $weekStart, $weekEnd);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $row = mysqli_fetch_assoc($result);
-    mysqli_stmt_close($stmt);
-    return $row ?: ['status' => 'Pending', 'paid_at' => null];
+// Get selected filter
+$filter = isset($_GET['filter']) ? $_GET['filter'] : 'site_salary';
+
+// Get date range
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
+
+$data = [];
+$filterTitle = '';
+
+switch ($filter) {
+    case 'site_salary':
+        $filterTitle = 'Site Salary (Total Salary per Branch)';
+        $sql = "SELECT 
+                    COALESCE(a.branch_name, 'Unassigned') as branch_name,
+                    COUNT(DISTINCT e.id) as employee_count,
+                    SUM(pr.basic_pay) as total_basic_pay,
+                    SUM(pr.ot_pay) as total_ot_pay,
+                    SUM(pr.gross_pay) as total_gross_pay,
+                    SUM(pr.total_deductions) as total_deductions,
+                    SUM(pr.net_pay) as total_net_pay
+                FROM employees e
+                LEFT JOIN (
+                    SELECT DISTINCT employee_id, branch_name
+                    FROM attendance
+                    WHERE attendance_date BETWEEN ? AND ?
+                ) a ON e.id = a.employee_id
+                LEFT JOIN payroll_records pr ON e.id = pr.employee_id 
+                    AND pr.pay_period_start >= ? AND pr.pay_period_end <= ?
+                WHERE COALESCE(a.branch_name, '') != 'Main Branch'
+                GROUP BY a.branch_name
+                ORDER BY a.branch_name";
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param("ssss", $startDate, $endDate, $startDate, $endDate);
+        $stmt->execute();
+        $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        break;
+
+    case 'office_salary':
+        $filterTitle = 'Office Salary (Main Branch Total)';
+        $sql = "SELECT 
+                    COALESCE(a.branch_name, 'Unassigned') as branch_name,
+                    COUNT(DISTINCT e.id) as employee_count,
+                    SUM(pr.basic_pay) as total_basic_pay,
+                    SUM(pr.ot_pay) as total_ot_pay,
+                    SUM(pr.gross_pay) as total_gross_pay,
+                    SUM(pr.total_deductions) as total_deductions,
+                    SUM(pr.net_pay) as total_net_pay
+                FROM employees e
+                LEFT JOIN (
+                    SELECT DISTINCT employee_id, branch_name
+                    FROM attendance
+                    WHERE attendance_date BETWEEN ? AND ?
+                ) a ON e.id = a.employee_id
+                LEFT JOIN payroll_records pr ON e.id = pr.employee_id 
+                    AND pr.pay_period_start >= ? AND pr.pay_period_end <= ?
+                WHERE COALESCE(a.branch_name, '') = 'Main Branch'
+                GROUP BY a.branch_name
+                ORDER BY a.branch_name";
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param("ssss", $startDate, $endDate, $startDate, $endDate);
+        $stmt->execute();
+        $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        break;
+
+    case 'cash_advance':
+        $filterTitle = 'Cash Advance (Total per Employee)';
+        $sql = "SELECT e.id, 
+                       e.employee_code,
+                       CONCAT(e.first_name, ' ', COALESCE(e.middle_name, ''), ' ', e.last_name) as full_name,
+                       COALESCE(a.branch_name, 'Unassigned') as branch_name,
+                       SUM(ca.amount) as total_cash_advance,
+                       COUNT(ca.id) as request_count,
+                       ca2.status as latest_status
+                FROM employees e
+                LEFT JOIN (
+                    SELECT DISTINCT employee_id, branch_name
+                    FROM attendance
+                    WHERE attendance_date BETWEEN ? AND ?
+                ) a ON e.id = a.employee_id
+                LEFT JOIN cash_advances ca ON e.id = ca.employee_id 
+                    AND ca.request_date >= ? AND ca.request_date <= ?
+                LEFT JOIN (
+                    SELECT employee_id, status
+                    FROM cash_advances ca1
+                    WHERE request_date = (
+                        SELECT MAX(request_date) 
+                        FROM cash_advances 
+                        WHERE employee_id = ca1.employee_id
+                    )
+                ) ca2 ON e.id = ca2.employee_id
+                GROUP BY e.id, e.employee_code, e.first_name, e.middle_name, e.last_name, a.branch_name, ca2.status
+                HAVING total_cash_advance > 0
+                ORDER BY total_cash_advance DESC";
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param("ssss", $startDate, $endDate, $startDate, $endDate);
+        $stmt->execute();
+        $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        break;
+
+    case 'employer_share':
+        $filterTitle = 'Employer Share Contribution (SSS, PhilHealth, Pag-IBIG)';
+        $sql = "SELECT 
+                    'SSS' as contribution_type,
+                    SUM(pr.sss_deduction) as total_employee_share,
+                    SUM(pr.sss_deduction) * 0.0733 as estimated_employer_share,
+                    SUM(pr.sss_deduction) * 1.0733 as total_contribution,
+                    COUNT(DISTINCT pr.employee_id) as employee_count
+                FROM payroll_records pr
+                WHERE pr.pay_period_start >= ? AND pr.pay_period_end <= ? AND pr.sss_deduction > 0
+                
+                UNION ALL
+                
+                SELECT 
+                    'PhilHealth' as contribution_type,
+                    SUM(pr.philhealth_deduction) as total_employee_share,
+                    SUM(pr.philhealth_deduction) as estimated_employer_share,
+                    SUM(pr.philhealth_deduction) * 2 as total_contribution,
+                    COUNT(DISTINCT pr.employee_id) as employee_count
+                FROM payroll_records pr
+                WHERE pr.pay_period_start >= ? AND pr.pay_period_end <= ? AND pr.philhealth_deduction > 0
+                
+                UNION ALL
+                
+                SELECT 
+                    'Pag-IBIG' as contribution_type,
+                    SUM(pr.pagibig_deduction) as total_employee_share,
+                    SUM(pr.pagibig_deduction) as estimated_employer_share,
+                    SUM(pr.pagibig_deduction) * 2 as total_contribution,
+                    COUNT(DISTINCT pr.employee_id) as employee_count
+                FROM payroll_records pr
+                WHERE pr.pay_period_start >= ? AND pr.pay_period_end <= ? AND pr.pagibig_deduction > 0";
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param("ssssss", $startDate, $endDate, $startDate, $endDate, $startDate, $endDate);
+        $stmt->execute();
+        $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        break;
 }
 
-// Weekly deductions logic
-if ($currentPayrollWeek === 4) {
-    $weeklySss = 0.00;
-    $weeklyPhilhealth = 0.00;
-    $weeklyPagibig = 0.00;
-} else {
-    $weeklySss = $MONTHLY_SSS / 3;
-    $weeklyPhilhealth = $MONTHLY_PHILHEALTH / 3;
-    $weeklyPagibig = $MONTHLY_PAGIBIG / 3;
+// Format currency helper
+function formatCurrency($amount) {
+    return '₱' . number_format($amount ?? 0, 2);
 }
-
-// Activity logging: payroll viewed
-@logActivity(
-    $db,
-    'Viewed Payroll',
-    'Viewed payroll for Week ' . $currentPayrollWeek . ' (' . $weekStart . ' to ' . $weekEnd . ')'
-);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Billing System | Payroll Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
+    <title>Billing - JAJR Construction</title>
     <link rel="stylesheet" href="css/billing.css">
-    <link rel="stylesheet" href="css/light-theme.css">
-    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="app-shell">
-        <?php include __DIR__ . '/sidebar.php'; ?>
+        <?php include 'sidebar.php'; ?>
         
-        <main class="main-content">
-            <!-- Header -->
-            <div class="header-card">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-                    <div class="header-left">
-                        <div class="header-icon">
-                            <i class="fas fa-calculator"></i>
-                        </div>
-                        <div class="header-text">
-                            <div class="welcome">Employee Billing System</div>
-                            <div class="header-subtitle">
-                                <i class="fas fa-user-shield me-2"></i>
-                                <?php echo isset($_SESSION['position']) ? $_SESSION['position'] . ' Panel' : 'Employee Panel'; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="date-display">
-                        <i class="fas fa-calendar-alt"></i>
-                        <?php echo date('F d, Y'); ?>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <span class="badge" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--black); font-weight: 700; padding: 10px 14px; border-radius: 10px;">
-                        Current Payroll Week: <?php echo (int)$currentPayrollWeek; ?>
-                    </span>
-                </div>
-            </div>
+        <div class="main-content">
+            <div class="billing-container">
+        <header class="billing-header">
+            <h1>Billing & Payroll Reports</h1>
+        </header>
 
-            <!-- Stats Overview -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-value">
-                        <?php 
-                            $totalEmployees = $employees->num_rows;
-                            echo $totalEmployees;
-                        ?>
-                    </div>
-                    <div class="stat-label">Total Employees</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                    <div class="stat-value">
-                        <?php
-                            // Get employees marked as paid for current week
-                            $paidQuery = "SELECT employee_id, gross_pay FROM payroll_payments 
-                                         WHERE status = 'Paid' 
-                                         AND payroll_start_date = ? AND payroll_end_date = ?";
-                            $stmtPaid = mysqli_prepare($db, $paidQuery);
-                            mysqli_stmt_bind_param($stmtPaid, 'ss', $weekStart, $weekEnd);
-                            mysqli_stmt_execute($stmtPaid);
-                            $paidResult = mysqli_stmt_get_result($stmtPaid);
-                            
-                            $totalMonthlyPaid = 0;
-                            while ($paid = mysqli_fetch_assoc($paidResult)) {
-                                $totalMonthlyPaid += $paid['gross_pay'];
-                            }
-                            mysqli_stmt_close($stmtPaid);
-                            
-                            echo "₱" . number_format($totalMonthlyPaid, 2);
-                        ?>
-                    </div>
-                    <div class="stat-label">Total Paid (Current Week)</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-calendar-week"></i>
-                    </div>
-                    <div class="stat-value">
-                        <?php
-                            // Get paid employee IDs for current week
-                            $paidIdsQuery = "SELECT employee_id FROM payroll_payments 
-                                            WHERE status = 'Paid' 
-                                            AND payroll_start_date = ? AND payroll_end_date = ?";
-                            $stmtPaidIds = mysqli_prepare($db, $paidIdsQuery);
-                            mysqli_stmt_bind_param($stmtPaidIds, 'ss', $weekStart, $weekEnd);
-                            mysqli_stmt_execute($stmtPaidIds);
-                            $paidIdsResult = mysqli_stmt_get_result($stmtPaidIds);
-                            $paidEmployeeIds = [];
-                            while ($row = mysqli_fetch_assoc($paidIdsResult)) {
-                                $paidEmployeeIds[] = $row['employee_id'];
-                            }
-                            mysqli_stmt_close($stmtPaidIds);
-                            
-                            // Get all active employees and calculate pending total
-                            $totalPending = 0;
-                            $empQuery = "SELECT id, daily_rate FROM employees WHERE status = 'Active'";
-                            $empResult = mysqli_query($db, $empQuery);
-                            
-                            if ($empResult) {
-                                while ($emp = mysqli_fetch_assoc($empResult)) {
-                                    if (!in_array($emp['id'], $paidEmployeeIds)) {
-                                        // Get present days for this employee in current week
-                                        $presentDaysQuery = "SELECT COUNT(*) as present_count 
-                                                            FROM attendance 
-                                                            WHERE employee_id = ? 
-                                                            AND attendance_date BETWEEN ? AND ?
-                                                            AND status IN ('Present', 'Late', 'Early Out')
-                                                            AND DAYOFWEEK(attendance_date) BETWEEN 2 AND 7";
-                                        $stmtPresent = mysqli_prepare($db, $presentDaysQuery);
-                                        mysqli_stmt_bind_param($stmtPresent, 'iss', $emp['id'], $weekStart, $weekEnd);
-                                        mysqli_stmt_execute($stmtPresent);
-                                        $presentResult = mysqli_stmt_get_result($stmtPresent);
-                                        $presentData = mysqli_fetch_assoc($presentResult);
-                                        $presentDays = intval($presentData['present_count'] ?? 0);
-                                        mysqli_stmt_close($stmtPresent);
-                                        
-                                        $empGross = floatval($emp['daily_rate']) * $presentDays;
-                                        $totalPending += $empGross;
-                                    }
-                                }
-                            }
-                            
-                            echo "₱" . number_format($totalPending, 2);
-                        ?>
-                    </div>
-                    <div class="stat-label">Total Pending (Current Week)</div>
-                </div>
-            </div>
-
-            <!-- Payroll Table -->
-            <div class="employee-table-container">
-                <div class="table-header">
-                    <div class="table-title">
-                        <i class="fas fa-file-invoice-dollar me-2"></i>
-                        Weekly Payroll (<?php echo htmlspecialchars($weekStart); ?> to <?php echo htmlspecialchars($weekEnd); ?>)
-                    </div>
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="employeeSearch" placeholder="Search employees..." onkeyup="searchEmployees()">
-                    </div>
+        <div class="filter-section">
+            <form method="GET" class="filter-form">
+                <div class="filter-group">
+                    <label for="filter">Report Type:</label>
+                    <select name="filter" id="filter" onchange="this.form.submit()">
+                        <option value="site_salary" <?php echo $filter === 'site_salary' ? 'selected' : ''; ?>>
+                            Site Salary (Per Branch)
+                        </option>
+                        <option value="office_salary" <?php echo $filter === 'office_salary' ? 'selected' : ''; ?>>
+                            Office Salary (Main Branch)
+                        </option>
+                        <option value="cash_advance" <?php echo $filter === 'cash_advance' ? 'selected' : ''; ?>>
+                            Cash Advance (Per Employee)
+                        </option>
+                        <option value="employer_share" <?php echo $filter === 'employer_share' ? 'selected' : ''; ?>>
+                            Employer Share Contribution
+                        </option>
+                    </select>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                <div class="filter-group">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" name="start_date" id="start_date" value="<?php echo $startDate; ?>">
+                </div>
+
+                <div class="filter-group">
+                    <label for="end_date">End Date:</label>
+                    <input type="date" name="end_date" id="end_date" value="<?php echo $endDate; ?>">
+                </div>
+
+                <button type="submit" class="filter-btn">Generate Report</button>
+                <button type="button" class="filter-btn print-btn" onclick="openPrintPreview()">
+                    <i class="fas fa-print"></i> Print Preview
+                </button>
+            </form>
+        </div>
+
+        <div class="report-section">
+            <h2><?php echo $filterTitle; ?></h2>
+            <p class="date-range">Period: <?php echo date('F d, Y', strtotime($startDate)); ?> - <?php echo date('F d, Y', strtotime($endDate)); ?></p>
+
+            <?php if (empty($data)): ?>
+                <div class="no-data">
+                    <p>No data found for the selected period.</p>
+                </div>
+            <?php else: ?>
+                <table class="billing-table">
+                    <thead>
+                        <?php if ($filter === 'site_salary' || $filter === 'office_salary'): ?>
                             <tr>
-                                <th>Employee Name</th>
+                                <th>Branch Name</th>
+                                <th>Employee Count</th>
+                                <th>Basic Pay</th>
+                                <th>OT Pay</th>
                                 <th>Gross Pay</th>
-                                <th>SSS Deduction</th>
-                                <th>PhilHealth Deduction</th>
-                                <th>Pag-IBIG Deduction</th>
+                                <th>Total Deductions</th>
                                 <th>Net Pay</th>
-                                <th>Action</th>
                             </tr>
-                        </thead>
-                        <tbody id="employeeTableBody">
-                            <?php
-                                $payrollSql = "
-                                    SELECT
-                                        e.id,
-                                        e.first_name,
-                                        e.last_name,
-                                        e.employee_code,
-                                        e.daily_rate,
-                                        (
-                                            IFNULL(
-                                                SUM(
-                                                    CASE
-                                                        WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL
-                                                            THEN TIME_TO_SEC(TIMEDIFF(a.time_out, a.time_in))
-                                                        ELSE 0
-                                                    END
-                                                ),
-                                                0
-                                            ) / 3600
-                                        ) + IFNULL(SUM(CAST(NULLIF(a.total_ot_hrs, '') AS DECIMAL(10,2))), 0) AS total_hours
-                                    FROM employees e
-                                    LEFT JOIN attendance a
-                                        ON a.employee_id = e.id
-                                        AND a.attendance_date BETWEEN '{$weekStart}' AND '{$weekEnd}'
-                                        AND DAYOFWEEK(a.attendance_date) BETWEEN 2 AND 7
-                                    WHERE e.status = 'Active'
-                                    GROUP BY e.id
-                                    ORDER BY e.last_name ASC, e.first_name ASC
-                                ";
-
-                                $payrollResult = mysqli_query($db, $payrollSql);
-                                if ($payrollResult) {
-                                    while ($row = mysqli_fetch_assoc($payrollResult)) {
-                                        $empName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
-                                        $empNameJs = json_encode($empName);
-                                        
-                                        // Check payment status first
-                                        $paymentStatus = getPaymentStatus($db, $row['id'], $weekStart, $weekEnd);
-                                        $isPaid = ($paymentStatus['status'] === 'Paid');
-                                        
-                                        // Get stored payment data if paid
-                                        $storedGross = 0;
-                                        $storedNet = 0;
-                                        if ($isPaid) {
-                                            $storedQuery = "SELECT gross_pay, net_pay FROM payroll_payments 
-                                                           WHERE employee_id = ? AND payroll_start_date = ? AND payroll_end_date = ? AND status = 'Paid'
-                                                           LIMIT 1";
-                                            $stmtStored = mysqli_prepare($db, $storedQuery);
-                                            mysqli_stmt_bind_param($stmtStored, 'iss', $row['id'], $weekStart, $weekEnd);
-                                            mysqli_stmt_execute($stmtStored);
-                                            $storedResult = mysqli_stmt_get_result($stmtStored);
-                                            $storedData = mysqli_fetch_assoc($storedResult);
-                                            if ($storedData) {
-                                                $storedGross = floatval($storedData['gross_pay']);
-                                                $storedNet = floatval($storedData['net_pay']);
-                                            }
-                                            mysqli_stmt_close($stmtStored);
-                                        }
-                                        
-                                        // Use stored gross if paid, otherwise calculate from attendance
-                                        if ($isPaid && $storedGross > 0) {
-                                            $grossPay = $storedGross;
-                                            $netPay = $storedNet;
-                                        } else {
-                                            // Calculate from attendance (pending employees)
-                                            $grossPay = (float)$row['daily_rate'] * (float)$row['total_hours'];
-                                            $sssDeduction = (float)$weeklySss;
-                                            $philhealthDeduction = (float)$weeklyPhilhealth;
-                                            $pagibigDeduction = (float)$weeklyPagibig;
-                                            $netPay = $grossPay - $sssDeduction - $philhealthDeduction - $pagibigDeduction;
-                                        }
-
-                                        $sssDeduction = (float)$weeklySss;
-                                        $philhealthDeduction = (float)$weeklyPhilhealth;
-                                        $pagibigDeduction = (float)$weeklyPagibig;
-                                        
-                                        // Format values based on payment status
-                                        if ($isPaid) {
-                                            $grossDisplay = '₱' . number_format($grossPay, 2);
-                                            $sssDisplay = '-₱' . number_format($sssDeduction, 2);
-                                            $philDisplay = '-₱' . number_format($philhealthDeduction, 2);
-                                            $pagDisplay = '-₱' . number_format($pagibigDeduction, 2);
-                                            $netDisplay = '₱' . number_format($netPay, 2);
-                                            $statusBadge = '<span class="badge" style="background: #28a745; color: white; font-size: 10px; padding: 4px 8px; border-radius: 4px; margin-top: 4px; display: inline-block;">PAID</span>';
-                                            $btnText = 'View Receipt';
-                                            $btnClass = 'btn-gold';
-                                        } else {
-                                            $grossDisplay = '<span class="text-muted">***</span>';
-                                            $sssDisplay = '<span class="text-muted">***</span>';
-                                            $philDisplay = '<span class="text-muted">***</span>';
-                                            $pagDisplay = '<span class="text-muted">***</span>';
-                                            $netDisplay = '<span class="text-muted">***</span>';
-                                            $statusBadge = '<span class="badge" style="background: #ffc107; color: #000; font-size: 10px; padding: 4px 8px; border-radius: 4px; margin-top: 4px; display: inline-block;">PENDING</span>';
-                                            $btnText = 'View Details';
-                                            $btnClass = 'btn-outline-light';
-                                        }
-                            ?>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar-placeholder me-3">
-                                                        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--black); font-weight: bold;">
-                                                            <?php echo strtoupper(substr($row['first_name'] ?? '', 0, 1)); ?>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-medium"><?php echo htmlspecialchars($empName); ?></div>
-                                                        <div class="text-muted small"><?php echo htmlspecialchars($row['employee_code'] ?? ''); ?></div>
-                                                        <div class="mt-1"><?php echo $statusBadge; ?></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><?php echo $grossDisplay; ?></td>
-                                            <td><?php echo $sssDisplay; ?></td>
-                                            <td><?php echo $philDisplay; ?></td>
-                                            <td><?php echo $pagDisplay; ?></td>
-                                            <td><?php echo $netDisplay; ?></td>
-                                            <td>
-                                                <?php if ($isAdmin && !$isPaid): ?>
-                                                    <button class="btn-mark-paid" onclick='markAsPaid(<?php echo (int)$row['id']; ?>, <?php echo $grossPay; ?>, <?php echo $netPay; ?>)'>
-                                                        <i class="fas fa-check-circle"></i>
-                                                        <span>Mark as Paid</span>
-                                                    </button>
-                                                <?php else: ?>
-                                                    <button class="<?php echo $btnClass; ?> btn-sm" onclick='openBillingModal(<?php echo (int)$row['id']; ?>, <?php echo htmlspecialchars($empNameJs, ENT_QUOTES, 'UTF-8'); ?>, <?php echo (float)$row['daily_rate']; ?>)'>
-                                                        <i class="fas fa-receipt me-1"></i>
-                                                        <?php echo $btnText; ?>
-                                                    </button>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                            <?php
-                                    }
-                                }
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+                        <?php elseif ($filter === 'cash_advance'): ?>
+                            <tr>
+                                <th>Employee Code</th>
+                                <th>Employee Name</th>
+                                <th>Branch</th>
+                                <th>Total Cash Advance</th>
+                                <th>Request Count</th>
+                                <th>Latest Status</th>
+                            </tr>
+                        <?php elseif ($filter === 'employer_share'): ?>
+                            <tr>
+                                <th>Contribution Type</th>
+                                <th>Employee Count</th>
+                                <th>Employee Share</th>
+                                <th>Employer Share</th>
+                                <th>Total Contribution</th>
+                            </tr>
+                        <?php endif; ?>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $grandTotal = 0;
+                        foreach ($data as $row): 
+                        ?>
+                            <?php if ($filter === 'site_salary' || $filter === 'office_salary'): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($row['branch_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo $row['employee_count']; ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['total_basic_pay']); ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['total_ot_pay']); ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['total_gross_pay']); ?></td>
+                                    <td class="amount deduction"><?php echo formatCurrency($row['total_deductions']); ?></td>
+                                    <td class="amount net"><?php echo formatCurrency($row['total_net_pay']); ?></td>
+                                </tr>
+                                <?php $grandTotal += ($row['total_net_pay'] ?? 0); ?>
+                            <?php elseif ($filter === 'cash_advance'): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($row['employee_code']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['full_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['branch_name'] ?? 'N/A'); ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['total_cash_advance']); ?></td>
+                                    <td><?php echo $row['request_count']; ?></td>
+                                    <td>
+                                        <span class="status-badge <?php echo strtolower($row['latest_status'] ?? 'pending'); ?>">
+                                            <?php echo $row['latest_status'] ?? 'No Status'; ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <?php $grandTotal += ($row['total_cash_advance'] ?? 0); ?>
+                            <?php elseif ($filter === 'employer_share'): ?>
+                                <tr>
+                                    <td><?php echo $row['contribution_type']; ?></td>
+                                    <td><?php echo $row['employee_count']; ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['total_employee_share']); ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['estimated_employer_share']); ?></td>
+                                    <td class="amount net"><?php echo formatCurrency($row['total_contribution']); ?></td>
+                                </tr>
+                                <?php $grandTotal += ($row['total_contribution'] ?? 0); ?>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <?php if ($filter !== 'employer_share'): ?>
+                    <tfoot>
+                        <tr class="total-row">
+                            <?php if ($filter === 'site_salary' || $filter === 'office_salary'): ?>
+                                <td colspan="6"><strong>Grand Total Net Pay:</strong></td>
+                                <td class="amount net"><strong><?php echo formatCurrency($grandTotal); ?></strong></td>
+                            <?php elseif ($filter === 'cash_advance'): ?>
+                                <td colspan="3"><strong>Grand Total Cash Advance:</strong></td>
+                                <td class="amount"><strong><?php echo formatCurrency($grandTotal); ?></strong></td>
+                                <td colspan="2"></td>
+                            <?php endif; ?>
+                        </tr>
+                    </tfoot>
+                    <?php endif; ?>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+        </div>
     </div>
 
-    <!-- Billing Modal -->
-    <div class="modal fade" id="billingModal" tabindex="-1" aria-labelledby="billingModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-calculator me-2"></i>
-                        Billing Details for <span id="empName" class="text-warning"></span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Loading Spinner -->
-                    <div id="loadingSpinner" class="loading-spinner">
-                        <div class="spinner"></div>
-                        <p>Loading billing information...</p>
+    <!-- Print Preview Modal -->
+    <div id="printModal" class="print-modal">
+        <div class="print-modal-content">
+            <div class="print-modal-header">
+                <h2>Payment Request Form - Print Preview</h2>
+                <button class="close-btn" onclick="closePrintPreview()">&times;</button>
+            </div>
+            <div class="print-modal-body">
+                <div class="payment-form" id="paymentForm">
+                    <div class="form-header">
+                        <div class="company-info">
+                            <h1>JAJR CONSTRUCTION</h1>
+                            <p>#55 P. Zamora St. Barangay II, San Fernando City, La Union</p>
+                            <p>Telephone # (072) 607-1150</p>
+                            <p>E-mail Address: jajrconstruction@yahoo.com</p>
+                        </div>
+                        <div class="form-info">
+                            <table class="form-info-table">
+                                <tr><td>Ref. PRF:</td><td>2017-01-0111</td></tr>
+                                <tr><td>PRF/Year-Month-Seq. No.:</td><td>2026-02-0001</td></tr>
+                                <tr><td>Date:</td><td><?php echo date('F d, Y'); ?></td></tr>
+                                <tr><td>PO No.:</td><td>_____________</td></tr>
+                            </table>
+                        </div>
                     </div>
                     
-                    <!-- Content -->
-                    <div id="billingContent" style="display: none;">
-                        <!-- View Type Selector -->
-                        <div class="view-type-selector">
-                            <button class="view-type-btn active" onclick="changeViewType('weekly')">
-                                <i class="fas fa-calendar-week me-2"></i>
-                                Weekly
-                            </button>
-                            <button class="view-type-btn" onclick="changeViewType('monthly')">
-                                <i class="fas fa-calendar-alt me-2"></i>
-                                Monthly
-                            </button>
-                        </div>
-                        
-                        <!-- Digital Receipt -->
-                        <div id="digitalReceipt" class="receipt-container">
-                            <!-- Receipt content will be loaded here -->
-                        </div>
-                        
-                        <!-- Additional Details -->
-                        <div id="additionalDetails" style="display: none;">
-                            <h6 class="mb-3">
-                                <i class="fas fa-list-ul me-2"></i>
-                                Detailed Attendance Breakdown
-                            </h6>
-                            <div id="attendanceDetails" class="table-responsive"></div>
-                        </div>
+                    <h2 class="form-title">PAYMENT REQUEST FORM</h2>
+                    
+                    <div class="payee-section">
+                        <table class="payee-table">
+                            <tr>
+                                <td class="label">Payee:</td>
+                                <td colspan="3" class="value"><strong>ELAINE MARICRIS T. AGUILAR</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="label">TIN:</td>
+                                <td class="value">_____________</td>
+                                <td class="label">Address:</td>
+                                <td class="value">_____________</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Form of Payment:</td>
+                                <td colspan="3">
+                                    <span class="checkbox">☐ Check</span>
+                                    <span class="checkbox">☐ Bank Transfer</span>
+                                    <span class="checkbox">☐ Others</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <table class="payment-table">
+                        <thead>
+                            <tr>
+                                <th class="col-particulars">PARTICULARS</th>
+                                <th class="col-amount">AMOUNT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Site Salary Section -->
+                            <tr class="section-header">
+                                <td colspan="2"><strong>SALARY (SITE)</strong></td>
+                            </tr>
+                            <?php 
+                            $siteTotal = 0;
+                            if ($filter === 'site_salary' && !empty($data)): 
+                                foreach ($data as $row): 
+                                    $siteTotal += ($row['total_net_pay'] ?? 0);
+                            ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['branch_name'] ?? 'N/A'); ?></td>
+                                <td class="amount-right"><?php echo formatCurrency($row['total_net_pay']); ?></td>
+                            </tr>
+                            <?php endforeach; endif; ?>
+                            <?php if ($filter !== 'site_salary'): ?>
+                            <tr><td colspan="2" class="no-data-cell">-- Select 'Site Salary' filter to view data --</td></tr>
+                            <?php endif; ?>
+
+                            <!-- Office Salary Section -->
+                            <tr class="section-header">
+                                <td colspan="2"><strong>OFFICE SALARY</strong></td>
+                            </tr>
+                            <?php 
+                            $officeTotal = 0;
+                            if ($filter === 'office_salary' && !empty($data)): 
+                                foreach ($data as $row): 
+                                    $officeTotal += ($row['total_net_pay'] ?? 0);
+                            ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['branch_name'] ?? 'N/A'); ?></td>
+                                <td class="amount-right"><?php echo formatCurrency($row['total_net_pay']); ?></td>
+                            </tr>
+                            <?php endforeach; endif; ?>
+                            <?php if ($filter !== 'office_salary'): ?>
+                            <tr><td colspan="2" class="no-data-cell">-- Select 'Office Salary' filter to view data --</td></tr>
+                            <?php endif; ?>
+
+                            <!-- Cash Advance Section -->
+                            <tr class="section-header">
+                                <td colspan="2"><strong>CASH ADVANCE</strong></td>
+                            </tr>
+                            <?php 
+                            $cashAdvanceTotal = 0;
+                            if ($filter === 'cash_advance' && !empty($data)): 
+                                foreach ($data as $row): 
+                                    $cashAdvanceTotal += ($row['total_cash_advance'] ?? 0);
+                            ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['full_name']); ?></td>
+                                <td class="amount-right"><?php echo formatCurrency($row['total_cash_advance']); ?></td>
+                            </tr>
+                            <?php endforeach; endif; ?>
+                            <?php if ($filter !== 'cash_advance'): ?>
+                            <tr><td colspan="2" class="no-data-cell">-- Select 'Cash Advance' filter to view data --</td></tr>
+                            <?php endif; ?>
+
+                            <!-- Employer Share Contribution Section -->
+                            <tr class="section-header">
+                                <td colspan="2"><strong>EMPLOYER SHARE CONTRIBUTION</strong></td>
+                            </tr>
+                            <?php 
+                            $employerShareTotal = 0;
+                            if ($filter === 'employer_share' && !empty($data)): 
+                                foreach ($data as $row): 
+                                    $employerShareTotal += ($row['total_contribution'] ?? 0);
+                            ?>
+                            <tr>
+                                <td><?php echo $row['contribution_type']; ?> EMPLOYER CONTRIBUTION 1st week</td>
+                                <td class="amount-right"><?php echo formatCurrency($row['total_contribution']); ?></td>
+                            </tr>
+                            <?php endforeach; endif; ?>
+                            <?php if ($filter !== 'employer_share'): ?>
+                            <tr><td colspan="2" class="no-data-cell">-- Select 'Employer Share' filter to view data --</td></tr>
+                            <?php endif; ?>
+
+                            <!-- Total Row -->
+                            <tr class="total-row">
+                                <td><strong>Total</strong></td>
+                                <td class="amount-right"><strong>
+                                    <?php 
+                                    $grandTotal = $siteTotal + $officeTotal + $cashAdvanceTotal + $employerShareTotal;
+                                    echo formatCurrency($grandTotal); 
+                                    ?>
+                                </strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="signature-section">
+                        <table class="signature-table">
+                            <tr>
+                                <td class="signature-box">
+                                    <div class="signature-label">Prepared by:</div>
+                                    <div class="signature-line">_________________________</div>
+                                    <div class="signature-name">Accounting Staff</div>
+                                </td>
+                                <td class="signature-box">
+                                    <div class="signature-label">Reviewed by:</div>
+                                    <div class="signature-line">_________________________</div>
+                                    <div class="signature-name">Accountant</div>
+                                </td>
+                                <td class="signature-box">
+                                    <div class="signature-label">Approved by:</div>
+                                    <div class="signature-line">_________________________</div>
+                                    <div class="signature-name">President</div>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn-gold" onclick="printReceipt()">
-                        <i class="fas fa-print me-2"></i>
-                        Print Receipt
-                    </button>
-                    <button class="btn-outline-gold" onclick="toggleDetails()" id="detailsBtn">
-                        <i class="fas fa-eye me-2"></i>
-                        View Details
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>
-                        Close
-                    </button>
-                </div>
+            </div>
+            <div class="print-modal-footer">
+                <button class="filter-btn" onclick="printPaymentForm()">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <button class="filter-btn close-modal-btn" onclick="closePrintPreview()">
+                    <i class="fas fa-times"></i> Close
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-   <script src="js/billing.js"></script>
+    <script>
+        // Auto-submit form when filter changes
+        document.getElementById('filter').addEventListener('change', function() {
+            this.form.submit();
+        });
+
+        // Print Preview Functions
+        function openPrintPreview() {
+            document.getElementById('printModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePrintPreview() {
+            document.getElementById('printModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function printPaymentForm() {
+            var printContent = document.getElementById('paymentForm').innerHTML;
+            var originalContent = document.body.innerHTML;
+            
+            document.body.innerHTML = '<div class="payment-form">' + printContent + '</div>';
+            window.print();
+            document.body.innerHTML = originalContent;
+            
+            // Re-attach event listeners after restoring content
+            document.getElementById('filter').addEventListener('change', function() {
+                this.form.submit();
+            });
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            var modal = document.getElementById('printModal');
+            if (event.target == modal) {
+                closePrintPreview();
+            }
+        }
+    </script>
 </body>
 </html>

@@ -1222,7 +1222,7 @@ foreach ($employeeList as $emp) {
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Last Date</th>
+                                        <th>Last Transaction</th>
                                         <th>Employee</th>
                                         <th>Total CA</th>
                                         <th>Total Paid</th>

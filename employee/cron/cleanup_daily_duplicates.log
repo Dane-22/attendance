@@ -1,0 +1,4 @@
+[2026-02-13 12:04:47] === Starting Daily Payroll Deduplication ===
+[2026-02-13 12:04:47] Before cleanup: 0 total records, 0 unique combinations
+[2026-02-13 12:04:47] Duplicates found: 0
+[2026-02-13 12:04:47] No duplicates found. Nothing to clean up.

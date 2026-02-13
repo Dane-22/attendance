@@ -648,3 +648,106 @@
             padding-top: 15px;
             border-top: 2px solid #333;
         }
+
+        /* Remarks/Payment Status Dropdown Styles */
+        .remarks-select {
+            background: #ffffff;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 100px;
+            color: #000000;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .remarks-select.paid {
+            background: #10b981;
+            border-color: #059669;
+            color: #000000;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .remarks-select.not-paid {
+            background: #ef4444;
+            border-color: #dc2626;
+            color: #000000;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        .remarks-select:hover {
+            border-color: #FFD700;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+        }
+
+        .remarks-select option {
+            background: #ffffff;
+            color: #000000;
+            font-weight: 600;
+            padding: 8px;
+        }
+
+        .remarks-select:focus {
+            outline: none;
+            border-color: #FFD700;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+        }
+
+        /* Toast Notification Styles */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            border: 2px solid #FFD700;
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            min-width: 300px;
+        }
+
+        .toast-notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-notification.success {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+        }
+
+        .toast-notification.error {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+        }
+
+        .toast-notification i {
+            font-size: 20px;
+            color: #FFD700;
+        }
+
+        .toast-notification.success i {
+            color: #10b981;
+        }
+
+        .toast-notification.error i {
+            color: #ef4444;
+        }
+
+        .toast-notification span {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+        }

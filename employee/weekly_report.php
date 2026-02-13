@@ -234,6 +234,9 @@ include __DIR__ . '/function/report.php';
                                 <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
                                     Actions
                                 </th>
+                                <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
+                                    Remarks
+                                </th>
                             </tr>
                             <tr class="bg-gradient-to-r from-yellow-700 to-yellow-900">
                                 <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">Days</th>
@@ -338,6 +341,14 @@ include __DIR__ . '/function/report.php';
                                         <i class="fas fa-file-invoice mr-1"></i>Payslip
                                     </button>
                                 </td>
+                                <td class="px-3 py-2 text-center text-sm">
+                                    <select id="remarks_<?php echo $emp_id; ?>" 
+                                            class="remarks-select <?php echo ($payroll['payment_status'] ?? 'Not Paid') === 'Paid' ? 'paid' : 'not-paid'; ?>"
+                                            onchange="updatePaymentStatus(<?php echo $emp_id; ?>, this.value)">
+                                        <option value="Not Paid" <?php echo ($payroll['payment_status'] ?? 'Not Paid') === 'Not Paid' ? 'selected' : ''; ?>>Not Paid</option>
+                                        <option value="Paid" <?php echo ($payroll['payment_status'] ?? 'Not Paid') === 'Paid' ? 'selected' : ''; ?>>Paid</option>
+                                    </select>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                             
@@ -379,6 +390,7 @@ include __DIR__ . '/function/report.php';
                                 <td class="px-2 py-3 text-right text-red-400">-</td>
                                 <td class="px-2 py-3 text-right text-red-400" id="grandTotalDeductions"><?php echo number_format($sum_total_deductions, 0); ?></td>
                                 <td class="px-3 py-3 text-right text-green-400" id="grandTakeHome"><?php echo number_format($grand_take_home, 0); ?></td>
+                                <td class="px-3 py-3 text-center text-gray-400">-</td>
                                 <td class="px-3 py-3 text-center text-gray-400">-</td>
                             </tr>
                         </tbody>
@@ -586,6 +598,80 @@ include __DIR__ . '/function/report.php';
         
         function numberFormat(num) {
             return num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        // Update Payment Status Function
+        function updatePaymentStatus(empId, status) {
+            const select = document.getElementById('remarks_' + empId);
+            
+            // Get employee name from the row
+            const row = select.closest('tr');
+            const empName = row.querySelector('td:first-child .font-medium').textContent.trim();
+            
+            // Update visual styling
+            select.classList.remove('paid', 'not-paid');
+            select.classList.add(status === 'Paid' ? 'paid' : 'not-paid');
+            
+            // Send AJAX request to update database
+            const formData = new FormData();
+            formData.append('employee_id', empId);
+            formData.append('payment_status', status);
+            formData.append('year', <?php echo $year; ?>);
+            formData.append('month', <?php echo $month; ?>);
+            formData.append('week', <?php echo $selected_week; ?>);
+            formData.append('view_type', '<?php echo $view_type; ?>');
+            
+            fetch('update_payment_status.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success toast notification
+                    showToast(`${empName} has been set to ${status}`, 'success');
+                } else {
+                    console.error('Failed to update payment status:', data.error);
+                    showToast('Failed to update payment status. Please try again.', 'error');
+                    // Revert the select if failed
+                    select.value = status === 'Paid' ? 'Not Paid' : 'Paid';
+                    select.classList.remove('paid', 'not-paid');
+                    select.classList.add(select.value === 'Paid' ? 'paid' : 'not-paid');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error updating payment status. Please check your connection.', 'error');
+            });
+        }
+        
+        // Toast Notification Function
+        function showToast(message, type = 'success') {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            // Add to body
+            document.body.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
         
         // Auto-export when triggered from Admin Quick Actions

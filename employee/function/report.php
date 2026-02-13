@@ -375,64 +375,59 @@ function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $m
                 $sss_deduction = $payroll['sss_deduction'];
                 $philhealth_deduction = $payroll['philhealth_deduction'];
                 $pagibig_deduction = $payroll['pagibig_deduction'];
-                $total_deductions = $payroll['total_deductions'];
-            }
-            
-            $take_home = $gross_plus_allowance - $total_deductions;
-            
-            $query = "INSERT INTO weekly_payroll_reports (
-                employee_id, report_year, report_month, week_number, view_type, branch_id,
-                days_worked, total_hours, daily_rate, basic_pay,
-                ot_hours, ot_rate, ot_amount,
-                performance_allowance, gross_pay, gross_plus_allowance,
-                ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
-                take_home_pay, status, created_by
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            ) ON DUPLICATE KEY UPDATE
-                days_worked = VALUES(days_worked),
-                total_hours = VALUES(total_hours),
-                daily_rate = VALUES(daily_rate),
-                basic_pay = VALUES(basic_pay),
-                ot_hours = VALUES(ot_hours),
-                ot_rate = VALUES(ot_rate),
-                ot_amount = VALUES(ot_amount),
-                performance_allowance = VALUES(performance_allowance),
-                gross_pay = VALUES(gross_pay),
-                gross_plus_allowance = VALUES(gross_plus_allowance),
-                ca_deduction = VALUES(ca_deduction),
-                sss_deduction = VALUES(sss_deduction),
-                philhealth_deduction = VALUES(philhealth_deduction),
-                pagibig_deduction = VALUES(pagibig_deduction),
-                sss_loan = VALUES(sss_loan),
-                total_deductions = VALUES(total_deductions),
-                take_home_pay = VALUES(take_home_pay),
-                updated_at = CURRENT_TIMESTAMP";
-            
-            $week_num = ($view_type === 'monthly') ? 0 : $selected_week;
-            $view_str = $view_type;
-            $status = 'Draft';
-            
-            $stmt = mysqli_prepare($db, $query);
-            mysqli_stmt_bind_param($stmt, 'iiisssiddddddddddddddddss',
-                $emp_id, $year, $month, $week_num, $view_str, $branch_id,
-                $days_worked, $total_hours, $daily_rate, $gross_pay,
-                $ot_hours, $ot_rate, $ot_amount,
-                $allowance, $gross_pay, $gross_plus_allowance,
-                $ca_deduction, $sss_deduction, $philhealth_deduction, $pagibig_deduction, $sss_loan, $total_deductions,
-                $take_home, $status, $created_by
-            );
-            
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
         }
+        
+        // Calculate net pay
+        $net_pay = $gross_pay - $payroll['total_deductions'];
+        $payroll['net_pay'] = max(0, $net_pay); // Ensure no negative net pay
+        
+        // Update totals
+        if ($days_worked > 0) {
+            $payroll_totals['total_employees']++;
+        }
+        $payroll_totals['total_days'] += $days_worked;
+        $payroll_totals['total_hours'] += $payroll['total_hours'];
+        $payroll_totals['total_gross'] += $gross_pay;
+        $payroll_totals['total_deductions'] += $payroll['total_deductions'];
+        $payroll_totals['total_net'] += $payroll['net_pay'];
     }
+    unset($payroll); // Break reference
 }
 
-// Save the report data (only if report is being viewed, not on every page load)
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($employee_payroll)) {
-    saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch);
+// NOTE: On-demand saving disabled - data is now only saved by cron jobs
+// weekly_aggregate_non_branch33.php (Friday midnight)
+// weekly_aggregate_branch33.php (Saturday midnight)
+// Uncomment below to re-enable on-demand saving when viewing reports:
+// if ($_SERVER['REQUEST_METHOD'] === 'GET' && !empty($employee_payroll)) {
+//     saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch);
+// }
+
+// Load payment status from database for each employee
+$week_num_for_db = ($view_type === 'monthly') ? 0 : $selected_week;
+$payment_status_query = "SELECT employee_id, payment_status FROM weekly_payroll_reports AS wpr1 
+                         WHERE report_year = ? AND report_month = ? AND week_number = ? AND view_type = ?
+                         AND id = (SELECT MAX(id) FROM weekly_payroll_reports AS wpr2 
+                                   WHERE wpr2.employee_id = wpr1.employee_id 
+                                   AND wpr2.report_year = wpr1.report_year 
+                                   AND wpr2.report_month = wpr1.report_month 
+                                   AND wpr2.week_number = wpr1.week_number 
+                                   AND wpr2.view_type = wpr1.view_type)";
+$payment_stmt = mysqli_prepare($db, $payment_status_query);
+mysqli_stmt_bind_param($payment_stmt, 'iiis', $year, $month, $week_num_for_db, $view_type);
+mysqli_stmt_execute($payment_stmt);
+$payment_result = mysqli_stmt_get_result($payment_stmt);
+
+$payment_statuses = [];
+while ($row = mysqli_fetch_assoc($payment_result)) {
+    $payment_statuses[$row['employee_id']] = $row['payment_status'];
 }
+mysqli_stmt_close($payment_stmt);
+
+// Merge payment status into employee payroll data
+foreach ($employee_payroll as $emp_id => &$payroll) {
+    $payroll['payment_status'] = $payment_statuses[$emp_id] ?? 'Not Paid';
+}
+unset($payroll);
 
 // Generate date array for the selected range
 $dates = [];
@@ -478,5 +473,6 @@ if ($view_type === 'monthly') {
             $current_week_dates = [];
         }
     }
+}
 }
 ?>

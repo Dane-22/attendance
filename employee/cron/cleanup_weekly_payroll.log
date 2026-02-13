@@ -1,0 +1,7 @@
+[2026-02-13 11:58:37] === Starting Weekly Payroll Cleanup ===
+[2026-02-13 11:58:37] Mode: Rebuilding from existing daily_payroll_reports data only
+[2026-02-13 11:58:37] Found 0 periods with daily data
+[2026-02-13 11:58:37] === Cleanup Complete ===
+[2026-02-13 11:58:37] Total weekly records inserted: 0
+[2026-02-13 11:58:37] weekly_payroll_reports is now a summary of daily_payroll_reports
+[2026-02-13 11:58:37] Run the weekly aggregation scripts going forward to keep it updated
