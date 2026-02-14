@@ -147,28 +147,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         <?php include __DIR__ . '/sidebar.php'; ?>
         
         <main class="main-content">
-            <div class="notification-header">
-                <h1><i class="fas fa-envelope"></i> My Notifications</h1>
-                <div class="header-actions">
-                    <button class="btn-mark-all" onclick="markAllRead()">
-                        <i class="fas fa-check-double"></i> Mark All Read
+            <div class="page-container">
+                <div class="notification-header">
+                    <h1><i class="fas fa-envelope"></i> My Notifications</h1>
+                    <div class="header-actions">
+                        <button class="btn-mark-all" onclick="markAllRead()">
+                            <i class="fas fa-check-double"></i> Mark All Read
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="notification-tabs">
+                    <button class="tab-btn active" data-filter="all" onclick="switchTab('all')">
+                        All (<span id="count-all">0</span>)
+                    </button>
+                    <button class="tab-btn" data-filter="unread" onclick="switchTab('unread')">
+                        Unread (<span id="count-unread">0</span>)
                     </button>
                 </div>
-            </div>
-            
-            <div class="notification-tabs">
-                <button class="tab-btn active" data-filter="all" onclick="switchTab('all')">
-                    All (<span id="count-all">0</span>)
-                </button>
-                <button class="tab-btn" data-filter="unread" onclick="switchTab('unread')">
-                    Unread (<span id="count-unread">0</span>)
-                </button>
-            </div>
-            
-            <div class="notification-container" id="notificationsContainer">
-                <div class="loading-state">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Loading notifications...</p>
+                
+                <div class="notification-container" id="notificationsContainer">
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading notifications...</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -261,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 return;
             }
             
-            let html = '<div class="notifications-list">';
+            let html = '<div class="notifications-grid">';
             
             notifications.forEach(notif => {
                 const isApproved = notif.type === 'overtime_approved';

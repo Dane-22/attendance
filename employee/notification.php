@@ -283,33 +283,35 @@ $pendingCount = getPendingOvertimeCount($db);
         <?php include __DIR__ . '/sidebar.php'; ?>
         
         <main class="main-content">
-            <div class="notification-header">
-                <h1><i class="fas fa-bell"></i> Overtime Requests</h1>
-                <div class="pending-badge">
-                    <span class="badge-count" id="pendingBadge"><?php echo $pendingCount; ?></span>
-                    <span class="badge-label">Pending</span>
+            <div class="page-container">
+                <div class="notification-header">
+                    <h1><i class="fas fa-bell"></i> Overtime Requests</h1>
+                    <div class="pending-badge">
+                        <span class="badge-count" id="pendingBadge"><?php echo $pendingCount; ?></span>
+                        <span class="badge-label">Pending</span>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="notification-tabs">
-                <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">
-                    Pending (<span id="count-pending">0</span>)
-                </button>
-                <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">
-                    Approved (<span id="count-approved">0</span>)
-                </button>
-                <button class="tab-btn" data-status="rejected" onclick="switchTab('rejected')">
-                    Rejected (<span id="count-rejected">0</span>)
-                </button>
-                <button class="tab-btn" data-status="all" onclick="switchTab('all')">
-                    All (<span id="count-all">0</span>)
-                </button>
-            </div>
-            
-            <div class="notification-container" id="requestsContainer">
-                <div class="loading-state">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Loading requests...</p>
+                
+                <div class="notification-tabs">
+                    <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">
+                        Pending (<span id="count-pending">0</span>)
+                    </button>
+                    <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">
+                        Approved (<span id="count-approved">0</span>)
+                    </button>
+                    <button class="tab-btn" data-status="rejected" onclick="switchTab('rejected')">
+                        Rejected (<span id="count-rejected">0</span>)
+                    </button>
+                    <button class="tab-btn" data-status="all" onclick="switchTab('all')">
+                        All (<span id="count-all">0</span>)
+                    </button>
+                </div>
+                
+                <div class="notification-container" id="requestsContainer">
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading requests...</p>
+                    </div>
                 </div>
             </div>
         </main>
