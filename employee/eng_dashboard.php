@@ -28,6 +28,7 @@ $employeeCode = '';
 $totalSites = 0;
 $activeProjects = 0;
 $pendingRequests = 0;
+$pendingOvertimeRequests = 0;
 $recentTransfers = [];
 $dbError = null;
 
@@ -122,6 +123,18 @@ try {
         $pendingRequests = $row['count'];
     }
     mysqli_stmt_close($caStmt);
+    
+    // 4b. Get pending overtime requests count
+    $otQuery = "SELECT COUNT(*) as count FROM overtime_requests 
+                WHERE employee_id = ? AND status = 'pending'";
+    $otStmt = mysqli_prepare($db, $otQuery);
+    mysqli_stmt_bind_param($otStmt, 'i', $employeeId);
+    mysqli_stmt_execute($otStmt);
+    $otResult = mysqli_stmt_get_result($otStmt);
+    if ($row = mysqli_fetch_assoc($otResult)) {
+        $pendingOvertimeRequests = $row['count'];
+    }
+    mysqli_stmt_close($otStmt);
 
     // 5. Recent Employee Transfers
     $query = "SELECT 
@@ -195,7 +208,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_cash_advance'
     exit();
 }
 
-// Helper function to format date
+// Handle Overtime Request AJAX
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_overtime'])) {
+    header('Content-Type: application/json');
+    
+    $branchName = trim($_POST['branch_name'] ?? '');
+    $requestDate = $_POST['request_date'] ?? '';
+    $requestedHours = floatval($_POST['requested_hours'] ?? 0);
+    $overtimeReason = trim($_POST['overtime_reason'] ?? '');
+    
+    if (empty($branchName)) {
+        echo json_encode(['success' => false, 'message' => 'Please select a branch']);
+        exit();
+    }
+    
+    if (empty($requestDate)) {
+        echo json_encode(['success' => false, 'message' => 'Please select a date']);
+        exit();
+    }
+    
+    if ($requestedHours <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Please enter valid overtime hours']);
+        exit();
+    }
+    
+    if (empty($overtimeReason)) {
+        echo json_encode(['success' => false, 'message' => 'Please provide a reason for overtime']);
+        exit();
+    }
+    
+    // Insert into overtime_requests table
+    $query = "INSERT INTO overtime_requests (employee_id, branch_name, request_date, requested_hours, overtime_reason, status, requested_by, requested_by_user_id, requested_at) 
+              VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())";
+    $stmt = mysqli_prepare($db, $query);
+    $requestedBy = $currentUserName;
+    $requestedByUserId = $currentUserId;
+    mysqli_stmt_bind_param($stmt, 'issdssi', $employeeId, $branchName, $requestDate, $requestedHours, $overtimeReason, $requestedBy, $requestedByUserId);
+    
+    if (mysqli_stmt_execute($stmt)) {
+        $overtimeRequestId = mysqli_insert_id($db);
+        mysqli_stmt_close($stmt);
+        
+        // Insert notification for the employee
+        $notificationTitle = 'Overtime Request Submitted';
+        $notificationMessage = "Your overtime request for {$requestedHours} hours on {$requestDate} at {$branchName} has been submitted and is pending approval.";
+        $notifQuery = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) 
+                       VALUES (?, ?, 'overtime_approved', ?, ?, 0, NOW())";
+        $notifStmt = mysqli_prepare($db, $notifQuery);
+        mysqli_stmt_bind_param($notifStmt, 'iiss', $employeeId, $overtimeRequestId, $notificationTitle, $notificationMessage);
+        mysqli_stmt_execute($notifStmt);
+        mysqli_stmt_close($notifStmt);
+        
+        echo json_encode(['success' => true, 'id' => $overtimeRequestId, 'message' => 'Overtime request submitted successfully']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to submit overtime request']);
+    }
+    exit();
+}
 function formatDateShort($date) {
     return date('M d, Y', strtotime($date));
 }
@@ -435,6 +504,141 @@ function formatDateShort($date) {
         }
         
         .ca-alert.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #F44336;
+            color: #F44336;
+        }
+        
+        /* Overtime Request Section Styles */
+        .overtime-request-section {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 100%);
+            border: 1px solid rgba(255, 152, 0, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .overtime-request-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .overtime-request-header i {
+            font-size: 24px;
+            color: var(--gold-2);
+        }
+        
+        .overtime-request-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .ot-form {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .ot-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .ot-field {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .ot-field label {
+            color: #b5b5b5;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .ot-field input,
+        .ot-field select,
+        .ot-field textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .ot-field input:focus,
+        .ot-field select:focus,
+        .ot-field textarea:focus {
+            outline: none;
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+        
+        .ot-field select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+        
+        .ot-field select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        .ot-field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .btn-submit-ot {
+            background: linear-gradient(180deg, #FF9800 0%, #F57C00 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 24px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .btn-submit-ot:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
+        }
+        
+        .ot-alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        .ot-alert.show {
+            display: block;
+        }
+        
+        .ot-alert.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+        
+        .ot-alert.error {
             background: rgba(244, 67, 54, 0.2);
             border: 1px solid #F44336;
             color: #F44336;
@@ -720,6 +924,51 @@ function formatDateShort($date) {
                     <button type="submit" class="btn-submit-ca">
                         <i class="fas fa-paper-plane"></i>
                         Submit Request to Admin
+                    </button>
+                </form>
+            </div>
+
+            <!-- Overtime Request Section -->
+            <div class="overtime-request-section">
+                <div class="overtime-request-header">
+                    <i class="fas fa-clock"></i>
+                    <h3>Request Overtime</h3>
+                    <?php if ($pendingOvertimeRequests > 0): ?>
+                        <span class="notification-badge" style="margin-left: auto;"><?php echo $pendingOvertimeRequests; ?> Pending</span>
+                    <?php endif; ?>
+                </div>
+                
+                <div id="otAlert" class="ot-alert"></div>
+                
+                <form class="ot-form" id="overtimeForm">
+                    <div class="ot-field">
+                        <label for="otBranch">Branch / Site</label>
+                        <select id="otBranch" name="branch_name" required>
+                            <option value="">Select a branch...</option>
+                            <?php foreach ($branchesList as $branch): ?>
+                                <option value="<?php echo htmlspecialchars($branch['branch_name']); ?>">
+                                    <?php echo htmlspecialchars($branch['branch_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="ot-row">
+                        <div class="ot-field">
+                            <label for="otDate">Date</label>
+                            <input type="date" id="otDate" name="request_date" required>
+                        </div>
+                        <div class="ot-field">
+                            <label for="otHours">Hours</label>
+                            <input type="number" id="otHours" name="requested_hours" min="0.5" max="24" step="0.5" placeholder="e.g. 2.5" required>
+                        </div>
+                    </div>
+                    <div class="ot-field">
+                        <label for="otReason">Reason / Justification</label>
+                        <textarea id="otReason" name="overtime_reason" placeholder="Explain why overtime is needed..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit-ot">
+                        <i class="fas fa-paper-plane"></i>
+                        Submit Overtime Request
                     </button>
                 </form>
             </div>
@@ -1101,6 +1350,54 @@ function formatDateShort($date) {
             .finally(() => {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request to Admin';
+            });
+        });
+        
+        // Overtime Request Form submission
+        document.getElementById('overtimeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const alertDiv = document.getElementById('otAlert');
+            const submitBtn = form.querySelector('.btn-submit-ot');
+            
+            const formData = new FormData(form);
+            formData.append('request_overtime', '1');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+            .then(async r => {
+                const text = await r.text();
+                console.log('Raw server response:', text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    throw new Error('Server returned non-JSON: ' + text.substring(0, 200));
+                }
+            })
+            .then(data => {
+                alertDiv.className = 'ot-alert ' + (data.success ? 'success show' : 'error show');
+                alertDiv.textContent = data.message;
+                
+                if (data.success) {
+                    form.reset();
+                    setTimeout(() => location.reload(), 1500);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alertDiv.className = 'ot-alert error show';
+                alertDiv.textContent = 'Error submitting request. Please try again.';
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Overtime Request';
             });
         });
     </script>
