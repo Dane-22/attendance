@@ -1,0 +1,307 @@
+/* ============================================
+   THEME VARIABLES - JAJR Attendance System
+   ============================================
+   
+   IMPORTANT: Default theme is DARK.
+   Light mode only activates when body has 'light-mode' class.
+   This ensures the default dark theme remains completely unaffected.
+   
+   Usage: All CSS should use var(--variable-name) instead of hardcoded colors.
+   */
+
+/* ============================================
+   DEFAULT THEME (DARK) - :root
+   ============================================
+   These are the fallback values used when no theme class is present.
+   They match the existing dark theme exactly.
+   */
+:root {
+    /* Background Colors */
+    --bg-page: #0b0b0b;
+    --bg-card: #161616;
+    --bg-card-hover: #1e1e1e;
+    --bg-sidebar: linear-gradient(180deg, rgba(20,20,20,0.98), rgba(10,10,10,0.98));
+    --bg-input: transparent;
+    --bg-modal: #161616;
+    --bg-hover: rgba(255,255,255,0.05);
+    
+    /* Text Colors */
+    --text-primary: rgba(255,255,255,0.92);
+    --text-secondary: rgba(255,255,255,0.75);
+    --text-muted: rgba(255,255,255,0.5);
+    --text-disabled: rgba(255,255,255,0.35);
+    
+    /* Accent Colors - Gold Brand */
+    --gold-1: #FFD66B;
+    --gold-2: #D4AF37;
+    --gold-3: #B8860B;
+    --accent-gradient: linear-gradient(90deg, #FFD66B, #D4AF37);
+    --accent-gradient-hover: linear-gradient(90deg, #FFE07A, #E8C547);
+    
+    /* Status Colors */
+    --status-success: #39ff14;
+    --status-success-bg: rgba(57,255,20,0.1);
+    --status-danger: #e06a6a;
+    --status-danger-bg: rgba(224,106,106,0.1);
+    --status-warning: #f59e0b;
+    --status-warning-bg: rgba(245,158,11,0.1);
+    --status-info: #3b82f6;
+    --status-info-bg: rgba(59,130,246,0.1);
+    
+    /* Border Colors */
+    --border-subtle: rgba(255,255,255,0.03);
+    --border-default: rgba(255,255,255,0.06);
+    --border-focus: rgba(212,175,55,0.3);
+    --border-gold: rgba(212,175,55,0.15);
+    
+    /* Shadows */
+    --shadow-card: 0 6px 20px rgba(0,0,0,0.6);
+    --shadow-card-hover: 0 26px 60px rgba(212,175,55,0.08);
+    --shadow-modal: 0 30px 80px rgba(0,0,0,0.8);
+    --shadow-button: 0 4px 12px rgba(0,0,0,0.3);
+    --shadow-button-hover: 0 8px 24px rgba(212,175,55,0.2);
+    
+    /* Spacing Scale */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+    
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms ease;
+    --transition-bounce: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Backdrop */
+    --backdrop: rgba(0,0,0,0.45);
+    --backdrop-blur: blur(10px);
+    
+    /* Glass Effect */
+    --glass-bg: rgba(255,255,255,0.03);
+    --glass-border: rgba(255,255,255,0.06);
+}
+
+/* ============================================
+   LIGHT THEME - body.light-mode
+   ============================================
+   These overrides ONLY apply when body has 'light-mode' class.
+   They will NEVER affect the default dark theme.
+   */
+body.light-mode {
+    /* Background Colors - Softer palette */
+    --bg-page: #f8f9fa;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f3f4;
+    --bg-sidebar: #ffffff;
+    --bg-input: #ffffff;
+    --bg-modal: #ffffff;
+    --bg-hover: rgba(212,175,55,0.08);
+    
+    /* Text Colors - Dark grays instead of pure black */
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --text-muted: #80868b;
+    --text-disabled: #9aa0a6;
+    
+    /* Accent Colors - Maintain gold brand */
+    --gold-1: #E8C547;
+    --gold-2: #D4AF37;
+    --gold-3: #B8960C;
+    --accent-gradient: linear-gradient(135deg, #E8C547 0%, #D4AF37 50%, #B8960C 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #F0D458 0%, #E8C547 50%, #D4AF37 100%);
+    
+    /* Status Colors - Darker for light backgrounds */
+    --status-success: #059669;
+    --status-success-bg: #d4edda;
+    --status-danger: #dc2626;
+    --status-danger-bg: #f8d7da;
+    --status-warning: #d97706;
+    --status-warning-bg: #fff3cd;
+    --status-info: #2563eb;
+    --status-info-bg: #d1ecf1;
+    
+    /* Border Colors - Soft grays */
+    --border-subtle: #e8eaed;
+    --border-default: #dadce0;
+    --border-focus: #d4af37;
+    --border-gold: #d4af37;
+    
+    /* Shadows - Softer for light mode */
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-card-hover: 0 8px 16px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06);
+    --shadow-modal: 0 10px 40px rgba(0,0,0,0.15);
+    --shadow-button: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-button-hover: 0 4px 12px rgba(212,175,55,0.3);
+    
+    /* Backdrop */
+    --backdrop: rgba(0,0,0,0.3);
+    
+    /* Glass Effect - For light mode */
+    --glass-bg: rgba(255,255,255,0.85);
+    --glass-border: rgba(255,255,255,0.5);
+}
+
+/* ============================================
+   UTILITY CLASSES (Work in both themes)
+   ============================================ */
+
+/* Text colors */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-disabled { color: var(--text-disabled); }
+
+/* Accent text */
+.text-gold { color: var(--gold-2); }
+
+/* Background colors */
+.bg-page { background: var(--bg-page); }
+.bg-card { background: var(--bg-card); }
+.bg-hover { background: var(--bg-hover); }
+
+/* Border utilities */
+.border-subtle { border-color: var(--border-subtle); }
+.border-default { border-color: var(--border-default); }
+.border-gold { border-color: var(--border-gold); }
+
+/* Shadow utilities */
+.shadow-card { box-shadow: var(--shadow-card); }
+.shadow-card-hover:hover { box-shadow: var(--shadow-card-hover); }
+.shadow-button { box-shadow: var(--shadow-button); }
+
+/* Transition utilities */
+.transition-fast { transition: all var(--transition-fast); }
+.transition-base { transition: all var(--transition-base); }
+.transition-slow { transition: all var(--transition-slow); }
+
+/* ============================================
+   VISIBLE HOVER EFFECTS (Both themes)
+   ============================================ */
+
+/* Card hover - clearly visible lift */
+.hover-lift {
+    transition: transform var(--transition-base), 
+                box-shadow var(--transition-base);
+}
+
+.hover-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.hover-lift:active {
+    transform: translateY(-2px) scale(0.98);
+    transition: transform var(--transition-fast);
+}
+
+/* Button hover - scale with glow */
+.hover-scale {
+    transition: transform var(--transition-bounce),
+                box-shadow var(--transition-base),
+                background var(--transition-fast);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-button-hover);
+}
+
+.hover-scale:active {
+    transform: scale(0.95);
+    transition: transform var(--transition-fast);
+}
+
+/* Menu item hover - slide with gold indicator */
+.hover-slide {
+    position: relative;
+    transition: transform var(--transition-base),
+                background var(--transition-fast),
+                padding var(--transition-base);
+}
+
+.hover-slide::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--gold-2);
+    transform: scaleY(0);
+    transition: transform var(--transition-base);
+}
+
+.hover-slide:hover {
+    transform: translateX(8px);
+    background: var(--bg-hover);
+}
+
+.hover-slide:hover::before {
+    transform: scaleY(1);
+}
+
+/* Input focus - visible ring */
+.focus-ring:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+    transition: box-shadow var(--transition-fast);
+}
+
+/* Link hover - animated underline */
+.hover-underline {
+    position: relative;
+    text-decoration: none;
+}
+
+.hover-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--gold-2);
+    transition: width 0.3s ease;
+}
+
+.hover-underline:hover::after {
+    width: 100%;
+}
+
+/* ============================================
+   STATUS BADGES (Both themes)
+   ============================================ */
+
+.badge-success {
+    background: var(--status-success-bg);
+    color: var(--status-success);
+    border: 1px solid var(--status-success);
+}
+
+.badge-danger {
+    background: var(--status-danger-bg);
+    color: var(--status-danger);
+    border: 1px solid var(--status-danger);
+}
+
+.badge-warning {
+    background: var(--status-warning-bg);
+    color: var(--status-warning);
+    border: 1px solid var(--status-warning);
+}
+
+.badge-info {
+    background: var(--status-info-bg);
+    color: var(--status-info);
+    border: 1px solid var(--status-info);
+}

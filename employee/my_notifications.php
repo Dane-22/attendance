@@ -2,6 +2,13 @@
 // employee/my_notifications.php
 // Employee notification center - shows overtime request status updates
 
+// Start output buffering to prevent any accidental output
+ob_start();
+
+// Suppress PHP errors for clean JSON output
+error_reporting(0);
+ini_set('display_errors', 0);
+
 session_start();
 
 // Check if user is logged in
@@ -19,6 +26,10 @@ require_once __DIR__ . '/../conn/db_connection.php';
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Clean output buffer to prevent any previous output
+    if (ob_get_level()) {
+        ob_clean();
+    }
     header('Content-Type: application/json');
     
     // Load notifications
@@ -30,13 +41,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $whereClause .= " AND n.is_read = 0";
         }
         
-        $sql = "SELECT n.*, r.requested_hours, r.request_date, r.branch_name, r.rejection_reason, r.status as request_status
+        $sql = "SELECT n.*, r.requested_hours, r.request_date, r.branch_name, r.rejection_reason, r.status as request_status,
+                       c.amount as ca_amount, c.reason as ca_reason, c.status as ca_status, c.rejection_reason as ca_rejection_reason
                 FROM employee_notifications n
                 LEFT JOIN overtime_requests r ON n.overtime_request_id = r.id
+                LEFT JOIN cash_advances c ON n.cash_advance_id = c.id
                 $whereClause
                 ORDER BY n.created_at DESC";
         
         $result = @mysqli_query($db, $sql);
+        
+        // If query failed (e.g., cash_advance_id column doesn't exist), fallback to simpler query
+        if (!$result) {
+            $sql = "SELECT n.*, r.requested_hours, r.request_date, r.branch_name, r.rejection_reason, r.status as request_status
+                    FROM employee_notifications n
+                    LEFT JOIN overtime_requests r ON n.overtime_request_id = r.id
+                    $whereClause
+                    ORDER BY n.created_at DESC";
+            $result = @mysqli_query($db, $sql);
+        }
+        
         $notifications = [];
         
         if ($result) {
@@ -52,7 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'requested_hours' => $row['requested_hours'],
                     'branch_name' => $row['branch_name'],
                     'rejection_reason' => $row['rejection_reason'],
-                    'request_status' => $row['request_status']
+                    'request_status' => $row['request_status'],
+                    'ca_amount' => $row['ca_amount'],
+                    'ca_reason' => $row['ca_reason'],
+                    'ca_status' => $row['ca_status'],
+                    'ca_rejection_reason' => $row['ca_rejection_reason']
                 ];
             }
         }
@@ -213,7 +241,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     data = JSON.parse(text);
                 } catch (e) {
                     console.error('JSON parse error:', e);
-                    throw new Error('Invalid response from server');
+                    console.error('Raw server response:', text);
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>Server Error (check console for details)</p>
+                            <pre style="font-size: 10px; max-width: 100%; overflow: auto; text-align: left; background: #222; padding: 10px; margin-top: 10px;">${escapeHtml(text.substring(0, 500))}</pre>
+                        </div>
+                    `;
+                    return;
                 }
                 
                 if (data.success) {
@@ -266,10 +302,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             let html = '<div class="notifications-grid">';
             
             notifications.forEach(notif => {
-                const isApproved = notif.type === 'overtime_approved';
-                const statusIcon = isApproved ? 'fa-check-circle' : 'fa-times-circle';
-                const statusClass = isApproved ? 'approved' : 'rejected';
-                const statusText = isApproved ? 'APPROVED' : 'REJECTED';
+                // Determine notification type and styling
+                let isApproved = false;
+                let isPending = false;
+                let isCashAdvance = false;
+                let statusIcon, statusClass, statusText, metaInfo;
+                
+                if (notif.type === 'overtime_approved') {
+                    isApproved = true;
+                    statusIcon = 'fa-check-circle';
+                    statusClass = 'approved';
+                    statusText = 'APPROVED';
+                    metaInfo = `${formatDate(notif.request_date)} • ${notif.requested_hours} hrs`;
+                } else if (notif.type === 'overtime_rejected') {
+                    statusIcon = 'fa-times-circle';
+                    statusClass = 'rejected';
+                    statusText = 'REJECTED';
+                    metaInfo = `${formatDate(notif.request_date)} • ${notif.requested_hours} hrs`;
+                } else if (notif.type === 'cash_advance_pending') {
+                    isPending = true;
+                    isCashAdvance = true;
+                    statusIcon = 'fa-clock';
+                    statusClass = 'pending';
+                    statusText = 'PENDING';
+                    metaInfo = notif.ca_amount ? `Amount: ₱${parseFloat(notif.ca_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : '';
+                } else if (notif.type === 'cash_advance_approved') {
+                    isApproved = true;
+                    isCashAdvance = true;
+                    statusIcon = 'fa-check-circle';
+                    statusClass = 'approved';
+                    statusText = 'APPROVED';
+                    metaInfo = notif.ca_amount ? `Amount: ₱${parseFloat(notif.ca_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : '';
+                } else if (notif.type === 'cash_advance_rejected') {
+                    isCashAdvance = true;
+                    statusIcon = 'fa-times-circle';
+                    statusClass = 'rejected';
+                    statusText = 'REJECTED';
+                    metaInfo = notif.ca_amount ? `Amount: ₱${parseFloat(notif.ca_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : '';
+                } else {
+                    // Default fallback
+                    statusIcon = 'fa-info-circle';
+                    statusClass = 'info';
+                    statusText = 'INFO';
+                    metaInfo = '';
+                }
+                
                 const unreadClass = notif.is_read ? '' : 'unread';
                 const dotIndicator = notif.is_read ? '' : '<span class="unread-dot"></span>';
                 
@@ -287,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             <p class="notification-message">${escapeHtml(notif.message)}</p>
                             <div class="notification-meta">
                                 <span class="status-badge ${statusClass}">${statusText}</span>
-                                <span class="date-info">${formatDate(notif.request_date)} • ${notif.requested_hours} hrs</span>
+                                ${metaInfo ? `<span class="date-info">${metaInfo}</span>` : ''}
                             </div>
                         </div>
                         <div class="notification-actions">

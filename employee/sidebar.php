@@ -63,6 +63,11 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
       <i class="fa-solid fa-bars"></i>
     </button>
     
+  <!-- Engineer Only: Dashboard -->
+  <?php if ($userRole === 'Engineer'): ?>
+    <a href="eng_dashboard.php" class="menu-item <?= $current === 'eng_dashboard.php' ? 'active' : '' ?>" data-target="eng_dashboard.php"><span class="icon">🏗️</span><span class="label">Dashboard</span></a>
+  <?php endif; ?>
+
   <!-- Admin/Super Admin Only: Dashboard -->
   <?php if ($isAdmin): ?>
     <a href="dashboard.php" class="menu-item <?= $current === 'dashboard.php' ? 'active' : '' ?>" data-target="dashboard.php"><span class="icon">🏠</span><span class="label">Dashboard</span></a>
@@ -76,7 +81,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <?php if ($isAdmin): ?>
     <a href="notification.php" class="menu-item <?= $current === 'notification.php' ? 'active' : '' ?>" data-target="notification.php">
       <span class="icon">🔔</span>
-      <span class="label">Overtime Requests</span>
+      <span class="label">Notification</span>
       <?php if ($pendingOvertimeCount > 0): ?>
         <span class="notification-badge"><?php echo $pendingOvertimeCount; ?></span>
       <?php endif; ?>
