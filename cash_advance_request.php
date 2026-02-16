@@ -44,7 +44,7 @@ if (empty($reason)) {
 }
 
 // Verify employee exists
-$empQuery = "SELECT id, first_name, last_name, employee_code, monthly_salary FROM employees WHERE id = ?";
+$empQuery = "SELECT id, first_name, last_name, employee_code, daily_rate FROM employees WHERE id = ?";
 $empStmt = mysqli_prepare($db, $empQuery);
 mysqli_stmt_bind_param($empStmt, 'i', $employee_id);
 mysqli_stmt_execute($empStmt);
@@ -71,10 +71,11 @@ if ($pendingCount > 0) {
     exit;
 }
 
-// Check maximum amount (50% of monthly salary or 10000 default)
+// Check maximum amount (50% of estimated monthly salary from daily rate, or 10000 default)
 $maxAmount = 10000; // Default max
-if (!empty($employee['monthly_salary']) && $employee['monthly_salary'] > 0) {
-    $maxAmount = $employee['monthly_salary'] * 0.5;
+if (!empty($employee['daily_rate']) && $employee['daily_rate'] > 0) {
+    $estimatedMonthly = $employee['daily_rate'] * 26; // Assume 26 working days
+    $maxAmount = $estimatedMonthly * 0.5;
 }
 
 if ($amount > $maxAmount) {
