@@ -64,7 +64,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
     </button>
     
   <!-- Engineer Only: Dashboard -->
-  <?php if ($userRole === 'Engineer'): ?>
+  <?php if ($userRole === 'Engineer' || $position === 'Admin'): ?>
     <a href="eng_dashboard.php" class="menu-item <?= $current === 'eng_dashboard.php' ? 'active' : '' ?>" data-target="eng_dashboard.php"><span class="icon">🏗️</span><span class="label">Dashboard</span></a>
   <?php endif; ?>
 
