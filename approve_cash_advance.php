@@ -1,7 +1,7 @@
 <?php
 // approve_cash_advance.php - Admin approval/rejection of cash advance requests
-require_once __DIR__ . '/../../conn/db_connection.php';
-require_once __DIR__ . '/../../functions.php';
+require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 session_start();
 
 header('Content-Type: application/json');

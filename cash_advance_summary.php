@@ -1,7 +1,7 @@
 <?php
 // cash_advance_summary.php - Get cash advance summary for an employee
-require_once __DIR__ . '/../../conn/db_connection.php';
-require_once __DIR__ . '/../../functions.php';
+require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
