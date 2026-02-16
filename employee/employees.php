@@ -441,9 +441,42 @@ if (!isset($_SESSION['employee_code'])) {
     function downloadQRCode() {
       const qrCanvas = document.querySelector('#qrcode canvas');
       if (qrCanvas) {
+        // Create a new canvas with extra space for the employee name
+        const newCanvas = document.createElement('canvas');
+        const ctx = newCanvas.getContext('2d');
+        
+        // Set canvas size - QR code size + space for text
+        const qrSize = 280;
+        const textHeight = 60;
+        const padding = 20;
+        newCanvas.width = qrSize + (padding * 2);
+        newCanvas.height = qrSize + textHeight + (padding * 2);
+        
+        // Fill white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+        
+        // Draw QR code centered
+        ctx.drawImage(qrCanvas, padding, padding, qrSize, qrSize);
+        
+        // Draw employee name below QR code
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        const employeeName = document.getElementById('qrEmployeeName').textContent;
+        const employeeCode = document.getElementById('qrEmployeeCode').textContent;
+        
+        // Draw name
+        ctx.fillText(employeeName, newCanvas.width / 2, qrSize + padding + 25);
+        
+        // Draw employee code below name
+        ctx.font = '14px Arial';
+        ctx.fillText(employeeCode, newCanvas.width / 2, qrSize + padding + 45);
+        
+        // Download the new canvas
         const link = document.createElement('a');
         link.download = 'employee-qr-' + document.getElementById('qrEmployeeCode').textContent + '.png';
-        link.href = qrCanvas.toDataURL('image/png');
+        link.href = newCanvas.toDataURL('image/png');
         link.click();
       }
     }
