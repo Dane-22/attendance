@@ -25,6 +25,7 @@ if (!isset($_SESSION['employee_code'])) {
   <link rel="stylesheet" href="css/employees.css">
   <link rel="stylesheet" href="css/light-theme.css">
   <script src="js/theme.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
  
 </head>
@@ -175,6 +176,9 @@ if (!isset($_SESSION['employee_code'])) {
                   <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
                 </div>
                 <div class="employee-row-actions">
+                  <button class="row-action-btn row-action-qr" onclick="generateQRCode(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>', '<?php echo htmlspecialchars($e['employee_code']); ?>', '<?php echo htmlspecialchars($e['email']); ?>', '<?php echo htmlspecialchars($e['position']); ?>')" title="Generate QR Code">
+                    <i class="fa-solid fa-qrcode"></i>
+                  </button>
                   <?php if ($isSuperAdmin): ?>
                   <button class="row-action-btn row-action-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')" title="Delete">
                     <i class="fa-solid fa-trash"></i>
@@ -365,7 +369,92 @@ if (!isset($_SESSION['employee_code'])) {
     </div>
   </div>
 
-  <script src="js/employees.js.php?totalPages=<?php echo $totalPages; ?>&currentView=<?php echo $currentView; ?>&perPage=<?php echo $perPage; ?>&page=<?php echo $page; ?>"></script>
+  <!-- QR Code Modal -->
+  <div class="qr-modal" id="qrModal">
+    <div class="qr-modal-content">
+      <div class="qr-modal-header">
+        <h3><i class="fa-solid fa-qrcode"></i> Employee QR Code</h3>
+        <button class="qr-close-btn" onclick="closeQRModal()">&times;</button>
+      </div>
+      <div class="qr-modal-body">
+        <div class="qr-employee-info">
+          <div class="qr-employee-name" id="qrEmployeeName"></div>
+          <div class="qr-employee-code" id="qrEmployeeCode"></div>
+        </div>
+        <div class="qr-code-container">
+          <div id="qrcode"></div>
+        </div>
+        <div class="qr-instructions">
+          Scan this QR code for quick employee identification
+        </div>
+        <div class="qr-data-preview">
+          <div class="qr-data-label">QR Data:</div>
+          <div class="qr-data-content" id="qrDataContent"></div>
+        </div>
+      </div>
+      <div class="qr-modal-footer">
+        <button class="qr-btn qr-btn-secondary" onclick="closeQRModal()">Close</button>
+        <button class="qr-btn qr-btn-primary" onclick="downloadQRCode()">
+          <i class="fa-solid fa-download"></i> Download QR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentQRCode = null;
+
+    function generateQRCode(event, id, name, code, email, position) {
+      event.stopPropagation();
+      
+      // Build the URL for QR code scanning - this will trigger time-in directly
+      const baseUrl = window.location.origin + '/employee/api/qr_timein.php';
+      const qrUrl = `${baseUrl}?id=${id}&code=${encodeURIComponent(code)}`;
+      
+      // Update modal content
+      document.getElementById('qrEmployeeName').textContent = name;
+      document.getElementById('qrEmployeeCode').textContent = code;
+      document.getElementById('qrDataContent').textContent = qrUrl;
+      
+      // Clear previous QR code
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = '';
+      
+      // Generate new QR code with URL
+      currentQRCode = new QRCode(qrContainer, {
+        text: qrUrl,
+        width: 200,
+        height: 200,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      
+      // Show modal
+      document.getElementById('qrModal').style.display = 'flex';
+    }
+
+    function closeQRModal() {
+      document.getElementById('qrModal').style.display = 'none';
+    }
+
+    function downloadQRCode() {
+      const qrCanvas = document.querySelector('#qrcode canvas');
+      if (qrCanvas) {
+        const link = document.createElement('a');
+        link.download = 'employee-qr-' + document.getElementById('qrEmployeeCode').textContent + '.png';
+        link.href = qrCanvas.toDataURL('image/png');
+        link.click();
+      }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('qrModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeQRModal();
+      }
+    });
+  </script>
 </body>
 </html>
 
