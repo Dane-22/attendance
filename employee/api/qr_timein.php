@@ -13,9 +13,10 @@ if (!$employeeId || !$employeeCode) {
     exit();
 }
 
-// Verify employee exists
-$empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name, employee_code, branch_name 
-                                FROM employees WHERE id = ? AND employee_code = ? LIMIT 1");
+// Verify employee exists and get their branch
+$empStmt = mysqli_prepare($db, "SELECT e.id, e.first_name, e.last_name, e.employee_code, e.branch_id 
+                                FROM employees e 
+                                WHERE e.id = ? AND e.employee_code = ? LIMIT 1");
 mysqli_stmt_bind_param($empStmt, 'is', $employeeId, $employeeCode);
 mysqli_stmt_execute($empStmt);
 $empResult = mysqli_stmt_get_result($empStmt);
@@ -47,11 +48,11 @@ if ($existing) {
 }
 
 // Record time-in
-$branchName = $employee['branch_name'] ?? 'System';
-$sql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status) 
+$branchId = $employee['branch_id'] ?? null;
+$sql = "INSERT INTO attendance (employee_id, branch_id, attendance_date, time_in, status) 
         VALUES (?, ?, CURDATE(), NOW(), 'Present')";
 $stmt = mysqli_prepare($db, $sql);
-mysqli_stmt_bind_param($stmt, "is", $employeeId, $branchName);
+mysqli_stmt_bind_param($stmt, "ii", $employeeId, $branchId);
 
 if (mysqli_stmt_execute($stmt)) {
     $timeIn = date('h:i A');
