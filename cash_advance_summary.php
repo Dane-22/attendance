@@ -43,10 +43,10 @@ $statsQuery = "SELECT
 FROM cash_advances 
 WHERE employee_id = ? $dateFilter";
 
-$statsStmt = $conn->prepare($statsQuery);
-$statsStmt->bind_param("i", $employee_id);
-$statsStmt->execute();
-$stats = $statsStmt->get_result()->fetch_assoc();
+$statsStmt = mysqli_prepare($db, $statsQuery);
+mysqli_stmt_bind_param($statsStmt, 'i', $employee_id);
+mysqli_stmt_execute($statsStmt);
+$stats = mysqli_fetch_assoc(mysqli_stmt_get_result($statsStmt));
 
 // Calculate outstanding balance
 $balanceQuery = "SELECT 
@@ -58,10 +58,10 @@ $balanceQuery = "SELECT
 FROM cash_advances 
 WHERE employee_id = ?";
 
-$balanceStmt = $conn->prepare($balanceQuery);
-$balanceStmt->bind_param("i", $employee_id);
-$balanceStmt->execute();
-$balance = floatval($balanceStmt->get_result()->fetch_assoc()['balance'] ?? 0);
+$balanceStmt = mysqli_prepare($db, $balanceQuery);
+mysqli_stmt_bind_param($balanceStmt, 'i', $employee_id);
+mysqli_stmt_execute($balanceStmt);
+$balance = floatval(mysqli_fetch_assoc(mysqli_stmt_get_result($balanceStmt))['balance'] ?? 0);
 
 echo json_encode([
     'success' => true,

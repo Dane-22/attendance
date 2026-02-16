@@ -23,11 +23,11 @@ if ($employeeId <= 0) {
 
 // Get employee info
 $empQuery = "SELECT id, first_name, last_name, employee_code, position FROM employees WHERE id = ?";
-$empStmt = $conn->prepare($empQuery);
-$empStmt->bind_param("i", $employeeId);
-$empStmt->execute();
-$empResult = $empStmt->get_result();
-$employee = $empResult->fetch_assoc();
+$empStmt = mysqli_prepare($db, $empQuery);
+mysqli_stmt_bind_param($empStmt, 'i', $employeeId);
+mysqli_stmt_execute($empStmt);
+$empResult = mysqli_stmt_get_result($empStmt);
+$employee = mysqli_fetch_assoc($empResult);
 
 if (!$employee) {
     echo json_encode(['success' => false, 'message' => 'Employee not found']);
@@ -38,15 +38,15 @@ if (!$employee) {
 $transQuery = "SELECT * FROM cash_advances 
                WHERE employee_id = ? 
                ORDER BY request_date ASC";
-$transStmt = $conn->prepare($transQuery);
-$transStmt->bind_param("i", $employeeId);
-$transStmt->execute();
-$transResult = $transStmt->get_result();
+$transStmt = mysqli_prepare($db, $transQuery);
+mysqli_stmt_bind_param($transStmt, 'i', $employeeId);
+mysqli_stmt_execute($transStmt);
+$transResult = mysqli_stmt_get_result($transStmt);
 
 $transactions = [];
 $balance = 0;
 
-while ($row = $transResult->fetch_assoc()) {
+while ($row = mysqli_fetch_assoc($transResult)) {
     if ($row['particular'] === 'Payment') {
         $balance -= $row['amount'];
     } else {

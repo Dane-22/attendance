@@ -45,26 +45,26 @@ if (empty($reason)) {
 
 // Verify employee exists
 $empQuery = "SELECT id, first_name, last_name, employee_code, monthly_salary FROM employees WHERE id = ?";
-$empStmt = $conn->prepare($empQuery);
-$empStmt->bind_param("i", $employee_id);
-$empStmt->execute();
-$empResult = $empStmt->get_result();
+$empStmt = mysqli_prepare($db, $empQuery);
+mysqli_stmt_bind_param($empStmt, 'i', $employee_id);
+mysqli_stmt_execute($empStmt);
+$empResult = mysqli_stmt_get_result($empStmt);
 
-if ($empResult->num_rows === 0) {
+if (mysqli_num_rows($empResult) === 0) {
     echo json_encode(['success' => false, 'message' => 'Employee not found']);
     exit;
 }
 
-$employee = $empResult->fetch_assoc();
+$employee = mysqli_fetch_assoc($empResult);
 
 // Check for existing pending requests
 $checkQuery = "SELECT COUNT(*) as pending_count FROM cash_advances 
                WHERE employee_id = ? AND status = 'pending'";
-$checkStmt = $conn->prepare($checkQuery);
-$checkStmt->bind_param("i", $employee_id);
-$checkStmt->execute();
-$checkResult = $checkStmt->get_result();
-$pendingCount = $checkResult->fetch_assoc()['pending_count'];
+$checkStmt = mysqli_prepare($db, $checkQuery);
+mysqli_stmt_bind_param($checkStmt, 'i', $employee_id);
+mysqli_stmt_execute($checkStmt);
+$checkResult = mysqli_stmt_get_result($checkStmt);
+$pendingCount = mysqli_fetch_assoc($checkResult)['pending_count'];
 
 if ($pendingCount > 0) {
     echo json_encode(['success' => false, 'message' => 'You already have a pending cash advance request']);
@@ -90,11 +90,11 @@ $balanceQuery = "SELECT
     SUM(CASE WHEN particular = 'Payment' THEN -amount ELSE amount END) as balance
     FROM cash_advances 
     WHERE employee_id = ? AND status IN ('approved', 'paid')";
-$balanceStmt = $conn->prepare($balanceQuery);
-$balanceStmt->bind_param("i", $employee_id);
-$balanceStmt->execute();
-$balanceResult = $balanceStmt->get_result();
-$outstandingBalance = floatval($balanceResult->fetch_assoc()['balance'] ?? 0);
+$balanceStmt = mysqli_prepare($db, $balanceQuery);
+mysqli_stmt_bind_param($balanceStmt, 'i', $employee_id);
+mysqli_stmt_execute($balanceStmt);
+$balanceResult = mysqli_stmt_get_result($balanceStmt);
+$outstandingBalance = floatval(mysqli_fetch_assoc($balanceResult)['balance'] ?? 0);
 
 if ($outstandingBalance > 0) {
     echo json_encode([
@@ -107,21 +107,21 @@ if ($outstandingBalance > 0) {
 // Insert new cash advance request
 $insertQuery = "INSERT INTO cash_advances (employee_id, amount, particular, reason, status, request_date) 
                 VALUES (?, ?, ?, ?, 'pending', NOW())";
-$insertStmt = $conn->prepare($insertQuery);
-$insertStmt->bind_param("idss", $employee_id, $amount, $particular, $reason);
+$insertStmt = mysqli_prepare($db, $insertQuery);
+mysqli_stmt_bind_param($insertStmt, 'idss', $employee_id, $amount, $particular, $reason);
 
-if ($insertStmt->execute()) {
-    $request_id = $conn->insert_id;
+if (mysqli_stmt_execute($insertStmt)) {
+    $request_id = mysqli_insert_id($db);
     
     // Create notification for admin (if notifications table exists)
     try {
         $notifQuery = "INSERT INTO notifications (type, title, message, employee_id, created_at) 
                        VALUES ('cash_advance', 'New Cash Advance Request', 
-                       'New request from {$employee['first_name']} {$employee['last_name']} - ₱' . number_format($amount, 2), 
+                       'New request from {$employee['first_name']} {$employee['last_name']} - ₱" . number_format($amount, 2) . "', 
                        ?, NOW())";
-        $notifStmt = $conn->prepare($notifQuery);
-        $notifStmt->bind_param("i", $employee_id);
-        $notifStmt->execute();
+        $notifStmt = mysqli_prepare($db, $notifQuery);
+        mysqli_stmt_bind_param($notifStmt, 'i', $employee_id);
+        mysqli_stmt_execute($notifStmt);
     } catch (Exception $e) {
         // Notifications table might not exist, continue silently
     }
@@ -134,7 +134,7 @@ if ($insertStmt->execute()) {
 } else {
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to submit request: ' . $conn->error
+        'message' => 'Failed to submit request: ' . mysqli_error($db)
     ]);
 }
 

@@ -59,10 +59,10 @@ $reqQuery = "SELECT ca.*, e.first_name, e.last_name, e.email
              FROM cash_advances ca
              JOIN employees e ON ca.employee_id = e.id
              WHERE ca.id = ? AND ca.status = 'pending'";
-$reqStmt = $conn->prepare($reqQuery);
-$reqStmt->bind_param("i", $request_id);
-$reqStmt->execute();
-$request = $reqStmt->get_result()->fetch_assoc();
+$reqStmt = mysqli_prepare($db, $reqQuery);
+mysqli_stmt_bind_param($reqStmt, 'i', $request_id);
+mysqli_stmt_execute($reqStmt);
+$request = mysqli_fetch_assoc(mysqli_stmt_get_result($reqStmt));
 
 if (!$request) {
     echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
@@ -74,19 +74,19 @@ if ($action === 'approve') {
     $updateQuery = "UPDATE cash_advances 
                    SET status = 'approved', approved_date = NOW(), approved_by = ?
                    WHERE id = ?";
-    $updateStmt = $conn->prepare($updateQuery);
-    $updateStmt->bind_param("si", $approved_by, $request_id);
+    $updateStmt = mysqli_prepare($db, $updateQuery);
+    mysqli_stmt_bind_param($updateStmt, 'si', $approved_by, $request_id);
     
-    if ($updateStmt->execute()) {
+    if (mysqli_stmt_execute($updateStmt)) {
         // Create notification for employee
         try {
             $notifQuery = "INSERT INTO notifications (type, title, message, employee_id, created_at) 
                           VALUES ('cash_advance', 'Cash Advance Approved', 
                           'Your request for ₱" . number_format($request['amount'], 2) . " has been approved.', 
                           ?, NOW())";
-            $notifStmt = $conn->prepare($notifQuery);
-            $notifStmt->bind_param("i", $request['employee_id']);
-            $notifStmt->execute();
+            $notifStmt = mysqli_prepare($db, $notifQuery);
+            mysqli_stmt_bind_param($notifStmt, 'i', $request['employee_id']);
+            mysqli_stmt_execute($notifStmt);
         } catch (Exception $e) {
             // Notifications table might not exist
         }
@@ -103,19 +103,19 @@ elseif ($action === 'reject') {
     $updateQuery = "UPDATE cash_advances 
                    SET status = 'rejected', approved_date = NOW(), approved_by = ?, reason = CONCAT(reason, ' [Rejected: ', ?, ']')
                    WHERE id = ?";
-    $updateStmt = $conn->prepare($updateQuery);
-    $updateStmt->bind_param("ssi", $approved_by, $rejection_reason, $request_id);
+    $updateStmt = mysqli_prepare($db, $updateQuery);
+    mysqli_stmt_bind_param($updateStmt, 'ssi', $approved_by, $rejection_reason, $request_id);
     
-    if ($updateStmt->execute()) {
+    if (mysqli_stmt_execute($updateStmt)) {
         // Create notification for employee
         try {
             $notifQuery = "INSERT INTO notifications (type, title, message, employee_id, created_at) 
                           VALUES ('cash_advance', 'Cash Advance Rejected', 
                           'Your request for ₱" . number_format($request['amount'], 2) . " was rejected. Reason: $rejection_reason', 
                           ?, NOW())";
-            $notifStmt = $conn->prepare($notifQuery);
-            $notifStmt->bind_param("i", $request['employee_id']);
-            $notifStmt->execute();
+            $notifStmt = mysqli_prepare($db, $notifQuery);
+            mysqli_stmt_bind_param($notifStmt, 'i', $request['employee_id']);
+            mysqli_stmt_execute($notifStmt);
         } catch (Exception $e) {
             // Notifications table might not exist
         }
@@ -132,10 +132,10 @@ elseif ($action === 'pay') {
     $updateQuery = "UPDATE cash_advances 
                    SET status = 'paid', paid_date = NOW()
                    WHERE id = ? AND status = 'approved'";
-    $updateStmt = $conn->prepare($updateQuery);
-    $updateStmt->bind_param("i", $request_id);
+    $updateStmt = mysqli_prepare($db, $updateQuery);
+    mysqli_stmt_bind_param($updateStmt, 'i', $request_id);
     
-    if ($updateStmt->execute() && $updateStmt->affected_rows > 0) {
+    if (mysqli_stmt_execute($updateStmt) && mysqli_affected_rows($db) > 0) {
         echo json_encode([
             'success' => true,
             'message' => 'Cash advance marked as paid'
