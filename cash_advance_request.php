@@ -87,23 +87,23 @@ if ($amount > $maxAmount) {
 }
 
 // Check outstanding balance
-$balanceQuery = "SELECT 
-    SUM(CASE WHEN particular = 'Payment' THEN -amount ELSE amount END) as balance
-    FROM cash_advances 
-    WHERE employee_id = ? AND status IN ('approved', 'paid')";
-$balanceStmt = mysqli_prepare($db, $balanceQuery);
-mysqli_stmt_bind_param($balanceStmt, 'i', $employee_id);
-mysqli_stmt_execute($balanceStmt);
-$balanceResult = mysqli_stmt_get_result($balanceStmt);
-$outstandingBalance = floatval(mysqli_fetch_assoc($balanceResult)['balance'] ?? 0);
+// $balanceQuery = "SELECT 
+//     SUM(CASE WHEN particular = 'Payment' THEN -amount ELSE amount END) as balance
+//     FROM cash_advances 
+//     WHERE employee_id = ? AND status IN ('approved', 'paid')";
+// $balanceStmt = mysqli_prepare($db, $balanceQuery);
+// mysqli_stmt_bind_param($balanceStmt, 'i', $employee_id);
+// mysqli_stmt_execute($balanceStmt);
+// $balanceResult = mysqli_stmt_get_result($balanceStmt);
+// $outstandingBalance = floatval(mysqli_fetch_assoc($balanceResult)['balance'] ?? 0);
 
-if ($outstandingBalance > 0) {
-    echo json_encode([
-        'success' => false, 
-        'message' => 'You have an outstanding balance of ₱' . number_format($outstandingBalance, 2) . '. Please settle before requesting new advance.'
-    ]);
-    exit;
-}
+// if ($outstandingBalance > 0) {
+//     echo json_encode([
+//         'success' => false, 
+//         'message' => 'You have an outstanding balance of ₱' . number_format($outstandingBalance, 2) . '. Please settle before requesting new advance.'
+//     ]);
+//     exit;
+// }
 
 // Insert new cash advance request
 $insertQuery = "INSERT INTO cash_advances (employee_id, amount, particular, reason, status, request_date) 
