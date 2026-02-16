@@ -5,16 +5,29 @@ session_start();
 // ===== SET PHILIPPINE TIME ZONE =====
 date_default_timezone_set('Asia/Manila'); // Philippine Time (UTC+8)
 
+// Check if this is a QR scan auto time-in request
+$isQRScan = isset($_GET['auto_timein']) && isset($_GET['emp_id']);
+
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    // Check if this is an AJAX request
-    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => 'Session expired. Please refresh the page and login again.']);
-        exit();
+    // If it's a QR scan, create temporary session to allow the request
+    if ($isQRScan) {
+        // Create temporary authenticated session for QR scan
+        $_SESSION['logged_in'] = true;
+        $_SESSION['employee_id'] = intval($_GET['emp_id']);
+        $_SESSION['employee_code'] = isset($_GET['emp_code']) ? $_GET['emp_code'] : '';
+        $_SESSION['position'] = 'QR Scan';
+        $_SESSION['qr_temp_session'] = true; // Mark as temporary
     } else {
-        header('Location: ../login.php');
-        exit();
+        // Check if this is an AJAX request
+        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Session expired. Please refresh the page and login again.']);
+            exit();
+        } else {
+            header('Location: ../login.php');
+            exit();
+        }
     }
 }
 
