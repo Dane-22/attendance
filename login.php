@@ -333,6 +333,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       -ms-user-select: none;
       user-select: none;
     }
+
+    /* QR Scanner modal */
+    .qr-scan-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 16px;
+    }
+    .qr-scan-panel {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(15, 15, 15, 0.95);
+      border: 1px solid rgba(255,165,0,0.25);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .qr-scan-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .qr-scan-title {
+      font-weight: 700;
+      color: #FFA500;
+    }
+    .qr-close {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    .qr-scan-status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+    }
+    #qrReader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+    }
   </style>
 </head>
 <body class="auth-bg text-white fade-in">
@@ -344,6 +394,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <h2 class="text-3xl font-bold">Welcome Back</h2>
           <p class="mt-2 small-muted">Sign in to manage attendance and engineering resources.</p>
         </div>
+
+  <!-- QR Scanner Modal (No login required) -->
+  <div id="qrScanBackdrop" class="qr-scan-backdrop" aria-hidden="true">
+    <div class="qr-scan-panel" role="dialog" aria-modal="true" aria-label="QR Scanner">
+      <div class="qr-scan-header">
+        <div class="qr-scan-title"><i class="fa-solid fa-camera"></i> Scan Employee QR</div>
+        <button type="button" class="qr-close" id="closeQrScannerBtn">Close</button>
+      </div>
+      <div id="qrReader"></div>
+      <div class="qr-scan-status" id="qrScanStatus">Allow camera access, then point at the QR code.</div>
+    </div>
+  </div>
 
         <div class="mt-6">
           <!-- SVG engineering gear -->
@@ -367,7 +429,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
 
       <div class="auth-right px-8 py-10">
-        <h3 class="text-2xl font-semibold">Log In</h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-2xl font-semibold">Log In</h3>
+          <button type="button" id="openQrScannerBtn" aria-label="Open QR Scanner" class="text-orange-400 hover:text-orange-300" style="font-size: 20px; padding: 6px 8px; border-radius: 8px;">
+            <i class="fa-solid fa-qrcode"></i>
+          </button>
+        </div>
         <p class="small-muted mt-2">Use your Employee Code or Email to sign in.</p>
 
         <?php 
@@ -450,6 +517,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 
   <script src="assets/js/auth.js" defer></script>
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
   <script>
     // SIMPLE PASSWORD TOGGLE - NO ANTI-COPY COMPLICATIONS
     const togglePassword = document.getElementById('togglePassword');
@@ -472,6 +540,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
       });
     }
+
+    // QR Scanner (kiosk mode: does not require login)
+    (function() {
+      const openBtn = document.getElementById('openQrScannerBtn');
+      const backdrop = document.getElementById('qrScanBackdrop');
+      const closeBtn = document.getElementById('closeQrScannerBtn');
+      const statusEl = document.getElementById('qrScanStatus');
+
+      let qr = null;
+      let isRunning = false;
+
+      function setStatus(msg) {
+        if (statusEl) statusEl.textContent = msg;
+      }
+
+      async function stopScanner() {
+        if (!qr) return;
+        if (!isRunning) return;
+        try {
+          await qr.stop();
+        } catch (e) {
+          // ignore
+        }
+        try {
+          await qr.clear();
+        } catch (e) {
+          // ignore
+        }
+        isRunning = false;
+      }
+
+      async function startScanner() {
+        if (typeof Html5Qrcode === 'undefined') {
+          setStatus('QR scanner library is still loading. Please try again.');
+          return;
+        }
+
+        if (!qr) {
+          qr = new Html5Qrcode('qrReader');
+        }
+
+        setStatus('Starting camera...');
+
+        const config = { fps: 10, qrbox: { width: 260, height: 260 } };
+
+        try {
+          const cameras = await Html5Qrcode.getCameras();
+          const camId = (cameras && cameras.length) ? cameras[cameras.length - 1].id : null;
+          await qr.start(
+            camId || { facingMode: 'environment' },
+            config,
+            async (decodedText) => {
+              if (!decodedText) return;
+              setStatus('QR detected. Processing...');
+
+              // Stop scanner before navigation
+              await stopScanner();
+              backdrop.style.display = 'none';
+              backdrop.setAttribute('aria-hidden', 'true');
+
+              // Expect a full URL or relative URL pointing to select_employee.php?auto_timein=1...
+              // Redirecting reuses existing server-side QR auto clock-in/out flow.
+              window.location.href = decodedText;
+            },
+            (errorMessage) => {
+              // ignore scan errors to avoid spamming UI
+            }
+          );
+          isRunning = true;
+          setStatus('Scanning...');
+        } catch (e) {
+          console.error(e);
+          setStatus('Unable to start camera. Please allow camera permission and try again.');
+        }
+      }
+
+      function openModal() {
+        backdrop.style.display = 'flex';
+        backdrop.setAttribute('aria-hidden', 'false');
+        setStatus('Allow camera access, then point at the QR code.');
+        // slight delay so modal is visible before camera init
+        setTimeout(() => startScanner(), 150);
+      }
+
+      async function closeModal() {
+        await stopScanner();
+        backdrop.style.display = 'none';
+        backdrop.setAttribute('aria-hidden', 'true');
+      }
+
+      if (openBtn) openBtn.addEventListener('click', openModal);
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (backdrop) {
+        backdrop.addEventListener('click', function(e) {
+          if (e.target === backdrop) closeModal();
+        });
+      }
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && backdrop && backdrop.style.display === 'flex') {
+          closeModal();
+        }
+      });
+    })();
   </script>
 </body>
 </html>

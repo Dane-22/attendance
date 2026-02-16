@@ -79,17 +79,64 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
             
             if ($response && $httpCode === 200) {
                 $apiResult = json_decode($response, true);
-                if ($apiResult && $apiResult['success']) {
+                if ($apiResult && !empty($apiResult['success'])) {
                     $qrScanResult = [
                         'success' => true,
                         'message' => $employee['first_name'] . ' ' . $employee['last_name'] . ' time-in recorded at ' . ($apiResult['time_in'] ?? date('h:i A')),
                         'time_in' => $apiResult['time_in'] ?? null
                     ];
                 } else {
-                    $qrScanResult = [
-                        'success' => false,
-                        'message' => $apiResult['message'] ?? 'Failed to record time-in'
-                    ];
+                    $msg = is_array($apiResult) ? ($apiResult['message'] ?? '') : '';
+
+                    // If already clocked in, auto-trigger clock out
+                    if (stripos($msg, 'already clocked in') !== false) {
+                        $clockOutUrl = 'http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . '/employee/api/clock_out.php';
+
+                        $outPostData = [
+                            'employee_id' => $qrEmployeeId,
+                            'employee_code' => $employee['employee_code'],
+                            'branch_name' => $branchName
+                        ];
+
+                        $ch2 = curl_init($clockOutUrl);
+                        curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch2, CURLOPT_POST, true);
+                        curl_setopt($ch2, CURLOPT_POSTFIELDS, http_build_query($outPostData));
+                        curl_setopt($ch2, CURLOPT_HTTPHEADER, [
+                            'X-Requested-With: XMLHttpRequest',
+                            'Cookie: ' . (isset($_SERVER['HTTP_COOKIE']) ? $_SERVER['HTTP_COOKIE'] : '')
+                        ]);
+
+                        $outResponse = curl_exec($ch2);
+                        $outHttpCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+                        curl_close($ch2);
+
+                        if ($outResponse && $outHttpCode === 200) {
+                            $outResult = json_decode($outResponse, true);
+                            if ($outResult && !empty($outResult['success'])) {
+                                $qrScanResult = [
+                                    'success' => true,
+                                    'message' => $employee['first_name'] . ' ' . $employee['last_name'] . ' time-out recorded at ' . ($outResult['time_out'] ?? date('h:i A')),
+                                    'time_out' => $outResult['time_out'] ?? null
+                                ];
+                            } else {
+                                $qrScanResult = [
+                                    'success' => false,
+                                    'message' => $outResult['message'] ?? 'Failed to record time-out'
+                                ];
+                            }
+                        } else {
+                            $qrScanResult = [
+                                'success' => false,
+                                'message' => 'API call failed. Please try again.'
+                            ];
+                        }
+                    } else {
+                        $qrScanResult = [
+                            'success' => false,
+                            'message' => $msg !== '' ? $msg : 'Failed to record time-in'
+                        ];
+                    }
                 }
             } else {
                 $qrScanResult = [
@@ -105,6 +152,7 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
         }
     }
 }
+
 ?>
 
 <!doctype html>
