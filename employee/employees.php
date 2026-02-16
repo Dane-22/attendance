@@ -407,9 +407,9 @@ if (!isset($_SESSION['employee_code'])) {
     function generateQRCode(event, id, name, code, email, position) {
       event.stopPropagation();
       
-      // Build the URL for QR code scanning - this will trigger time-in directly
-      const baseUrl = window.location.origin + '/employee/api/qr_timein.php';
-      const qrUrl = `${baseUrl}?id=${id}&code=${encodeURIComponent(code)}`;
+      // Build the URL for QR code scanning - goes to select_employee.php to auto-trigger time-in
+      const baseUrl = window.location.origin + '/employee/select_employee.php';
+      const qrUrl = `${baseUrl}?auto_timein=1&emp_id=${id}&emp_code=${encodeURIComponent(code)}`;
       
       // Update modal content
       document.getElementById('qrEmployeeName').textContent = name;
@@ -423,8 +423,8 @@ if (!isset($_SESSION['employee_code'])) {
       // Generate new QR code with URL
       currentQRCode = new QRCode(qrContainer, {
         text: qrUrl,
-        width: 200,
-        height: 200,
+        width: 280,
+        height: 280,
         colorDark: '#000000',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.H

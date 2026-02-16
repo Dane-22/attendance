@@ -20,6 +20,78 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
 require('../conn/db_connection.php');
 require('function/attendance.php');
+
+// ===== QR SCAN AUTO TIME-IN VIA API =====
+$qrScanResult = null;
+if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
+    $qrEmployeeId = intval($_GET['emp_id']);
+    $qrEmployeeCode = isset($_GET['emp_code']) ? $_GET['emp_code'] : '';
+    
+    if ($qrEmployeeId) {
+        // Fetch employee details and branch
+        $empStmt = mysqli_prepare($db, "SELECT e.id, e.first_name, e.last_name, e.employee_code, b.branch_name 
+            FROM employees e 
+            LEFT JOIN branches b ON b.id = e.branch_id 
+            WHERE e.id = ? LIMIT 1");
+        mysqli_stmt_bind_param($empStmt, 'i', $qrEmployeeId);
+        mysqli_stmt_execute($empStmt);
+        $empResult = mysqli_stmt_get_result($empStmt);
+        $employee = mysqli_fetch_assoc($empResult);
+        mysqli_stmt_close($empStmt);
+        
+        if ($employee) {
+            $branchName = $employee['branch_name'] ?? 'System';
+            
+            // Call clock_in API directly
+            $apiUrl = 'http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . '/employee/api/clock_in.php';
+            
+            $postData = [
+                'employee_id' => $qrEmployeeId,
+                'employee_code' => $employee['employee_code'],
+                'branch_name' => $branchName
+            ];
+            
+            $ch = curl_init($apiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'X-Requested-With: XMLHttpRequest',
+                'Cookie: ' . (isset($_SERVER['HTTP_COOKIE']) ? $_SERVER['HTTP_COOKIE'] : '')
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($response && $httpCode === 200) {
+                $apiResult = json_decode($response, true);
+                if ($apiResult && $apiResult['success']) {
+                    $qrScanResult = [
+                        'success' => true,
+                        'message' => $employee['first_name'] . ' ' . $employee['last_name'] . ' time-in recorded at ' . ($apiResult['time_in'] ?? date('h:i A')),
+                        'time_in' => $apiResult['time_in'] ?? null
+                    ];
+                } else {
+                    $qrScanResult = [
+                        'success' => false,
+                        'message' => $apiResult['message'] ?? 'Failed to record time-in'
+                    ];
+                }
+            } else {
+                $qrScanResult = [
+                    'success' => false,
+                    'message' => 'API call failed. Please try again.'
+                ];
+            }
+        } else {
+            $qrScanResult = [
+                'success' => false,
+                'message' => 'Employee not found'
+            ];
+        }
+    }
+}
 ?>
 
 <!doctype html>
@@ -35,6 +107,25 @@ require('function/attendance.php');
   <link rel="stylesheet" href="css/select_employee.css">
   <link rel="stylesheet" href="css/light-theme.css">
   <script src="js/theme.js"></script>
+  <style>
+    .qr-result-banner {
+      padding: 16px 24px;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-weight: 600;
+      text-align: center;
+    }
+    .qr-result-banner.success {
+      background: rgba(16, 185, 129, 0.2);
+      border: 2px solid #10b981;
+      color: #10b981;
+    }
+    .qr-result-banner.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid #ef4444;
+      color: #ef4444;
+    }
+  </style>
 
 </head>
 <body>
@@ -42,6 +133,14 @@ require('function/attendance.php');
     <?php include __DIR__ . '/sidebar.php'; ?>
 
     <main class="main-content">
+      <!-- QR Scan Result Message -->
+      <?php if ($qrScanResult): ?>
+      <div class="qr-result-banner <?php echo $qrScanResult['success'] ? 'success' : 'error'; ?>">
+        <i class="fas <?php echo $qrScanResult['success'] ? 'fa-check-circle' : 'fa-exclamation-circle'; ?>"></i>
+        <?php echo htmlspecialchars($qrScanResult['message']); ?>
+      </div>
+      <?php endif; ?>
+
       <!-- Success/Error Messages -->
       <div id="successMessage" class="success-message"></div>
       <div id="errorMessage" class="error-message"></div>
@@ -307,11 +406,58 @@ require('function/attendance.php');
       currentTime: <?php echo json_encode($currentTime); ?>
     };
     window.branchesFromPHP = <?php echo json_encode($branches); ?>;
+
+    // QR Scan Data - for auto-selecting branch after time-in
+    <?php
+    $qrEmployeeId = isset($_GET['emp_id']) ? intval($_GET['emp_id']) : 0;
+    $autoTimein = isset($_GET['auto_timein']) ? 1 : 0;
+    $qrEmployeeBranch = '';
+    
+    if ($qrEmployeeId && $autoTimein) {
+        $branchStmt = mysqli_prepare($db, "SELECT b.branch_name 
+            FROM employees e 
+            LEFT JOIN branches b ON b.id = e.branch_id 
+            WHERE e.id = ? LIMIT 1");
+        if ($branchStmt) {
+            mysqli_stmt_bind_param($branchStmt, 'i', $qrEmployeeId);
+            mysqli_stmt_execute($branchStmt);
+            $branchResult = mysqli_stmt_get_result($branchStmt);
+            if ($branchRow = mysqli_fetch_assoc($branchResult)) {
+                $qrEmployeeBranch = $branchRow['branch_name'];
+            }
+            mysqli_stmt_close($branchStmt);
+        }
+    }
+    ?>
+    window.qrScanData = {
+      enabled: <?php echo $autoTimein ? 'true' : 'false'; ?>,
+      employeeBranch: <?php echo json_encode($qrEmployeeBranch); ?>
+    };
   </script>
   <script src="../assets/js/sidebar-toggle.js"></script>
   <script src="js/attendance.js"></script>
 
+  <!-- QR Scan Auto-Select Branch -->
+  <script>
+  (function() {
+    if (!window.qrScanData || !window.qrScanData.enabled || !window.qrScanData.employeeBranch) return;
 
+    const empBranch = window.qrScanData.employeeBranch;
+    console.log('QR Scan: Auto-selecting branch', empBranch);
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        const branchCards = document.querySelectorAll('.branch-card');
+        branchCards.forEach(function(card) {
+          if (card.dataset.branch === empBranch) {
+            console.log('QR Scan: Selecting branch', empBranch);
+            card.click();
+          }
+        });
+      }, 1000);
+    });
+  })();
+  </script>
 
 </body>
 </html>
