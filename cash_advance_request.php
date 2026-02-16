@@ -114,17 +114,17 @@ mysqli_stmt_bind_param($insertStmt, 'idss', $employee_id, $amount, $particular, 
 if (mysqli_stmt_execute($insertStmt)) {
     $request_id = mysqli_insert_id($db);
     
-    // Create notification for admin (if notifications table exists)
+    // Create notification for admin (if employee_notifications table exists)
     try {
-        $notifQuery = "INSERT INTO notifications (type, title, message, employee_id, created_at) 
-                       VALUES ('cash_advance', 'New Cash Advance Request', 
+        $notifQuery = "INSERT INTO employee_notifications (employee_id, notification_type, title, message, cash_advance_id, created_at) 
+                       VALUES (?, 'cash_advance', 'New Cash Advance Request', 
                        'New request from {$employee['first_name']} {$employee['last_name']} - ₱" . number_format($amount, 2) . "', 
                        ?, NOW())";
         $notifStmt = mysqli_prepare($db, $notifQuery);
-        mysqli_stmt_bind_param($notifStmt, 'i', $employee_id);
+        mysqli_stmt_bind_param($notifStmt, 'ii', $employee_id, $request_id);
         mysqli_stmt_execute($notifStmt);
     } catch (Exception $e) {
-        // Notifications table might not exist, continue silently
+        // employee_notifications table might not exist, continue silently
     }
     
     echo json_encode([
