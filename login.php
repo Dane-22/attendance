@@ -640,11 +640,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           });
           
           const text = await response.text();
+          console.log('HTTP Status:', response.status);
+          console.log('Raw response:', text);
+          
           let data;
           try {
             data = JSON.parse(text);
           } catch (e) {
-            return { success: false, message: 'Server: ' + text.substring(0, 80) };
+            return { success: false, message: `HTTP ${response.status}: ${text.substring(0, 60) || 'Empty response'}` };
           }
           
           if (data.success) {
