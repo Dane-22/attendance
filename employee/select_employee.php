@@ -2,10 +2,6 @@
 // employee/select_employee.php
 session_start();
 
-// Temporary error display for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 // ===== SET PHILIPPINE TIME ZONE =====
 date_default_timezone_set('Asia/Manila'); // Philippine Time (UTC+8)
 
