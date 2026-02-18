@@ -586,20 +586,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         const config = { fps: 10, qrbox: { width: 260, height: 260 } };
 
+        const buildSelectEmployeeUrlFromCode = (employeeCode) => {
+          const code = String(employeeCode || '').trim();
+          if (!code) return null;
+          return `${window.location.origin}/employee/select_employee.php?auto_timein=1&emp_code=${encodeURIComponent(code)}`;
+        };
+
+        const normalizeRedirectUrl = (raw) => {
+          const text = String(raw || '').trim();
+          if (!text) return { ok: false, error: 'Empty QR code.' };
+
+          // If QR contains only employee code (common for some QR generators)
+          if (!/^https?:\/\//i.test(text) && !text.startsWith('/')) {
+            const built = buildSelectEmployeeUrlFromCode(text);
+            if (built) return { ok: true, url: built };
+          }
+
+          try {
+            const urlObj = new URL(text, window.location.origin);
+            const pathname = urlObj.pathname || '';
+
+            // Only allow redirecting into the attendance auto flow.
+            if (!/\/employee\/select_employee\.php$/i.test(pathname) && !/\/select_employee\.php$/i.test(pathname)) {
+              return { ok: false, error: 'Invalid QR code. Please scan a valid employee QR.' };
+            }
+
+            // Force auto_timein=1 so scan triggers the existing flow.
+            if (!urlObj.searchParams.get('auto_timein')) {
+              urlObj.searchParams.set('auto_timein', '1');
+            }
+
+            return { ok: true, url: urlObj.toString() };
+          } catch (e) {
+            const built = buildSelectEmployeeUrlFromCode(text);
+            if (built) return { ok: true, url: built };
+            return { ok: false, error: 'Unrecognized QR format.' };
+          }
+        };
+
         try {
+          // On some mobile browsers, enumerateDevices/getCameras can be restricted until
+          // a stream is granted. Start directly with facingMode and only fall back if needed.
           const startWith = async (cameraConfig) => {
             await qr.start(
               cameraConfig,
               config,
               async (decodedText) => {
-                if (!decodedText) return;
-                setStatus('QR detected. Processing...');
+                const normalized = normalizeRedirectUrl(decodedText);
+                if (!normalized.ok) {
+                  setStatus(normalized.error);
+                  return;
+                }
+
+                setStatus('QR detected. Redirecting...');
 
                 await stopScanner();
                 backdrop.style.display = 'none';
                 backdrop.setAttribute('aria-hidden', 'true');
 
-                window.location.href = decodedText;
+                window.location.href = normalized.url;
               },
               () => {
                 // ignore scan errors to avoid spamming UI

@@ -55,8 +55,9 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
         if ($employee) {
             $branchName = $employee['branch_name'] ?? 'System';
             
-            // Call clock_in API directly
-            $apiUrl = 'http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . '/employee/api/clock_in.php';
+            // Call clock_in API directly (use 127.0.0.1 to avoid DNS delays)
+            $protocol = 'http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '') . '://';
+            $apiUrl = $protocol . '127.0.0.1' . ($_SERVER['SERVER_PORT'] && $_SERVER['SERVER_PORT'] != '80' && $_SERVER['SERVER_PORT'] != '443' ? ':' . $_SERVER['SERVER_PORT'] : '') . '/employee/api/clock_in.php';
             
             $postData = [
                 'employee_id' => $qrEmployeeId,
@@ -70,14 +71,28 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'X-Requested-With: XMLHttpRequest',
-                'Cookie: ' . (isset($_SERVER['HTTP_COOKIE']) ? $_SERVER['HTTP_COOKIE'] : '')
+                'Cookie: ' . (isset($_SERVER['HTTP_COOKIE']) ? $_SERVER['HTTP_COOKIE'] : ''),
+                'Connection: close',
+                'Host: ' . $_SERVER['HTTP_HOST']
             ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
+            curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             
             $response = curl_exec($ch);
+            $curlError = curl_error($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
             
-            if ($response && $httpCode === 200) {
+            if ($curlError) {
+                $qrScanResult = [
+                    'success' => false,
+                    'message' => 'Connection error: ' . $curlError
+                ];
+            } elseif ($response && $httpCode === 200) {
                 $apiResult = json_decode($response, true);
                 if ($apiResult && !empty($apiResult['success'])) {
                     $qrScanResult = [
@@ -90,7 +105,7 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
 
                     // If already clocked in, auto-trigger clock out
                     if (stripos($msg, 'already clocked in') !== false) {
-                        $clockOutUrl = 'http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . '/employee/api/clock_out.php';
+                        $clockOutUrl = $protocol . '127.0.0.1' . ($_SERVER['SERVER_PORT'] && $_SERVER['SERVER_PORT'] != '80' && $_SERVER['SERVER_PORT'] != '443' ? ':' . $_SERVER['SERVER_PORT'] : '') . '/employee/api/clock_out.php';
 
                         $outPostData = [
                             'employee_id' => $qrEmployeeId,
@@ -104,14 +119,28 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
                         curl_setopt($ch2, CURLOPT_POSTFIELDS, http_build_query($outPostData));
                         curl_setopt($ch2, CURLOPT_HTTPHEADER, [
                             'X-Requested-With: XMLHttpRequest',
-                            'Cookie: ' . (isset($_SERVER['HTTP_COOKIE']) ? $_SERVER['HTTP_COOKIE'] : '')
+                            'Cookie: ' . (isset($_SERVER['HTTP_COOKIE']) ? $_SERVER['HTTP_COOKIE'] : ''),
+                            'Connection: close',
+                            'Host: ' . $_SERVER['HTTP_HOST']
                         ]);
+                        curl_setopt($ch2, CURLOPT_TIMEOUT, 10);
+                        curl_setopt($ch2, CURLOPT_CONNECTTIMEOUT, 3);
+                        curl_setopt($ch2, CURLOPT_FRESH_CONNECT, true);
+                        curl_setopt($ch2, CURLOPT_FORBID_REUSE, true);
+                        curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+                        curl_setopt($ch2, CURLOPT_SSL_VERIFYHOST, false);
 
                         $outResponse = curl_exec($ch2);
+                        $outCurlError = curl_error($ch2);
                         $outHttpCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
                         curl_close($ch2);
 
-                        if ($outResponse && $outHttpCode === 200) {
+                        if ($outCurlError) {
+                            $qrScanResult = [
+                                'success' => false,
+                                'message' => 'Clock-out connection error: ' . $outCurlError
+                            ];
+                        } elseif ($outResponse && $outHttpCode === 200) {
                             $outResult = json_decode($outResponse, true);
                             if ($outResult && !empty($outResult['success'])) {
                                 $qrScanResult = [
