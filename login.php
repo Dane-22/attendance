@@ -265,9 +265,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Log In — JAJR Company</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/theme-variables.css">
   <link rel="stylesheet" href="assets/style_auth.css">
   <link rel="icon" type="image/x-icon" href="assets/img/profile/jajr-logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="assets/js/theme.js"></script>
   <meta http-equiv="Permissions-Policy" content="camera=*, microphone=()">
   <style>
     /* Additional styles for select dropdown */

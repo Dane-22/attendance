@@ -160,7 +160,10 @@ function formatCurrency($amount) {
     <title>Billing - JAJR Construction</title>
     <link rel="stylesheet" href="css/billing.css">
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/theme-variables.css">
+    <link rel="stylesheet" href="css/light-theme.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <script src="js/theme.js"></script>
 </head>
 <body>
     <div class="app-shell">

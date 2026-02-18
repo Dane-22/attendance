@@ -170,6 +170,9 @@ mysqli_close($db);
     <!-- FontAwesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/theme-variables.css">
+    <link rel="stylesheet" href="css/light-theme.css">
+    <script src="js/theme.js"></script>
     
     <style>
         /* Transfer Module - Dark Engineering Theme */

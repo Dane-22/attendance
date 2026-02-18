@@ -286,6 +286,8 @@ function formatDateShort($date) {
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/theme-variables.css">
+    <link rel="stylesheet" href="css/light-theme.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="dashboard.css">
     <style>
@@ -1155,6 +1157,7 @@ function formatDateShort($date) {
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/theme.js"></script>
     <script src="js/dashboard.js"></script>
     <script>
         // Update current time display

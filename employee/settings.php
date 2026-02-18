@@ -1497,12 +1497,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
           </div>
 
           <!-- Appearance Tab -->
-          <!-- <div id="appearance-tab" class="tab-pane">
+          <div id="appearance-tab" class="tab-pane">
             <div class="section-title">Appearance Settings</div>
-            <div class="section-subtitle">Customize your dashboard look and feel</div> -->
-            
+            <div class="section-subtitle">Customize your dashboard look and feel</div>
+
             <!-- Theme Toggle -->
-            <!-- <div class="theme-toggle-container">
+            <div class="theme-toggle-container">
               <div class="theme-toggle-info">
                 <div class="theme-icon">
                   <i class="fas fa-moon"></i>
@@ -1512,16 +1512,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
                   <p>Switch between dark and light theme for your dashboard</p>
                 </div>
               </div>
-              <button id="themeToggleBtn">
+              <button id="themeToggleBtn" type="button">
                 <i class="fas fa-sun"></i>
                 <span class="theme-text">Switch to Light Mode</span>
               </button>
-            </div> -->
-            
+            </div>
+
             <!-- Theme Preview Info -->
-            
-          </div>
-          
+            <div class="system-tools">
+              <div class="tool-card">
+                <div class="tool-icon">
+                  <i class="fas fa-palette"></i>
+                </div>
+                <div class="tool-content">
+                  <div class="tool-title">Theme Information</div>
+                  <div class="tool-description">
+                    Your theme preference is saved automatically and will persist across sessions.
+                    The light mode provides better visibility in bright environments, while dark mode
+                    reduces eye strain in low-light conditions.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>  
 
           <!-- System Tools Tab (Admin Only) -->
           <?php if ($can_access_system_tools): ?>
