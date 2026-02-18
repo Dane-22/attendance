@@ -48,8 +48,8 @@ try {
 
     $request_id = intval($input['request_id']);
     $action = $input['action'];
-    $approved_by = isset($input['approved_by']) ? mysqli_real_escape_string($conn, trim($input['approved_by'])) : 'Administrator';
-    $rejection_reason = isset($input['rejection_reason']) ? mysqli_real_escape_string($conn, trim($input['rejection_reason'])) : null;
+    $approved_by = isset($input['approved_by']) ? mysqli_real_escape_string($db, trim($input['approved_by'])) : 'Administrator';
+    $rejection_reason = isset($input['rejection_reason']) ? mysqli_real_escape_string($db, trim($input['rejection_reason'])) : null;
 
     // Validate rejection reason for reject action
     if ($action === 'reject' && empty($rejection_reason)) {
@@ -66,7 +66,7 @@ try {
                 FROM overtime_requests r 
                 LEFT JOIN employees e ON r.employee_id = e.id 
                 WHERE r.id = ?";
-    $get_stmt = mysqli_prepare($conn, $get_sql);
+    $get_stmt = mysqli_prepare($db, $get_sql);
     mysqli_stmt_bind_param($get_stmt, "i", $request_id);
     mysqli_stmt_execute($get_stmt);
     $result = mysqli_stmt_get_result($get_stmt);
@@ -93,7 +93,7 @@ try {
     }
 
     // Start transaction
-    mysqli_begin_transaction($conn);
+    mysqli_begin_transaction($db);
 
     try {
         if ($action === 'approve') {
@@ -103,11 +103,11 @@ try {
                                approved_by = ?, 
                                approved_at = NOW() 
                            WHERE id = ?";
-            $update_stmt = mysqli_prepare($conn, $update_sql);
+            $update_stmt = mysqli_prepare($db, $update_sql);
             mysqli_stmt_bind_param($update_stmt, "si", $approved_by, $request_id);
             
             if (!mysqli_stmt_execute($update_stmt)) {
-                throw new Exception('Failed to update overtime request: ' . mysqli_error($conn));
+                throw new Exception('Failed to update overtime request: ' . mysqli_error($db));
             }
             
             // Update attendance record with OT hours
@@ -117,7 +117,7 @@ try {
                               WHERE employee_id = ? 
                               AND attendance_date = ?
                               AND (is_overtime_running = 0 OR total_ot_hrs = '0')";
-            $attendance_stmt = mysqli_prepare($conn, $attendance_sql);
+            $attendance_stmt = mysqli_prepare($db, $attendance_sql);
             $total_ot_hrs = strval($request['requested_hours']);
             mysqli_stmt_bind_param($attendance_stmt, "sis", $total_ot_hrs, $request['employee_id'], $request['request_date']);
             mysqli_stmt_execute($attendance_stmt);
@@ -127,7 +127,7 @@ try {
             $notif_message = "Your overtime request for {$request['requested_hours']} hours has been approved.";
             $notif_sql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) 
                           VALUES (?, ?, 'overtime_approved', ?, ?, 0, NOW())";
-            $notif_stmt = mysqli_prepare($conn, $notif_sql);
+            $notif_stmt = mysqli_prepare($db, $notif_sql);
             mysqli_stmt_bind_param($notif_stmt, "iiss", $request['employee_id'], $request_id, $notif_title, $notif_message);
             mysqli_stmt_execute($notif_stmt);
             
@@ -139,11 +139,11 @@ try {
                                approved_at = NOW(),
                                rejection_reason = ? 
                            WHERE id = ?";
-            $update_stmt = mysqli_prepare($conn, $update_sql);
+            $update_stmt = mysqli_prepare($db, $update_sql);
             mysqli_stmt_bind_param($update_stmt, "ssi", $approved_by, $rejection_reason, $request_id);
             
             if (!mysqli_stmt_execute($update_stmt)) {
-                throw new Exception('Failed to update overtime request: ' . mysqli_error($conn));
+                throw new Exception('Failed to update overtime request: ' . mysqli_error($db));
             }
             
             // Create rejection notification
@@ -151,13 +151,13 @@ try {
             $notif_message = "Your overtime request for {$request['requested_hours']} hours has been rejected. Reason: {$rejection_reason}";
             $notif_sql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) 
                           VALUES (?, ?, 'overtime_rejected', ?, ?, 0, NOW())";
-            $notif_stmt = mysqli_prepare($conn, $notif_sql);
+            $notif_stmt = mysqli_prepare($db, $notif_sql);
             mysqli_stmt_bind_param($notif_stmt, "iiss", $request['employee_id'], $request_id, $notif_title, $notif_message);
             mysqli_stmt_execute($notif_stmt);
         }
         
         // Commit transaction
-        mysqli_commit($conn);
+        mysqli_commit($db);
         
         $message = $action === 'approve' 
             ? 'Overtime request approved successfully' 
@@ -170,7 +170,7 @@ try {
         
     } catch (Exception $e) {
         // Rollback transaction on error
-        mysqli_rollback($conn);
+        mysqli_rollback($db);
         
         http_response_code(500);
         echo json_encode([
@@ -179,7 +179,7 @@ try {
         ]);
     }
 
-    mysqli_close($conn);
+    mysqli_close($db);
 
 } catch (Exception $e) {
     http_response_code(500);

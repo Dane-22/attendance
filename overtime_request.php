@@ -47,10 +47,10 @@ try {
     }
 
     $employee_id = intval($input['employee_id']);
-    $employee_code = mysqli_real_escape_string($conn, trim($input['employee_code']));
-    $branch_name = mysqli_real_escape_string($conn, trim($input['branch_name']));
+    $employee_code = mysqli_real_escape_string($db, trim($input['employee_code']));
+    $branch_name = mysqli_real_escape_string($db, trim($input['branch_name']));
     $requested_hours = floatval($input['requested_hours']);
-    $overtime_reason = mysqli_real_escape_string($conn, trim($input['overtime_reason']));
+    $overtime_reason = mysqli_real_escape_string($db, trim($input['overtime_reason']));
 
     // Validate hours (max 4 hours)
     if ($requested_hours <= 0 || $requested_hours > 4) {
@@ -69,7 +69,7 @@ try {
 
     // Check for duplicate request for this date
     $check_sql = "SELECT id FROM overtime_requests WHERE employee_id = ? AND request_date = ? AND status != 'rejected'";
-    $check_stmt = mysqli_prepare($conn, $check_sql);
+    $check_stmt = mysqli_prepare($db, $check_sql);
     mysqli_stmt_bind_param($check_stmt, "is", $employee_id, $request_date);
     mysqli_stmt_execute($check_stmt);
     $check_result = mysqli_stmt_get_result($check_stmt);
@@ -88,7 +88,7 @@ try {
             (employee_id, branch_name, request_date, requested_hours, overtime_reason, status, requested_by, requested_by_user_id, requested_at) 
             VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())";
 
-    $stmt = mysqli_prepare($conn, $sql);
+    $stmt = mysqli_prepare($db, $sql);
     mysqli_stmt_bind_param($stmt, "issdsss", 
         $employee_id, 
         $branch_name, 
@@ -100,14 +100,14 @@ try {
     );
 
     if (mysqli_stmt_execute($stmt)) {
-        $request_id = mysqli_insert_id($conn);
+        $request_id = mysqli_insert_id($db);
         
         // Create notification for the employee
         $notif_title = "Overtime Request Submitted";
         $notif_message = "Your overtime request for {$requested_hours} hours has been submitted and is pending approval.";
         $notif_sql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) 
                        VALUES (?, ?, 'overtime_pending', ?, ?, 0, NOW())";
-        $notif_stmt = mysqli_prepare($conn, $notif_sql);
+        $notif_stmt = mysqli_prepare($db, $notif_sql);
         mysqli_stmt_bind_param($notif_stmt, "iiss", $employee_id, $request_id, $notif_title, $notif_message);
         mysqli_stmt_execute($notif_stmt);
         
@@ -120,11 +120,11 @@ try {
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'message' => 'Failed to submit overtime request: ' . mysqli_error($conn)
+            'message' => 'Failed to submit overtime request: ' . mysqli_error($db)
         ]);
     }
 
-    mysqli_close($conn);
+    mysqli_close($db);
 
 } catch (Exception $e) {
     http_response_code(500);

@@ -43,7 +43,7 @@ try {
 
     // Filter by status
     if (!empty($input['status'])) {
-        $status = mysqli_real_escape_string($conn, $input['status']);
+        $status = mysqli_real_escape_string($db, $input['status']);
         $where[] = "r.status = ?";
         $params[] = $status;
         $types .= "s";
@@ -86,7 +86,7 @@ try {
             WHERE $where_clause
             ORDER BY r.requested_at DESC";
 
-    $stmt = mysqli_prepare($conn, $sql);
+    $stmt = mysqli_prepare($db, $sql);
     if (!empty($params)) {
         mysqli_stmt_bind_param($stmt, $types, ...$params);
     }
@@ -110,7 +110,7 @@ try {
         'count' => count($requests)
     ]);
 
-    mysqli_close($conn);
+    mysqli_close($db);
 
 } catch (Exception $e) {
     http_response_code(500);
