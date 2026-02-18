@@ -22,6 +22,7 @@ if (!$isAdmin) {
 }
 
 require_once __DIR__ . '/../conn/db_connection.php';
+require_once __DIR__ . '/../functions.php';
 
 // Helper function to get pending count
 function getPendingOvertimeCount($db) {
@@ -222,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
                 
                 echo json_encode(['success' => true, 'message' => 'Cash advance approved']);
+                logActivity($db, 'Cash Advance Approved', "Super Admin approved cash advance #{$requestId} for employee #{$employeeId}, amount: ₱{$amount}");
             } else if (!$result) {
                 echo json_encode(['success' => false, 'message' => 'Execute failed: ' . mysqli_error($db)]);
             } else {
@@ -302,6 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
                 
                 echo json_encode(['success' => true, 'message' => 'Cash advance rejected']);
+                logActivity($db, 'Cash Advance Rejected', "Super Admin rejected cash advance #{$requestId}. Reason: {$rejectionReason}");
             } else if (!$result) {
                 echo json_encode(['success' => false, 'message' => 'Execute failed: ' . mysqli_error($db)]);
             } else {
@@ -472,6 +475,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             
             echo json_encode(['success' => true, 'message' => 'Overtime request approved']);
+            logActivity($db, 'Overtime Approved', "Super Admin approved overtime #{$requestId} for {$request['requested_hours']} hours on {$request['request_date']}");
         } else {
             mysqli_stmt_close($updateRequestStmt);
             echo json_encode(['success' => false, 'message' => 'Failed to approve request']);
@@ -527,6 +531,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             
             echo json_encode(['success' => true, 'message' => 'Overtime request rejected']);
+            logActivity($db, 'Overtime Rejected', "Super Admin rejected overtime #{$requestId}. Reason: {$rejectionReason}");
         } else {
             mysqli_stmt_close($updateStmt);
             echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);

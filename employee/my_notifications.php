@@ -23,6 +23,7 @@ $firstName = $_SESSION['first_name'] ?? '';
 $lastName = $_SESSION['last_name'] ?? '';
 
 require_once __DIR__ . '/../conn/db_connection.php';
+require_once __DIR__ . '/../functions.php';
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -122,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             mysqli_stmt_bind_param($stmt, 'ii', $notifId, $userId);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
+            logActivity($db, 'Notification Marked Read', "User marked notification #{$notifId} as read");
         }
         
         echo json_encode(['success' => true]);
@@ -135,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         mysqli_stmt_bind_param($stmt, 'i', $userId);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+        logActivity($db, 'All Notifications Marked Read', "User marked all notifications as read");
         
         echo json_encode(['success' => true]);
         exit();
@@ -150,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             mysqli_stmt_bind_param($stmt, 'ii', $notifId, $userId);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
+            logActivity($db, 'Notification Deleted', "User deleted notification #{$notifId}");
         }
         
         echo json_encode(['success' => true]);
