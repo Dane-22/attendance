@@ -631,7 +631,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const formData = new FormData();
         if (empId) formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
-        formData.append('branch_name', 'System');
+        // Don't send branch_name - API will use employee's assigned branch
 
         try {
           const response = await fetch(url, {
@@ -663,7 +663,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const formData = new FormData();
         if (empId) formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
-        formData.append('branch_name', 'System');
+        // Don't send branch_name - API will use employee's assigned branch
 
         try {
           const response = await fetch(url, {
