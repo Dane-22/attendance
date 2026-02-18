@@ -639,7 +639,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             body: formData
           });
           
-          const data = await response.json();
+          const text = await response.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            return { success: false, message: 'Server: ' + text.substring(0, 80) };
+          }
           
           if (data.success) {
             return { success: true, message: data.message };
