@@ -407,35 +407,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 
   <div class="min-h-screen flex items-center justify-center px-6">
-    <div class="auth-card w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-
-      <div class="auth-left hidden md:flex flex-col justify-center items-start gap-6 px-8 bg-black/20">
-        <div class="w-full text-left">
-          <h2 class="text-3xl font-bold">Welcome Back</h2>
-          <p class="mt-2 small-muted">Sign in to manage attendance and engineering resources.</p>
-        </div>
-
-        <div class="mt-6">
-          <!-- SVG engineering gear -->
-          <svg width="220" height="220" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-            <defs>
-              <linearGradient id="og" x1="0" x2="1"><stop offset="0" stop-color="#FFA500"/><stop offset="1" stop-color="#000"/></linearGradient>
-            </defs>
-            <g class="gear-anim" transform="translate(50,50)">
-              <circle cx="0" cy="0" r="28" stroke="url(#og)" stroke-width="3" fill="rgba(255,255,255,0.02)" />
-              <g stroke="url(#og)" stroke-width="2">
-                <path d="M0 -35 L0 -45" />
-                <path d="M0 35 L0 45" />
-                <path d="M-35 0 L-45 0" />
-                <path d="M35 0 L45 0" />
-              </g>
-            </g>
-          </svg>
-        </div>
-
-        <div class="mt-auto text-sm small-muted">Not a member? <a href="signup.php" data-transition class="text-orange-400">Create account</a></div>
-      </div>
-
+    <div class="auth-card w-full max-w-md overflow-hidden">
       <div class="auth-right px-8 py-10">
         <div class="flex items-center justify-between">
           <h3 class="text-2xl font-semibold">Log In</h3>
@@ -515,10 +487,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
         </form>
 
-        <div class="mt-6 text-sm small-muted">
-          <p><strong>Note for Super Admins:</strong> You will see ALL branches in the attendance system.</p>
-          <p><strong>Note for Regular Users:</strong> You will only see employees from your assigned branch.</p>
-        </div>
       </div>
 
     </div>
