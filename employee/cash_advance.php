@@ -97,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_signature'])) 
             
             if (mysqli_stmt_execute($stmt)) {
                 echo json_encode(['success' => true, 'path' => $dbPath]);
+                logActivity($db, 'Signature Uploaded', "Uploaded {$signatureType} signature for employee #{$empId}");
             } else {
                 echo json_encode(['success' => false, 'message' => 'Database error']);
             }
@@ -172,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_signature_file
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['success' => true, 'path' => $dbPath]);
+            logActivity($db, 'Signature Uploaded', "Uploaded {$signatureType} signature file for employee #{$empId}");
         } else {
             echo json_encode(['success' => false, 'message' => 'Database error']);
         }

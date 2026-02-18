@@ -6,6 +6,7 @@ try {
     ini_set('display_errors', 0);
 
     require_once __DIR__ . '/../../conn/db_connection.php';
+    require_once __DIR__ . '/../../functions.php';
 
     $action = $_POST['action'] ?? 'in'; // 'in' or 'out'
     $employeeId = intval($_POST['employee_id'] ?? 0);
@@ -74,6 +75,7 @@ try {
                 'message' => "$empName time-in recorded at $timeIn",
                 'time_in' => $timeIn
             ]);
+            logActivity($db, 'QR Clock In', "{$empName} (QR) clocked in at {$branchName}");
         } else {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
         }
@@ -111,6 +113,7 @@ try {
                 'message' => "$empName time-out recorded at $timeOut",
                 'time_out' => $timeOut
             ]);
+            logActivity($db, 'QR Clock Out', "{$empName} (QR) clocked out");
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to record time-out']);
         }

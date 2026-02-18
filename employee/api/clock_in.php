@@ -2,6 +2,7 @@
 // api/clock_in.php
 session_start();
 require_once __DIR__ . '/../../conn/db_connection.php';
+require_once __DIR__ . '/../../functions.php';
 
 header('Content-Type: application/json');
 
@@ -484,6 +485,7 @@ if (mysqli_stmt_execute($stmt)) {
         'from_branch' => $currentAssignedBranchName,
         'to_branch' => $targetBranchName
     ]);
+    logActivity($db, 'Clocked In', "Employee #{$employeeId} clocked in at {$targetBranchName}");
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
 }

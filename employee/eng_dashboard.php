@@ -7,6 +7,7 @@
 // Start session and include database connection
 session_start();
 require_once __DIR__ . '/../conn/db_connection.php';
+require_once __DIR__ . '/../functions.php';
 
 // Check if user is Engineer
 $userRole = isset($_SESSION['position']) ? $_SESSION['position'] : '';
@@ -201,6 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_cash_advance'
         }
         
         echo json_encode(['success' => true, 'id' => $newId, 'message' => 'Cash advance request submitted successfully']);
+        logActivity($db, 'Cash Advance Requested', "Engineer requested ₱{$amount} cash advance - {$reason}");
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to submit request']);
     }
@@ -260,6 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_overtime'])) 
         mysqli_stmt_close($notifStmt);
         
         echo json_encode(['success' => true, 'id' => $overtimeRequestId, 'message' => 'Overtime request submitted successfully']);
+        logActivity($db, 'Overtime Requested', "Engineer requested {$requestedHours} hours overtime on {$requestDate} at {$branchName}");
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to submit overtime request']);
     }

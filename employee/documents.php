@@ -1,6 +1,7 @@
 <?php
 // employee/documents.php
 require('../conn/db_connection.php');
+require_once __DIR__ . '/../functions.php';
 session_start();
 
 // Check if user is logged in
@@ -140,6 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['document'])) {
             
             if ($stmt->execute()) {
                 $msg = 'Document uploaded successfully!';
+                $action = $existingDoc ? 'Document Updated' : 'Document Uploaded';
+                logActivity($db, $action, "{$documentType} document for employee #{$employeeId}");
             }
             $stmt->close();
         }
@@ -167,6 +170,7 @@ if (isset($_GET['delete'])) {
         $deleteStmt->close();
         
         $msg = 'Document deleted successfully!';
+        logActivity($db, 'Document Deleted', "Document ID #{$id} for employee #{$employeeId}");
     }
 }
 

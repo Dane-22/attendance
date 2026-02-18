@@ -2,6 +2,7 @@
 // api/clock_out.php
 session_start();
 require_once __DIR__ . '/../../conn/db_connection.php';
+require_once __DIR__ . '/../../functions.php';
 
 header('Content-Type: application/json');
 
@@ -87,6 +88,7 @@ if ($action === 'undo_clock_out') {
             'message' => 'Clock-out undone',
             'shift_id' => $shiftId
         ]);
+        logActivity($db, 'Clock-out Undone', "Employee #{$employeeId} undone clock-out for shift #{$shiftId}");
     } else {
         echo json_encode(['success' => false, 'message' => 'Unable to undo clock-out']);
     }
@@ -172,6 +174,7 @@ if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
         'shift_hours' => $shiftHours,
         'total_hours_today' => $totalHoursToday
     ]);
+    logActivity($db, 'Clocked Out', "Employee #{$employeeId} clocked out, worked {$shiftHours} hours");
 } else {
     echo json_encode(['success' => false, 'message' => 'Unable to clock out or already clocked out']);
 }
