@@ -627,33 +627,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       // Call clock-in API via AJAX
       async function processClockIn(empId, empCode) {
+        // If we only have emp_id, try to get emp_code from server
+        if (empId && !empCode) {
+          try {
+            const lookupUrl = `${window.location.origin}/employee/api/get_employee.php?id=${empId}`;
+            const lookupRes = await fetch(lookupUrl, { credentials: 'include' });
+            const lookupData = await lookupRes.json();
+            if (lookupData.success) {
+              empCode = lookupData.employee_code;
+            }
+          } catch (e) {
+            // Continue without code
+          }
+        }
+
         const url = `${window.location.origin}/employee/api/clock_in.php`;
         const formData = new FormData();
         if (empId) formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
-        // Don't send branch_name - API will use employee's assigned branch
 
         try {
           const response = await fetch(url, {
             method: 'POST',
             body: formData,
+            credentials: 'include',
             headers: {
               'X-Requested-With': 'XMLHttpRequest'
             }
           });
           
-          const data = await response.json();
+          const text = await response.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            return { success: false, message: 'Server error: ' + text.substring(0, 100) };
+          }
           
           if (data.success) {
             return { success: true, message: `Time-in recorded at ${data.time_in || new Date().toLocaleTimeString()}` };
           } else if (data.message && data.message.toLowerCase().includes('already clocked in')) {
-            // Try clock-out
             return await processClockOut(empId, empCode);
           } else {
             return { success: false, message: data.message || 'Failed to record time-in' };
           }
         } catch (err) {
-          return { success: false, message: 'Connection error. Please try again.' };
+          return { success: false, message: 'Network error: ' + (err.message || 'Cannot connect') };
         }
       }
 
@@ -663,18 +682,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const formData = new FormData();
         if (empId) formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
-        // Don't send branch_name - API will use employee's assigned branch
 
         try {
           const response = await fetch(url, {
             method: 'POST',
             body: formData,
+            credentials: 'include',
             headers: {
               'X-Requested-With': 'XMLHttpRequest'
             }
           });
           
-          const data = await response.json();
+          const text = await response.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            return { success: false, message: 'Server error: ' + text.substring(0, 100) };
+          }
           
           if (data.success) {
             return { success: true, message: `Time-out recorded at ${data.time_out || new Date().toLocaleTimeString()}` };
@@ -682,7 +707,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return { success: false, message: data.message || 'Failed to record time-out' };
           }
         } catch (err) {
-          return { success: false, message: 'Connection error. Please try again.' };
+          return { success: false, message: 'Network error: ' + (err.message || 'Cannot connect') };
         }
       }
 
