@@ -17,7 +17,7 @@ try {
     }
 
     // Get employee info
-    $empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name, employee_code, branch_id FROM employees WHERE id = ? AND active = 1 LIMIT 1");
+    $empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name, employee_code, branch_id FROM employees WHERE id = ? AND status = 'Active' LIMIT 1");
     mysqli_stmt_bind_param($empStmt, 'i', $employeeId);
     mysqli_stmt_execute($empStmt);
     $empResult = mysqli_stmt_get_result($empStmt);
@@ -61,9 +61,9 @@ try {
         }
         mysqli_stmt_close($stmt);
         
-        // Simple insert with just required fields
-        $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status) 
-                       VALUES (?, ?, CURDATE(), NOW(), 'Present')";
+        // Insert with all required columns
+        $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running, is_time_running, total_ot_hrs) 
+                       VALUES (?, ?, CURDATE(), NOW(), 'Present', 0, 1, '0')";
         $insertStmt = mysqli_prepare($db, $insertSql);
         mysqli_stmt_bind_param($insertStmt, "is", $employeeId, $branchName);
         
