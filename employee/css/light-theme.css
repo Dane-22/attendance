@@ -1246,3 +1246,805 @@ body.light-mode .welcome {
 body.light-mode .text-gray {
   color: #6a6a7a;
 }
+
+/* ============================================
+   EMPLOYEES.PHP SPECIFIC
+   ============================================ */
+
+/* Edit Form Modal */
+body.light-mode .edit-form-modal {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .edit-form-container {
+  background: #ffffff;
+  border: 2px solid #D4AF37;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .edit-form-header {
+  background: #f8f8fa;
+  border-bottom: 1px solid #e8e8ec;
+}
+
+body.light-mode .edit-form-header h3 {
+  color: #D4AF37;
+}
+
+body.light-mode .employee-id-display {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+}
+
+body.light-mode .form-section {
+  border-bottom: 1px solid #e8e8ec;
+}
+
+body.light-mode .section-title {
+  color: #D4AF37;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .form-label {
+  color: #1a1a2e;
+}
+
+body.light-mode .form-label.required::after {
+  color: #ef4444;
+}
+
+body.light-mode .form-input,
+body.light-mode .form-select {
+  background: #ffffff;
+  border: 2px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .form-input:focus,
+body.light-mode .form-select:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .form-input:disabled,
+body.light-mode .form-select:disabled {
+  background: #f0f0f5;
+  border-color: #e0e0e5;
+  color: #9a9aaa;
+}
+
+body.light-mode .form-select option {
+  background: #ffffff;
+  color: #1a1a2e;
+}
+
+body.light-mode .profile-image-preview {
+  border: 3px solid #D4AF37;
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .file-input-label {
+  background: rgba(212, 175, 55, 0.1);
+  border: 2px dashed rgba(212, 175, 55, 0.3);
+  color: #D4AF37;
+}
+
+body.light-mode .file-input-label:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: #D4AF37;
+}
+
+body.light-mode .file-info {
+  color: #6a6a7a;
+}
+
+body.light-mode .form-actions {
+  border-top: 1px solid #e8e8ec;
+}
+
+body.light-mode .btn-cancel {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #4a4a5a;
+}
+
+body.light-mode .btn-cancel:hover {
+  background: #ffffff;
+  border-color: #D4AF37;
+  color: #1a1a2e;
+}
+
+body.light-mode .btn-save {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .btn-save:hover {
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .close-btn {
+  color: #6a6a7a;
+}
+
+body.light-mode .close-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+}
+
+/* Search Bar */
+body.light-mode .search-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .search-icon {
+  color: #9a9aaa;
+}
+
+body.light-mode .search-input {
+  background: #f8f8fa;
+  border: 2px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .search-input:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .search-input::placeholder {
+  color: #9a9aaa;
+}
+
+body.light-mode .clear-search-btn {
+  color: #9a9aaa;
+}
+
+body.light-mode .clear-search-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+}
+
+/* Action Buttons */
+body.light-mode .action-btn-edit {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .action-btn-edit:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: #D4AF37;
+}
+
+body.light-mode .action-btn-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+body.light-mode .action-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+/* List View */
+body.light-mode .employees-list-view {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .list-header {
+  background: #f8f8fa;
+  border-bottom: 1px solid #e8e8ec;
+  color: #D4AF37;
+}
+
+body.light-mode .employee-row {
+  border-bottom: 1px solid #f0f0f5;
+}
+
+body.light-mode .employee-row:hover {
+  background: #f8f8fa;
+}
+
+body.light-mode .employee-row-avatar {
+  border: 2px solid #D4AF37;
+}
+
+body.light-mode .employee-row-avatar .initials {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .employee-row-name {
+  color: #1a1a2e;
+}
+
+body.light-mode .employee-row-email {
+  color: #6a6a7a;
+}
+
+body.light-mode .employee-row-position,
+body.light-mode .employee-row-status,
+body.light-mode .employee-row-code {
+  color: #4a4a5a;
+}
+
+body.light-mode .row-action-btn {
+  color: #6a6a7a;
+}
+
+body.light-mode .row-action-edit:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+}
+
+body.light-mode .row-action-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+body.light-mode .row-action-qr:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* QR Modal */
+body.light-mode .qr-modal {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .qr-modal-content {
+  background: #ffffff;
+  border: 2px solid #D4AF37;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .qr-modal-header {
+  background: #f8f8fa;
+  border-bottom: 1px solid #e8e8ec;
+}
+
+body.light-mode .qr-modal-header h3 {
+  color: #D4AF37;
+}
+
+body.light-mode .qr-close-btn {
+  color: #6a6a7a;
+}
+
+body.light-mode .qr-close-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+}
+
+body.light-mode .qr-employee-name {
+  color: #1a1a2e;
+}
+
+body.light-mode .qr-employee-code {
+  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.1);
+}
+
+body.light-mode .qr-instructions {
+  color: #6a6a7a;
+}
+
+body.light-mode .qr-data-preview {
+  background: #f8f8fa;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .qr-data-label {
+  color: #D4AF37;
+}
+
+body.light-mode .qr-data-content {
+  color: #4a4a5a;
+  background: #ffffff;
+}
+
+body.light-mode .qr-btn-primary {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .qr-btn-secondary {
+  background: #f8f8fa;
+  color: #4a4a5a;
+  border: 1px solid #e0e0e5;
+}
+
+body.light-mode .qr-btn-secondary:hover {
+  background: #ffffff;
+  border-color: #D4AF37;
+  color: #1a1a2e;
+}
+
+/* Pagination Enhancement */
+body.light-mode .pagination-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .pagination-info {
+  color: #4a4a5a;
+}
+
+body.light-mode .pagination-info strong {
+  color: #D4AF37;
+}
+
+body.light-mode .page-size-select {
+  background: #ffffff;
+  border: 2px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .page-size-select:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .page-btn {
+  background: #ffffff;
+  border: 2px solid #e0e0e5;
+  color: #4a4a5a;
+}
+
+body.light-mode .page-btn:hover:not(:disabled):not(.active) {
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+body.light-mode .page-btn.active {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  border-color: #D4AF37;
+  color: #ffffff;
+}
+
+body.light-mode .page-btn:disabled {
+  background: #f0f0f5;
+  border-color: #e0e0e5;
+  color: #9a9aaa;
+}
+
+body.light-mode .page-dots {
+  color: #9a9aaa;
+}
+
+body.light-mode .page-jump-input {
+  background: #ffffff;
+  border: 2px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .page-jump-input:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .page-jump-btn {
+  background: rgba(212, 175, 55, 0.1);
+  border: 2px solid rgba(212, 175, 55, 0.3);
+  color: #D4AF37;
+}
+
+body.light-mode .page-jump-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: #D4AF37;
+}
+
+/* Header and Title */
+body.light-mode .header h1 {
+  color: #1a1a2e;
+}
+
+body.light-mode .header .text-muted {
+  color: #6a6a7a;
+}
+
+/* Add Button */
+body.light-mode .add-btn {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+  border: none;
+}
+
+body.light-mode .add-btn:hover {
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+/* FAB Button */
+body.light-mode .fab {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+  border: none;
+}
+
+/* Section Title */
+body.light-mode section h2 {
+  color: #D4AF37;
+}
+
+/* ============================================
+   WEEKLY_REPORT.PHP SPECIFIC
+   ============================================ */
+
+/* Main Content & Header */
+body.light-mode .main-content {
+  background: #f5f5f7;
+}
+
+body.light-mode .header-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .welcome {
+  color: #D4AF37;
+}
+
+body.light-mode .text-gray {
+  color: #6a6a7a;
+}
+
+body.light-mode .menu-toggle {
+  color: #D4AF37;
+}
+
+/* Report Card */
+body.light-mode .report-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .report-header {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+}
+
+body.light-mode .report-table {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+/* Date & Branch Headers */
+body.light-mode .date-header {
+  background: rgba(212, 175, 55, 0.15);
+  color: #1a1a2e;
+}
+
+body.light-mode .branch-header {
+  background: #f8f8fa;
+  border-right: 1px solid #e8e8ec;
+  color: #D4AF37;
+}
+
+/* Employee Box */
+body.light-mode .employee-box {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .employee-box:hover {
+  background: rgba(212, 175, 55, 0.2);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+}
+
+/* Input Fields */
+body.light-mode .input-field {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .input-field:focus {
+  border-color: #D4AF37;
+}
+
+/* Buttons */
+body.light-mode .btn-primary {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .btn-primary:hover {
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .btn-secondary {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #4a4a5a;
+}
+
+body.light-mode .btn-secondary:hover {
+  background: #ffffff;
+  border-color: #D4AF37;
+}
+
+body.light-mode .btn-print {
+  background: #ffffff;
+  border: 2px solid #D4AF37;
+  color: #D4AF37;
+}
+
+body.light-mode .btn-print:hover {
+  background: #D4AF37;
+  color: #ffffff;
+}
+
+/* Empty Cell */
+body.light-mode .empty-cell {
+  background: #f8f8fa;
+  color: #6a6a7a;
+}
+
+/* View Toggle */
+body.light-mode .view-toggle {
+  background: #f8f8fa;
+}
+
+body.light-mode .view-option {
+  color: #4a4a5a;
+}
+
+body.light-mode .view-option.active {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .view-option:not(.active):hover {
+  background: #ffffff;
+}
+
+/* Weekly Breakdown */
+body.light-mode .weekly-breakdown {
+  background: rgba(212, 175, 55, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+body.light-mode .week-card {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .week-card:hover {
+  background: rgba(212, 175, 55, 0.15);
+}
+
+/* Summary Cards */
+body.light-mode .summary-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .summary-value {
+  color: #D4AF37;
+}
+
+body.light-mode .summary-label {
+  color: #6a6a7a;
+}
+
+/* Branch Filter Badges */
+body.light-mode .branch-badge {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #1a1a2e;
+}
+
+body.light-mode .branch-badge.all {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+body.light-mode .branch-badge:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+body.light-mode .branch-badge.all:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+body.light-mode .branch-badge.active {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  border-color: #D4AF37;
+  color: #ffffff;
+}
+
+body.light-mode .branch-badge.all.active {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  border-color: #D4AF37;
+  color: #ffffff;
+}
+
+/* Payslip Button */
+body.light-mode .btn-payslip {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .btn-payslip:hover {
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.5);
+}
+
+/* Payslip Modal */
+body.light-mode .modal-header {
+  border-bottom: 1px solid #e8e8ec;
+}
+
+body.light-mode .modal-close {
+  color: #6a6a7a;
+}
+
+body.light-mode .modal-close:hover {
+  color: #D4AF37;
+}
+
+body.light-mode .modal-footer {
+  border-top: 1px solid #e8e8ec;
+}
+
+body.light-mode .payslip-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .payslip-header {
+  border-bottom: 2px solid #D4AF37;
+}
+
+body.light-mode .payslip-section h5 {
+  color: #1a1a2e;
+}
+
+body.light-mode .payslip-row {
+  color: #4a4a5a;
+}
+
+body.light-mode .payslip-row.total {
+  border-top: 1px solid #e8e8ec;
+}
+
+body.light-mode .payslip-row.grand-total {
+  border-top: 2px solid #10b981;
+}
+
+body.light-mode .payslip-footer {
+  border-top: 2px solid #e8e8ec;
+}
+
+/* Remarks/Payment Status Dropdown */
+body.light-mode .remarks-select {
+  background: #ffffff;
+  border: 2px solid #e0e0e5;
+  color: #1a1a2e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .remarks-select.paid {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+body.light-mode .remarks-select.not-paid {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+body.light-mode .remarks-select:hover {
+  border-color: #D4AF37;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .remarks-select option {
+  background: #ffffff;
+  color: #1a1a2e;
+}
+
+body.light-mode .remarks-select:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+/* Toast Notifications */
+body.light-mode .toast-notification {
+  background: #ffffff;
+  border: 2px solid #D4AF37;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .toast-notification.success {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+body.light-mode .toast-notification.error {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+body.light-mode .toast-notification i {
+  color: #D4AF37;
+}
+
+body.light-mode .toast-notification.success i {
+  color: #10b981;
+}
+
+body.light-mode .toast-notification.error i {
+  color: #ef4444;
+}
+
+body.light-mode .toast-notification span {
+  color: #1a1a2e;
+}
+
+/* Mobile Grid View */
+@media (max-width: 767px) {
+  body.light-mode #reportTable tbody tr {
+    background: #ffffff;
+    border: 1px solid #e8e8ec;
+  }
+  
+  body.light-mode #reportTable tbody tr#totalRow {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8fa 100%);
+    border: 2px solid #D4AF37;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+  }
+  
+  body.light-mode #reportTable tbody tr td {
+    border-bottom: 1px solid #f0f0f5;
+  }
+  
+  body.light-mode #reportTable tbody tr td:nth-child(1) {
+    color: #D4AF37;
+    border-bottom: 2px solid #D4AF37;
+  }
+  
+  body.light-mode #reportTable tbody tr td:nth-child(17) {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+}
+
+/* Table Styling for Light Mode */
+body.light-mode table {
+  color: #1a1a2e;
+}
+
+body.light-mode th {
+  background: #f8f8fa;
+  color: #D4AF37;
+  border-bottom: 2px solid #e8e8ec;
+}
+
+body.light-mode td {
+  color: #4a4a5a;
+  border-bottom: 1px solid #f0f0f5;
+}
+
+body.light-mode tr:hover td {
+  background: #f8f8fa;
+}
+
+/* Total Row */
+body.light-mode tr#totalRow {
+  background: linear-gradient(135deg, #f8f8fa 0%, #ffffff 100%);
+  border-top: 2px solid #D4AF37;
+}
+
+body.light-mode tr#totalRow td {
+  color: #1a1a2e;
+  font-weight: 700;
+}
