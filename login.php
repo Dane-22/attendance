@@ -268,6 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="assets/style_auth.css">
   <link rel="icon" type="image/x-icon" href="assets/img/profile/jajr-logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta http-equiv="Permissions-Policy" content="camera=*, microphone=()">
   <style>
     /* Additional styles for select dropdown */
     select.input-field {
@@ -386,15 +387,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </style>
 </head>
 <body class="auth-bg text-white fade-in">
-  <div class="min-h-screen flex items-center justify-center px-6">
-    <div class="auth-card w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-
-      <div class="auth-left hidden md:flex flex-col justify-center items-start gap-6 px-8 bg-black/20">
-        <div class="w-full text-left">
-          <h2 class="text-3xl font-bold">Welcome Back</h2>
-          <p class="mt-2 small-muted">Sign in to manage attendance and engineering resources.</p>
-        </div>
-
   <!-- QR Scanner Modal (No login required) -->
   <div id="qrScanBackdrop" class="qr-scan-backdrop" aria-hidden="true">
     <div class="qr-scan-panel" role="dialog" aria-modal="true" aria-label="QR Scanner">
@@ -406,6 +398,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="qr-scan-status" id="qrScanStatus">Allow camera access, then point at the QR code.</div>
     </div>
   </div>
+
+  <div class="min-h-screen flex items-center justify-center px-6">
+    <div class="auth-card w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+
+      <div class="auth-left hidden md:flex flex-col justify-center items-start gap-6 px-8 bg-black/20">
+        <div class="w-full text-left">
+          <h2 class="text-3xl font-bold">Welcome Back</h2>
+          <p class="mt-2 small-muted">Sign in to manage attendance and engineering resources.</p>
+        </div>
 
         <div class="mt-6">
           <!-- SVG engineering gear -->
@@ -517,7 +518,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 
   <script src="assets/js/auth.js" defer></script>
-  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
     // SIMPLE PASSWORD TOGGLE - NO ANTI-COPY COMPLICATIONS
     const togglePassword = document.getElementById('togglePassword');
@@ -586,33 +587,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const config = { fps: 10, qrbox: { width: 260, height: 260 } };
 
         try {
-          const cameras = await Html5Qrcode.getCameras();
-          const camId = (cameras && cameras.length) ? cameras[cameras.length - 1].id : null;
-          await qr.start(
-            camId || { facingMode: 'environment' },
-            config,
-            async (decodedText) => {
-              if (!decodedText) return;
-              setStatus('QR detected. Processing...');
+          const startWith = async (cameraConfig) => {
+            await qr.start(
+              cameraConfig,
+              config,
+              async (decodedText) => {
+                if (!decodedText) return;
+                setStatus('QR detected. Processing...');
 
-              // Stop scanner before navigation
-              await stopScanner();
-              backdrop.style.display = 'none';
-              backdrop.setAttribute('aria-hidden', 'true');
+                await stopScanner();
+                backdrop.style.display = 'none';
+                backdrop.setAttribute('aria-hidden', 'true');
 
-              // Expect a full URL or relative URL pointing to select_employee.php?auto_timein=1...
-              // Redirecting reuses existing server-side QR auto clock-in/out flow.
-              window.location.href = decodedText;
-            },
-            (errorMessage) => {
-              // ignore scan errors to avoid spamming UI
-            }
-          );
-          isRunning = true;
-          setStatus('Scanning...');
+                window.location.href = decodedText;
+              },
+              () => {
+                // ignore scan errors to avoid spamming UI
+              }
+            );
+            isRunning = true;
+            setStatus('Scanning...');
+          };
+
+          try {
+            await startWith({ facingMode: { exact: 'environment' } });
+          } catch (e1) {
+            await startWith({ facingMode: 'environment' });
+          }
         } catch (e) {
           console.error(e);
-          setStatus('Unable to start camera. Please allow camera permission and try again.');
+          const name = e && (e.name || e.toString());
+          const msg = (e && e.message) ? e.message : '';
+
+          if (name && String(name).includes('NotAllowedError')) {
+            setStatus('Camera blocked. Check Chrome site settings: Camera must be Allowed for this site.');
+          } else if (name && String(name).includes('NotFoundError')) {
+            setStatus('No camera found on this device.');
+          } else if (msg && msg.toLowerCase().includes('permission')) {
+            setStatus('Camera permission denied. Please allow camera access and try again.');
+          } else {
+            setStatus('Unable to start camera. Please try again or refresh the page.');
+          }
         }
       }
 
@@ -620,7 +635,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         backdrop.style.display = 'flex';
         backdrop.setAttribute('aria-hidden', 'false');
         setStatus('Allow camera access, then point at the QR code.');
-        // slight delay so modal is visible before camera init
         setTimeout(() => startScanner(), 150);
       }
 
