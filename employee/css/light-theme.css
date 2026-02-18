@@ -2038,6 +2038,24 @@ body.light-mode tr:hover td {
   background: #f8f8fa;
 }
 
+/* Employee name column - ensure visibility */
+body.light-mode td:first-child,
+body.light-mode .employee-name,
+body.light-mode .employee-name a,
+body.light-mode td.employee-cell,
+body.light-mode .text-dark,
+body.light-mode .text-black,
+body.light-mode table td:first-child,
+body.light-mode #reportTable td:first-child,
+body.light-mode .text-gray-400,
+body.light-mode .text-gray-300,
+body.light-mode .text-white,
+body.light-mode td[class*="text-gray"],
+body.light-mode td[class*="text-white"] {
+  color: #000000 !important;
+  font-weight: 700;
+}
+
 /* Total Row */
 body.light-mode tr#totalRow {
   background: linear-gradient(135deg, #f8f8fa 0%, #ffffff 100%);
@@ -2047,4 +2065,635 @@ body.light-mode tr#totalRow {
 body.light-mode tr#totalRow td {
   color: #1a1a2e;
   font-weight: 700;
+}
+
+/* ============================================
+   BILLING.PHP SPECIFIC
+   ============================================ */
+
+/* Main Content */
+body.light-mode .main-content {
+  background: #f5f5f7;
+}
+
+/* Billing Header */
+body.light-mode .billing-header {
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+body.light-mode .billing-header h1 {
+  background: linear-gradient(90deg, #D4AF37, #B8960C);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Filter Section */
+body.light-mode .filter-section {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+body.light-mode .filter-group label {
+  color: #6a6a7a;
+}
+
+body.light-mode .filter-group select,
+body.light-mode .filter-group input {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .filter-group select:focus,
+body.light-mode .filter-group input:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .filter-group select option {
+  background: #ffffff;
+  color: #1a1a2e;
+}
+
+body.light-mode .filter-btn {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .filter-btn:hover {
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
+}
+
+/* Report Section */
+body.light-mode .report-section {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+body.light-mode .report-section h2 {
+  color: #D4AF37;
+}
+
+body.light-mode .date-range {
+  color: #6a6a7a;
+  border-bottom: 1px solid #e8e8ec;
+}
+
+/* No Data */
+body.light-mode .no-data {
+  color: #6a6a7a;
+}
+
+/* Billing Table */
+body.light-mode .billing-table {
+  color: #1a1a2e;
+}
+
+body.light-mode .billing-table th,
+body.light-mode .billing-table td {
+  border-bottom: 1px solid #f0f0f5;
+}
+
+body.light-mode .billing-table th {
+  background: #f8f8fa;
+  color: #D4AF37;
+}
+
+body.light-mode .billing-table tbody tr:hover {
+  background: #f8f8fa;
+}
+
+body.light-mode .billing-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Amount Styling */
+body.light-mode .amount {
+  color: #1a1a2e;
+}
+
+body.light-mode .amount.net {
+  color: #10b981;
+}
+
+body.light-mode .amount.deduction {
+  color: #ef4444;
+}
+
+/* Total Row */
+body.light-mode tfoot .total-row {
+  background: #f8f8fa;
+}
+
+body.light-mode tfoot .total-row td {
+  border-top: 2px solid #D4AF37;
+}
+
+/* Status Badges */
+body.light-mode .status-badge.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+body.light-mode .status-badge.approved {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+body.light-mode .status-badge.paid {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+body.light-mode .status-badge.rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Print Button */
+body.light-mode .print-btn {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
+body.light-mode .print-btn:hover {
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+}
+
+/* Print Preview Modal */
+body.light-mode .print-modal {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .print-modal-content {
+  background-color: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .print-modal-header {
+  background: #f8f8fa;
+  border-bottom: 1px solid #e8e8ec;
+}
+
+body.light-mode .print-modal-header h2 {
+  color: #D4AF37;
+}
+
+body.light-mode .close-btn {
+  color: #6a6a7a;
+}
+
+body.light-mode .close-btn:hover {
+  color: #ef4444;
+}
+
+body.light-mode .print-modal-footer {
+  background: #f8f8fa;
+  border-top: 1px solid #e8e8ec;
+}
+
+body.light-mode .close-modal-btn {
+  background: linear-gradient(90deg, #6b7280, #4b5563);
+  color: #ffffff;
+}
+
+/* Mobile Grid View */
+@media (max-width: 767px) {
+  body.light-mode .billing-table tbody tr {
+    background: #ffffff;
+    border: 1px solid #e8e8ec;
+  }
+  
+  body.light-mode .billing-table tbody tr.total-row,
+  body.light-mode .billing-table tfoot tr {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 2px solid #D4AF37;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
+  }
+  
+  body.light-mode .billing-table td {
+    border-bottom: 1px solid #f0f0f5;
+  }
+  
+  body.light-mode .billing-table tbody tr td:first-child {
+    color: #D4AF37;
+    border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+  }
+  
+  body.light-mode .billing-table td.amount.net {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+}
+
+/* ============================================
+   DOCUMENTS.PHP SPECIFIC
+   ============================================ */
+
+/* Body Background */
+body.light-mode .dark-engineering {
+  background: #f5f5f7;
+  color: #1a1a2e;
+}
+
+/* Glass Card */
+body.light-mode .glass-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+/* Gold Text */
+body.light-mode .gold-text {
+  color: #D4AF37;
+}
+
+/* View Options */
+body.light-mode .view-options-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .view-options-title {
+  color: #D4AF37;
+}
+
+body.light-mode .view-option-btn {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #6a6a7a;
+}
+
+body.light-mode .view-option-btn:hover {
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+body.light-mode .view-option-btn.active {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  border-color: #D4AF37;
+  color: #ffffff;
+}
+
+/* Pagination */
+body.light-mode .pagination-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .pagination-info {
+  color: #6a6a7a;
+}
+
+body.light-mode .pagination-btn {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #D4AF37;
+}
+
+body.light-mode .pagination-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: #D4AF37;
+}
+
+body.light-mode .pagination-btn.disabled {
+  opacity: 0.5;
+  color: #9a9aaa;
+}
+
+body.light-mode .page-number {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #D4AF37;
+}
+
+body.light-mode .page-number:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+body.light-mode .page-number.active {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  border-color: #D4AF37;
+  color: #ffffff;
+}
+
+body.light-mode .limit-selector {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .limit-selector:focus {
+  border-color: #D4AF37;
+}
+
+/* Employee Cards */
+body.light-mode .employee-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .employee-card:hover {
+  box-shadow: 0 10px 20px rgba(212, 175, 55, 0.1);
+}
+
+body.light-mode .employee-card-list {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .employee-card-list:hover {
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.1);
+}
+
+body.light-mode .employee-card-details {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .employee-card-details:hover {
+  box-shadow: 0 10px 20px rgba(212, 175, 55, 0.1);
+}
+
+/* Employee Names and Info */
+body.light-mode .employee-card .name,
+body.light-mode .employee-card-list .name,
+body.light-mode .employee-card-details .name {
+  color: #1a1a2e !important;
+}
+
+body.light-mode .employee-card .sub,
+body.light-mode .employee-card-list .sub,
+body.light-mode .employee-card-details .sub {
+  color: #6a6a7a !important;
+}
+
+/* Avatar Initials */
+body.light-mode .avatar-initials {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+/* Document Cards */
+body.light-mode .document-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .document-card:hover {
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+}
+
+body.light-mode .document-card-list {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .document-card-list:hover {
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+}
+
+/* Status */
+body.light-mode .status-present {
+  color: #10b981;
+}
+
+body.light-mode .status-missing {
+  color: #ef4444;
+}
+
+/* Detail Items */
+body.light-mode .detail-label {
+  color: #6a6a7a;
+}
+
+body.light-mode .detail-value {
+  color: #1a1a2e;
+}
+
+/* FAB Button */
+body.light-mode .fab {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+/* Text Muted */
+body.light-mode .text-muted {
+  color: #6a6a7a !important;
+}
+
+/* Responsive Mobile */
+@media (max-width: 768px) {
+  body.light-mode .employee-card-list,
+  body.light-mode .document-card-list {
+    background: #ffffff;
+    border: 1px solid #e8e8ec;
+  }
+}
+
+/* ============================================
+   LOGS.PHP SPECIFIC - Activity Logs
+   ============================================ */
+
+/* Body & Main Content */
+body.light-mode body {
+  background: #f5f5f7;
+  color: #1a1a2e;
+}
+
+body.light-mode .main-content {
+  background: #f5f5f7;
+}
+
+/* Log Card */
+body.light-mode .log-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+body.light-mode .log-header {
+  background: linear-gradient(90deg, #D4AF37, #1a1a2e);
+}
+
+/* Log Table */
+body.light-mode .log-table {
+  background: #ffffff;
+}
+
+body.light-mode .log-row:hover {
+  background: rgba(212, 175, 55, 0.05);
+}
+
+/* Input Fields */
+body.light-mode .input-field {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .input-field:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .input-field::placeholder {
+  color: #9a9aaa;
+}
+
+/* Buttons */
+body.light-mode .btn-primary {
+  background: linear-gradient(90deg, #D4AF37, #1a1a2e);
+  color: #ffffff;
+}
+
+body.light-mode .btn-primary:hover {
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+}
+
+body.light-mode .btn-secondary {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #4a4a5a;
+}
+
+body.light-mode .btn-secondary:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+/* Pagination */
+body.light-mode .pagination-btn {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #4a4a5a;
+}
+
+body.light-mode .pagination-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: #D4AF37;
+}
+
+body.light-mode .pagination-btn.active {
+  background: #D4AF37;
+  color: #ffffff;
+}
+
+/* Action Badges */
+body.light-mode .action-login {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+body.light-mode .action-logout {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+body.light-mode .action-create {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+body.light-mode .action-update {
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
+}
+
+body.light-mode .action-delete {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+body.light-mode .action-system {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+}
+
+/* Table Container Scrollbar */
+body.light-mode .table-container::-webkit-scrollbar-track {
+  background: #f0f0f5;
+}
+
+body.light-mode .table-container::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+}
+
+/* Stats Cards */
+body.light-mode .stats-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+/* Export Button */
+body.light-mode .export-btn {
+  background: linear-gradient(90deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+body.light-mode .export-btn:hover {
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+/* Tailwind Text Colors for Light Mode */
+body.light-mode .text-white,
+body.light-mode .text-gray-300,
+body.light-mode .text-gray-400 {
+  color: #1a1a2e;
+}
+
+body.light-mode .text-gray-300 {
+  color: #6a6a7a;
+}
+
+body.light-mode .text-gray-400 {
+  color: #6a6a7a;
+}
+
+/* Table Header */
+body.light-mode .bg-gray-800 {
+  background: #f8f8fa;
+}
+
+body.light-mode th.text-gray-300 {
+  color: #D4AF37;
+}
+
+/* Table Body */
+body.light-mode .divide-y.divide-gray-700 > tr,
+body.light-mode tbody.divide-y.divide-gray-700 tr {
+  border-color: #f0f0f5;
+}
+
+body.light-mode .bg-gray-800\/50 {
+  background: #f8f8fa;
+}
+
+/* IP Address Badge */
+body.light-mode .bg-gray-900 {
+  background: #f0f0f5;
+  color: #4a4a5a;
+}
+
+/* Mobile Grid View */
+@media (max-width: 767px) {
+  body.light-mode .table-container tbody tr.log-row {
+    background: #ffffff;
+    border: 1px solid #e8e8ec;
+  }
+  
+  body.light-mode .table-container tbody tr.log-row.bg-gray-800\/50 {
+    background: #ffffff;
+  }
+  
+  body.light-mode .table-container tbody tr td {
+    border-bottom: 1px solid #f0f0f5;
+  }
+  
+  body.light-mode .table-container tbody tr td:first-child {
+    color: #D4AF37;
+    border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+  }
 }
