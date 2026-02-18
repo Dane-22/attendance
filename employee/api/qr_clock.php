@@ -17,7 +17,7 @@ try {
     }
 
     // Get employee info
-    $empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name, employee_code, branch_id FROM employees WHERE id = ? AND is_active = 1 LIMIT 1");
+    $empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name, employee_code, branch_id FROM employees WHERE id = ? AND status = 'Active' LIMIT 1");
     mysqli_stmt_bind_param($empStmt, 'i', $employeeId);
     mysqli_stmt_execute($empStmt);
     $empResult = mysqli_stmt_get_result($empStmt);
