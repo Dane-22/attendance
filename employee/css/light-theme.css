@@ -658,3 +658,591 @@ body.light-mode ::-webkit-scrollbar-thumb {
 body.light-mode ::-webkit-scrollbar-thumb:hover {
   background: #b0b0c0;
 }
+
+/* ============================================
+   SELECT_EMPLOYEE.PHP SPECIFIC
+   ============================================ */
+
+/* Welcome Banner */
+body.light-mode .welcome-banner-left {
+  color: #D4AF37;
+}
+
+body.light-mode .welcome-banner-right {
+  color: #6a6a7a;
+}
+
+body.light-mode .welcome-banner-time {
+  color: #1a1a2e;
+}
+
+/* Stat Cards */
+body.light-mode .stat-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+body.light-mode .stat-label {
+  color: #6a6a7a;
+}
+
+body.light-mode .stat-value {
+  color: #D4AF37;
+}
+
+body.light-mode .stat-list {
+  background: #f8f8fa;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .stat-list-item {
+  color: #4a4a5a;
+}
+
+body.light-mode .stat-list-more {
+  color: #D4AF37;
+}
+
+/* Time Alert */
+body.light-mode .time-alert {
+  background: #ffffff;
+  border-color: #e8e8ec;
+}
+
+body.light-mode .time-alert.before-cutoff {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+}
+
+body.light-mode .time-alert.after-cutoff {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: #ef4444;
+}
+
+body.light-mode .time-alert-title {
+  color: #1a1a2e;
+}
+
+body.light-mode .time-alert-message {
+  color: #6a6a7a;
+}
+
+/* Branch Selection */
+body.light-mode .branch-selection {
+  background: rgba(212, 175, 55, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+body.light-mode .branch-title {
+  color: #D4AF37;
+}
+
+body.light-mode .branch-search-input {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .branch-search-input:focus {
+  border-color: #D4AF37;
+  background: #ffffff;
+}
+
+body.light-mode .branch-search-input::placeholder {
+  color: #9a9aaa;
+}
+
+/* Branch Cards */
+body.light-mode .branch-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .branch-card:hover {
+  background: #f8f8fa;
+  border-color: #D4AF37;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.1);
+}
+
+body.light-mode .branch-card.selected {
+  background: linear-gradient(135deg, #D4AF37, #B8960C) !important;
+  border-color: #D4AF37 !important;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2) !important;
+}
+
+body.light-mode .branch-card.selected .branch-name,
+body.light-mode .branch-card.selected .branch-desc {
+  color: #ffffff !important;
+}
+
+body.light-mode .branch-name {
+  color: #1a1a2e;
+}
+
+body.light-mode .branch-desc {
+  color: #6a6a7a;
+}
+
+body.light-mode .btn-remove-branch {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+body.light-mode .btn-remove-branch:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* Filter Options */
+body.light-mode .filter-options-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .filter-options-title {
+  color: #1a1a2e;
+}
+
+/* Status Pills */
+body.light-mode .status-pill {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #4a4a5a;
+}
+
+body.light-mode .status-pill:hover {
+  background: #ffffff;
+  border-color: #D4AF37;
+  color: #1a1a2e;
+}
+
+body.light-mode .status-pill.active {
+  background: #D4AF37;
+  border-color: #D4AF37;
+  color: #ffffff;
+}
+
+/* Toggle Switch */
+body.light-mode .toggle-label {
+  color: #6a6a7a;
+}
+
+body.light-mode .slider {
+  background-color: #d0d0da;
+}
+
+body.light-mode input:checked + .slider {
+  background-color: #D4AF37;
+}
+
+body.light-mode .slider:before {
+  background-color: #ffffff;
+}
+
+/* Status Filter Select */
+body.light-mode .status-filter-select {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .status-filter-select:focus {
+  border-color: #D4AF37;
+}
+
+body.light-mode .status-filter-select option {
+  background: #ffffff;
+  color: #1a1a2e;
+}
+
+/* View Options */
+body.light-mode .view-option-btn {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #6a6a7a;
+}
+
+body.light-mode .view-option-btn:hover {
+  background: #ffffff;
+  border-color: #D4AF37;
+  color: #1a1a2e;
+}
+
+/* Search Container */
+body.light-mode .search-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .search-input {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .search-input:focus {
+  border-color: #D4AF37;
+  background: #ffffff;
+}
+
+body.light-mode .search-input::placeholder {
+  color: #9a9aaa;
+}
+
+/* Employee Cards (List View) */
+body.light-mode .employee-card-list {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .employee-card-list:hover {
+  border-color: #D4AF37;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.1);
+}
+
+body.light-mode .employee-card-list .employee-name {
+  color: #1a1a2e;
+}
+
+body.light-mode .employee-card-list .employee-code {
+  color: #D4AF37;
+}
+
+body.light-mode .employee-card-list .employee-position {
+  color: #6a6a7a;
+}
+
+/* Employee Table */
+body.light-mode .employee-table-wrap {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .employee-table thead th {
+  background: #f8f8fa;
+  color: #D4AF37;
+  border-bottom: 1px solid #e8e8ec;
+}
+
+body.light-mode .employee-table tbody td {
+  color: #4a4a5a;
+  border-bottom: 1px solid #f0f0f5;
+}
+
+body.light-mode .employee-table tbody tr:hover {
+  background: #f8f8fa;
+}
+
+/* Employee Avatar */
+body.light-mode .employee-avatar {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  color: #D4AF37;
+}
+
+body.light-mode .employee-sub {
+  color: #6a6a7a;
+}
+
+body.light-mode .employee-branch-label {
+  color: #6a6a7a;
+}
+
+body.light-mode .employee-branch-value {
+  color: #4a4a5a;
+}
+
+/* Kebab Menu */
+body.light-mode .kebab-btn {
+  border: 1px solid #e0e0e5;
+  color: #6a6a7a;
+}
+
+body.light-mode .kebab-btn:hover {
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+body.light-mode .kebab-dropdown {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+body.light-mode .kebab-item {
+  color: #4a4a5a;
+}
+
+body.light-mode .kebab-item:hover {
+  background: rgba(212, 175, 55, 0.08);
+  color: #D4AF37;
+}
+
+body.light-mode .kebab-logs-title {
+  color: #D4AF37;
+}
+
+body.light-mode .kebab-logs-body {
+  color: #4a4a5a;
+}
+
+body.light-mode .kebab-log-row {
+  background: #f8f8fa;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .kebab-log-sep {
+  color: #6a6a7a;
+}
+
+/* Status Badges */
+body.light-mode .status-available {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+  border: none;
+}
+
+body.light-mode .status-present {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+}
+
+body.light-mode .status-absent-auto {
+  background: #ffffff;
+  color: #ef4444;
+  border: 1px dashed #ef4444;
+}
+
+body.light-mode .status-absent-manual {
+  background: #ef4444;
+  color: #ffffff;
+  border: 1px solid #ef4444;
+}
+
+/* Buttons */
+body.light-mode .btn-present {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+body.light-mode .btn-present:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4);
+}
+
+body.light-mode .btn-present-late {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+body.light-mode .btn-present-late:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+body.light-mode .btn-absent {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+body.light-mode .btn-absent:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+}
+
+body.light-mode .btn-transfer {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: white;
+}
+
+body.light-mode .btn-transfer:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+body.light-mode .btn-transfer:disabled {
+  background: #e0e0e5;
+  color: #9a9aaa;
+}
+
+/* Loading and Messages */
+body.light-mode .loading {
+  color: #6a6a7a;
+}
+
+body.light-mode .no-employees {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  color: #6a6a7a;
+}
+
+body.light-mode .no-employees i {
+  color: #d0d0da;
+}
+
+body.light-mode .all-marked {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid #10b981;
+  color: #059669;
+}
+
+body.light-mode .success-message {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+body.light-mode .error-message {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+}
+
+/* Undo Snackbar */
+body.light-mode .undo-snackbar {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  color: #1a1a2e;
+}
+
+body.light-mode .undo-snackbar-text {
+  color: #1a1a2e;
+}
+
+body.light-mode .undo-snackbar-btn {
+  color: #D4AF37;
+}
+
+body.light-mode .undo-snackbar-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+body.light-mode .undo-snackbar-close {
+  color: #6a6a7a;
+  border-color: #e0e0e5;
+}
+
+body.light-mode .undo-snackbar-close:hover {
+  color: #1a1a2e;
+  border-color: #D4AF37;
+}
+
+/* Modal */
+body.light-mode .modal-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .modal-panel {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+body.light-mode .time-logs-body {
+  color: #4a4a5a;
+}
+
+body.light-mode .time-log-row {
+  background: #f8f8fa;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .time-log-sep {
+  color: #6a6a7a;
+}
+
+body.light-mode .form-row label {
+  color: #D4AF37;
+}
+
+body.light-mode .form-row input {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .form-row input:focus {
+  border-color: #D4AF37;
+}
+
+body.light-mode .form-row small {
+  color: #6a6a7a;
+}
+
+/* Branch Messages */
+body.light-mode #branchMessage.success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid #10b981;
+  color: #059669;
+}
+
+body.light-mode #branchMessage.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  color: #dc2626;
+}
+
+/* Pagination */
+body.light-mode .pagination-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .pagination-info {
+  color: #6a6a7a;
+}
+
+body.light-mode .pagination-info strong {
+  color: #D4AF37;
+}
+
+body.light-mode .page-size-select {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .page-size-select:focus {
+  border-color: #D4AF37;
+}
+
+/* Quick Tips */
+body.light-mode .quick-tips-container {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .quick-tips-header {
+  color: #1a1a2e;
+}
+
+body.light-mode .quick-tips-header i {
+  color: #D4AF37;
+}
+
+body.light-mode .quick-tips-list {
+  color: #4a4a5a;
+}
+
+body.light-mode .quick-tips-list strong {
+  color: #1a1a2e;
+}
+
+body.light-mode .quick-tips-list span {
+  color: #6a6a7a;
+}
+
+/* Header Card */
+body.light-mode .header-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .menu-toggle {
+  color: #D4AF37;
+}
+
+body.light-mode .welcome {
+  color: #D4AF37;
+}
+
+body.light-mode .text-gray {
+  color: #6a6a7a;
+}
