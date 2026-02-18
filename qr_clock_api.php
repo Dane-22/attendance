@@ -175,8 +175,8 @@ try {
         }
         
         // Insert new time-in record
-        $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at) 
-                       VALUES (?, ?, CURDATE(), NOW(), 'Present', NOW())";
+        $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running, is_time_running, total_ot_hrs, created_at) 
+                       VALUES (?, ?, CURDATE(), NOW(), 'Present', 0, 0, '0', NOW())";
         
         $insertStmt = mysqli_prepare($db, $insertSql);
         if (!$insertStmt) {
