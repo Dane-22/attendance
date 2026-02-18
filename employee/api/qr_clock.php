@@ -61,9 +61,9 @@ try {
         }
         mysqli_stmt_close($stmt);
         
-        // Simple insert with just required fields
-        $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status) 
-                       VALUES (?, ?, CURDATE(), NOW(), 'Present')";
+        // Simple insert with required fields including is_overtime_running, is_time_running, total_ot_hrs
+        $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running, is_time_running, total_ot_hrs) 
+                       VALUES (?, ?, CURDATE(), NOW(), 'Present', 0, 1, '0')";
         $insertStmt = mysqli_prepare($db, $insertSql);
         mysqli_stmt_bind_param($insertStmt, "is", $employeeId, $branchName);
         
