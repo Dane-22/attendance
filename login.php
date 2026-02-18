@@ -458,7 +458,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div>
             <label class="block text-sm">Employee Code or Email</label>
             <input name="identifier" class="mt-2 w-full p-3 rounded input-field" 
-                   placeholder="e.g. E12345 or you@company.com" 
+                   placeholder="ENG-2001-01 or you@gmail.com" 
                    value="<?php echo htmlspecialchars($_POST['identifier'] ?? ''); ?>" />
           </div>
           
@@ -469,8 +469,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label class="block text-sm">Password</label>
             <div class="password-wrapper mt-2">
               <input type="password" name="password" id="passwordInput" 
-                     class="password-field w-full p-3 rounded input-field" 
-                     placeholder="••••••••" />
+                     class="password-field w-full p-3 rounded input-field" />
               <button type="button" class="password-toggle" id="togglePassword">
                 <i class="fas fa-eye"></i>
               </button>
