@@ -1,11 +1,14 @@
 <?php
 require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 $employeeId = $_POST['employee_id'] ?? null;
 $branchName = $_POST['branch_name'] ?? null;
 
 if (!$employeeId || !$branchName) {
+    // Log missing parameters
+    logApiActivity($db, $employeeId ?? null, 'Time Out Failed', "Missing employee_id or branch_name in time out request");
     echo json_encode(['success' => false, 'message' => 'Missing employee_id or branch_name']);
     exit();
 }
@@ -51,11 +54,15 @@ $row = $result ? mysqli_fetch_assoc($result) : null;
 mysqli_stmt_close($stmt);
 
 if (!$row) {
+    // Log no open record found
+    logApiActivity($db, $employeeId, 'Time Out Failed', "No open attendance record for time out - Employee ID: {$employeeId}");
     echo json_encode(['success' => false, 'message' => 'No open attendance record for time out']);
     exit();
 }
 
 if (!empty($row['branch_name']) && $row['branch_name'] !== $branchName) {
+    // Log branch mismatch
+    logApiActivity($db, $employeeId, 'Time Out Failed', "Cannot time out from different branch. Attempted: {$branchName}, Original: {$row['branch_name']}");
     echo json_encode(['success' => false, 'message' => 'Cannot time out from a different branch']);
     exit();
 }
@@ -74,8 +81,14 @@ if (mysqli_stmt_execute($updateStmt)) {
         'time_out' => date('Y-m-d H:i:s'),
         'is_time_running' => false
     ]);
+    
+    // Log activity to database
+    logApiActivity($db, $employeeId, 'Time Out', "Employee ID {$employeeId} timed out at branch: {$branchName}");
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
+    
+    // Log failed activity to database
+    logApiActivity($db, $employeeId, 'Time Out Failed', "Failed to record time out for Employee ID {$employeeId} - Error: " . mysqli_error($db));
 }
 mysqli_stmt_close($updateStmt);
 ?>

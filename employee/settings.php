@@ -12,6 +12,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 require('../conn/db_connection.php');
+require_once __DIR__ . '/../functions.php';
 
 // Include procurement API sync function
 require('../procurement-api.php');
@@ -134,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
             $userData['last_name'] = $last_name;
             
             $success_message = "Profile updated successfully!";
+            logActivity($db, 'Profile Updated', "User #{$employeeId} updated profile information");
         } else {
             $error_message = "Failed to update profile. Please try again.";
         }
@@ -204,6 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
                     } else {
                         $success_message = "Password updated locally. Sync to procurement system failed: " . $sync_result['message'];
                     }
+                    logActivity($db, 'Password Changed', "User #{$employeeId} changed password");
                 } else {
                     $error_message = "Failed to update password. Please try again.";
                 }
@@ -296,6 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image'])) {
                         $profile_image = '../' . $image_path;
                         $success_message = "Profile image uploaded successfully!";
                         error_log("Profile image uploaded: $image_path");
+                        logActivity($db, 'Profile Image Updated', "User #{$employeeId} uploaded new profile image");
                     } else {
                         $error_message = "Failed to update profile image in database.";
                         error_log("Database error: " . mysqli_error($db));
@@ -318,6 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
         $error_message = "You don't have permission to perform this action!";
         error_log("Unauthorized backup attempt by user ID: $employeeId, Role: $user_role");
     } else {
+        logActivity($db, 'Database Backup', "Super Admin/Admin created database backup");
         // Create backup directory if it doesn't exist
         $backup_dir = '../backups/';
         if (!file_exists($backup_dir)) {

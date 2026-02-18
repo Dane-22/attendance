@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once 'conn/db_connection.php';
+require_once 'functions.php';
 require_once 'procurement-api.php';
 
 // Get input data (support both JSON and form-data)
@@ -132,6 +133,9 @@ if (!$updateSuccess) {
 
 // Sync to procurement system
 $sync_result = syncPasswordToProcurement($employee_code, $new_password);
+
+// Log activity to database
+logApiActivity($db, $employeeId, 'Password Changed', "User {$employee_code} changed password via API");
 
 // Build response
 $response = [

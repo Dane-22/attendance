@@ -5,6 +5,8 @@ if (file_exists(__DIR__ . '/conn/db_connection.php')) {
     require_once __DIR__ . '/db_connection.php';
 }
 
+require_once __DIR__ . '/functions.php';
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
@@ -73,6 +75,9 @@ if ($affected <= 0) {
 }
 
 echo json_encode(['success' => true, 'message' => 'Employee branch updated', 'employee_id' => $employeeId, 'branch_id' => $branchId]);
+
+// Log activity to database
+logApiActivity($db, $employeeId, 'Branch Updated', "Employee ID {$employeeId} branch updated to Branch ID: {$branchId}");
 
 mysqli_close($db);
 ?>

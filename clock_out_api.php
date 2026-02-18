@@ -1,6 +1,7 @@
 <?php
 // clock_out_api.php
 require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 // Input
@@ -8,6 +9,8 @@ $employeeId = $_POST['employee_id'] ?? null;
 $branchName = $_POST['branch_name'] ?? null;
 
 if (!$employeeId) {
+    // Log missing employee_id
+    logApiActivity($db, null, 'Clock Out Failed', "Missing employee_id in clock out request");
     echo json_encode(['success' => false, 'message' => 'Missing employee_id']);
     exit();
 }
@@ -26,6 +29,8 @@ $row = $result ? mysqli_fetch_assoc($result) : null;
 mysqli_stmt_close($stmt);
 
 if (!$row) {
+    // Log no open record found
+    logApiActivity($db, $employeeId, 'Clock Out Failed', "No open attendance record for clock out - Employee ID: {$employeeId}");
     echo json_encode(['success' => false, 'message' => 'No open attendance (clock in) found for today']);
     exit();
 }
@@ -58,8 +63,14 @@ if (mysqli_stmt_execute($updateStmt)) {
         'time_out' => $timeOut,
         'attendance_id' => $attendanceId
     ]);
+    
+    // Log activity to database
+    logApiActivity($db, $employeeId, 'Clock Out', "Employee ID {$employeeId} clocked out at branch: {$branchName}");
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
+    
+    // Log failed activity to database
+    logApiActivity($db, $employeeId, 'Clock Out Failed', "Failed to record clock out for Employee ID {$employeeId} - Error: " . mysqli_error($db));
 }
 mysqli_stmt_close($updateStmt);
 ?>

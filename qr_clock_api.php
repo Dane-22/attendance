@@ -51,6 +51,7 @@ try {
     }
     
     require_once $dbPath;
+    require_once __DIR__ . '/functions.php';
     
     // Verify $db connection exists
     if (!isset($db) || !$db) {
@@ -89,6 +90,7 @@ try {
 
     // Check if employee is active (status = 'Active')
     if (isset($employee['status']) && $employee['status'] !== 'Active') {
+        logApiActivity($db, $employeeId, 'QR Clock Failed', "Employee ID {$employeeId} account is not active");
         jsonResponse(['success' => false, 'message' => 'Employee account is not active']);
     }
 
@@ -161,6 +163,10 @@ try {
                 if (mysqli_stmt_execute($updateStmt)) {
                     $timeOut = date('h:i A');
                     mysqli_stmt_close($updateStmt);
+                    
+                    // Log activity to database
+                    logApiActivity($db, $employeeId, 'QR Clock Out', "Employee {$empName} auto clocked out at {$timeOut} via QR");
+                    
                     jsonResponse([
                         'success' => true,
                         'message' => "$empName time-out recorded at $timeOut",
@@ -169,6 +175,10 @@ try {
                     ]);
                 } else {
                     mysqli_stmt_close($updateStmt);
+                    
+                    // Log failed activity to database
+                    logApiActivity($db, $employeeId, 'QR Clock Out Failed', "Failed to auto clock out Employee ID {$employeeId} via QR");
+                    
                     jsonResponse(['success' => false, 'message' => 'Failed to record time-out']);
                 }
             }
@@ -188,6 +198,10 @@ try {
         if (mysqli_stmt_execute($insertStmt)) {
             $timeIn = date('h:i A');
             mysqli_stmt_close($insertStmt);
+            
+            // Log activity to database
+            logApiActivity($db, $employeeId, 'QR Clock In', "Employee {$empName} clocked in at {$timeIn} via QR");
+            
             jsonResponse([
                 'success' => true,
                 'message' => "$empName time-in recorded at $timeIn",
@@ -195,6 +209,10 @@ try {
             ]);
         } else {
             mysqli_stmt_close($insertStmt);
+            
+            // Log failed activity to database
+            logApiActivity($db, $employeeId, 'QR Clock In Failed', "Failed to clock in Employee ID {$employeeId} via QR - Error: " . mysqli_error($db));
+            
             jsonResponse(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
         }
         

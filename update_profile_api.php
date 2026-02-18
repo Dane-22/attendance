@@ -5,6 +5,8 @@ if (file_exists(__DIR__ . '/conn/db_connection.php')) {
     require_once __DIR__ . '/db_connection.php';
 }
 
+require_once __DIR__ . '/functions.php';
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
@@ -62,6 +64,8 @@ function is_hex_32($value) {
 
 $employee_id = isset($_POST['employee_id']) ? (int)$_POST['employee_id'] : 0;
 if ($employee_id <= 0) {
+    // Log invalid employee_id
+    logApiActivity($db, null, 'Profile Update Failed', "Missing or invalid employee_id in profile update request");
     json_error('employee_id is required');
 }
 
@@ -193,8 +197,12 @@ mysqli_stmt_close($stmt);
 
 if (!$ok) {
     if ($errno === 1062) {
+        // Log duplicate value error
+        logApiActivity($db, $employee_id, 'Profile Update Failed', "Duplicate value error in profile update - Employee ID: {$employee_id}");
         json_error('Duplicate value (email or employee_code already exists)', 409);
     }
+    // Log update failure
+    logApiActivity($db, $employee_id, 'Profile Update Failed', "Profile update failed - Employee ID: {$employee_id}, Error: {$err}");
     json_error('Update failed: ' . $err, 500);
 }
 
@@ -224,6 +232,9 @@ echo json_encode([
         'daily_rate' => $user['daily_rate'],
     ]
 ]);
+
+// Log successful profile update
+logApiActivity($db, $employee_id, 'Profile Updated', "Profile updated for Employee ID: {$employee_id}, Employee Code: {$user['employee_code']}");
 
 mysqli_close($db);
 ?>

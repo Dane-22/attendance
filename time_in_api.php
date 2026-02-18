@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 $employeeId = $_POST['employee_id'] ?? null;
@@ -116,8 +117,14 @@ if (mysqli_stmt_execute($insertStmt)) {
         'time_in' => date('Y-m-d H:i:s'),
         'is_time_running' => true
     ]);
+    
+    // Log activity to database
+    logApiActivity($db, $employeeId, 'Time In', "Employee ID {$employeeId} timed in at branch: {$branchName}");
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
+    
+    // Log failed activity to database
+    logApiActivity($db, $employeeId, 'Time In Failed', "Failed to record time in for Employee ID {$employeeId} at branch: {$branchName} - Error: " . mysqli_error($db));
 }
 mysqli_stmt_close($insertStmt);
 ?>

@@ -1,6 +1,7 @@
 <?php
 // submit_attendance.php
 require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 // --- 1. START NG ERROR LOGGER ---
@@ -20,6 +21,8 @@ $date            = date("Y-m-d");
 
 // --- 3. VALIDATION ---
 if (!$employee_id || !$branch_selected) {
+    // Log missing data
+    logApiActivity($db, $employee_id ?? null, 'Attendance Submit Failed', "Missing employee_id or branch_name in attendance submit request");
     echo json_encode(["success" => false, "message" => "Missing data: employee_id or branch_name."]);
     exit;
 }
@@ -33,6 +36,8 @@ mysqli_stmt_execute($check_stmt);
 $check_result = mysqli_stmt_get_result($check_stmt);
 
 if (mysqli_num_rows($check_result) > 0) {
+    // Log duplicate attendance attempt
+    logApiActivity($db, $employee_id, 'Attendance Submit Failed', "Duplicate attendance attempt - Employee already timed-in today");
     echo json_encode(["success" => false, "message" => "Employee already timed-in today."]);
     mysqli_stmt_close($check_stmt);
     exit;
@@ -65,6 +70,9 @@ $insert_stmt = mysqli_prepare($db, $insert_sql);
 mysqli_stmt_bind_param($insert_stmt, "isss", $employee_id, $branch_selected, $date, $status);
 
 if (mysqli_stmt_execute($insert_stmt)) {
+    // Log successful attendance submission
+    logApiActivity($db, $employee_id, 'Attendance Submitted', "Attendance saved for Employee ID: {$employee_id} at branch: {$branch_selected}");
+    
     echo json_encode([
         "success" => true, 
         "message" => "Attendance saved!",
@@ -75,6 +83,8 @@ if (mysqli_stmt_execute($insert_stmt)) {
         ]
     ]);
 } else {
+    // Log failed attendance submission
+    logApiActivity($db, $employee_id, 'Attendance Submit Failed', "Database error during attendance insert - Employee ID: {$employee_id}, Error: " . mysqli_error($db));
     echo json_encode(["success" => false, "message" => "Database error during insert."]);
 }
 

@@ -1,6 +1,7 @@
 <?php
 // login_api.php - FIXED VERSION WITH DUAL PASSWORD SUPPORT
 require_once __DIR__ . "/conn/db_connection.php";
+require_once __DIR__ . "/functions.php";
 header('Content-Type: application/json');
 
 // --- 1. START NG ERROR LOGGER (Kusa itong gagawa ng api_debug.log) ---
@@ -125,7 +126,7 @@ if ($user) {
         mysqli_stmt_close($check_stmt);
         
         // Response para sa Mobile App
-        echo json_encode([
+        $response = [
             "success" => true,
             "message" => "Login successful",
             "user_data" => [
@@ -137,7 +138,11 @@ if ($user) {
                 "assigned_branch" => $user['branch_name'],
                 "daily_branch"  => $daily_branch
             ]
-        ]);
+        ];
+        echo json_encode($response);
+        
+        // Log activity to database
+        logApiActivity($db, $user['id'], 'API Login', "User {$user['employee_code']} logged in via API from branch: {$daily_branch}");
         
         // Log successful login
         file_put_contents($log_file, "[$current_time] Successful login: {$user['employee_code']} from branch: {$daily_branch}\n", FILE_APPEND);
@@ -147,10 +152,16 @@ if ($user) {
             "message" => "Invalid password.",
             "debug_hash" => substr($stored_hash, 0, 20) . "..." // Show first 20 chars for debugging
         ]);
+        // Log failed login attempt to database
+        logApiActivity($db, $user['id'] ?? null, 'API Login Failed', "Failed login attempt for identifier: {$identifier} - Invalid password");
+        
         file_put_contents($log_file, "[$current_time] Failed login attempt for: {$identifier}\n", FILE_APPEND);
     }
 } else {
     echo json_encode(["success" => false, "message" => "Account not found or is currently Inactive."]);
+    // Log failed login attempt to database
+    logApiActivity($db, null, 'API Login Failed', "Failed login attempt for identifier: {$identifier} - Account not found or inactive");
+    
     file_put_contents($log_file, "[$current_time] Account not found: {$identifier}\n", FILE_APPEND);
 }
 

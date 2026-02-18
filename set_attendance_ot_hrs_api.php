@@ -6,6 +6,8 @@ if (file_exists(__DIR__ . '/conn/db_connection.php')) {
     require_once __DIR__ . '/db_connection.php';
 }
 
+require_once __DIR__ . '/functions.php';
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
@@ -78,6 +80,10 @@ mysqli_stmt_bind_param($updateStmt, 'si', $otHours, $attendanceId);
 
 if (!mysqli_stmt_execute($updateStmt)) {
     echo json_encode(['success' => false, 'message' => 'Failed to update OT hours: ' . mysqli_error($db)]);
+    
+    // Log failed activity to database
+    logApiActivity($db, $employeeId, 'OT Hours Update Failed', "Failed to update OT hours for Attendance ID: {$attendanceId}, Employee ID: {$employeeId} - Error: " . mysqli_error($db));
+    
     mysqli_stmt_close($updateStmt);
     exit();
 }
@@ -91,6 +97,9 @@ echo json_encode([
     'date' => $date,
     'total_ot_hrs' => $otHours,
 ]);
+
+// Log activity to database
+logApiActivity($db, $employeeId, 'OT Hours Updated', "OT hours updated to {$otHours} for Attendance ID: {$attendanceId}, Employee ID: {$employeeId}, Date: {$date}");
 
 mysqli_close($db);
 ?>

@@ -19,6 +19,7 @@ try {
     } else {
         require_once __DIR__ . '/db_connection.php';
     }
+    require_once __DIR__ . '/functions.php';
 
     $debug = isset($_GET['debug']) && $_GET['debug'] === '1';
 
@@ -132,11 +133,20 @@ try {
                 ]
             ]);
             
+            // Log activity to database
+            logApiActivity($db, $user['id'], 'API Login (Simple)', "User {$user['employee_code']} logged in via simple API from branch: {$daily_branch}");
+            
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid password.']);
+            
+            // Log failed login attempt
+            logApiActivity($db, $user['id'] ?? null, 'API Login Failed (Simple)', "Failed login attempt for identifier: {$identifier} - Invalid password");
         }
     } else {
         echo json_encode(['success' => false, 'message' => 'Account not found or is inactive.']);
+        
+        // Log failed login attempt
+        logApiActivity($db, null, 'API Login Failed (Simple)', "Failed login attempt for identifier: {$identifier} - Account not found or inactive");
     }
     
     mysqli_stmt_close($stmt);

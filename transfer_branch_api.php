@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 $employeeId = $_POST['employee_id'] ?? null;
@@ -23,6 +24,8 @@ function attendanceHasColumn($db, $columnName) {
 }
 
 if (!$employeeId || (!$toBranch && !$toBranchId)) {
+    // Log missing parameters
+    logApiActivity($db, $employeeId ?? null, 'Branch Transfer Failed', "Missing employee_id or to_branch/to_branch_id in transfer request");
     echo json_encode(['success' => false, 'message' => 'Missing employee_id or to_branch/to_branch_id']);
     exit();
 }
@@ -113,6 +116,9 @@ mysqli_stmt_close($updateEmpStmt);
 
 // 2) If no open attendance, transfer is only employees table change
 if (!$attendanceId) {
+    // Log employee branch update only
+    logApiActivity($db, $employeeId, 'Branch Transferred', "Employee ID {$employeeId} assigned branch updated to: {$resolvedToBranchName} (no open attendance)");
+    
     echo json_encode([
         'success' => true,
         'message' => 'Employee branch updated (no open attendance to transfer)',
@@ -130,6 +136,8 @@ $updateSql = "UPDATE attendance SET time_out = NOW(), updated_at = NOW(), is_tim
 $updateStmt = mysqli_prepare($db, $updateSql);
 mysqli_stmt_bind_param($updateStmt, 'i', $attendanceId);
 if (!mysqli_stmt_execute($updateStmt)) {
+    // Log failed time out
+    logApiActivity($db, $employeeId, 'Branch Transfer Failed', "Failed to time out from current branch - Attendance ID: {$attendanceId}, Error: " . mysqli_error($db));
     echo json_encode(['success' => false, 'message' => 'Failed to time out from current branch: ' . mysqli_error($db)]);
     mysqli_stmt_close($updateStmt);
     exit();
@@ -147,11 +155,16 @@ $insertSql = $shouldIncludeOtDefaults
 $insertStmt = mysqli_prepare($db, $insertSql);
 mysqli_stmt_bind_param($insertStmt, 'iss', $employeeId, $resolvedToBranchName, $date);
 if (mysqli_stmt_execute($insertStmt)) {
+    $newAttendanceId = mysqli_insert_id($db);
+    
+    // Log successful branch transfer with time out and time in
+    logApiActivity($db, $employeeId, 'Branch Transferred', "Employee ID {$employeeId} transferred from {$actualFromBranch} to {$resolvedToBranchName} - timed out and timed in");
+    
     echo json_encode([
         'success' => true,
         'message' => 'Transferred and timed in to new branch',
         'employee_id' => (int)$employeeId,
-        'attendance_id' => mysqli_insert_id($db),
+        'attendance_id' => $newAttendanceId,
         'time_in' => date('Y-m-d H:i:s'),
         'from_branch' => $actualFromBranch,
         'to_branch' => $resolvedToBranchName,
@@ -160,6 +173,8 @@ if (mysqli_stmt_execute($insertStmt)) {
         'timed_in' => true,
     ]);
 } else {
+    // Log failed time in
+    logApiActivity($db, $employeeId, 'Branch Transfer Failed', "Failed to time in to new branch - To: {$resolvedToBranchName}, Error: " . mysqli_error($db));
     echo json_encode(['success' => false, 'message' => 'Failed to time in to new branch: ' . mysqli_error($db)]);
 }
 mysqli_stmt_close($insertStmt);

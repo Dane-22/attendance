@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 $employeeId = isset($_POST['employee_id']) ? (int)$_POST['employee_id'] : 0;
@@ -7,6 +8,8 @@ $branchName = isset($_POST['branch_name']) ? trim($_POST['branch_name']) : '';
 $date = isset($_POST['date']) ? trim($_POST['date']) : date('Y-m-d');
 
 if ($employeeId <= 0) {
+    // Log invalid employee_id
+    logApiActivity($db, null, 'Mark Absent Failed', "Missing or invalid employee_id in mark absent request");
     echo json_encode(['success' => false, 'message' => 'Missing or invalid employee_id']);
     exit();
 }
@@ -74,8 +77,14 @@ if ($row && isset($row['id'])) {
     mysqli_stmt_bind_param($stmt, $types, ...$params);
 
     if (mysqli_stmt_execute($stmt)) {
+        // Log successful update to absent
+        logApiActivity($db, $employeeId, 'Marked Absent', "Attendance marked as Absent for Employee ID: {$employeeId}, Attendance ID: {$attendanceId}, Date: {$date}");
+        
         echo json_encode(['success' => true, 'message' => 'Attendance marked as Absent']);
     } else {
+        // Log failed update
+        logApiActivity($db, $employeeId, 'Mark Absent Failed', "Failed to mark attendance as Absent - Employee ID: {$employeeId}, Attendance ID: {$attendanceId}, Error: " . mysqli_error($db));
+        
         echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
     }
 
@@ -118,8 +127,14 @@ $insertStmt = mysqli_prepare($db, $insertSql);
 mysqli_stmt_bind_param($insertStmt, $types, ...$params);
 
 if (mysqli_stmt_execute($insertStmt)) {
+    // Log successful insert as absent
+    logApiActivity($db, $employeeId, 'Marked Absent', "New attendance record created as Absent for Employee ID: {$employeeId}, Date: {$date}, Branch: {$branchName}");
+    
     echo json_encode(['success' => true, 'message' => 'Attendance marked as Absent']);
 } else {
+    // Log failed insert
+    logApiActivity($db, $employeeId, 'Mark Absent Failed', "Failed to create absent attendance record - Employee ID: {$employeeId}, Date: {$date}, Error: " . mysqli_error($db));
+    
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
 }
 
