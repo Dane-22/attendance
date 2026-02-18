@@ -396,6 +396,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
       <div id="qrReader"></div>
       <div class="qr-scan-status" id="qrScanStatus">Allow camera access, then point at the QR code.</div>
+      <!-- QR Result Display -->
+      <div id="qrResultArea" style="display: none; padding: 16px; text-align: center;">
+        <div id="qrResultMessage" style="font-weight: 600; margin-bottom: 12px;"></div>
+        <button type="button" id="scanAnotherBtn" style="background: #FFD700; border: none; color: #0b0b0b; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+          <i class="fa-solid fa-camera"></i> Scan Another
+        </button>
+      </div>
     </div>
   </div>
 
@@ -548,12 +555,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       const backdrop = document.getElementById('qrScanBackdrop');
       const closeBtn = document.getElementById('closeQrScannerBtn');
       const statusEl = document.getElementById('qrScanStatus');
+      const qrReader = document.getElementById('qrReader');
+      const qrResultArea = document.getElementById('qrResultArea');
+      const qrResultMessage = document.getElementById('qrResultMessage');
+      const scanAnotherBtn = document.getElementById('scanAnotherBtn');
 
       let qr = null;
       let isRunning = false;
 
       function setStatus(msg) {
         if (statusEl) statusEl.textContent = msg;
+      }
+
+      function showResult(success, message) {
+        if (qrReader) qrReader.style.display = 'none';
+        if (statusEl) statusEl.style.display = 'none';
+        if (qrResultArea) {
+          qrResultArea.style.display = 'block';
+          qrResultMessage.textContent = message;
+          qrResultMessage.style.color = success ? '#10b981' : '#ef4444';
+        }
+      }
+
+      function resetScanner() {
+        if (qrReader) qrReader.style.display = 'block';
+        if (statusEl) {
+          statusEl.style.display = 'block';
+          statusEl.textContent = 'Allow camera access, then point at the QR code.';
+        }
+        if (qrResultArea) qrResultArea.style.display = 'none';
+        startScanner();
       }
 
       async function stopScanner() {
@@ -572,6 +603,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         isRunning = false;
       }
 
+      // Parse employee code/ID from QR text
+      function parseEmployeeFromQR(text) {
+        // Try to extract from URL format: .../select_employee.php?auto_timein=1&emp_id=123&emp_code=ABC
+        const empIdMatch = text.match(/[?&]emp_id=(\d+)/);
+        const empCodeMatch = text.match(/[?&]emp_code=([^&]+)/);
+        
+        if (empIdMatch || empCodeMatch) {
+          return {
+            emp_id: empIdMatch ? empIdMatch[1] : null,
+            emp_code: empCodeMatch ? decodeURIComponent(empCodeMatch[1]) : null
+          };
+        }
+        
+        // If QR contains only employee code (plain text)
+        const plainCode = text.trim();
+        if (plainCode && !plainCode.includes('/')) {
+          return { emp_id: null, emp_code: plainCode };
+        }
+        
+        return null;
+      }
+
+      // Call clock-in API via AJAX
+      async function processClockIn(empId, empCode) {
+        const url = `${window.location.origin}/employee/api/clock_in.php`;
+        const formData = new FormData();
+        if (empId) formData.append('employee_id', empId);
+        if (empCode) formData.append('employee_code', empCode);
+        formData.append('branch_name', 'System');
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            return { success: true, message: `Time-in recorded at ${data.time_in || new Date().toLocaleTimeString()}` };
+          } else if (data.message && data.message.toLowerCase().includes('already clocked in')) {
+            // Try clock-out
+            return await processClockOut(empId, empCode);
+          } else {
+            return { success: false, message: data.message || 'Failed to record time-in' };
+          }
+        } catch (err) {
+          return { success: false, message: 'Connection error. Please try again.' };
+        }
+      }
+
+      // Call clock-out API via AJAX
+      async function processClockOut(empId, empCode) {
+        const url = `${window.location.origin}/employee/api/clock_out.php`;
+        const formData = new FormData();
+        if (empId) formData.append('employee_id', empId);
+        if (empCode) formData.append('employee_code', empCode);
+        formData.append('branch_name', 'System');
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            return { success: true, message: `Time-out recorded at ${data.time_out || new Date().toLocaleTimeString()}` };
+          } else {
+            return { success: false, message: data.message || 'Failed to record time-out' };
+          }
+        } catch (err) {
+          return { success: false, message: 'Connection error. Please try again.' };
+        }
+      }
+
       async function startScanner() {
         if (typeof Html5Qrcode === 'undefined') {
           setStatus('QR scanner library is still loading. Please try again.');
@@ -586,65 +700,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         const config = { fps: 10, qrbox: { width: 260, height: 260 } };
 
-        const buildSelectEmployeeUrlFromCode = (employeeCode) => {
-          const code = String(employeeCode || '').trim();
-          if (!code) return null;
-          return `${window.location.origin}/employee/select_employee.php?auto_timein=1&emp_code=${encodeURIComponent(code)}`;
-        };
-
-        const normalizeRedirectUrl = (raw) => {
-          const text = String(raw || '').trim();
-          if (!text) return { ok: false, error: 'Empty QR code.' };
-
-          // If QR contains only employee code (common for some QR generators)
-          if (!/^https?:\/\//i.test(text) && !text.startsWith('/')) {
-            const built = buildSelectEmployeeUrlFromCode(text);
-            if (built) return { ok: true, url: built };
-          }
-
-          try {
-            const urlObj = new URL(text, window.location.origin);
-            const pathname = urlObj.pathname || '';
-
-            // Only allow redirecting into the attendance auto flow.
-            if (!/\/employee\/select_employee\.php$/i.test(pathname) && !/\/select_employee\.php$/i.test(pathname)) {
-              return { ok: false, error: 'Invalid QR code. Please scan a valid employee QR.' };
-            }
-
-            // Force auto_timein=1 so scan triggers the existing flow.
-            if (!urlObj.searchParams.get('auto_timein')) {
-              urlObj.searchParams.set('auto_timein', '1');
-            }
-
-            return { ok: true, url: urlObj.toString() };
-          } catch (e) {
-            const built = buildSelectEmployeeUrlFromCode(text);
-            if (built) return { ok: true, url: built };
-            return { ok: false, error: 'Unrecognized QR format.' };
-          }
-        };
-
         try {
-          // On some mobile browsers, enumerateDevices/getCameras can be restricted until
-          // a stream is granted. Start directly with facingMode and only fall back if needed.
           const startWith = async (cameraConfig) => {
             await qr.start(
               cameraConfig,
               config,
               async (decodedText) => {
-                const normalized = normalizeRedirectUrl(decodedText);
-                if (!normalized.ok) {
-                  setStatus(normalized.error);
+                // Parse employee info from QR
+                const empInfo = parseEmployeeFromQR(decodedText);
+                if (!empInfo || (!empInfo.emp_id && !empInfo.emp_code)) {
+                  setStatus('Invalid QR code. Please scan a valid employee QR.');
                   return;
                 }
 
-                setStatus('QR detected. Redirecting...');
-
+                setStatus('Processing...');
                 await stopScanner();
-                backdrop.style.display = 'none';
-                backdrop.setAttribute('aria-hidden', 'true');
 
-                window.location.href = normalized.url;
+                // Process clock-in/out via AJAX
+                const result = await processClockIn(empInfo.emp_id, empInfo.emp_code);
+                showResult(result.success, result.message);
               },
               () => {
                 // ignore scan errors to avoid spamming UI
@@ -679,6 +753,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       function openModal() {
         backdrop.style.display = 'flex';
         backdrop.setAttribute('aria-hidden', 'false');
+        if (qrReader) qrReader.style.display = 'block';
+        if (statusEl) statusEl.style.display = 'block';
+        if (qrResultArea) qrResultArea.style.display = 'none';
         setStatus('Allow camera access, then point at the QR code.');
         setTimeout(() => startScanner(), 150);
       }
@@ -691,6 +768,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       if (openBtn) openBtn.addEventListener('click', openModal);
       if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (scanAnotherBtn) scanAnotherBtn.addEventListener('click', resetScanner);
       if (backdrop) {
         backdrop.addEventListener('click', function(e) {
           if (e.target === backdrop) closeModal();
