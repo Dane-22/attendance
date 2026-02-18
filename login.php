@@ -625,89 +625,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         return null;
       }
 
-      // Call clock-in API via AJAX
+      // Call QR clock API via AJAX
       async function processClockIn(empId, empCode) {
-        // If we only have emp_id, try to get emp_code from server
-        if (empId && !empCode) {
-          try {
-            const lookupUrl = `${window.location.origin}/employee/api/get_employee.php?id=${empId}`;
-            const lookupRes = await fetch(lookupUrl, { credentials: 'include' });
-            const lookupData = await lookupRes.json();
-            if (lookupData.success) {
-              empCode = lookupData.employee_code;
-            }
-          } catch (e) {
-            // Continue without code
-          }
-        }
-
-        const url = `${window.location.origin}/employee/api/clock_in.php`;
+        const url = `${window.location.origin}/employee/api/qr_clock.php`;
         const formData = new FormData();
-        if (empId) formData.append('employee_id', empId);
+        formData.append('action', 'in');
+        formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
 
         try {
           const response = await fetch(url, {
             method: 'POST',
-            body: formData,
-            credentials: 'include',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
+            body: formData
           });
           
-          const text = await response.text();
-          let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            return { success: false, message: 'Server error: ' + text.substring(0, 100) };
-          }
+          const data = await response.json();
           
           if (data.success) {
-            return { success: true, message: `Time-in recorded at ${data.time_in || new Date().toLocaleTimeString()}` };
-          } else if (data.message && data.message.toLowerCase().includes('already clocked in')) {
+            return { success: true, message: data.message };
+          } else if (data.already_in) {
+            // Already clocked in, trigger clock-out
             return await processClockOut(empId, empCode);
           } else {
             return { success: false, message: data.message || 'Failed to record time-in' };
           }
         } catch (err) {
-          return { success: false, message: 'Network error: ' + (err.message || 'Cannot connect') };
+          return { success: false, message: 'Error: ' + (err.message || 'Cannot connect') };
         }
       }
 
-      // Call clock-out API via AJAX
+      // Call QR clock-out API via AJAX
       async function processClockOut(empId, empCode) {
-        const url = `${window.location.origin}/employee/api/clock_out.php`;
+        const url = `${window.location.origin}/employee/api/qr_clock.php`;
         const formData = new FormData();
-        if (empId) formData.append('employee_id', empId);
+        formData.append('action', 'out');
+        formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
 
         try {
           const response = await fetch(url, {
             method: 'POST',
-            body: formData,
-            credentials: 'include',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
+            body: formData
           });
           
-          const text = await response.text();
-          let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            return { success: false, message: 'Server error: ' + text.substring(0, 100) };
-          }
+          const data = await response.json();
           
           if (data.success) {
-            return { success: true, message: `Time-out recorded at ${data.time_out || new Date().toLocaleTimeString()}` };
+            return { success: true, message: data.message };
           } else {
             return { success: false, message: data.message || 'Failed to record time-out' };
           }
         } catch (err) {
-          return { success: false, message: 'Network error: ' + (err.message || 'Cannot connect') };
+          return { success: false, message: 'Error: ' + (err.message || 'Cannot connect') };
         }
       }
 
