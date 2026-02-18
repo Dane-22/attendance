@@ -2,6 +2,7 @@
 // update_payment_status.php - Update employee payment status for weekly report
 session_start();
 require_once __DIR__ . '/../conn/db_connection.php';
+require_once __DIR__ . '/../functions.php';
 
 // Check if user is logged in and is admin/super admin
 if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin'])) {
@@ -87,12 +88,19 @@ if ($record_exists) {
     )";
     
     $stmt = mysqli_prepare($db, $query);
-    $pending_status = 'Pending';
     $created_by = $_SESSION['user_id'] ?? 0;
-    mysqli_stmt_bind_param($stmt, 'iiiisssi', $employee_id, $year, $month, $week_num, $view_type, $payment_status, $pending_status, $created_by);
+    mysqli_stmt_bind_param($stmt, 'iiiissi', $employee_id, $year, $month, $week_num, $view_type, $payment_status, $created_by);
 }
 
 if (mysqli_stmt_execute($stmt)) {
+    // Log the payment status update
+    $user_name = $_SESSION['first_name'] ?? 'Unknown';
+    $emp_info = mysqli_query($db, "SELECT CONCAT(last_name, ', ', first_name) as emp_name FROM employees WHERE id = $employee_id");
+    $emp_row = mysqli_fetch_assoc($emp_info);
+    $emp_name = $emp_row ? $emp_row['emp_name'] : 'Employee #' . $employee_id;
+    $period = ($view_type === 'monthly') ? "$year-$month" : "$year-$month Week $week_num";
+    logActivity($db, 'Payment Status Updated', "User $user_name set $emp_name to '$payment_status' for $period");
+    
     echo json_encode(['success' => true]);
 } else {
     echo json_encode(['success' => false, 'error' => 'Database error: ' . mysqli_error($db)]);
