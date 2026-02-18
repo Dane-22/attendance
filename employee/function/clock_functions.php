@@ -471,10 +471,18 @@ function performClockOut($db, $employeeId, $employeeCode, $branchName = null) {
     }
     
     // Calculate hours worked
-    $timeInObj = new DateTime($timeIn);
-    $timeOutObj = new DateTime();
-    $interval = $timeInObj->diff($timeOutObj);
-    $hoursWorked = $interval->h + ($interval->i / 60) + ($interval->days * 24);
+    $hoursWorked = 0;
+    if ($timeIn && $timeIn !== '0000-00-00 00:00:00') {
+        try {
+            $timeInObj = new DateTime($timeIn);
+            $timeOutObj = new DateTime();
+            $interval = $timeInObj->diff($timeOutObj);
+            $hoursWorked = $interval->h + ($interval->i / 60) + ($interval->days * 24);
+        } catch (Exception $e) {
+            // If DateTime fails, default to 0
+            $hoursWorked = 0;
+        }
+    }
     
     // Update attendance record
     $hasRunningCol = attendanceHasIsTimeRunningColumn($db);
