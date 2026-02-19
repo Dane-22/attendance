@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Feb 18, 2026 at 02:35 AM
+-- Generation Time: Feb 19, 2026 at 05:16 AM
 -- Server version: 8.4.7
 -- PHP Version: 8.3.28
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_action` (`action`),
   KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=582 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=599 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `activity_logs`
@@ -49,7 +49,24 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (578, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-16 00:27:36'),
 (579, 63, 'Logged In', 'User JOYLENE F. BALANON logged in from branch: Main Branch', '::1', '2026-02-16 03:08:47'),
 (580, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-16 03:41:18'),
-(581, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 01:56:51');
+(581, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 01:56:51'),
+(582, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 05:07:42'),
+(583, 6, 'Payment Status Updated', 'User Super set ABUBO, CESAR to \'Paid\' for 2026-2 Week 3', '::1', '2026-02-18 05:25:22'),
+(584, 6, 'Signature Uploaded', 'Uploaded employee signature for employee #12', '::1', '2026-02-18 05:28:16'),
+(585, 6, 'Document Uploaded', 'sss document for employee #12', '::1', '2026-02-18 05:30:26'),
+(586, 6, 'Profile Updated', 'User #6 updated profile information', '::1', '2026-02-18 05:40:35'),
+(587, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 07:02:28'),
+(588, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 08:14:49'),
+(589, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 00:01:57'),
+(590, 6, 'Document Uploaded', 'philhealth document for employee #12', '::1', '2026-02-19 00:09:30'),
+(591, 6, 'Document Deleted', 'Document ID #7 for employee #12', '::1', '2026-02-19 00:10:02'),
+(592, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 00:34:31'),
+(593, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 01:30:24'),
+(594, 63, 'Logged In', 'User JOYLENE F. BALANON logged in from branch: Main Branch', '::1', '2026-02-19 01:30:37'),
+(595, 63, 'Notification Marked Read', 'User marked notification #16 as read', '::1', '2026-02-19 01:32:59'),
+(596, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 02:46:45'),
+(597, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 02:58:07'),
+(598, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 05:13:13');
 
 -- --------------------------------------------------------
 
@@ -76,14 +93,16 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `total_ot_hrs` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_attendance_employee_date` (`employee_id`,`attendance_date`)
-) ENGINE=MyISAM AUTO_INCREMENT=1067 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=1069 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `attendance`
 --
 
 INSERT INTO `attendance` (`id`, `employee_id`, `status`, `branch_name`, `attendance_date`, `time_in`, `time_out`, `created_at`, `updated_at`, `is_auto_absent`, `auto_absent_applied`, `absent_notes`, `is_overtime_running`, `is_time_running`, `total_ot_hrs`) VALUES
-(1066, 6, 'Present', 'Main Branch', '2026-02-18', NULL, NULL, '2026-02-18 01:56:51', NULL, 0, 0, NULL, 0, 0, '0'),
+(1068, 63, 'Present', 'Main Branch', '2026-02-19', NULL, NULL, '2026-02-19 01:30:37', NULL, 0, 0, NULL, 0, 0, '0'),
+(1066, 6, 'Present', 'Main Branch', '2026-02-18', NULL, NULL, '2026-02-18 01:56:51', '2026-02-18 08:14:49', 0, 0, NULL, 0, 0, '0'),
+(1067, 6, 'Present', 'Main Branch', '2026-02-19', NULL, NULL, '2026-02-19 00:01:57', '2026-02-19 05:13:13', 0, 0, NULL, 0, 0, '0'),
 (1064, 6, 'Present', 'Main Branch', '2026-02-16', NULL, NULL, '2026-02-16 00:27:36', '2026-02-16 03:41:18', 0, 0, NULL, 0, 0, '0'),
 (1065, 63, 'Present', 'Main Branch', '2026-02-16', NULL, NULL, '2026-02-16 03:08:47', NULL, 0, 0, NULL, 0, 0, '0');
 
@@ -254,7 +273,14 @@ CREATE TABLE IF NOT EXISTS `documents` (
   `upload_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_employee_doc_type` (`employee_id`,`document_type`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `documents`
+--
+
+INSERT INTO `documents` (`id`, `employee_id`, `document_name`, `document_type`, `category`, `file_path`, `upload_date`) VALUES
+(8, 12, 'employee-qr-E0008.png', 'philhealth', 'image', '../uploads/12_20260219080930_employee-qr-E0008.png', '2026-02-19 00:09:30');
 
 -- --------------------------------------------------------
 
@@ -293,7 +319,7 @@ INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `middle_name`, `la
 (17, 'E0007', 'ROLLY', NULL, 'BALTAZAR', 'rolly.baltazar@example.com', '$2y$10$4/nX3PsxAeYnik1fwh7lxO3XJHlW.IiOjK5NZPDCDD9eXoCBMVp8K', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 08:22:23', NULL, 500.00, 10),
 (18, 'E0008', 'DONG', NULL, 'BAUTISTA', 'dong.bautista@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 07:01:04', NULL, 600.00, 20),
 (14, 'E0004', 'NOEL', NULL, 'ARIZ', 'noel.ariz@example.com', '$2y$10$2Iq/E7PtLMHHBwAjTl.q5OthGTKYXQf5Bx/Q/SXpsmeyQ5VJKcnnO', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-13 08:25:50', NULL, 550.00, 10),
-(6, 'SA001', 'Super', '', 'Adminesu', 'admin@jajrconstruction.com', '$2y$10$RSHOb3hskFZueMLlCycFuua/4EwcxGmAIzpcl8ixQpEXY3tfu9LYi', 'Super Admin', 'Active', '2026-01-16 02:26:58', '2026-02-11 01:28:51', 'profile_697d9f9a1f47a8.96968556.png', 600.00, 31),
+(6, 'SA001', 'Super', 'Torres', 'Adminesu', 'admin@jajrconstruction.com', '$2y$10$RSHOb3hskFZueMLlCycFuua/4EwcxGmAIzpcl8ixQpEXY3tfu9LYi', 'Super Admin', 'Active', '2026-01-16 02:26:58', '2026-02-18 05:40:35', 'profile_697d9f9a1f47a8.96968556.png', 600.00, 31),
 (15, 'E0005', 'DANIEL', NULL, 'BACHILLER', 'daniel.bachiller@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 08:27:53', NULL, 600.00, 20),
 (11, 'E0001', 'AARIZ', NULL, 'MARLOU', 'aariz.marlou@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-09 01:58:28', NULL, 700.00, 21),
 (12, 'E0002', 'CESAR', NULL, 'ABUBO', 'cesar.abubo@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-09 00:12:46', 'profile_697d962d450256.84780797.png', 550.00, 10),
@@ -401,7 +427,7 @@ CREATE TABLE IF NOT EXISTS `employee_notifications` (
 
 INSERT INTO `employee_notifications` (`id`, `employee_id`, `overtime_request_id`, `notification_type`, `title`, `message`, `is_read`, `created_at`, `read_at`, `cash_advance_id`) VALUES
 (15, 63, NULL, 'cash_advance_pending', 'Cash Advance Submitted', 'Your cash advance request for ₱1.05 has been submitted and is pending approval.', 1, '2026-02-16 03:40:18', '2026-02-16 03:41:03', 14),
-(16, 63, NULL, 'cash_advance_approved', 'Cash Advance Approved', 'Your cash advance request for ₱1.05 has been approved.', 0, '2026-02-16 03:41:22', NULL, 14);
+(16, 63, NULL, 'cash_advance_approved', 'Cash Advance Approved', 'Your cash advance request for ₱1.05 has been approved.', 1, '2026-02-16 03:41:22', '2026-02-19 01:32:59', 14);
 
 -- --------------------------------------------------------
 
@@ -446,7 +472,14 @@ CREATE TABLE IF NOT EXISTS `e_signatures` (
   KEY `idx_employee_id` (`employee_id`),
   KEY `idx_signature_type` (`signature_type`),
   KEY `idx_is_active` (`is_active`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `e_signatures`
+--
+
+INSERT INTO `e_signatures` (`id`, `employee_id`, `signature_type`, `signature_image`, `signature_data`, `created_at`, `updated_at`, `is_active`) VALUES
+(11, 12, 'employee', 'uploads/signatures/sig_12_employee_1771392496.png', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAADICAYAAAA0n5+2AAAQAElEQVR4Aeydu68tOVaH93QD4tEM72EiRAhBI0TMiCYhJZmAmIyMgJSMvwAJkIggQggS0glQS3RIgOhsAoQIhpFArXnPSPOsb99a+/rUqb3rsV1Vtutr7XXssl328mfX8u/UOX3uOxf/k4AEJCABCUhAAhLISkCBlRWnnUlAAhKQQB4C9iKBugkosOpeP72XgAQkIAEJSKBAAgqsAhdFlySQg4B9SEACEpDAcQQUWMexd2QJSEACEpCABBoloMC6u7BWSEACEpCABCQggXUEFFjruHmXBCQgAQlI4BgCjloFAQVWFcukkxKQgAQkIAEJ1ERAgVXTaumrBCSQg4B9SEACEticgAJrc8QOIAEJSEACEpDA2QgosM624jnmax8SkIAEJCABCTwkoMB6iMdKCUhAAhKQgARqIVCSnwqsklZDXyQgAQlIQAISaIKAAquJZXQSEpCABHIQsA8JSCAXAQVWLpL2IwEJSEACEpCABHoCCqwehIkEchCwDwlIQAISkAAEFFhQ0CQgAQlIQAISkEBGAoUJrIwzsysJSEACEpCABCRwEAEF1kHgHVYCEpCABCoioKsSWEhAgbUQmM0lIAEJSEACEpDAFAEF1hQh6yUggRwE7EMCEpDAqQgosE613E5WAhKQgAQkIIE9CCiw9qCcYwz7kIAEJCABCUigGgIKrGqWSkclIAEJSEAC5RHQo3ECCqxxLpZKQAISkIAEJCCB1QQUWKvReaMEJCCBHATsQwISaJGAAqvFVXVOEpCABCQgAQkcSkCBdSh+B89BwD4kIAEJSEACpRFQYJW2IvojAQlIQAISkED1BN65XKqfgxOQgAQkIAEJSEACRRHwDVZRy6EzEpCABCRwI2BGAhUTUGBVvHi63iyB/+tm9oPOfjiwL3fXfiQgAQlIoAICCqwKFkkXT0MghNUvdzP+VGfDz2eGBRPXVktAAhKQwEEEFFgHgXdYCSQE4m3VUFjFG6yk6S37pS7Hff/QpX4kIAEJSKAwAgqsRwtinQS2IxBvqxBR6dsqrv+/G5Yynk+Msq7oxeez3RVt/qhL/7YzPxKQgAQkUBABgndB7uiKBJonEMJq7G0Vgoln8lcmKHy1q6dtl1w/f3z96hcJSOA0BJxo+QQI5uV7qYcSqJvAJ537/DiPN1GPhFXXbPLz9a7FpztLP++mF+YlIAEJSOB4Agqs49dAD9ojkAoqRNUvdFNM3zhRxjW29Bl8r+srPh9HxnQpAdtLQAIS2JbA0uC+rTf2LoE6CUwJKmaFqMLWiCrux7iXFCP/BTKaBCQgAQmUR0CBVd6aVOHRyZ1cKqgQQzxrWA50CDX6+TO+9PaffWoiAQlIQAIFEMgV8AuYii5IYDMCRwuqLw5m5nM7AOKlBCQggZ5AMYmBupil0JGCCHyl8yV+KZ23RcPfoeqqL5RjvJ3CeJYw6nLbb3Qd8vtW3+1SxuqS24cyLt7niyYBCUhAAmUQ2OpAKGN2eiGBeQSGgurnutuGQgYxhVGO8exgXdNdPr/VjfITnQ0/f5kU/FuSNyuBdQS8SwISyEJgzwMii8N2IoEMBGoQVHOnye9hxb9R+Ltzb7KdBCQgAQlsS0CBtS1fey+DwJ6C6ogZ/1Uy6P8mebMSkIAEJHAQAQXWQeAddlMCrQuqIby/6Ao+6owP/4QOqSYBCUhAAgcSKE9gHQjDoaslcDZBNbZQn0sKv5/kzUpAAhKQwAEEFFgHQHfIpwkoqMYR/nlfzHPtL7z3MEwkkIuA/UhgCQEC8ZL2tpXAEQS+1g2a/tmEEv8vv87Fwz/8qDDeXv3O4d7ogAQkIIETE1BgnXjxC596Kqp+tvOVP43QJbcPfzIBoxxjL2O3BifNfLOf94/3aUGJrkhAAhI4DwEPpPOsdQ0znSOqEFMYexerYV57+viv/WA/1qcmEpCABCRwAAEPqAOgrx2y4fv48R92700Vggpzv87fBPCa39qWEpCABCSQlYAHVlacdraAQPq2CjGAxe3DH/1Fuek0gS9MN7GFBCQggawE7GyEgAJrBIpFmxFIRdXwbdVRoup73Wx5e5YavtRqf93NJz61zqEFv9P9RJ59FutiKgEJnICAAusEi3zwFKdE1dc7/3h7tdVe5GDjgAsbHt7v9uPjQ1hX5EcCTxGIvRQp+2y4995eXy6xPyNl3z7lgDdLQALHEtjqUDt2Vo5+NIElourTTzjLIYTFoUSaHlrkOdjikCN9NBztW7CYYwtzqXUOsQZzU/ZmauzbR3Nnrw+NZ2HueLaTgAQ2JqDA2hjwibr/RjdXAj6HwtiP/yjnAGHPzRVVHBgY/YbRTxiHEEa/YZ0bdz9xHyl/LyruiRTfWrDv9gS+2KUtzKfGOcSeGqbsuzD2YWrdcs3+DPvlmmch7S/Nx/OTpjxbswe0oQQksIwAgWvZHbaWwEsCIax+pismyHfJ9RPBnTL2GXatuPOFYE/wj/tIOTAw+gi7c/uF9qlF+zTFh7CW/4xB/C2sX70Hy/LDCLDvwmIvRpru1TS/tyDjOcQOg+TAEmiBAA/25dLCTJzDngRCVCFoxoQVhwN7C7vn11BQhZC6156xUmOM1BgrtXv9nKmctTnTfFud696CLJ6reN4UW63uLOe1KQEOpE0HsPOmCBBoCboc3AThmBxlXGP39lQIquhjTFDRTxh9pUa/qcXYpq8JfNgXcTD3WZMTEWDdsfR5IZ8+T2l++IZsiIq28Vzy/A7rN722cwnUSoCHrlbf9XsfAunbKgJtjBoBl7J7+yhEFW1DUNE++iCljjKMfsKo054jANPnevDuMxBAjGHx7LFvEF08m1jKgDrKMMQWltabl4AEegI8UH3WRAI3Aqmouve2ir2D3W7qMqmgIgCHqOqqbh/KMQI1Nuzj1tDMagLJHxtd3Yc3npvAPcGVUuH5xXieMcVWSsf86Ql4uJ1+C7wAEMJqTFTxi9ME03TPhKAisBJg5wqqtI8XDniRhcDfZOnFTiTwlkAILmJAvN16W/smRx1xACMmvCn1qwROSsCDbmLhT1AdooqgOCasCJrsk/d6FgROjPYhqGjTV9/+bz7KMO7Fot50XwJ/su9wjnYCAmNii3iQTp1nnzKMeIGl9eYl0DwBD77ml/juBAl4BL97oooAyf6It1S0xSjH0o4p57tayrkHS+vN70+ANWHUP+CLJoGNCITY4pnn+ScOxN6LISnHKMeIPVFnup6AdxZOgIeicBd1LyOB9G0VAS+6JuhhlBH8wiiLt1TRlpRyjPYY+4hAS51WBgGEMZ78Jl80CexEgDhAPCAujIkt3KCO+IERayjTJNAcAR6E5iblhF4RIIgRzMbeVhEE4wbahKAiCKbl1FGGsW+wqDctj8BXe5d+qU9NhgS83prAmNgijqTjEk8ow4hTWFpvXgLVEvCQrHbpZjlOsCJwEcTiBq75hXVSyscEFW2pR3zRhn2CUa7VQeA7vZu8teyzJhI4jECILeIIMYXYQoxJHaIcoxwjfqX15iVQFQE2e1UO6+wkAcQTgYkARbCKG9Lr4Zss2lCPcQ/G3iAoUjdmlpVN4L96936xT00kUBIBYgsxhlgzJrbwlTpiEkZMo0yTQDUE2ODVOKujDwmEsPrprhWBqUuuH4JTXKd5KuOaevYCRrlWP4GP+ymwH/qsiQSKJDAmtohNqbPEKMowxBaW1puXQEKgjKwHahnr8IwXzwgr1/8Z8t4rAQnkJhBii9iEqBp7u0U5htjCFFu5V8H+shBgE2fpyE52J4CwIrjwhoJgEw58q8vENfWR74qvf6OKa9cdGm1b/HuE/I5d2zN1dtkJFNRhCC7i1pjYwlXqiHUYYiv+D1rqNAkcRsCD9jD0qwdOhVV0QmAJYfVTXSHXBJ0ue/3Etet9xeEXCUigQgKp2CK+jQkuyvmmgpiH2MIqnKout0DAA7eeVSRQEDR4YxVec01AYR0VVkHl8LQIB/6594L90WdNJNAUgVRw3RNb7H/iJEYMbQqAkymbAAdz2R6e2zveShEUCA4EiqAR16zfVH3cY3o+AuwTZv15vmgSaJjAmNiK/R/TJoZShhE3sagzlUB2AhzQ2Tt9tkPvv4Sw4q0UQSGQEBi4Zt0IDnE9Vh9lphKQgATORCDEFnGSeOnbrTOtfkFzZQMW5M7pXQnR9EhY8QucCqvTb5VZADhYaPgBXzQJnJRACK57Ygss1BFXMeIwZWNmmQRmE1BgzUa1WcN4W8WDzUMeA3H97e6CMtYphBW/wNkVXz+0ifprgV8kIAEJSOAugVRsETv5JoQ4mt5AOWWYYislY34RAQ7uRTfYOBsBhBUP8KO3VfxCO8KKh1xhlQ39aTpijzHZ9/lShOmEBMoikAouxVZZa1O9NwqsfZeQAw+xFMIqRuc6fVtFeSqs+I6KMtp9rsu4bh0EP5MEPulb/FqfmkhAAvcJKLbus7FmBQEP6hXQVtwSwmrqbVV0jQjjjVUIK8r57or1+ogLTQISkIAENiOwRGzxzfBmjthxvQQ4sOv1vmzPeSOFUOKt0yNhlc4i2qfCivu55oFP25qXwBSB/+kb+A8+9yBMJLCCALGXs5I4zDe6xOS0G74ZVmRdUiTmIcCmIdXyEQhh9ZNdlzyQXXL98FByjd3jTt21cfcl2t9r2zXxI4GHBD7ua/ldvj5rIgEJPEFgKLaiK0VWkDC9EfDwvqF4KhOiClF0T1hNsebecAKhNdU+2ppKQAINEHAK1RFAbPFGKxxXZAUJ0ysBD/Erhgs/msOWvuYNYTUmqr7TdT1XKDF21/z6SYXWtcAvElhJ4MP+PgJ/nzWRgAQyElBkZYTZWlcKrLcrihjiIELgzLUxYUU/cOX3rt72Pi/HuNw7r7WtEgJmJSABCRxCYCiyjOGHLEN5g7oRnl8TRNGSt1VjI/IGi35cjzE6lq0l4D/4vJac90lgGQFEFjF82V22bprA7UBvepbTk0PgjLXigXlkz7ytSsfj4XQtUiLmcxFg/9LX5/miSUACEpDAPgQ81N9wRuDwy4pxGL0pvVwQUNil/w9eqfXFJhKQgAQksBEBu5VAlQQQC1U6voHTiCx4IKiGYosyDAHG2y5sAxfsUgLZCbCX6fQDvmgSkMBmBDgjNuvcjusjgKCoz+vtPR6KrXREHiJMsZVSMV8uAT2TgAQkIIHdCSiwppEjthBUvAlAVKV3UI5RjvlmK6VjvgQC/DNN+PE+XzQJSGBzAp4DmyOuYwAF1vQ6RQuEFrwQVGNii3bUIbQwHzKIaEcT+FLvwGf61EQCEpCABHYggGDYYZjmhkjFFqJqTHBRjtDCFFvNbYFqJvRPvaef7VMTCUhgWwKcD9uOcOvdTMkEFFh5VocHCpaIqjliS8GVh7u9TBP4pG/yXp+aSEAC+Qks/VdA8ntgj8URQBQU51TlDs0RWwgx3mxhiq3KF7xw9/+9cP8Odc/BJZCJgGdpJpAtdeOm2HY1p8QWoyu2oKBtReCjrmO+u2Yv++jvJwAADc1JREFU/mmX9yMBCUhAAjsQUGDtALkfggMO3giq+DEib7D66mtCHWVYBW+2rj77pXwC3yjfRT2UQBMEiN1NTMRJPE+AA//5XuxhKYEQW/BHVIXgSvuhnIc1DMHFm4i0jXkJzCHwH32jP+xTEwlIIC8B4nXeHu3tOQIF3M0BX4Abp3chBBcP6ZjYAhB173aZVHAhuroiPxJ4SOBf+trf7lMTCUggH4E0Dnum5uNafU9uhvKWcExsIaqGniK4MOrCeNCxYVuvJQAB/09CKGhzCNhmPgHiMK2Jw6SaBK4EFFhXDMV+CbHFOvEQY/fecDEJ6jEe9DAEF0a9dk4C/p+E51x3Z709gTS2Eqe3H9ERqiHghqhmqW6OhuhCSIUpum54CsmU5Yb/J2FZ66E3bRDgd2KJwcyGb2hJNQncCCiwbiiqzii6ql6+XZz3/yTcBbODnIgAvxMb0/UsDRKmNwKlboqbg2ZWExiKLt5yYfe+0+I7MYz6MF5/Y6ud8MZiCHzYe/J7fWoiAQmsJ5DGReLq+p68s1kCCqxml/bVxBBcGGuOkMIIDBiC6tUNXQFtMOrDCCxYV+2nIgL/2Pv6831qIgEJrCJwvYm4SIa4SFwlr0ngBQEO2xcFXpyKAIEBYx8QMLAQXASOMRi0wagPQ3BhY+0tK4PAl3s3fr1PTSQggXUE0lhH7FzXi3c1T8DN0fwSL55gCC72BkIKU3QtxljcDf9dikf6IYHKCRATmQLfYJJqEhglwCE6WmGhBBICiq4ERqVZBBbGG6wPKp2DbkvgaAK+vTp6BSoaX4FV0WK9cbWYrzlEF8EKK2ZSjTuCwGp8ik5PApsS8O3Vpnjb6lyB1dZ6Hj2bpaKLYIXxqh1DbGFHz6PV8f++nxhvsfqsiQQkMJMAMSqaenYGiTQ1/4KAm+QFDi82IPBIdA2HQ2xhBDIMscUf8xu283odAf5Uw+93t/5dZ34kIIH5BIhF0ZrfSY28qQTuElBg3UVjxYYEQnQhpjACFoJqOCR1/DE/6rA0yA3bej1NgB8RIrKmW9riCAKOWS4BYlF4R/yKvKkE7hJQYN1FY8WOBAhY7EWCGPZIcCG0whRcOy6SQ0ngpATSOEN8OikGp72UAIfa0ntsL4GtCaSCC7GFIaqG4xLsKMd+cLlc0kA4bOu1BCQggTUEiDPcR5wh1SQwi4ACaxYmGx1IALGFsVcJdCG2hsGOOoxyDLGFHei6Q0tAApUTSGMIMajy6ej+ngTSDbPnuI4lgbUEQmyxdxFUIbiG/VGHIbYwAiU2bOe1BCQggXsEiCHUEUNINQnMJsAhNbuxDSVQIIEQXARCbIngKnA6uiQBCbwmcEhJKqo8Kw9ZgroHddPUvX56/5rAEsFFAA3z7dZrlpZI4KwE0j8PQ4w4Kwfn/QQBBdYT8Ly1CgJrBBdiC6tignOctI0EJLCIAH8eJm7wnAwSposIuHEW4bJxAwRSwRU/Thx+h8qPGjHKMcQW1sD0nYIEJDBBIH3WiRETza2WwDgBBdY4l0Gpl40SCLHFc4CgIpgiqIbTpQ6jDiMAY8N2XktAAnUT4LnmWWcWPOvECPKaBBYT4GBZfJM3SKBRAgRTngkCLLZEcDWKxGlJ4DQE+L0rnvuYMLEg8uWmelYsATdQsUujYwUQWCK4+G43jO+CC3BfFyQggZkEEFfp712lQmtmFzaTwEsCCqyXPLySwCMCCq5HdOqs02sJKK7cA5sQUGBtgtVOT0IgFVzx40TeYg2nz3fDlGO83cKGbbyWgASOIeCbq2O4Nz+qAqv5Jd54gnYfBEJs8UwhqO4JLuowxBaG2MKiH1MJSGA/AjyDMRrPZeRNJfA0AQ6DpzuxAwlI4BWBe4Jr2JCgjhHoMcXWkJDXEtiGAM9b9MwzGHnTRggcPQ0F1tEr4PhnIRCCi0COxRuu4fypI/CHKbiGhLyWwPMEeL6ilzQfZaYSeJqAAutphHYggVUE1gguxBa2akBvksAyAs22TgUVec/BZpf62Im5sY7l7+gSCAKp4Iq3WwT/qCfl7RZGOYbYwqjTJCCBaQI8N9GKvGdg0DDNTsDNlR2pHUrgDYEnvobY4vlEUIXgGnZJHcZBgSm2hoS8lsBbAjwjcUWe5yuuTSWQnYAbLDtSO5RAdgIhuBBT2CPBxcGBIbaw7M7YoQQqJJA+Czwfnn0VLmJtLhe8yWpDqb8S2I1AKrgQWxiHRuoAQgyjHOOAwdI25iVwBgLse54F5sqz4LkHCW1zAm60zRE7gAQ2JYDYwniWOUTGxBYOUIdxwGAcOpRrEmiZAPucfc8c2fc8J+SfM++WwAwCbrYZkGwigYoIpGKLg+WR4OLACeMgqmiauiqBSQLsaZ4BGrLPPe8goe1GwA23G2oHksAhBNYILg4mbCuH7VcCWxNg/yqutqZs/w8JKLAe4rFSAs0RSAVXvN3iu/t0ohxMGOUYhxWWtjEvgVIJsFfZv+Gf51yQMN2VgBtvV9yZBrMbCeQhEGKLOMCBFIJr2Dt1GGIL4wAbtvFaAkcTYF+yP9mr4UuajzJTCexCgMC6y0AOIgEJFE8gBBeHEvZIcHGQhXGwFT85HWyWwPe6mbEX2bNd9voZXl8L/bI9AUd4S0CB9ZaFOQlI4CWBNYILsYW97MkrCeQnEMLq3aTrEFaebQkUs8cQcBMew91RJVAjgVRwxdstDrR0LrxFwCjHEFtY2sb8XQJWzCCgsJoBySbHE1BgHb8GeiCBGgmE2CKGIKhCcA3nQh2G2MIUW0NCXs8lgLBi//jGai4x2x1KgOB4qAMOLoGcBOzrMAIhuBBT2CPBhdAK48A8zGkHroJAKqzYWzjN/iHvGQYNrUgCbs4il0WnJFA9gWcEF6IL42CtHoQTWE2A9Wcf8MYKMUVHCCvEu2cXNLSiCQw2adG+6pwEJFAvgVRwcUByUGLDGXGQhnGw0iY1DtwwDuDh/V7XT4B1ZY1Zf/ZCzIh9w5nFXooyUwkUS4DNWqxzOiYBCTRJgAOS2INxgHJwhoiamjDtwziA475IOZjDOKin+rO+LAKsHevKGodn7I9PXS4X9k2UmUqgeALvFO+hDkpAAq0T4OAkFmEcrKlxuGIhoKZYpPdyUMd9kXKAhynApmjuV8+asEasX4wa1+yPKDOVQDUECGjVOKujEpDAagK13sjhihGrMA7g1BBfGIcxNjXP9F4F2BStvPUIWgwxFcaaYaxLjBbXrHeUmUqgOgJu4OqWTIclIIGEAOILI5ZhHNSpIb4wDm0suXU0m96rABtFNFqIcMJCOJHCOzV4YinjtDPaUsc6puXmJVAlATfy3GWznQQkUCMBxBdGrMM4wFNDfGEc7tjUHNN7EQvckxrCIgzBMdVfDfXMA4t5kaZzJg8LLOUzNTfuC+M+1mfqHuslUA0BN3Q1S6WjEpDABgQQXxixEOOgTw3xhYUQmHIhvRfBEffVnDIPLJ3bFIfhfNN7Iw/vsKn+rH9AwKoyCbC5y/RMryQgAQkcTwDxhRErsRAHkSK+sBAUx3u8vQcx10iDRZrCKrXtvXIECRRGgAegMJd0RwISkMCeBJ4aC/GFEUuxVGSQR3xhIUZqS5nD0Jhnak8B9GYJtEqAh6TVuTkvCUhAAkcTQHxhxNoa7Wh+ji+BagnwwFfrvI6XQUAvJCABCUhAAhJ4SUCB9ZKHVxKQgAQkIAEJtEHg0FkosA7F7+ASkIAEJCABCbRIQIHV4qo6JwlIQAI5CNiHBCSwmoACazU6b5SABCQgAQlIQALjBBRY41wslUAOAvYhAQlIQAInJaDAOunCO20JSEACEpCABLYjULbA2m7e9iwBCUhAAhKQgAQ2I6DA2gytHUtAAhKQQKsEnJcEpggosKYIWS8BCUhAAhKQgAQWElBgLQRmcwlIIAcB+5CABCTQNgEFVtvr6+wkIAEJSEACEjiAgALrAOg5hrQPCUhAAhKQgATKJaDAKndt9EwCEpCABCRQGwH97QkosHoQJhKQgAQkIAEJSCAXAQVWLpL2IwEJSCAHAfuQgASaIKDAamIZnYQEJCABCUhAAiURUGCVtBr6koOAfUhAAhKQgAQOJ6DAOnwJdEACEpCABCQggdYIvBZYrc3Q+UhAAhKQgAQkIIGdCSiwdgbucBKQgAQksI6Ad0mgJgIKrJpWS18lIAEJSEACEqiCgAKrimXSSQnkIGAfEpCABCSwFwEF1l6kHUcCEpCABCQggdMQUGAtWGqbSkACEpCABCQggTkEFFhzKNlGAhKQgAQkUC4BPSuQgAKrwEXRJQlIQAISkIAE6iagwKp7/fReAhLIQcA+JCABCWQmoMDKDNTuJCABCUhAAhKQgALLPZCDgH1IQAISkIAEJJAQUGAlMMxKQAISkIAEJNASgePmosA6jr0jS0ACEpCABCTQKAEFVqML67QkIAEJ5CBgHxKQwDoCCqx13LxLAhKQgAQkIAEJ3CWgwLqLxgoJ5CBgHxKQgAQkcEYCCqwzrrpzloAEJCABCUhgUwLFC6xNZ2/nEpCABCQgAQlIYAMCCqwNoNqlBCQgAQk0T8AJSuAhAQXWQzxWSkACEpCABCQggeUEFFjLmXmHBCSQg4B9SEACEmiYgAKr4cV1ahKQgAQkIAEJHENAgXUM9xyj2ocEJCABCUhAAoUSUGAVujC6JQEJSEACEqiTgF5DQIEFBU0CEpCABCQgAQlkJKDAygjTriQgAQnkIGAfEpBA/QR+BAAA//8I0GmwAAAABklEQVQDAPqsU+splQzOAAAAAElFTkSuQmCC', '2026-02-18 05:28:16', '2026-02-18 05:28:16', 1);
 
 -- --------------------------------------------------------
 
@@ -749,14 +782,15 @@ CREATE TABLE IF NOT EXISTS `rate_limit` (
   `timestamp` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_ip_timestamp` (`ip`,`timestamp`)
-) ENGINE=MyISAM AUTO_INCREMENT=94 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=142 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `rate_limit`
 --
 
 INSERT INTO `rate_limit` (`id`, `ip`, `user_id`, `timestamp`) VALUES
-(93, '::1', 0, 1771046748);
+(141, '::1', 0, 1771463165),
+(140, '::1', 0, 1771463150);
 
 -- --------------------------------------------------------
 
@@ -848,7 +882,14 @@ CREATE TABLE IF NOT EXISTS `weekly_payroll_reports` (
   KEY `idx_branch_id` (`branch_id`),
   KEY `idx_status` (`status`),
   KEY `idx_view_type` (`view_type`)
-) ENGINE=InnoDB AUTO_INCREMENT=15940 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15941 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `weekly_payroll_reports`
+--
+
+INSERT INTO `weekly_payroll_reports` (`id`, `employee_id`, `report_year`, `report_month`, `week_number`, `view_type`, `branch_id`, `days_worked`, `total_hours`, `daily_rate`, `basic_pay`, `ot_hours`, `ot_rate`, `ot_amount`, `performance_allowance`, `gross_pay`, `gross_plus_allowance`, `ca_deduction`, `sss_deduction`, `philhealth_deduction`, `pagibig_deduction`, `sss_loan`, `total_deductions`, `take_home_pay`, `status`, `payment_status`, `created_by`, `finalized_by`, `finalized_at`, `created_at`, `updated_at`) VALUES
+(15940, 12, 2026, 2, 3, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, '', 'Paid', 0, NULL, NULL, '2026-02-18 05:25:22', '2026-02-18 05:25:22');
 
 -- --------------------------------------------------------
 

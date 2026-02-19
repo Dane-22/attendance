@@ -46,24 +46,16 @@
             document.getElementById('editMiddleName').value = employee.middle_name || '';
             document.getElementById('editLastName').value = employee.last_name;
             document.getElementById('editEmail').value = employee.email;
-            document.getElementById('editPhone').value = employee.phone || '';
             document.getElementById('editPosition').value = employee.position;
-            document.getElementById('editDepartment').value = employee.department || '';
             document.getElementById('editStatus').value = employee.status;
             
             // Update profile image preview
             const profileImagePreview = document.getElementById('profileImagePreview');
-            const profileImageInitials = document.getElementById('profileImageInitials');
             
             if (employee.profile_image) {
-              profileImagePreview.innerHTML = `<img src="uploads/${employee.profile_image}" alt="Profile" onerror="this.style.display='none'; document.getElementById('profileImageInitials').style.display='flex';">`;
-              profileImageInitials.style.display = 'none';
-              profileImageInitials.textContent = (employee.first_name[0] + employee.last_name[0]).toUpperCase();
+              profileImagePreview.innerHTML = `<img src="uploads/${employee.profile_image}" alt="Profile" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%;height:100%;object-fit:cover;"><div class="initials" id="profileImageInitials" style="display:none;">${(employee.first_name[0] + employee.last_name[0]).toUpperCase()}</div>`;
             } else {
-              profileImagePreview.innerHTML = '';
-              profileImageInitials.style.display = 'flex';
-              profileImageInitials.textContent = (employee.first_name[0] + employee.last_name[0]).toUpperCase();
-              profileImagePreview.appendChild(profileImageInitials);
+              profileImagePreview.innerHTML = `<div class="initials" id="profileImageInitials">${(employee.first_name[0] + employee.last_name[0]).toUpperCase()}</div>`;
             }
             
             // Show modal
@@ -87,14 +79,12 @@
 
     function previewProfileImage(input) {
       const preview = document.getElementById('profileImagePreview');
-      const initials = document.getElementById('profileImageInitials');
       
       if (input.files && input.files[0]) {
         const reader = new FileReader();
         
         reader.onload = function(e) {
           preview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview" style="width:100%;height:100%;object-fit:cover;">`;
-          initials.style.display = 'none';
         }
         
         reader.readAsDataURL(input.files[0]);
@@ -105,6 +95,20 @@
     editModal?.addEventListener('click', function(e) {
       if (e.target === this) {
         closeEditModal();
+      }
+    });
+
+    // Handle edit form submission
+    document.getElementById('editEmployeeForm')?.addEventListener('submit', function(e) {
+      // Form will submit normally - no preventDefault
+      // This ensures the form actually submits
+    });
+
+    // Force form submission on Save Changes button click
+    document.querySelector('.btn-save')?.addEventListener('click', function(e) {
+      const form = document.getElementById('editEmployeeForm');
+      if (form) {
+        form.submit();
       }
     });
 

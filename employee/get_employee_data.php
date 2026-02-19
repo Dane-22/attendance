@@ -3,6 +3,10 @@
 require_once __DIR__ . '/../conn/db_connection.php';
 header('Content-Type: application/json');
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 $employeeId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 if ($employeeId <= 0) {
@@ -10,10 +14,26 @@ if ($employeeId <= 0) {
     exit;
 }
 
+if (!isset($db) || !$db) {
+    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+    exit;
+}
+
 $sql = "SELECT * FROM employees WHERE id = ?";
 $stmt = mysqli_prepare($db, $sql);
+
+if (!$stmt) {
+    echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . mysqli_error($db)]);
+    exit;
+}
+
 mysqli_stmt_bind_param($stmt, 'i', $employeeId);
-mysqli_stmt_execute($stmt);
+
+if (!mysqli_stmt_execute($stmt)) {
+    echo json_encode(['success' => false, 'message' => 'Execute failed: ' . mysqli_stmt_error($stmt)]);
+    exit;
+}
+
 $result = mysqli_stmt_get_result($stmt);
 
 if ($row = mysqli_fetch_assoc($result)) {
@@ -26,9 +46,7 @@ if ($row = mysqli_fetch_assoc($result)) {
             'middle_name' => $row['middle_name'],
             'last_name' => $row['last_name'],
             'email' => $row['email'],
-            'phone' => $row['phone'] ?? '',
             'position' => $row['position'],
-            'department' => $row['department'] ?? '',
             'status' => $row['status'],
             'profile_image' => $row['profile_image'] ?? '',
             'created_at' => $row['created_at'],

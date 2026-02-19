@@ -120,9 +120,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = intval($_POST['id'] ?? 0);
                 $employee_code = trim($_POST['employee_code'] ?? '');
                 $first_name = trim($_POST['first_name'] ?? '');
+                $middle_name = trim($_POST['middle_name'] ?? '');
                 $last_name = trim($_POST['last_name'] ?? '');
                 $email = trim($_POST['email'] ?? '');
                 $position = trim($_POST['position'] ?? '');
+                $status = trim($_POST['status'] ?? 'Active');
                 
                 if ($id > 0) {
                     // Check if the new employee code conflicts with another employee
@@ -134,59 +136,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (mysqli_stmt_num_rows($check) > 0) {
                         $msg = 'Error: Employee code already exists for another employee.';
                     } else {
-                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, last_name = ?, email = ?, position = ? WHERE id = ?");
-                        mysqli_stmt_bind_param($up, 'sssssi', $employee_code, $first_name, $last_name, $email, $position, $id);
+                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ? WHERE id = ?");
+                        mysqli_stmt_bind_param($up, 'sssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $id);
                         if (mysqli_stmt_execute($up)) {
                             $msg = 'Employee updated.';
                             
+
                             // Handle profile image upload if provided
-                            if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+                            if (isset($_FILES['profile_image'])) {
                                 $file = $_FILES['profile_image'];
-                                $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                                $max_size = 5 * 1024 * 1024; // 5MB
                                 
-                                if (in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
-                                    // Generate unique filename
-                                    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-                                    $unique_name = uniqid('profile_', true) . '.' . $extension;
-                                    $upload_path = __DIR__ . '/uploads/' . $unique_name;
-                                    
-                                    // Create uploads directory if it doesn't exist
-                                    $upload_dir = __DIR__ . '/uploads/';
-                                    if (!is_dir($upload_dir)) {
-                                        mkdir($upload_dir, 0755, true);
-                                    }
-                                    
-                                    // Get current profile image to delete old one
-                                    $current_image = null;
-                                    $get_current = mysqli_prepare($db, "SELECT profile_image FROM employees WHERE id = ?");
-                                    mysqli_stmt_bind_param($get_current, 'i', $id);
-                                    mysqli_stmt_execute($get_current);
-                                    
-                                    // NA-AYOS NA: Bind result muna bago mag-fetch
-                                    mysqli_stmt_bind_result($get_current, $current_image);
-                                    if (mysqli_stmt_fetch($get_current)) {
-                                        // Successfully fetched the current image
-                                    }
-                                    mysqli_stmt_close($get_current);
-                                    
-                                    // Delete old profile image if exists
-                                    if ($current_image && file_exists(__DIR__ . '/uploads/' . $current_image)) {
-                                        unlink(__DIR__ . '/uploads/' . $current_image);
-                                    }
-                                    
-                                    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
-                                        // Update database with new image
-                                        $update_img = mysqli_prepare($db, "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?");
-                                        mysqli_stmt_bind_param($update_img, 'si', $unique_name, $id);
-                                        mysqli_stmt_execute($update_img);
-                                        mysqli_stmt_close($update_img);
-                                        $msg .= ' Profile image updated.';
-                                    } else {
-                                        $msg .= ' Failed to save profile image.';
-                                    }
+                                // Check for upload errors
+                                if ($file['error'] !== UPLOAD_ERR_OK) {
+                                    $error_messages = [
+                                        UPLOAD_ERR_INI_SIZE => 'File exceeds server upload limit (upload_max_filesize)',
+                                        UPLOAD_ERR_FORM_SIZE => 'File exceeds form max size',
+                                        UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                                        UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                                        UPLOAD_ERR_NO_TMP_DIR => 'Missing temp folder',
+                                        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                                        UPLOAD_ERR_EXTENSION => 'PHP extension stopped upload'
+                                    ];
+                                    $error_msg = $error_messages[$file['error']] ?? 'Unknown upload error (code: ' . $file['error'] . ')';
+                                    $msg .= ' Profile image error: ' . $error_msg;
                                 } else {
-                                    $msg .= ' Invalid profile image file.';
+                                    // Upload successful, process the file
+                                    $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                                    $max_size = 5 * 1024 * 1024; // 5MB
+                                    
+                                    if (in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
+                                        // Generate unique filename
+                                        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+                                        $unique_name = uniqid('profile_', true) . '.' . $extension;
+                                        $upload_path = __DIR__ . '/../uploads/' . $unique_name;
+                                        
+                                        // Create uploads directory if it doesn't exist
+                                        $upload_dir = __DIR__ . '/../uploads/';
+                                        if (!is_dir($upload_dir)) {
+                                            mkdir($upload_dir, 0755, true);
+                                        }
+                                        
+                                        // Get current profile image to delete old one
+                                        $current_image = null;
+                                        $get_current = mysqli_prepare($db, "SELECT profile_image FROM employees WHERE id = ?");
+                                        mysqli_stmt_bind_param($get_current, 'i', $id);
+                                        mysqli_stmt_execute($get_current);
+                                        mysqli_stmt_bind_result($get_current, $current_image);
+                                        mysqli_stmt_fetch($get_current);
+                                        mysqli_stmt_close($get_current);
+                                        
+                                        // Delete old profile image if exists
+                                        if ($current_image && file_exists(__DIR__ . '/../uploads/' . $current_image)) {
+                                            unlink(__DIR__ . '/../uploads/' . $current_image);
+                                        }
+                                        
+                                        if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                                            // Update database with new image
+                                            $update_img = mysqli_prepare($db, "UPDATE employees SET profile_image = ?, updated_at = NOW() WHERE id = ?");
+                                            mysqli_stmt_bind_param($update_img, 'si', $unique_name, $id);
+                                            mysqli_stmt_execute($update_img);
+                                            mysqli_stmt_close($update_img);
+                                            $msg .= ' Profile image updated. [Debug: saved to ' . $upload_path . ']';
+                                        } else {
+                                            $msg .= ' Failed to save profile image. [Debug: tmp=' . $file['tmp_name'] . ', dest=' . $upload_path . ', exists=' . (file_exists($file['tmp_name']) ? 'yes' : 'no') . ', dir_writable=' . (is_writable($upload_dir) ? 'yes' : 'no') . ']';
+                                        }
+                                    } else {
+                                        $msg .= ' Invalid profile image file. Only JPG, PNG, GIF, and WebP files up to 5MB are allowed.';
+                                    }
                                 }
                             }
                         } else {

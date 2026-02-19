@@ -24,9 +24,8 @@ if (!isset($_SESSION['employee_code'])) {
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="css/employees.css">
   <link rel="stylesheet" href="css/light-theme.css">
-  <script src="js/theme.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
  
 </head>
 <body class="dark-engineering">
@@ -269,13 +268,9 @@ if (!isset($_SESSION['employee_code'])) {
         <div class="form-section">
           <h4 class="section-title">Contact Information</h4>
           <div class="form-row-grid">
-            <div class="form-group">
+            <div class="form-group" style="grid-column: 1 / -1;">
               <label class="form-label required">Email Address</label>
               <input type="email" name="email" id="editEmail" class="form-input" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Phone Number</label>
-              <input type="tel" name="phone" id="editPhone" class="form-input" placeholder="+63 XXX XXX XXXX">
             </div>
           </div>
         </div>
@@ -287,10 +282,6 @@ if (!isset($_SESSION['employee_code'])) {
             <div class="form-group">
               <label class="form-label required">Position</label>
               <input type="text" name="position" id="editPosition" class="form-input" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Department</label>
-              <input type="text" name="department" id="editDepartment" class="form-input">
             </div>
             <div class="form-group">
               <label class="form-label">Status</label>
@@ -363,7 +354,7 @@ if (!isset($_SESSION['employee_code'])) {
         </div>
         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
           <button type="button" class="btn" id="closeAdd" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Cancel</button>
-          <button class="add-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Employee</button>
+          <button type="submit" class="add-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Employee</button>
         </div>
       </form>
     </div>
@@ -407,31 +398,43 @@ if (!isset($_SESSION['employee_code'])) {
     function generateQRCode(event, id, name, code, email, position) {
       event.stopPropagation();
       
-      // Build the URL for QR code scanning - goes to select_employee.php to auto-trigger time-in
-      const baseUrl = window.location.origin + '/employee/select_employee.php';
-      const qrUrl = `${baseUrl}?auto_timein=1&emp_id=${id}&emp_code=${encodeURIComponent(code)}`;
+      // Check if QRCode library is loaded
+      if (typeof QRCode === 'undefined') {
+        alert('QR Code library not loaded. Please refresh the page.');
+        console.error('QRCode library not found');
+        return;
+      }
       
-      // Update modal content
-      document.getElementById('qrEmployeeName').textContent = name;
-      document.getElementById('qrEmployeeCode').textContent = code;
-      document.getElementById('qrDataContent').textContent = qrUrl;
-      
-      // Clear previous QR code
-      const qrContainer = document.getElementById('qrcode');
-      qrContainer.innerHTML = '';
-      
-      // Generate new QR code with URL
-      currentQRCode = new QRCode(qrContainer, {
-        text: qrUrl,
-        width: 280,
-        height: 280,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
-      });
-      
-      // Show modal
-      document.getElementById('qrModal').style.display = 'flex';
+      try {
+        // Build the URL for QR code scanning
+        const baseUrl = window.location.origin + '/employee/select_employee.php';
+        const qrUrl = `${baseUrl}?auto_timein=1&emp_id=${id}&emp_code=${encodeURIComponent(code)}`;
+        
+        // Update modal content
+        document.getElementById('qrEmployeeName').textContent = name;
+        document.getElementById('qrEmployeeCode').textContent = code;
+        document.getElementById('qrDataContent').textContent = qrUrl;
+        
+        // Clear previous QR code
+        const qrContainer = document.getElementById('qrcode');
+        qrContainer.innerHTML = '';
+        
+        // Generate new QR code with URL
+        currentQRCode = new QRCode(qrContainer, {
+          text: qrUrl,
+          width: 280,
+          height: 280,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        // Show modal
+        document.getElementById('qrModal').style.display = 'flex';
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+        alert('Error generating QR code: ' + error.message);
+      }
     }
 
     function closeQRModal() {
@@ -488,6 +491,7 @@ if (!isset($_SESSION['employee_code'])) {
       }
     });
   </script>
+  <script src="js/employees.js.php"></script>
 </body>
 </html>
 
