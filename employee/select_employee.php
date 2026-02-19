@@ -268,6 +268,18 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
                 <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">Project names must be unique and 2-255 characters</small>
               </div>
 
+              <div class="form-row" style="margin-top: 12px;">
+                <label style="font-size: 12px; color: #FFD700; font-weight: 600; margin-bottom: 6px; display: block;">Exact Address</label>
+                <textarea 
+                  id="branchAddressInput" 
+                  name="branch_address" 
+                  placeholder="Enter exact address (e.g., 123 Main St, City, Province)" 
+                  rows="3"
+                  style="background: transparent; border: 1px solid rgba(255,255,255,0.04); padding: 0.6rem 0.75rem; border-radius: 8px; color: #ffffff; width: 100%; resize: vertical;"
+                ></textarea>
+                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">Enter the complete address for this project location</small>
+              </div>
+
               <div style="display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;">
                 <button type="button" onclick="closeAddBranchModal()" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
                   Cancel

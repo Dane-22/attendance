@@ -1662,6 +1662,8 @@ function debugUndo() {
         event.preventDefault();
         
         const branchName = document.getElementById('branchNameInput').value.trim();
+        const branchAddress = document.getElementById('branchAddressInput').value.trim();
+        const branchDescription = document.getElementById('branchDescriptionInput').value.trim();
         
         if (!branchName) {
             showBranchMessage('Project name is required', 'error');
@@ -1681,6 +1683,7 @@ function debugUndo() {
         const formData = new FormData();
         formData.append('branch_action', 'add_branch');
         formData.append('branch_name', branchName);
+        formData.append('branch_address', branchAddress);
 
         fetch(window.location.pathname, {
             method: 'POST',

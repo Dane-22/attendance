@@ -356,6 +356,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             }
 
+            $branch_address = isset($_POST['branch_address']) ? trim($_POST['branch_address']) : '';
+
             $checkQuery = "SELECT id FROM branches WHERE branch_name = ?";
 
             $checkStmt = mysqli_prepare($db, $checkQuery);
@@ -374,11 +376,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             }
 
-            $insertQuery = "INSERT INTO branches (branch_name, created_at) VALUES (?, NOW())";
+            $insertQuery = "INSERT INTO branches (branch_name, branch_address, created_at) VALUES (?, ?, NOW())";
 
             $insertStmt = mysqli_prepare($db, $insertQuery);
 
-            mysqli_stmt_bind_param($insertStmt, 's', $branch_name);
+            mysqli_stmt_bind_param($insertStmt, 'ss', $branch_name, $branch_address);
 
             if (mysqli_stmt_execute($insertStmt)) {
 
