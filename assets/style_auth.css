@@ -9,7 +9,7 @@
 }
 
 .auth-bg{
-  background: linear-gradient(90deg, var(--orange) 0%, var(--black) 100%);
+  background: linear-gradient(90deg, #FFA500 0%, #000000 100%);
   min-height: 100vh;
 }
 

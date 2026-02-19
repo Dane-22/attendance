@@ -482,7 +482,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="#" class="text-sm text-orange-400">Forgot password?</a>
           </div>
           <div>
-            <button type="submit" class="w-full py-3 rounded btn-glow bg-gradient-to-r from-orange-400 to-black text-black font-semibold">
+            <button type="submit" class="w-full py-3 rounded btn-glow bg-orange-500 text-white font-semibold">
               Sign In
             </button>
           </div>
