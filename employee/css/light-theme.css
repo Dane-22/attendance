@@ -1218,15 +1218,19 @@ body.light-mode .quick-tips-header i {
 }
 
 body.light-mode .quick-tips-list {
-  color: #4a4a5a;
+  color: #1a1a2e !important;
+}
+
+body.light-mode .quick-tips-list li {
+  color: #1a1a2e !important;
 }
 
 body.light-mode .quick-tips-list strong {
-  color: #1a1a2e;
+  color: #1a1a2e !important;
 }
 
 body.light-mode .quick-tips-list span {
-  color: #6a6a7a;
+  color: #1a1a2e !important;
 }
 
 /* Header Card */
