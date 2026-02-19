@@ -3,13 +3,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
+        entry.target.classList.add('active');
       }
     });
-  }, { threshold: 0.12 });
+  }, { threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
 
   document.querySelectorAll('.reveal').forEach(el => {
     observer.observe(el);
+  });
+
+  // Smooth scrolling for navigation links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    });
   });
 
   // Add a small parallax / subtle movement on mouse for hero SVG (non-essential)
@@ -20,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const y = (e.clientY - window.innerHeight/2) / 60;
       hero.style.transform = `translate(${x}px, ${y}px)`;
     });
-    hero.addEventListener('mouseleave', () => { hero.style.transform = '' });
+    hero.addEventListener('mouseleave', () => { hero.style.transform = ''; });
   }
 });
 
