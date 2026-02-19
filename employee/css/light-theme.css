@@ -60,6 +60,7 @@ body.light-mode .sidebar a {
   background: transparent;
   border-left: 3px solid transparent;
   transition: all 0.25s ease;
+  font-size: 15px;
 }
 
 body.light-mode .menu-item:hover,
@@ -69,24 +70,36 @@ body.light-mode .sidebar a:hover {
 }
 
 body.light-mode .menu-item.active,
-body.light-mode .sidebar a.active {
+body.light-mode .sidebar a.active,
+body.light-mode .sidebar .menu-item.active {
   background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, transparent 100%);
-  color: #1a1a2e;
-  border-left: 3px solid #D4AF37;
+  color: #FFD66B;
+  border-left: 3px solid #FFD66B;
+}
+
+body.light-mode .menu-item .icon {
+  width: 28px;
+  font-size: 18px;
+  text-align: center;
+  display: inline-block;
 }
 
 body.light-mode .menu-item.active .icon,
-body.light-mode .menu-item .icon {
-  color: #D4AF37;
+body.light-mode .menu-item .icon,
+body.light-mode .sidebar .menu-item.active .icon {
+  color: #FFD66B;
 }
 
 body.light-mode .menu-item .label {
   color: #4a4a5a;
+  font-size: 15px;
+  white-space: nowrap;
 }
 
 body.light-mode .menu-item:hover .label,
-body.light-mode .menu-item.active .label {
-  color: #1a1a2e;
+body.light-mode .menu-item.active .label,
+body.light-mode .sidebar .menu-item.active .label {
+  color: #FFD66B;
 }
 
 body.light-mode .menu-item.logout {
@@ -2595,6 +2608,7 @@ body.light-mode .sidebar .sidebar-brand div:last-child {
 /* Menu Items */
 body.light-mode .sidebar .menu-item {
   color: #4a4a5a;
+  font-size: 15px;
 }
 
 body.light-mode .sidebar .menu-item:hover {
@@ -2603,18 +2617,22 @@ body.light-mode .sidebar .menu-item:hover {
 }
 
 body.light-mode .sidebar .menu-item.active {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
-  color: #D4AF37;
-  border-right: 3px solid #D4AF37;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, transparent 100%);
+  color: #FFD66B;
+  border-left: 3px solid #FFD66B;
 }
 
 body.light-mode .sidebar .menu-item .icon {
   color: #6a6a7a;
+  width: 28px;
+  font-size: 18px;
+  text-align: center;
+  display: inline-block;
 }
 
 body.light-mode .sidebar .menu-item:hover .icon,
 body.light-mode .sidebar .menu-item.active .icon {
-  color: #D4AF37;
+  color: #FFD66B;
 }
 
 /* Logout Item */
@@ -2635,11 +2653,6 @@ body.light-mode .mobile-open-btn {
 /* Sidebar Backdrop */
 body.light-mode .sidebar-backdrop {
   background: rgba(0, 0, 0, 0.3);
-}
-
-/* Menu Item Active State (Text Color Override) */
-body.light-mode .sidebar .menu-item.active {
-  color: #D4AF37;
 }
 
 /* ============================================
