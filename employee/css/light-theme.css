@@ -3395,3 +3395,537 @@ body.light-mode .danger-zone-title {
   }
 }
 
+/* ================================
+   MY NOTIFICATIONS PAGE - Light Mode
+   ================================ */
+
+/* Page Container & Header */
+body.light-mode .page-container {
+  background: #f5f5f7;
+}
+
+body.light-mode .notification-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8fa 100%);
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+body.light-mode .notification-header h1 {
+  color: #1a1a2e;
+}
+
+body.light-mode .notification-header h1 i {
+  color: #D4AF37;
+}
+
+/* Mark All Read Button */
+body.light-mode .btn-mark-all {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .btn-mark-all:hover {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+/* Notification Tabs */
+body.light-mode .notification-tabs {
+  background: #f8f8fa;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .tab-btn {
+  background: #ffffff;
+  color: #6a6a7a;
+  border: 1px solid #e0e0e5;
+}
+
+body.light-mode .tab-btn:hover {
+  background: #f8f8fa;
+  color: #1a1a2e;
+}
+
+body.light-mode .tab-btn.active {
+  background: linear-gradient(135deg, #D4AF37, #ff8c42);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+/* Notification Cards */
+body.light-mode .notifications-grid {
+  gap: 16px;
+}
+
+body.light-mode .notification-card {
+  background: #ffffff;
+  border: 1px solid #D4AF37;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+body.light-mode .notification-card:hover {
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.2);
+  transform: translateY(-2px);
+  border-color: #FFD66B;
+}
+
+/* Notification Status Borders */
+body.light-mode .notification-card.approved {
+  border-left: 4px solid #10b981;
+}
+
+body.light-mode .notification-card.rejected {
+  border-left: 4px solid #ef4444;
+}
+
+body.light-mode .notification-card.pending {
+  border-left: 4px solid #f59e0b;
+}
+
+body.light-mode .notification-card.info {
+  border-left: 4px solid #3b82f6;
+}
+
+/* Unread Notification */
+body.light-mode .notification-card.unread {
+  background: linear-gradient(135deg, #ffffff 0%, rgba(212, 175, 55, 0.08) 100%);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+body.light-mode .notification-card.unread::before {
+  background: #D4AF37;
+}
+
+/* Unread Dot */
+body.light-mode .unread-dot {
+  background: #D4AF37;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.2);
+}
+
+/* Notification Icons */
+body.light-mode .notification-icon {
+  background: #f8f8fa;
+}
+
+body.light-mode .notification-card.approved .notification-icon {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+body.light-mode .notification-card.rejected .notification-icon {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+body.light-mode .notification-card.pending .notification-icon {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+body.light-mode .notification-card.info .notification-icon {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* Notification Content */
+body.light-mode .notification-header-row h4,
+body.light-mode .notification-card .notification-header-row h4,
+body.light-mode .notification-card.approved .notification-header-row h4,
+body.light-mode .notification-card.rejected .notification-header-row h4,
+body.light-mode .notification-card.pending .notification-header-row h4 {
+  color: #1a1a2e !important;
+}
+
+body.light-mode .notification-card.unread .notification-header-row h4 {
+  color: #D4AF37 !important;
+}
+
+body.light-mode .notification-time,
+body.light-mode .notification-card .notification-time {
+  color: #6a6a7a !important;
+}
+
+body.light-mode .notification-message,
+body.light-mode .notification-card .notification-message,
+body.light-mode .notification-card.approved .notification-message,
+body.light-mode .notification-card.rejected .notification-message,
+body.light-mode .notification-card.pending .notification-message {
+  color: #4a4a5a !important;
+}
+
+body.light-mode .date-info,
+body.light-mode .notification-card .date-info {
+  color: #6a6a7a !important;
+}
+
+/* Status Badges */
+body.light-mode .status-badge {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+body.light-mode .status-badge.approved {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+body.light-mode .status-badge.rejected {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+body.light-mode .status-badge.pending {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+body.light-mode .status-badge.info {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+/* Date Info */
+body.light-mode .date-info {
+  color: #6a6a7a;
+}
+
+/* Action Buttons */
+body.light-mode .btn-action {
+  background: #f8f8fa;
+  border: 1px solid #e0e0e5;
+}
+
+body.light-mode .btn-action:hover {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .btn-read {
+  color: #10b981;
+}
+
+body.light-mode .btn-read:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+}
+
+body.light-mode .btn-delete {
+  color: #ef4444;
+}
+
+body.light-mode .btn-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+/* Loading & Empty States */
+body.light-mode .loading-state {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .loading-state i {
+  color: #D4AF37;
+}
+
+body.light-mode .loading-state p {
+  color: #6a6a7a;
+}
+
+body.light-mode .empty-state {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+}
+
+body.light-mode .empty-state i {
+  color: #D4AF37;
+}
+
+body.light-mode .empty-state p {
+  color: #6a6a7a;
+}
+
+/* Toast Notifications */
+body.light-mode .toast {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .toast.success {
+  border-left: 4px solid #10b981;
+}
+
+body.light-mode .toast.error {
+  border-left: 4px solid #ef4444;
+}
+
+body.light-mode .toast.info {
+  border-left: 4px solid #3b82f6;
+}
+
+body.light-mode .toast-icon {
+  color: #D4AF37;
+}
+
+body.light-mode .toast.success .toast-icon {
+  color: #10b981;
+}
+
+body.light-mode .toast.error .toast-icon {
+  color: #ef4444;
+}
+
+body.light-mode .toast.info .toast-icon {
+  color: #3b82f6;
+}
+
+body.light-mode .toast-message {
+  color: #1a1a2e;
+}
+
+/* ================================
+   ENG DASHBOARD - Time Tracking Light Mode
+   ================================ */
+
+/* Time Tracking Section */
+body.light-mode .time-tracking-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8fa 100%);
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Time Tracking Header */
+body.light-mode .time-tracking-header h3 {
+  color: #1a1a2e;
+}
+
+body.light-mode .time-tracking-header i {
+  color: #D4AF37;
+}
+
+/* Current Time & Date */
+body.light-mode .current-time {
+  color: #D4AF37;
+  text-shadow: none;
+}
+
+body.light-mode .current-date {
+  color: #6a6a7a;
+}
+
+/* Time Tracking Status */
+body.light-mode .time-tracking-status span {
+  color: #4a4a5a;
+}
+
+body.light-mode .status-indicator {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+body.light-mode .status-indicator.inactive {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Time Buttons */
+body.light-mode .btn-time {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+body.light-mode .btn-time-in {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+body.light-mode .btn-time-in:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+body.light-mode .btn-time-out {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+body.light-mode .btn-time-out:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+body.light-mode .btn-time:disabled {
+  background: #e0e0e5;
+  color: #9a9aaa;
+  box-shadow: none;
+}
+
+/* ================================
+   ENG DASHBOARD - Cash Advance & Overtime Request Light Mode
+   ================================ */
+
+/* Cash Advance Section */
+body.light-mode .cash-advance-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8fa 100%);
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .cash-advance-header h3 {
+  color: #1a1a2e;
+}
+
+body.light-mode .cash-advance-header i {
+  color: #D4AF37;
+}
+
+/* Overtime Request Section */
+body.light-mode .overtime-request-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8fa 100%);
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .overtime-request-header h3 {
+  color: #1a1a2e;
+}
+
+body.light-mode .overtime-request-header i {
+  color: #D4AF37;
+}
+
+/* Form Labels */
+body.light-mode .cash-advance-section label,
+body.light-mode .overtime-request-section label,
+body.light-mode .form-section label {
+  color: #4a4a5a;
+}
+
+/* Form Inputs */
+body.light-mode .cash-advance-section input,
+body.light-mode .cash-advance-section select,
+body.light-mode .cash-advance-section textarea,
+body.light-mode .overtime-request-section input,
+body.light-mode .overtime-request-section select,
+body.light-mode .overtime-request-section textarea {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .cash-advance-section input:focus,
+body.light-mode .cash-advance-section select:focus,
+body.light-mode .cash-advance-section textarea:focus,
+body.light-mode .overtime-request-section input:focus,
+body.light-mode .overtime-request-section select:focus,
+body.light-mode .overtime-request-section textarea:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+/* Placeholder text */
+body.light-mode .cash-advance-section input::placeholder,
+body.light-mode .cash-advance-section textarea::placeholder,
+body.light-mode .overtime-request-section input::placeholder,
+body.light-mode .overtime-request-section textarea::placeholder {
+  color: #9a9aaa;
+}
+
+/* ================================
+   ENG DASHBOARD - Branch Selection Modal Light Mode
+   ================================ */
+
+/* Modal Header */
+body.light-mode .branch-modal-header h2 {
+  color: #1a1a2e;
+}
+
+body.light-mode .branch-modal-header i {
+  color: #D4AF37;
+}
+
+body.light-mode .branch-modal-description {
+  color: #6a6a7a;
+}
+
+/* Branch Options */
+body.light-mode .branch-option {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+body.light-mode .branch-option:hover {
+  background: #f8f8fa;
+  border-color: #D4AF37;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.15);
+}
+
+/* Selected Branch */
+body.light-mode .branch-option.selected,
+body.light-mode .branch-option input:checked + .branch-content,
+body.light-mode .branch-option input:checked ~ .branch-content {
+  background: linear-gradient(135deg, #ffffff 0%, rgba(212, 175, 55, 0.1) 100%);
+  border-color: #D4AF37;
+}
+
+/* Branch Icon */
+body.light-mode .branch-icon {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+}
+
+/* Branch Name */
+body.light-mode .branch-name,
+body.light-mode .branch-option .branch-name,
+body.light-mode .branch-content .branch-name,
+body.light-mode .branch-title,
+body.light-mode .branch-option .branch-info h6 {
+  color: #000000 !important;
+}
+
+/* Branch Location/Subtitle */
+body.light-mode .branch-location,
+body.light-mode .branch-subtitle,
+body.light-mode .branch-address {
+  color: #6a6a7a;
+}
+
+/* Checkmark */
+body.light-mode .branch-checkmark {
+  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.1);
+}
+
+/* Modal Footer Buttons */
+body.light-mode .btn-cancel-branch {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #6a6a7a;
+}
+
+body.light-mode .btn-cancel-branch:hover {
+  background: #f0f0f5;
+  color: #1a1a2e;
+  border-color: #D4AF37;
+}
+
+body.light-mode .btn-confirm-branch {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+body.light-mode .btn-confirm-branch:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+body.light-mode .btn-confirm-branch:disabled {
+  background: #e0e0e5;
+  color: #9a9aaa;
+  box-shadow: none;
+}
+
