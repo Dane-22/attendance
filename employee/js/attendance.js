@@ -1661,9 +1661,17 @@ function debugUndo() {
     function submitAddBranch(event) {
         event.preventDefault();
         
-        const branchName = document.getElementById('branchNameInput').value.trim();
-        const branchAddress = document.getElementById('branchAddressInput').value.trim();
-        const branchDescription = document.getElementById('branchDescriptionInput').value.trim();
+        const branchNameInput = document.getElementById('branchNameInput');
+        const branchAddressInput = document.getElementById('branchAddressInput');
+        
+        if (!branchNameInput) {
+            console.error('branchNameInput not found in DOM');
+            showError('Form error: Project name field not found');
+            return;
+        }
+        
+        const branchName = branchNameInput.value.trim();
+        const branchAddress = branchAddressInput ? branchAddressInput.value.trim() : '';
         
         if (!branchName) {
             showBranchMessage('Project name is required', 'error');

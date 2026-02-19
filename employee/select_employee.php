@@ -454,7 +454,7 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
     };
   </script>
   <script src="../assets/js/sidebar-toggle.js"></script>
-  <script src="js/attendance.js"></script>
+  <script src="js/attendance.js?v=2"></script>
 
   <!-- QR Scan Auto-Select Branch -->
   <script>
