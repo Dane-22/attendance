@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit;
 }
 
-$sql = "SELECT id, branch_name FROM branches WHERE is_active = 1 ORDER BY branch_name ASC";
+$sql = "SELECT id, branch_name, branch_address FROM branches WHERE is_active = 1 ORDER BY branch_name ASC";
 $result = mysqli_query($db, $sql);
 
 $branches = [];
@@ -23,6 +23,7 @@ if ($result) {
         $branches[] = [
             'id' => (int)$row['id'],
             'branch_name' => $row['branch_name'],
+            'branch_address' => $row['branch_address'],
         ];
     }
 }
