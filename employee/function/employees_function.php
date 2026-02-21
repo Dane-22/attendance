@@ -56,7 +56,6 @@ function checkRateLimit() {
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = isset($_GET['per_page']) ? max(1, min(100, intval($_GET['per_page']))) : 10;
 $offset = ($page - 1) * $perPage;
-
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if user is Super Admin for employee modifications
