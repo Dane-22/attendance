@@ -358,6 +358,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $branch_address = isset($_POST['branch_address']) ? trim($_POST['branch_address']) : '';
 
+            $order_number = isset($_POST['order_number']) ? trim($_POST['order_number']) : '';
+
             $checkQuery = "SELECT id FROM branches WHERE branch_name = ?";
 
             $checkStmt = mysqli_prepare($db, $checkQuery);
@@ -376,31 +378,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             }
 
-            // Generate unique 9-digit order number
-            $orderNumber = '';
-            $maxAttempts = 100;
-            $attempts = 0;
-            do {
-                $orderNumber = strval(mt_rand(100000000, 999999999));
-                $checkStmt = mysqli_prepare($db, "SELECT id FROM branches WHERE order_number = ?");
-                mysqli_stmt_bind_param($checkStmt, 's', $orderNumber);
-                mysqli_stmt_execute($checkStmt);
-                mysqli_stmt_store_result($checkStmt);
-                $exists = mysqli_stmt_num_rows($checkStmt) > 0;
-                mysqli_stmt_close($checkStmt);
-                $attempts++;
-            } while ($exists && $attempts < $maxAttempts);
-
-            if ($exists) {
-                echo json_encode(['success' => false, 'message' => 'Could not generate unique order number']);
-                exit();
-            }
-
             $insertQuery = "INSERT INTO branches (branch_name, branch_address, order_number, created_at) VALUES (?, ?, ?, NOW())";
 
             $insertStmt = mysqli_prepare($db, $insertQuery);
 
-            mysqli_stmt_bind_param($insertStmt, 'sss', $branch_name, $branch_address, $orderNumber);
+            mysqli_stmt_bind_param($insertStmt, 'sss', $branch_name, $branch_address, $order_number);
 
             if (mysqli_stmt_execute($insertStmt)) {
 

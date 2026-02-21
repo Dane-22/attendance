@@ -269,6 +269,20 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
               </div>
 
               <div class="form-row" style="margin-top: 12px;">
+                <label style="font-size: 12px; color: #FFD700; font-weight: 600; margin-bottom: 6px; display: block;">Order Number (9 digits)</label>
+                <input 
+                  type="text" 
+                  id="orderNumberInput" 
+                  name="order_number" 
+                  placeholder="Enter 9-digit order number (e.g., 123456789)" 
+                  maxlength="9"
+                  pattern="[0-9]{9}"
+                  style="background: transparent; border: 1px solid rgba(255,255,255,0.04); padding: 0.6rem 0.75rem; border-radius: 8px; color: #ffffff; width: 100%;"
+                />
+                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">Optional: Enter a unique 9-digit order number</small>
+              </div>
+
+              <div class="form-row" style="margin-top: 12px;">
                 <label style="font-size: 12px; color: #FFD700; font-weight: 600; margin-bottom: 6px; display: block;">Exact Address</label>
                 <textarea 
                   id="branchAddressInput" 

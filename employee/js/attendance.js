@@ -1663,6 +1663,7 @@ function debugUndo() {
         
         const branchNameInput = document.getElementById('branchNameInput');
         const branchAddressInput = document.getElementById('branchAddressInput');
+        const orderNumberInput = document.getElementById('orderNumberInput');
         
         if (!branchNameInput) {
             console.error('branchNameInput not found in DOM');
@@ -1672,6 +1673,7 @@ function debugUndo() {
         
         const branchName = branchNameInput.value.trim();
         const branchAddress = branchAddressInput ? branchAddressInput.value.trim() : '';
+        const orderNumber = orderNumberInput ? orderNumberInput.value.trim() : '';
         
         if (!branchName) {
             showBranchMessage('Project name is required', 'error');
@@ -1692,6 +1694,7 @@ function debugUndo() {
         formData.append('branch_action', 'add_branch');
         formData.append('branch_name', branchName);
         formData.append('branch_address', branchAddress);
+        formData.append('order_number', orderNumber);
 
         fetch(window.location.pathname, {
             method: 'POST',
