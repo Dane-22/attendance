@@ -24,7 +24,7 @@ if (!$isAdmin) {
 require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 
-// Helper function to get pending count
+// Helper function to get pending count (includes pending and pre_approved)
 function getPendingOvertimeCount($db) {
     if (!$db) return 0;
     // Suppress errors and check if table exists first
@@ -32,14 +32,14 @@ function getPendingOvertimeCount($db) {
     if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
         return 0;
     }
-    $sql = "SELECT COUNT(*) as cnt FROM overtime_requests WHERE status = 'pending'";
+    $sql = "SELECT COUNT(*) as cnt FROM overtime_requests WHERE status IN ('pending', 'pre_approved')";
     $result = @mysqli_query($db, $sql);
     if (!$result) return 0;
     $row = mysqli_fetch_assoc($result);
     return intval($row['cnt'] ?? 0);
 }
 
-// Helper function to get pending cash advance count
+// Helper function to get pending cash advance count (includes pending and pre_approved)
 function getPendingCashAdvanceCount($db) {
     if (!$db) return 0;
     // Check if table exists
@@ -56,7 +56,7 @@ function getPendingCashAdvanceCount($db) {
         @mysqli_query($db, "ALTER TABLE cash_advances ADD COLUMN approved_at DATETIME DEFAULT NULL");
         @mysqli_query($db, "ALTER TABLE cash_advances ADD COLUMN rejection_reason TEXT DEFAULT NULL");
     }
-    $sql = "SELECT COUNT(*) as cnt FROM cash_advances WHERE status = 'pending' AND particular = 'Cash Advance'";
+    $sql = "SELECT COUNT(*) as cnt FROM cash_advances WHERE status IN ('pending', 'pre_approved') AND particular = 'Cash Advance'";
     $result = @mysqli_query($db, $sql);
     if (!$result) return 0;
     $row = mysqli_fetch_assoc($result);
@@ -159,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             
             // Get request details first for notification
-            $getSql = "SELECT * FROM cash_advances WHERE id = ? AND (status = 'pending' OR status = 'Pending') LIMIT 1";
+            $getSql = "SELECT * FROM cash_advances WHERE id = ? AND (status = 'pending' OR status = 'Pending' OR status = 'pre_approved') LIMIT 1";
             $getStmt = mysqli_prepare($db, $getSql);
             mysqli_stmt_bind_param($getStmt, 'i', $requestId);
             mysqli_stmt_execute($getStmt);
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             
             // Update request
-            $sql = "UPDATE cash_advances SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND (status = 'pending' OR status = 'Pending')";
+            $sql = "UPDATE cash_advances SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND (status = 'pending' OR status = 'Pending' OR status = 'pre_approved')";
             $stmt = mysqli_prepare($db, $sql);
             if (!$stmt) {
                 echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . mysqli_error($db)]);
@@ -272,7 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             
             // Update request
-            $sql = "UPDATE cash_advances SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND (status = 'pending' OR status = 'Pending')";
+            $sql = "UPDATE cash_advances SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND (status = 'pending' OR status = 'Pending' OR status = 'pre_approved')";
             $stmt = mysqli_prepare($db, $sql);
             if (!$stmt) {
                 echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . mysqli_error($db)]);
@@ -336,6 +336,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit();
         }
         
+        // Ensure status column exists
+        $checkColumn = @mysqli_query($db, "SHOW COLUMNS FROM overtime_requests LIKE 'status'");
+        if (!$checkColumn || mysqli_num_rows($checkColumn) === 0) {
+            @mysqli_query($db, "ALTER TABLE overtime_requests ADD COLUMN status VARCHAR(20) DEFAULT 'pending'");
+            @mysqli_query($db, "ALTER TABLE overtime_requests ADD COLUMN approved_by VARCHAR(100) DEFAULT NULL");
+            @mysqli_query($db, "ALTER TABLE overtime_requests ADD COLUMN approved_at DATETIME DEFAULT NULL");
+            @mysqli_query($db, "ALTER TABLE overtime_requests ADD COLUMN rejection_reason TEXT DEFAULT NULL");
+        }
+        
+        // Update any rows with NULL or empty status to 'pending'
+        @mysqli_query($db, "UPDATE overtime_requests SET status = 'pending' WHERE status IS NULL OR status = ''");
+        
         $status = isset($_POST['status']) ? $_POST['status'] : 'pending';
         
         $whereClause = "WHERE 1=1";
@@ -376,10 +388,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
         
-        // Get counts for tabs
+        // Get counts for tabs - include pre-approved
         $countsSql = "SELECT status, COUNT(*) as cnt FROM overtime_requests GROUP BY status";
         $countsResult = mysqli_query($db, $countsSql);
-        $counts = ['pending' => 0, 'approved' => 0, 'rejected' => 0, 'all' => 0];
+        $counts = ['pending' => 0, 'pre-approved' => 0, 'approved' => 0, 'rejected' => 0, 'all' => 0];
         
         if ($countsResult) {
             while ($row = mysqli_fetch_assoc($countsResult)) {
@@ -388,10 +400,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
         
+        // Debug: check first request status
+        $debugFirstStatus = isset($requests[0]) ? ($requests[0]['status'] ?? 'NOT_SET') : 'NO_REQUESTS';
+        
         echo json_encode([
             'success' => true,
             'requests' => $requests,
-            'counts' => $counts
+            'counts' => $counts,
+            'debug' => ['first_status' => $debugFirstStatus, 'sql_status_filter' => $status]
         ]);
         exit();
     }
@@ -406,8 +422,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit();
         }
         
-        // Get request details
-        $checkSql = "SELECT * FROM overtime_requests WHERE id = ? AND status = 'pending' LIMIT 1";
+        // Get request details - allow approval of pending or pre-approved
+        $checkSql = "SELECT * FROM overtime_requests WHERE id = ? AND (status = 'pending' OR status = 'pre-approved') LIMIT 1";
         $checkStmt = mysqli_prepare($db, $checkSql);
         mysqli_stmt_bind_param($checkStmt, 'i', $requestId);
         mysqli_stmt_execute($checkStmt);
@@ -494,8 +510,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit();
         }
         
-        // Get request details first for notification
-        $getSql = "SELECT * FROM overtime_requests WHERE id = ? AND status = 'pending' LIMIT 1";
+        // Get request details first for notification - allow rejection of pending or pre-approved
+        $getSql = "SELECT * FROM overtime_requests WHERE id = ? AND (status = 'pending' OR status = 'pre-approved') LIMIT 1";
         $getStmt = mysqli_prepare($db, $getSql);
         mysqli_stmt_bind_param($getStmt, 'i', $requestId);
         mysqli_stmt_execute($getStmt);
@@ -503,8 +519,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $requestDetails = mysqli_fetch_assoc($getResult);
         mysqli_stmt_close($getStmt);
         
-        // Update request status
-        $updateSql = "UPDATE overtime_requests SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND status = 'pending'";
+        // Update request status - allow rejection of pending or pre-approved
+        $updateSql = "UPDATE overtime_requests SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND (status = 'pending' OR status = 'pre-approved')";
         $updateStmt = mysqli_prepare($db, $updateSql);
         mysqli_stmt_bind_param($updateStmt, 'ssi', $adminName, $rejectionReason, $requestId);
         
@@ -669,6 +685,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                     <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">
                         Pending (<span id="count-pending">0</span>)
                     </button>
+                    <button class="tab-btn" data-status="pre-approved" onclick="switchTab('pre-approved')">
+                        Pre-Approved (<span id="count-pre-approved">0</span>)
+                    </button>
                     <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">
                         Approved (<span id="count-approved">0</span>)
                     </button>
@@ -763,6 +782,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 
                 if (data.success) {
                     currentRequests = data.requests;
+                    console.log('DEBUG: Loaded requests:', data.requests.map(r => ({id: r.id, status: r.status})));
                     updateCounts(data.counts);
                     if (currentRequestType === 'cash_advance') {
                         renderCashAdvanceRequests(data.requests);
@@ -805,12 +825,15 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
             
             requests.forEach(request => {
                 const statusClass = request.status;
-                const statusIcon = request.status.toLowerCase() === 'pending' ? 'fa-clock' : 
-                                  request.status.toLowerCase() === 'approved' ? 'fa-check' : 'fa-times';
+                const statusLower = request.status?.toLowerCase();
+                const statusIcon = statusLower === 'pending' ? 'fa-clock' : 
+                                  statusLower === 'pre_approved' ? 'fa-check-double' :
+                                  statusLower === 'approved' ? 'fa-check' : 'fa-times';
                 const amountFormatted = new Intl.NumberFormat('en-PH', {
                     style: 'currency',
                     currency: 'PHP'
                 }).format(request.amount);
+                const showActions = statusLower === 'pending' || statusLower === 'pre_approved';
                 
                 html += `
                     <div class="request-card ${statusClass}" data-request-id="${request.id}">
@@ -829,7 +852,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                             </div>
                             <div class="status-badge ${statusClass}">
                                 <i class="fas ${statusIcon}"></i>
-                                ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                ${request.status === 'pre_approved' ? 'Pre-Approved' : request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                             </div>
                         </div>
                         
@@ -854,16 +877,16 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                             ` : ''}
                             ${request.approved_by ? `
                                 <div class="info-row meta">
-                                    <span class="label">${request.status.toLowerCase() === 'approved' ? 'Approved' : 'Processed'} by:</span>
+                                    <span class="label">${statusLower === 'approved' ? 'Approved' : (statusLower === 'pre_approved' ? 'Pre-Approved' : 'Processed')} by:</span>
                                     <span class="value">${escapeHtml(request.approved_by)} on ${formatDateTime(request.approved_at)}</span>
                                 </div>
                             ` : ''}
                         </div>
                         
-                        ${request.status.toLowerCase() === 'pending' ? `
+                        ${showActions ? `
                             <div class="request-actions">
                                 <button class="btn-approve" onclick="approveCashAdvance(${request.id})">
-                                    <i class="fas fa-check"></i> Approve
+                                    <i class="fas fa-check"></i> ${statusLower === 'pre_approved' ? 'Final Approve' : 'Approve'}
                                 </button>
                                 <button class="btn-reject" onclick="showRejectionModal(${request.id}, 'cash_advance')">
                                     <i class="fas fa-times"></i> Reject
@@ -880,10 +903,12 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
         
         function updateCounts(counts) {
             document.getElementById('count-pending').textContent = counts.pending || 0;
+            document.getElementById('count-pre-approved').textContent = counts['pre-approved'] || 0;
             document.getElementById('count-approved').textContent = counts.approved || 0;
             document.getElementById('count-rejected').textContent = counts.rejected || 0;
             document.getElementById('count-all').textContent = counts.all || 0;
-            document.getElementById('pendingBadge').textContent = counts.pending || 0;
+            const pendingAndPreApproved = (counts.pending || 0) + (counts['pre-approved'] || 0);
+            document.getElementById('pendingBadge').textContent = pendingAndPreApproved;
         }
         
         function renderRequests(requests) {
@@ -903,8 +928,11 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
             
             requests.forEach(request => {
                 const statusClass = request.status;
-                const statusIcon = request.status.toLowerCase() === 'pending' ? 'fa-clock' : 
-                                  request.status.toLowerCase() === 'approved' ? 'fa-check' : 'fa-times';
+                const statusLower = request.status?.toLowerCase();
+                const statusIcon = statusLower === 'pending' ? 'fa-clock' : 
+                                  statusLower === 'pre-approved' ? 'fa-check-double' :
+                                  statusLower === 'approved' ? 'fa-check' : 'fa-times';
+                const showActions = statusLower === 'pending' || statusLower === 'pre-approved';
                 
                 html += `
                     <div class="request-card ${statusClass}" data-request-id="${request.id}">
@@ -923,7 +951,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                             </div>
                             <div class="status-badge ${statusClass}">
                                 <i class="fas ${statusIcon}"></i>
-                                ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                ${request.status === 'pre_approved' ? 'Pre-Approved' : request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                             </div>
                         </div>
                         
@@ -952,16 +980,16 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                             </div>
                             ${request.approved_by ? `
                                 <div class="info-row meta">
-                                    <span class="label">${request.status.toLowerCase() === 'approved' ? 'Approved' : 'Processed'} by:</span>
+                                    <span class="label">${statusLower === 'approved' ? 'Approved' : (statusLower === 'pre_approved' ? 'Pre-Approved' : 'Processed')} by:</span>
                                     <span class="value">${escapeHtml(request.approved_by)} on ${formatDateTime(request.approved_at)}</span>
                                 </div>
                             ` : ''}
                         </div>
                         
-                        ${request.status.toLowerCase() === 'pending' ? `
+                        ${showActions ? `
                             <div class="request-actions">
                                 <button class="btn-approve" onclick="approveRequest(${request.id})">
-                                    <i class="fas fa-check"></i> Approve
+                                    <i class="fas fa-check"></i> ${statusLower === 'pre-approved' ? 'Final Approve' : 'Approve'}
                                 </button>
                                 <button class="btn-reject" onclick="showRejectionModal(${request.id}, 'overtime')">
                                     <i class="fas fa-times"></i> Reject
@@ -1260,8 +1288,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 });
                 const caData = await caResponse.json();
                 
-                const otPending = data.success ? (data.counts?.pending || 0) : 0;
-                const caPending = caData.success ? (caData.counts?.pending || 0) : 0;
+                const otPending = data.success ? ((data.counts?.pending || 0) + (data.counts?.['pre-approved'] || 0)) : 0;
+                const caPending = caData.success ? ((caData.counts?.pending || 0) + (caData.counts?.['pre-approved'] || 0)) : 0;
                 
                 document.getElementById('pendingBadge').textContent = otPending + caPending;
                 document.getElementById('type-count-overtime').textContent = otPending;

@@ -1,0 +1,7 @@
+# Protect database schema files
+<FilesMatch "\.(sql|json|csv|dump)$">
+    Require all denied
+</FilesMatch>
+
+# Disable directory listing
+Options -Indexes

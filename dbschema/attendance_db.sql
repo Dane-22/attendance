@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Feb 19, 2026 at 05:16 AM
+-- Generation Time: Feb 24, 2026 at 07:06 AM
 -- Server version: 8.4.7
 -- PHP Version: 8.3.28
 
@@ -39,34 +39,18 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_action` (`action`),
   KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=599 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=615 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `activity_logs`
 --
 
 INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`, `created_at`) VALUES
-(578, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-16 00:27:36'),
-(579, 63, 'Logged In', 'User JOYLENE F. BALANON logged in from branch: Main Branch', '::1', '2026-02-16 03:08:47'),
-(580, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-16 03:41:18'),
-(581, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 01:56:51'),
-(582, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 05:07:42'),
-(583, 6, 'Payment Status Updated', 'User Super set ABUBO, CESAR to \'Paid\' for 2026-2 Week 3', '::1', '2026-02-18 05:25:22'),
-(584, 6, 'Signature Uploaded', 'Uploaded employee signature for employee #12', '::1', '2026-02-18 05:28:16'),
-(585, 6, 'Document Uploaded', 'sss document for employee #12', '::1', '2026-02-18 05:30:26'),
-(586, 6, 'Profile Updated', 'User #6 updated profile information', '::1', '2026-02-18 05:40:35'),
-(587, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 07:02:28'),
-(588, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-18 08:14:49'),
-(589, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 00:01:57'),
-(590, 6, 'Document Uploaded', 'philhealth document for employee #12', '::1', '2026-02-19 00:09:30'),
-(591, 6, 'Document Deleted', 'Document ID #7 for employee #12', '::1', '2026-02-19 00:10:02'),
-(592, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 00:34:31'),
-(593, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 01:30:24'),
-(594, 63, 'Logged In', 'User JOYLENE F. BALANON logged in from branch: Main Branch', '::1', '2026-02-19 01:30:37'),
-(595, 63, 'Notification Marked Read', 'User marked notification #16 as read', '::1', '2026-02-19 01:32:59'),
-(596, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 02:46:45'),
-(597, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 02:58:07'),
-(598, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-19 05:13:13');
+(610, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-23 02:57:42'),
+(611, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-23 03:09:16'),
+(612, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 06:24:00'),
+(613, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 06:34:37'),
+(614, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 06:42:43');
 
 -- --------------------------------------------------------
 
@@ -93,18 +77,15 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `total_ot_hrs` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_attendance_employee_date` (`employee_id`,`attendance_date`)
-) ENGINE=MyISAM AUTO_INCREMENT=1069 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=1077 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `attendance`
 --
 
 INSERT INTO `attendance` (`id`, `employee_id`, `status`, `branch_name`, `attendance_date`, `time_in`, `time_out`, `created_at`, `updated_at`, `is_auto_absent`, `auto_absent_applied`, `absent_notes`, `is_overtime_running`, `is_time_running`, `total_ot_hrs`) VALUES
-(1068, 63, 'Present', 'Main Branch', '2026-02-19', NULL, NULL, '2026-02-19 01:30:37', NULL, 0, 0, NULL, 0, 0, '0'),
-(1066, 6, 'Present', 'Main Branch', '2026-02-18', NULL, NULL, '2026-02-18 01:56:51', '2026-02-18 08:14:49', 0, 0, NULL, 0, 0, '0'),
-(1067, 6, 'Present', 'Main Branch', '2026-02-19', NULL, NULL, '2026-02-19 00:01:57', '2026-02-19 05:13:13', 0, 0, NULL, 0, 0, '0'),
-(1064, 6, 'Present', 'Main Branch', '2026-02-16', NULL, NULL, '2026-02-16 00:27:36', '2026-02-16 03:41:18', 0, 0, NULL, 0, 0, '0'),
-(1065, 63, 'Present', 'Main Branch', '2026-02-16', NULL, NULL, '2026-02-16 03:08:47', NULL, 0, 0, NULL, 0, 0, '0');
+(1075, 6, 'Present', 'Main Branch', '2026-02-23', NULL, NULL, '2026-02-23 02:57:42', '2026-02-23 03:09:16', 0, 0, NULL, 0, 0, '0'),
+(1076, 117, 'Present', 'Main Branch', '2026-02-24', NULL, NULL, '2026-02-24 06:24:00', '2026-02-24 06:42:43', 0, 0, NULL, 0, 0, '0');
 
 -- --------------------------------------------------------
 
@@ -115,6 +96,7 @@ INSERT INTO `attendance` (`id`, `employee_id`, `status`, `branch_name`, `attenda
 DROP TABLE IF EXISTS `branches`;
 CREATE TABLE IF NOT EXISTS `branches` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `order_number` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `branch_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `branch_address` varchar(55) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -123,28 +105,28 @@ CREATE TABLE IF NOT EXISTS `branches` (
   UNIQUE KEY `branch_name` (`branch_name`),
   KEY `idx_branch_name` (`branch_name`),
   KEY `idx_is_active` (`is_active`)
-) ENGINE=MyISAM AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `branch_name`, `branch_address`, `created_at`, `is_active`) VALUES
-(23, 'BCDA - Fence', NULL, '2026-02-06 01:01:29', 1),
-(22, 'BCDA - Control Tower', NULL, '2026-02-06 01:01:11', 1),
-(21, 'BCDA - Admin', 'Taguig City, Metro Manila', '2026-02-06 01:00:59', 1),
-(10, 'Sto. Rosario', NULL, '2026-01-29 03:19:23', 1),
-(20, 'BCDA - CCA', NULL, '2026-02-06 01:00:44', 1),
-(32, 'Maintenance', NULL, '2026-02-06 01:03:08', 1),
-(24, 'BCDA - Fire Station', NULL, '2026-02-06 01:01:46', 1),
-(25, 'BCDA - CCTV', NULL, '2026-02-06 01:01:55', 1),
-(26, 'Panicsican', NULL, '2026-02-06 01:02:07', 1),
-(27, 'Dallangayan', NULL, '2026-02-06 01:02:16', 1),
-(28, 'Pias - Sundara', NULL, '2026-02-06 01:02:25', 1),
-(29, 'Pias - Office', NULL, '2026-02-06 01:02:33', 1),
-(30, 'Capitol - Roadwork', NULL, '2026-02-06 01:02:59', 1),
-(31, 'Capitol - Accounting', NULL, '2026-02-06 01:03:08', 1),
-(33, 'MAIN OFFICE', NULL, '2026-02-10 08:10:39', 1);
+INSERT INTO `branches` (`id`, `order_number`, `branch_name`, `branch_address`, `created_at`, `is_active`) VALUES
+(23, '393859493', 'BCDA - Fence', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:29', 1),
+(22, '393859493', 'BCDA - Control Tower', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:11', 1),
+(21, '393859493', 'BCDA - Admin', 'Poro point, San Fernando City, La Union', '2026-02-06 01:00:59', 1),
+(10, '299269388', 'Sto. Rosario', 'Sto. Rosario, San Juan, La Union', '2026-01-29 03:19:23', 1),
+(20, '393859493', 'BCDA - CCA', 'Poro point, San Fernando City, La Union', '2026-02-06 01:00:44', 1),
+(32, '488809024', 'Maintenance', NULL, '2026-02-06 01:03:08', 1),
+(24, '393859493', 'BCDA - Fire Station', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:46', 1),
+(25, '393859493', 'BCDA - CCTV', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:55', 1),
+(26, '159166591', 'Panicsican', 'Panicsican, San Juan, La Union', '2026-02-06 01:02:07', 1),
+(27, '149744923', 'Dallangayan', NULL, '2026-02-06 01:02:16', 1),
+(28, '228984422', 'Pias - Sundara', NULL, '2026-02-06 01:02:25', 1),
+(29, '228984422', 'Pias - Office', NULL, '2026-02-06 01:02:33', 1),
+(30, '473768962', 'Capitol - Roadwork', NULL, '2026-02-06 01:02:59', 1),
+(31, '473768962', 'Capitol - Accounting', NULL, '2026-02-06 01:03:08', 1),
+(33, '458762594', 'MAIN OFFICE', NULL, '2026-02-10 08:10:39', 1);
 
 -- --------------------------------------------------------
 
@@ -185,13 +167,6 @@ CREATE TABLE IF NOT EXISTS `cash_advances` (
   PRIMARY KEY (`id`),
   KEY `employee_id` (`employee_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `cash_advances`
---
-
-INSERT INTO `cash_advances` (`id`, `employee_id`, `amount`, `particular`, `reason`, `status`, `request_date`, `approved_date`, `paid_date`, `approved_by`, `approved_at`, `rejection_reason`) VALUES
-(14, 63, 1.05, 'Cash Advance', 'agrtfdx', 'approved', '2026-02-16 11:40:17', NULL, NULL, 'Admin', '2026-02-16 11:41:22', NULL);
 
 -- --------------------------------------------------------
 
@@ -275,13 +250,6 @@ CREATE TABLE IF NOT EXISTS `documents` (
   KEY `idx_employee_doc_type` (`employee_id`,`document_type`)
 ) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
---
--- Dumping data for table `documents`
---
-
-INSERT INTO `documents` (`id`, `employee_id`, `document_name`, `document_type`, `category`, `file_path`, `upload_date`) VALUES
-(8, 12, 'employee-qr-E0008.png', 'philhealth', 'image', '../uploads/12_20260219080930_employee-qr-E0008.png', '2026-02-19 00:09:30');
-
 -- --------------------------------------------------------
 
 --
@@ -308,7 +276,7 @@ CREATE TABLE IF NOT EXISTS `employees` (
   UNIQUE KEY `employee_code` (`employee_code`),
   UNIQUE KEY `email` (`email`),
   KEY `fk_employees_branch` (`branch_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=137 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=140 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `employees`
@@ -319,11 +287,11 @@ INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `middle_name`, `la
 (17, 'E0007', 'ROLLY', NULL, 'BALTAZAR', 'rolly.baltazar@example.com', '$2y$10$4/nX3PsxAeYnik1fwh7lxO3XJHlW.IiOjK5NZPDCDD9eXoCBMVp8K', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 08:22:23', NULL, 500.00, 10),
 (18, 'E0008', 'DONG', NULL, 'BAUTISTA', 'dong.bautista@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 07:01:04', NULL, 600.00, 20),
 (14, 'E0004', 'NOEL', NULL, 'ARIZ', 'noel.ariz@example.com', '$2y$10$2Iq/E7PtLMHHBwAjTl.q5OthGTKYXQf5Bx/Q/SXpsmeyQ5VJKcnnO', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-13 08:25:50', NULL, 550.00, 10),
-(6, 'SA001', 'Super', 'Torres', 'Adminesu', 'admin@jajrconstruction.com', '$2y$10$RSHOb3hskFZueMLlCycFuua/4EwcxGmAIzpcl8ixQpEXY3tfu9LYi', 'Super Admin', 'Active', '2026-01-16 02:26:58', '2026-02-18 05:40:35', 'profile_697d9f9a1f47a8.96968556.png', 600.00, 31),
+(6, 'SA001', 'Super', 'Torres', 'Adminesu', 'admin@jajrconstruction.com', '$2y$10$RSHOb3hskFZueMLlCycFuua/4EwcxGmAIzpcl8ixQpEXY3tfu9LYi', 'Super Admin', 'Active', '2026-01-16 02:26:58', '2026-02-19 05:51:54', 'uploads/profile_images/profile_6_1771480314.png', 600.00, 31),
 (15, 'E0005', 'DANIEL', NULL, 'BACHILLER', 'daniel.bachiller@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 08:27:53', NULL, 600.00, 20),
 (11, 'E0001', 'AARIZ', NULL, 'MARLOU', 'aariz.marlou@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-09 01:58:28', NULL, 700.00, 21),
-(12, 'E0002', 'CESAR', NULL, 'ABUBO', 'cesar.abubo@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-09 00:12:46', 'profile_697d962d450256.84780797.png', 550.00, 10),
-(13, 'E0003', 'MARLON', NULL, 'AGUILAR', 'marlon.aguilar@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-11 05:02:02', NULL, 600.00, 20),
+(12, 'E0002', 'CESAR', '', 'ABUBO', 'cesar.abubo@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-19 05:26:42', 'profile_697d962d450256.84780797.png', 550.00, 10),
+(13, 'E0003', 'MARLON', '', 'AGUILAR', 'marlon.aguilar@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-19 05:51:41', 'profile_6996a4ed2ef972.23487330.png', 600.00, 20),
 (19, 'E0009', 'JANLY', NULL, 'BELINO', 'janly.belino@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-09 00:24:27', NULL, 650.00, 10),
 (20, 'E0010', 'MENUEL', NULL, 'BENITEZ', 'menuel.benitez@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 08:23:00', NULL, 600.00, 10),
 (21, 'E0011', 'GELMAR', NULL, 'BERNACHEA', 'gelmar.bernachea@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-09 00:24:13', NULL, 500.00, 10),
@@ -366,7 +334,6 @@ INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `middle_name`, `la
 (58, 'E0048', 'HILMAR', NULL, 'TATUNAY', 'hilmar.tatunay@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-09 00:33:51', NULL, 500.00, 20),
 (59, 'E0049', 'KENNETH JOHN', NULL, 'UGAS', 'kennethjohn.ugas@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 08:25:30', NULL, 600.00, 10),
 (60, 'E0050', 'CLYDE JUSTINE', NULL, 'VASADRE', 'clydejustine.vasadre@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 07:01:04', NULL, 500.00, 28),
-(61, 'E0051', 'CARL JHUNELL', NULL, 'ACAS', 'carljhunell.acas@example.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Worker', 'Active', '2026-01-22 07:58:04', '2026-02-06 07:01:04', 'profile_697d9f9350dad3.88439854.png', 600.00, 28),
 (63, 'ENG-2026-0005', 'JOYLENE F.', NULL, 'BALANON', 'joylene.balanon@example.com', '$2y$10$6sbxv2qIU8i/2KUOVDrUZOLBIHTOvRoI9ApBOwLtYPXN60w8jx4mm', 'Engineer', 'Active', '2026-01-22 07:58:04', '2026-02-14 06:07:08', NULL, 600.00, 21),
 (122, 'E0053', 'VERGEL', NULL, 'DACUMOS', 'vergel.dacumos@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:22', '2026-02-06 08:48:24', NULL, 600.00, 22),
 (123, 'E0054', 'REAL RAIN', NULL, 'IVERSON', 'realrain.iverson@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:22', '2026-02-06 08:48:38', NULL, 600.00, 22),
@@ -377,14 +344,12 @@ INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `middle_name`, `la
 (125, 'E0056', 'SONNY', NULL, 'OCCIANO', 'sonny.occiano@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:22', '2026-02-09 00:23:00', NULL, 1400.00, 22),
 (126, 'E0065', 'RANDY', NULL, 'ATON', 'randy.aton@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:34', '2026-02-06 08:47:34', NULL, 600.00, 10),
 (120, 'SA-2026-004', 'Marc', '', 'Arzadon', 'arzadon@gmail.com', '$2y$10$qSf327Nylr1l.TkboICD6ujkKmYGEaiTvixotQ.Jh/XP.MYOZsJIe', 'Super Admin', 'Active', '2026-02-06 07:18:15', '2026-02-07 07:33:06', NULL, 600.00, NULL),
-(111, 'Supere', 'Admin', 'Admin', 'Admin', 'super@gmail.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'Super Admin', 'Active', '0000-00-00 00:00:00', '2026-02-06 01:17:06', '', 0.00, 30),
-(112, 'SUPER001', 'Super', 'Admin', 'Account', 'superadmin@example.com', '$2y$10$Pci.6CbsQnCcVA.OxTJSs.Trzw0lFxGNFsLEDYY3hPtKbkOUxYLuC', 'Super Adminn', 'Active', '2026-02-03 07:49:06', '2026-02-06 01:17:06', NULL, 0.00, 31),
 (115, 'PRO-2026-0001', 'Junell', '', 'Tadina', 'tadina@gmail.com', '$2y$10$Nc0l0GkWV9crcUj7dc1vie4ry1up7kwrYBJGeH5oDSvJlhKCOgUt6', 'Engineer', 'Active', '2026-02-06 07:12:32', '2026-02-10 02:31:56', NULL, 600.00, NULL),
 (114, 'ENG-2026-0003', 'Julius John', '', 'Echague', 'echague@gmail.com', '$2y$10$5vYYVwzl3qRA1ClmqUBjJu/YM8SrszeIhO6oEtaoFXcuVxIpmvrV2', 'Engineer', 'Active', '2026-02-06 07:12:00', '2026-02-07 07:34:38', NULL, 600.00, NULL),
 (121, 'E0052', 'JOSHUA', NULL, 'ARQUITOLA', 'joshua.arquitola@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:22', '2026-02-06 08:48:07', NULL, 600.00, 22),
 (113, 'ENG-2026-0002', 'John Kennedy', '', 'Lucas', 'lucas@gmail.com', '$2y$10$p.ERk7.PwModiMwq61au.ufymZHF/jRpMffS3dQBobbFwEmADEUT.', 'Engineer', 'Active', '2026-02-06 07:11:15', '2026-02-07 07:34:49', NULL, 600.00, NULL),
 (116, 'ENG-2026-0006', 'Winnielyn Kaye', '', 'Olarte', 'olarte@gmail.com', '$2y$10$1NUUvvknY0mWhdfHYYygheh6Kj1zoCTQSQcxOzPUKNyR28/S4cj7G', 'Engineer', 'Active', '2026-02-06 07:14:59', '2026-02-07 07:35:05', NULL, 600.00, NULL),
-(117, 'ADMIN-2026-0001', 'ELAINE', 'Torres', 'Aguilar', 'aguilar@gmail.com', '$2y$10$Q0GiyO/e43xHBEwRHNAmvOoh7pu9TEiN3t1Jl1mL39UuhHsv6k8Wq', 'Admin', 'Active', '2026-02-06 07:15:51', '2026-02-10 08:13:37', NULL, 600.00, 33),
+(117, 'ADMIN-2026-0001', 'ELAINE', 'Torres', 'Aguilar', 'aguilar@gmail.com', '$2y$10$Q0GiyO/e43xHBEwRHNAmvOoh7pu9TEiN3t1Jl1mL39UuhHsv6k8Wq', 'Admin', 'Active', '2026-02-06 07:15:51', '2026-02-19 05:51:49', 'profile_6996a4f55d7335.10207456.png', 600.00, 33),
 (118, 'SA-2026-002', 'Jason', 'Larkin', 'Wong', 'wong@gmail.com', '$2y$10$TWT37ldw/9w1nEBDLtVgvOS/6gEEM1IJSbthCB/9vHmaeJ7FYuGbC', 'Super Admin', 'Active', '2026-02-06 07:16:34', '2026-02-07 07:33:29', NULL, 600.00, NULL),
 (119, 'SA-2026-003', 'Lee Aldrich', '', 'Rimando', 'rimando@gmail.com', '$2y$10$BeFRm.XDlPuyZJHLC4Qhw.WZuxW8biClIxAAILz9PEzVaO9gEo92G', 'Super Admin', 'Active', '2026-02-06 07:17:12', '2026-02-07 07:33:18', NULL, 600.00, NULL),
 (135, 'ADMIN-2026-0003', 'Admin', '', 'Charisse', 'charisse@gmail.com', '9f0c3c0c2aef2cfafc8e5ed4b1fed480', 'ADMIN', 'Active', '2026-02-10 07:55:32', '2026-02-10 08:13:48', NULL, 600.00, 33),
@@ -420,14 +385,6 @@ CREATE TABLE IF NOT EXISTS `employee_notifications` (
   KEY `overtime_request_id` (`overtime_request_id`),
   KEY `cash_advance_id` (`cash_advance_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `employee_notifications`
---
-
-INSERT INTO `employee_notifications` (`id`, `employee_id`, `overtime_request_id`, `notification_type`, `title`, `message`, `is_read`, `created_at`, `read_at`, `cash_advance_id`) VALUES
-(15, 63, NULL, 'cash_advance_pending', 'Cash Advance Submitted', 'Your cash advance request for ₱1.05 has been submitted and is pending approval.', 1, '2026-02-16 03:40:18', '2026-02-16 03:41:03', 14),
-(16, 63, NULL, 'cash_advance_approved', 'Cash Advance Approved', 'Your cash advance request for ₱1.05 has been approved.', 1, '2026-02-16 03:41:22', '2026-02-19 01:32:59', 14);
 
 -- --------------------------------------------------------
 
@@ -580,7 +537,7 @@ CREATE TABLE IF NOT EXISTS `overtime_requests` (
   KEY `idx_status` (`status`),
   KEY `idx_requested_at` (`requested_at`),
   KEY `idx_requested_by_user` (`requested_by_user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -672,105 +629,6 @@ CREATE TABLE IF NOT EXISTS `performance_adjustments` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `purchase_orders`
---
-
-DROP TABLE IF EXISTS `purchase_orders`;
-CREATE TABLE IF NOT EXISTS `purchase_orders` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `po_number` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `purchase_request_id` int NOT NULL,
-  `supplier_id` int NOT NULL,
-  `prepared_by` int NOT NULL,
-  `total_amount` decimal(10,2) DEFAULT '0.00',
-  `po_date` date NOT NULL,
-  `expected_delivery_date` date DEFAULT NULL,
-  `actual_delivery_date` date DEFAULT NULL,
-  `status` enum('Draft','Ordered','Delivered','Cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'Draft',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `po_number` (`po_number`),
-  KEY `purchase_request_id` (`purchase_request_id`),
-  KEY `supplier_id` (`supplier_id`),
-  KEY `prepared_by` (`prepared_by`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchase_order_items`
---
-
-DROP TABLE IF EXISTS `purchase_order_items`;
-CREATE TABLE IF NOT EXISTS `purchase_order_items` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `purchase_order_id` int NOT NULL,
-  `purchase_request_item_id` int NOT NULL,
-  `item_id` int NOT NULL,
-  `quantity` int NOT NULL,
-  `unit_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `purchase_order_id` (`purchase_order_id`),
-  KEY `purchase_request_item_id` (`purchase_request_item_id`),
-  KEY `item_id` (`item_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchase_requests`
---
-
-DROP TABLE IF EXISTS `purchase_requests`;
-CREATE TABLE IF NOT EXISTS `purchase_requests` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `pr_number` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `requested_by` int NOT NULL,
-  `purpose` text COLLATE utf8mb4_unicode_ci,
-  `remarks` text COLLATE utf8mb4_unicode_ci,
-  `status` enum('Pending','Approved','Rejected','For Purchase','Completed','Cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
-  `approved_by` int DEFAULT NULL,
-  `approved_at` timestamp NULL DEFAULT NULL,
-  `rejection_reason` text COLLATE utf8mb4_unicode_ci,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `pr_number` (`pr_number`),
-  KEY `requested_by` (`requested_by`),
-  KEY `approved_by` (`approved_by`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchase_request_items`
---
-
-DROP TABLE IF EXISTS `purchase_request_items`;
-CREATE TABLE IF NOT EXISTS `purchase_request_items` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `purchase_request_id` int NOT NULL,
-  `item_id` int NOT NULL,
-  `quantity` int NOT NULL,
-  `unit_price` decimal(10,2) DEFAULT '0.00',
-  `total_price` decimal(10,2) DEFAULT '0.00',
-  `remarks` text COLLATE utf8mb4_unicode_ci,
-  `status` enum('Pending','For Purchase','Purchased','Received') COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
-  `received_by` int DEFAULT NULL,
-  `received_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `purchase_request_id` (`purchase_request_id`),
-  KEY `item_id` (`item_id`),
-  KEY `received_by` (`received_by`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `rate_limit`
 --
 
@@ -782,59 +640,14 @@ CREATE TABLE IF NOT EXISTS `rate_limit` (
   `timestamp` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_ip_timestamp` (`ip`,`timestamp`)
-) ENGINE=MyISAM AUTO_INCREMENT=142 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=147 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `rate_limit`
 --
 
 INSERT INTO `rate_limit` (`id`, `ip`, `user_id`, `timestamp`) VALUES
-(141, '::1', 0, 1771463165),
-(140, '::1', 0, 1771463150);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `suppliers`
---
-
-DROP TABLE IF EXISTS `suppliers`;
-CREATE TABLE IF NOT EXISTS `suppliers` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `supplier_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `supplier_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `contact_person` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `address` text COLLATE utf8mb4_unicode_ci,
-  `status` enum('Active','Inactive') COLLATE utf8mb4_unicode_ci DEFAULT 'Active',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `supplier_code` (`supplier_code`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `supplier_items`
---
-
-DROP TABLE IF EXISTS `supplier_items`;
-CREATE TABLE IF NOT EXISTS `supplier_items` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `supplier_id` int NOT NULL,
-  `item_id` int NOT NULL,
-  `price` decimal(10,2) DEFAULT NULL,
-  `lead_time_days` int DEFAULT NULL COMMENT 'Estimated delivery time in days',
-  `is_preferred` tinyint(1) DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_supplier_item` (`supplier_id`,`item_id`),
-  KEY `item_id` (`item_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+(146, '::1', 0, 1771916479);
 
 -- --------------------------------------------------------
 
@@ -883,13 +696,6 @@ CREATE TABLE IF NOT EXISTS `weekly_payroll_reports` (
   KEY `idx_status` (`status`),
   KEY `idx_view_type` (`view_type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15941 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `weekly_payroll_reports`
---
-
-INSERT INTO `weekly_payroll_reports` (`id`, `employee_id`, `report_year`, `report_month`, `week_number`, `view_type`, `branch_id`, `days_worked`, `total_hours`, `daily_rate`, `basic_pay`, `ot_hours`, `ot_rate`, `ot_amount`, `performance_allowance`, `gross_pay`, `gross_plus_allowance`, `ca_deduction`, `sss_deduction`, `philhealth_deduction`, `pagibig_deduction`, `sss_loan`, `total_deductions`, `take_home_pay`, `status`, `payment_status`, `created_by`, `finalized_by`, `finalized_at`, `created_at`, `updated_at`) VALUES
-(15940, 12, 2026, 2, 3, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, '', 'Paid', 0, NULL, NULL, '2026-02-18 05:25:22', '2026-02-18 05:25:22');
 
 -- --------------------------------------------------------
 

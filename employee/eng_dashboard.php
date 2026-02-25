@@ -9,9 +9,9 @@ session_start();
 require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 
-// Check if user is Engineer
+// Check if user is Engineer or Admin
 $userRole = isset($_SESSION['position']) ? $_SESSION['position'] : '';
-if ($userRole !== 'Engineer') {
+if (!in_array($userRole, ['Engineer', 'Admin'])) {
     header('Location: select_employee.php');
     exit();
 }
@@ -255,11 +255,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_overtime'])) 
         $notificationTitle = 'Overtime Request Submitted';
         $notificationMessage = "Your overtime request for {$requestedHours} hours on {$requestDate} at {$branchName} has been submitted and is pending approval.";
         $notifQuery = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) 
-                       VALUES (?, ?, 'overtime_approved', ?, ?, 0, NOW())";
+                       VALUES (?, ?, 'overtime_submitted', ?, ?, 0, NOW())";
         $notifStmt = mysqli_prepare($db, $notifQuery);
         mysqli_stmt_bind_param($notifStmt, 'iiss', $employeeId, $overtimeRequestId, $notificationTitle, $notificationMessage);
         mysqli_stmt_execute($notifStmt);
         mysqli_stmt_close($notifStmt);
+        
+        // Create notification for all Admin users
+        $adminNotifTitle = "New Overtime Request";
+        $adminNotifMessage = "{$currentUserName} requested {$requestedHours} hours overtime for {$branchName} on {$requestDate}. Reason: {$overtimeReason}";
+        $adminNotifType = 'overtime_request';
+        
+        // Get all Admin users
+        $adminSql = "SELECT id FROM employees WHERE position = 'Admin' AND status = 'Active'";
+        $adminResult = mysqli_query($db, $adminSql);
+        if ($adminResult) {
+            while ($adminRow = mysqli_fetch_assoc($adminResult)) {
+                $adminId = $adminRow['id'];
+                $adminNotifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $adminNotifStmt = mysqli_prepare($db, $adminNotifInsertSql);
+                if ($adminNotifStmt) {
+                    mysqli_stmt_bind_param($adminNotifStmt, 'iisss', $adminId, $overtimeRequestId, $adminNotifType, $adminNotifTitle, $adminNotifMessage);
+                    mysqli_stmt_execute($adminNotifStmt);
+                    mysqli_stmt_close($adminNotifStmt);
+                }
+            }
+        }
         
         echo json_encode(['success' => true, 'id' => $overtimeRequestId, 'message' => 'Overtime request submitted successfully']);
         logActivity($db, 'Overtime Requested', "Engineer requested {$requestedHours} hours overtime on {$requestDate} at {$branchName}");

@@ -318,6 +318,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     statusClass = 'approved';
                     statusText = 'APPROVED';
                     metaInfo = `${formatDate(notif.request_date)} • ${notif.requested_hours} hrs`;
+                } else if (notif.type === 'overtime_submitted') {
+                    isPending = true;
+                    statusIcon = 'fa-clock';
+                    statusClass = 'pending';
+                    statusText = 'PENDING';
+                    metaInfo = `${formatDate(notif.request_date)} • ${notif.requested_hours} hrs`;
                 } else if (notif.type === 'overtime_rejected') {
                     statusIcon = 'fa-times-circle';
                     statusClass = 'rejected';

@@ -1,0 +1,19 @@
+# Only allow POST/GET for API endpoints
+<LimitExcept POST GET>
+    Require all denied
+</LimitExcept>
+
+# CORS headers for mobile API access
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "POST, GET, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "\.(php)$">
+    Require all granted
+</FilesMatch>

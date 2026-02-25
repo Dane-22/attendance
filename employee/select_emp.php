@@ -2515,8 +2515,8 @@ function applyAutoAbsent($db, $date) {
 
     // ===== BRANCH MANAGEMENT FUNCTIONS (INTEGRATED) =====
     
-    // DEBUG: Force admin access
-    const isAdminUser = true; // Force true for debugging
+    // Check if user is Admin or Super Admin based on PHP session
+    const isAdminUser = <?php echo (in_array($position, ['Admin', 'Super Admin'])) ? 'true' : 'false'; ?>;
     
     if (isAdminUser && document.getElementById('addBranchBtn')) {
         console.log('DEBUG: Add Branch button found, attaching click handler');

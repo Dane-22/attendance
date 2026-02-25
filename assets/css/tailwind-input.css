@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom JAJR styles */
+@layer components {
+  .btn-primary {
+    @apply bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded;
+  }
+  
+  .card-dark {
+    @apply bg-gray-900 border border-gray-800 rounded-lg;
+  }
+}

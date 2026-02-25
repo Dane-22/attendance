@@ -1,0 +1,53 @@
+# === SECURITY HEADERS ===
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Prevent MIME-type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Permissions Policy (formerly Feature Policy)
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# === DIRECTORY PROTECTION ===
+Options -Indexes
+ServerSignature Off
+
+# === PROTECT SENSITIVE FILES (Apache 2.4+ syntax) ===
+<FilesMatch "^(\.env|\.git|\.htaccess|\.htpasswd)$">
+    Require all denied
+</FilesMatch>
+
+# === PROTECT CONFIGURATION FILES ===
+<FilesMatch "(db_connection\.php|config\.php|functions\.php)$">
+    Require all denied
+</FilesMatch>
+
+# === PROTECT LOG FILES ===
+<FilesMatch "\.(log|sql|bak|backup)$">
+    Require all denied
+</FilesMatch>
+
+# === URL REWRITING (Optional - for pretty URLs) ===
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Force HTTPS (uncomment when SSL is available)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+    
+    # Block common exploits
+    RewriteCond %{REQUEST_METHOD} ^(HEAD|TRACE|DELETE|TRACK|DEBUG) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+    
+    # Block suspicious user agents
+    RewriteCond %{HTTP_USER_AGENT} (libwww-perl|wget|python|nikto|curl|scan|java|winhttp|clshttp|loader) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>

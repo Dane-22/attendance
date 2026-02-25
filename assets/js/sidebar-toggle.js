@@ -52,3 +52,4 @@
   window.addEventListener('resize', handleResize);
   handleResize();
 })();
+})();

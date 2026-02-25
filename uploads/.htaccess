@@ -1,0 +1,16 @@
+# Disable PHP execution in uploads folder
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Require all denied
+</FilesMatch>
+
+# Disable script execution
+Options -ExecCGI
+AddHandler cgi-script .php .pl .py .jsp .asp .sh .cgi
+
+# Protect uploaded files - only allow common image/document types
+<FilesMatch "\.(jpg|jpeg|png|gif|pdf|doc|docx|xls|xlsx)$">
+    Require all granted
+</FilesMatch>
+
+# Disable directory listing
+Options -Indexes

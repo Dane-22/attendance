@@ -1,0 +1,7 @@
+# Protect documentation files
+<FilesMatch "\.(md|txt|sql)$">
+    Require all denied
+</FilesMatch>
+
+# Disable directory listing
+Options -Indexes

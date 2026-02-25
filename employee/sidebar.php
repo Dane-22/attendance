@@ -8,6 +8,7 @@ $userRole = isset($_SESSION['position']) ? $_SESSION['position'] : 'Employee';
 
 // Check if user is Admin or Super Admin
 $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
+$isSuperAdmin = ($userRole === 'Super Admin');
 
 // Get pending count for badge (function defined in notification.php if included)
 $pendingOvertimeCount = 0;
@@ -69,7 +70,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Dashboard -->
-  <?php if ($isAdmin): ?>
+  <?php if ($isSuperAdmin): ?>
     <a href="dashboard.php" class="menu-item <?= $current === 'dashboard.php' ? 'active' : '' ?>" data-target="dashboard.php"><span class="icon">🏠</span><span class="label">Dashboard</span></a>
 
   <?php endif; ?>
@@ -78,10 +79,21 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <a href="select_employee.php" class="menu-item <?= $current === 'select_employee.php' ? 'active' : '' ?>" data-target="select_employee.php"><span class="icon">📋</span><span class="label">Site Attendance</span></a>
 
   <!-- Super Admin Only: Overtime Request Management -->
-  <?php if ($isAdmin): ?>
+<?php if ($isSuperAdmin): ?>
     <a href="notification.php" class="menu-item <?= $current === 'notification.php' ? 'active' : '' ?>" data-target="notification.php">
       <span class="icon">🔔</span>
       <span class="label">Notification</span>
+      <?php if ($pendingOvertimeCount > 0): ?>
+        <span class="notification-badge"><?php echo $pendingOvertimeCount; ?></span>
+      <?php endif; ?>
+    </a>
+<?php endif; ?>
+
+  <!-- Admin Only: View Notifications (read-only) -->
+  <?php if ($userRole === 'Admin'): ?>
+    <a href="admin_notification.php" class="menu-item <?= $current === 'admin_notification.php' ? 'active' : '' ?>" data-target="admin_notification.php">
+      <span class="icon">🔔</span>
+      <span class="label">Notifications</span>
       <?php if ($pendingOvertimeCount > 0): ?>
         <span class="notification-badge"><?php echo $pendingOvertimeCount; ?></span>
       <?php endif; ?>
@@ -102,22 +114,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <!-- All Users: Employee List -->
   <a href="employees.php" class="menu-item <?= $current === 'employees.php' ? 'active' : '' ?>" data-target="employees.php"><span class="icon">👥</span><span class="label">Employee List</span></a>
 
-  <!-- Admin/Super Admin Only: Reports -->
-  <?php if ($isAdmin): ?>
-    <a href="weekly_report.php" class="menu-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php"><span class="icon">📅</span><span class="label">Payroll</span></a>
-
-  <?php endif; ?>
-
-  <?php if ($isAdmin): ?>
-   <a href="cash_advance.php" class="menu-item <?= $current === 'cash_advance.php' ? 'active' : '' ?>" data-target="cash_advance.php"><span class="icon">💵</span><span class="label">Cash Advance</span></a>
-
-  <?php endif; ?>
-
-  <!-- Admin/Super Admin Only: Billing -->
-  <?php if ($isAdmin): ?>
-    <a href="billing.php" class="menu-item <?= $current === 'billing.php' ? 'active' : '' ?>" data-target="billing.php"><span class="icon">💰</span><span class="label">Billing</span></a>
-
-  <?php endif; ?>
+ 
 
   <!-- Admin/Super Admin Only: Documents -->
   <?php if ($isAdmin): ?>
@@ -129,6 +126,23 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <?php if ($isAdmin): ?>
     <a href="logs.php" class="menu-item <?= $current === 'logs.php' ? 'active' : '' ?>" data-target="logs.php"><span class="icon">🗂️</span><span class="label">Activity Logs</span></a>
 
+  <?php endif; ?>
+
+  <!-- Admin/Super Admin Only: Finance Dropdown -->
+  <?php if ($isAdmin): ?>
+    <div class="menu-dropdown">
+      <button class="menu-item dropdown-toggle <?= in_array($current, ['weekly_report.php', 'overtime.php', 'billing.php', 'cash_advance.php']) ? 'active' : '' ?>" onclick="toggleDropdown(this)">
+        <span class="icon">💰</span>
+        <span class="label">Finance</span>
+        <span class="dropdown-arrow">▼</span>
+      </button>
+      <div class="dropdown-menu <?= in_array($current, ['weekly_report.php', 'overtime.php', 'billing.php', 'cash_advance.php']) ? 'show' : '' ?>">
+        <a href="weekly_report.php" class="dropdown-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php">Weekly Report</a>
+        <a href="overtime.php" class="dropdown-item <?= $current === 'overtime.php' ? 'active' : '' ?>" data-target="overtime.php">Overtime</a>
+        <a href="billing.php" class="dropdown-item <?= $current === 'billing.php' ? 'active' : '' ?>" data-target="billing.php">Billing</a>
+        <a href="cash_advance.php" class="dropdown-item <?= $current === 'cash_advance.php' ? 'active' : '' ?>" data-target="cash_advance.php">Cash Advance</a>
+      </div>
+    </div>
   <?php endif; ?>
 
   <!-- Admin/Super Admin/Engineer Only: Procurement (External Link) -->
@@ -146,5 +160,68 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <a href="../logout.php" class="menu-item logout"><span class="icon">🚪</span><span class="label">Log Out</span></a>
 
   </aside>
+
+  <!-- Dropdown Styles -->
+  <style>
+    .menu-dropdown {
+      position: relative;
+    }
+    .dropdown-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dropdown-arrow {
+      margin-left: auto;
+      font-size: 10px;
+      transition: transform 0.2s ease;
+    }
+    .dropdown-toggle.active .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+    .dropdown-menu {
+      display: none;
+      background: rgba(0,0,0,0.1);
+      padding: 5px 0;
+    }
+    .dropdown-menu.show {
+      display: block;
+    }
+    .dropdown-item {
+      display: block;
+      padding: 10px 15px 10px 45px;
+      color: var(--text-primary, #E5E7EB);
+      text-decoration: none;
+      font-size: 15px;
+      border-left: 3px solid transparent;
+    }
+    .dropdown-toggle .label {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .dropdown-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .dropdown-item.active {
+      background: rgba(255,255,255,0.15);
+      border-left-color: var(--gold-2, #FFD700);
+      color: var(--gold-2, #FFD700);
+    }
+  </style>
+
+  <!-- Dropdown Toggle Script -->
+  <script>
+    function toggleDropdown(button) {
+      const dropdown = button.nextElementSibling;
+      const arrow = button.querySelector('.dropdown-arrow');
+      dropdown.classList.toggle('show');
+      arrow.style.transform = dropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+  </script>
+
   <script src="../assets/js/main.js"></script>
 

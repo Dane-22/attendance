@@ -16,14 +16,14 @@
 
 * { box-sizing: border-box; }
 
-html, body {
+/* html, body {
     height: 100%;
     margin: 0;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background: var(--bg-page);
     color: var(--soft-white);
     -webkit-font-smoothing: antialiased;
-}
+} */
 
 /* App Shell for Sidebar */
 .app-shell {

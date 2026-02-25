@@ -2719,7 +2719,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         mysqli_stmt_close($insertStmt);
 
-
+        // Create notification for all Admin users
+        $notifTitle = "New Overtime Request";
+        $notifMessage = "{$employeeName} requested {$totalOtHrs} hours overtime for {$branch}. Reason: {$overtimeReason}";
+        $notifType = 'overtime_request';
+        
+        // Get all Admin users
+        $adminSql = "SELECT id FROM employees WHERE position = 'Admin' AND status = 'Active'";
+        $adminResult = mysqli_query($db, $adminSql);
+        if ($adminResult) {
+            while ($adminRow = mysqli_fetch_assoc($adminResult)) {
+                $adminId = $adminRow['id'];
+                $notifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $notifStmt = mysqli_prepare($db, $notifInsertSql);
+                if ($notifStmt) {
+                    mysqli_stmt_bind_param($notifStmt, 'iisss', $adminId, $requestId, $notifType, $notifTitle, $notifMessage);
+                    mysqli_stmt_execute($notifStmt);
+                    mysqli_stmt_close($notifStmt);
+                }
+            }
+        }
 
         echo json_encode([
 

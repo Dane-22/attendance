@@ -1,0 +1,13 @@
+{
+  "name": "jajr-attendance",
+  "version": "1.0.0",
+  "description": "JAJR Attendance System - Tailwind CSS Build",
+  "scripts": {
+    "build-css": "npx tailwindcss -i ./assets/css/tailwind-input.css -o ./assets/css/tailwind.css --minify",
+    "watch-css": "npx tailwindcss -i ./assets/css/tailwind-input.css -o ./assets/css/tailwind.css --watch",
+    "dev": "npm run watch-css"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}
