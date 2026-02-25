@@ -122,8 +122,8 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
 
   <?php endif; ?>
 
-  <!-- Admin/Super Admin Only: Activity Logs -->
-  <?php if ($isAdmin): ?>
+  <!-- Super Admin Only: Activity Logs -->
+  <?php if ($isSuperAdmin): ?>
     <a href="logs.php" class="menu-item <?= $current === 'logs.php' ? 'active' : '' ?>" data-target="logs.php"><span class="icon">🗂️</span><span class="label">Activity Logs</span></a>
 
   <?php endif; ?>
@@ -166,7 +166,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
     .menu-dropdown {
       position: relative;
     }
-    .dropdown-toggle {
+    .menu-dropdown .dropdown-toggle {
       width: 100%;
       background: none;
       border: none;
@@ -174,42 +174,65 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
       display: flex;
       align-items: center;
       gap: 10px;
+      text-align: left;
+      padding: 0.6rem 0.75rem;
     }
-    .dropdown-arrow {
+    .menu-dropdown .dropdown-toggle::after {
+      display: none !important;
+    }
+    .menu-dropdown .dropdown-arrow {
       margin-left: auto;
       font-size: 10px;
       transition: transform 0.2s ease;
     }
-    .dropdown-toggle.active .dropdown-arrow {
+    .menu-dropdown .dropdown-toggle.active .dropdown-arrow {
       transform: rotate(180deg);
     }
-    .dropdown-menu {
+    .menu-dropdown .dropdown-menu {
       display: none;
       background: rgba(0,0,0,0.1);
       padding: 5px 0;
+      position: static;
+      float: none;
+      min-width: auto;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
     }
-    .dropdown-menu.show {
+    .menu-dropdown .dropdown-menu.show {
       display: block;
     }
-    .dropdown-item {
+    .menu-dropdown .dropdown-item {
       display: block;
       padding: 10px 15px 10px 45px;
       color: var(--text-primary, #E5E7EB);
       text-decoration: none;
       font-size: 15px;
       border-left: 3px solid transparent;
+      background: transparent;
+      clear: both;
+      font-weight: normal;
+      line-height: 1.5;
+      white-space: nowrap;
     }
-    .dropdown-toggle .label {
+    .menu-dropdown .dropdown-toggle .label {
       font-size: 16px;
       font-weight: 600;
     }
-    .dropdown-item:hover {
+    .menu-dropdown .dropdown-item:hover {
       background: rgba(255,255,255,0.1);
+      color: var(--text-primary, #E5E7EB);
     }
-    .dropdown-item.active {
+    .menu-dropdown .dropdown-item.active {
       background: rgba(255,255,255,0.15);
       border-left-color: var(--gold-2, #FFD700);
       color: var(--gold-2, #FFD700);
+    }
+    /* Override Bootstrap dropdown styles */
+    .menu-dropdown .dropdown-menu[data-bs-popper] {
+      left: auto;
+      margin-top: 0;
     }
   </style>
 

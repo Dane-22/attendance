@@ -382,7 +382,7 @@ foreach ($employeeList as $emp) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cash Advance - JAJR Company</title>
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="css/select_employee.css">
@@ -1286,6 +1286,21 @@ foreach ($employeeList as $emp) {
             .data-table tbody tr {
                 padding: 12px;
             }
+        }
+
+        /* Full width layout - same as billing.php */
+        .main-content:has(.cash-advance-container) {
+            margin-left: 260px !important;
+            padding: 1rem 0 !important;
+            width: calc(100vw - 260px) !important;
+            max-width: calc(100vw - 260px) !important;
+        }
+        
+        .cash-advance-container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            padding: 15px;
         }
     </style>
 </head>

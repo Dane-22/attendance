@@ -16,34 +16,8 @@
 
 * { box-sizing: border-box; }
 
-/* html, body {
-    height: 100%;
-    margin: 0;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--bg-page);
-    color: var(--soft-white);
-    -webkit-font-smoothing: antialiased;
-} */
-
-/* App Shell for Sidebar */
-.app-shell {
-    display: flex;
-    min-height: 100vh;
-}
-
-.main-content {
-    flex: 1;
-    padding: 10px;
-    background: var(--bg-page);
-    overflow-x: hidden;
-    max-width: 100%;
-}
-
-/* Desktop: sidebar fixed */
-@media (min-width: 1024px) {
-    .main-content {
-        margin-left: 260px;
-    }
+html, body {
+    font-family: 'Inter', sans-serif;
 }
 
 /* Billing Container */
@@ -52,6 +26,14 @@
     width: 100%;
     margin: 0 auto;
     padding: 15px;
+}
+
+/* Make billing content span full width next to sidebar */
+.main-content:has(.billing-container) {
+    margin-left: 260px !important;
+    padding: 1rem 0 !important;
+    width: calc(100vw - 260px) !important;
+    max-width: calc(100vw - 260px) !important;
 }
 
 /* Header */
@@ -225,7 +207,7 @@
 
 /* Amount Styling */
 .amount {
-    font-family: 'SF Mono', 'Monaco', monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-weight: 500;
     color: var(--soft-white);
 }
@@ -323,7 +305,6 @@ tfoot .total-row td {
 /* Print Styles */
 @media print {
     .filter-section,
-    .app-shell .sidebar,
     .print-modal-header,
     .print-modal-footer,
     .no-data-cell {
@@ -583,7 +564,7 @@ tfoot .total-row td {
 
 .amount-right {
     text-align: right;
-    font-family: 'Courier New', monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .payment-table .total-row {

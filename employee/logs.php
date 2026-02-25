@@ -85,6 +85,7 @@ $total_pages = ceil($total_records / $per_page);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activity Logs - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="css/light-theme.css">
@@ -99,7 +100,7 @@ $total_pages = ceil($total_records / $per_page);
         body {
             background: linear-gradient(135deg, var(--black) 0%, #1a1a1a 100%);
             color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             min-height: 100vh;
         }
 
@@ -509,14 +510,17 @@ $total_pages = ceil($total_records / $per_page);
                     </div>
                 </form>
                 
-                <!-- Export Button (if needed) -->
-                <!--
-                <div class="flex justify-end">
-                    <button class="export-btn">
-                        <i class="fas fa-download"></i> Export Logs
-                    </button>
+                <!-- Export Buttons -->
+                <div class="flex flex-wrap gap-3 justify-end mb-4">
+                    <a href="api/export_logs_excel.php?search_user=<?php echo urlencode($search_user); ?>&search_action=<?php echo urlencode($search_action); ?>" 
+                       class="export-btn" target="_blank">
+                        <i class="fas fa-file-excel"></i> Export Excel (100/page)
+                    </a>
+                    <a href="api/export_logs_analytics_pdf.php?search_user=<?php echo urlencode($search_user); ?>&search_action=<?php echo urlencode($search_action); ?>" 
+                       class="btn-primary" style="background: linear-gradient(90deg, #EF4444, #DC2626);" target="_blank">
+                        <i class="fas fa-file-pdf"></i> View Analytics
+                    </a>
                 </div>
-                -->
             </div>
 
             <!-- Results Info -->
