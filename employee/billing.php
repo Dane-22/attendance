@@ -22,26 +22,23 @@ switch ($filter) {
     case 'site_salary':
         $filterTitle = 'Site Salary (Total Salary per Branch)';
         $sql = "SELECT 
-                    COALESCE(a.branch_name, 'Unassigned') as branch_name,
-                    COUNT(DISTINCT e.id) as employee_count,
-                    SUM(pr.basic_pay) as total_basic_pay,
-                    SUM(pr.ot_amount) as total_ot_pay,
-                    SUM(pr.gross_pay) as total_gross_pay,
-                    SUM(pr.total_deductions) as total_deductions,
-                    SUM(pr.take_home_pay) as total_net_pay
-                FROM employees e
-                LEFT JOIN (
-                    SELECT DISTINCT employee_id, branch_name
-                    FROM attendance
-                    WHERE attendance_date BETWEEN ? AND ?
-                ) a ON e.id = a.employee_id
-                LEFT JOIN daily_payroll_reports pr ON e.id = pr.employee_id 
-                    AND pr.report_date BETWEEN ? AND ?
-                WHERE COALESCE(a.branch_name, '') != 'Main Branch'
-                GROUP BY a.branch_name
-                ORDER BY a.branch_name";
+                    COALESCE(b.branch_name, 'Unassigned') as branch_name,
+                    COUNT(DISTINCT wpr.employee_id) as employee_count,
+                    SUM(wpr.basic_pay) as total_basic_pay,
+                    SUM(wpr.ot_amount) as total_ot_pay,
+                    SUM(wpr.gross_pay) as total_gross_pay,
+                    SUM(wpr.total_deductions) as total_deductions,
+                    SUM(wpr.take_home_pay) as total_net_pay
+                FROM weekly_payroll_reports wpr
+                LEFT JOIN employees e ON wpr.employee_id = e.id
+                LEFT JOIN branches b ON e.branch_id = b.id
+                WHERE wpr.report_year = YEAR(?)
+                  AND wpr.report_month = MONTH(?)
+                  AND COALESCE(b.branch_name, '') != 'Main Branch'
+                GROUP BY b.branch_name
+                ORDER BY b.branch_name";
         $stmt = $db->prepare($sql);
-        $stmt->bind_param("ssss", $startDate, $endDate, $startDate, $endDate);
+        $stmt->bind_param("ss", $startDate, $startDate);
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         break;
@@ -49,26 +46,23 @@ switch ($filter) {
     case 'office_salary':
         $filterTitle = 'Office Salary (Main Branch Total)';
         $sql = "SELECT 
-                    COALESCE(a.branch_name, 'Unassigned') as branch_name,
-                    COUNT(DISTINCT e.id) as employee_count,
-                    SUM(pr.basic_pay) as total_basic_pay,
-                    SUM(pr.ot_amount) as total_ot_pay,
-                    SUM(pr.gross_pay) as total_gross_pay,
-                    SUM(pr.total_deductions) as total_deductions,
-                    SUM(pr.take_home_pay) as total_net_pay
-                FROM employees e
-                LEFT JOIN (
-                    SELECT DISTINCT employee_id, branch_name
-                    FROM attendance
-                    WHERE attendance_date BETWEEN ? AND ?
-                ) a ON e.id = a.employee_id
-                LEFT JOIN daily_payroll_reports pr ON e.id = pr.employee_id 
-                    AND pr.report_date BETWEEN ? AND ?
-                WHERE COALESCE(a.branch_name, '') = 'Main Branch'
-                GROUP BY a.branch_name
-                ORDER BY a.branch_name";
+                    COALESCE(b.branch_name, 'Unassigned') as branch_name,
+                    COUNT(DISTINCT wpr.employee_id) as employee_count,
+                    SUM(wpr.basic_pay) as total_basic_pay,
+                    SUM(wpr.ot_amount) as total_ot_pay,
+                    SUM(wpr.gross_pay) as total_gross_pay,
+                    SUM(wpr.total_deductions) as total_deductions,
+                    SUM(wpr.take_home_pay) as total_net_pay
+                FROM weekly_payroll_reports wpr
+                LEFT JOIN employees e ON wpr.employee_id = e.id
+                LEFT JOIN branches b ON e.branch_id = b.id
+                WHERE wpr.report_year = YEAR(?)
+                  AND wpr.report_month = MONTH(?)
+                  AND COALESCE(b.branch_name, '') = 'Main Branch'
+                GROUP BY b.branch_name
+                ORDER BY b.branch_name";
         $stmt = $db->prepare($sql);
-        $stmt->bind_param("ssss", $startDate, $endDate, $startDate, $endDate);
+        $stmt->bind_param("ss", $startDate, $startDate);
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         break;
@@ -112,36 +106,36 @@ switch ($filter) {
         $filterTitle = 'Employer Share Contribution (SSS, PhilHealth, Pag-IBIG)';
         $sql = "SELECT 
                     'SSS' as contribution_type,
-                    SUM(pr.sss_deduction) as total_employee_share,
-                    SUM(pr.sss_deduction) * 0.0733 as estimated_employer_share,
-                    SUM(pr.sss_deduction) * 1.0733 as total_contribution,
-                    COUNT(DISTINCT pr.employee_id) as employee_count
-                FROM daily_payroll_reports pr
-                WHERE pr.report_date BETWEEN ? AND ? AND pr.sss_deduction > 0
+                    SUM(wpr.sss_deduction) as total_employee_share,
+                    SUM(wpr.sss_deduction) * 0.0733 as estimated_employer_share,
+                    SUM(wpr.sss_deduction) * 1.0733 as total_contribution,
+                    COUNT(DISTINCT wpr.employee_id) as employee_count
+                FROM weekly_payroll_reports wpr
+                WHERE wpr.report_year = YEAR(?) AND wpr.report_month = MONTH(?) AND wpr.sss_deduction > 0
                 
                 UNION ALL
                 
                 SELECT 
                     'PhilHealth' as contribution_type,
-                    SUM(pr.philhealth_deduction) as total_employee_share,
-                    SUM(pr.philhealth_deduction) as estimated_employer_share,
-                    SUM(pr.philhealth_deduction) * 2 as total_contribution,
-                    COUNT(DISTINCT pr.employee_id) as employee_count
-                FROM daily_payroll_reports pr
-                WHERE pr.report_date BETWEEN ? AND ? AND pr.philhealth_deduction > 0
+                    SUM(wpr.philhealth_deduction) as total_employee_share,
+                    SUM(wpr.philhealth_deduction) as estimated_employer_share,
+                    SUM(wpr.philhealth_deduction) * 2 as total_contribution,
+                    COUNT(DISTINCT wpr.employee_id) as employee_count
+                FROM weekly_payroll_reports wpr
+                WHERE wpr.report_year = YEAR(?) AND wpr.report_month = MONTH(?) AND wpr.philhealth_deduction > 0
                 
                 UNION ALL
                 
                 SELECT 
                     'Pag-IBIG' as contribution_type,
-                    SUM(pr.pagibig_deduction) as total_employee_share,
-                    SUM(pr.pagibig_deduction) as estimated_employer_share,
-                    SUM(pr.pagibig_deduction) * 2 as total_contribution,
-                    COUNT(DISTINCT pr.employee_id) as employee_count
-                FROM daily_payroll_reports pr
-                WHERE pr.report_date BETWEEN ? AND ? AND pr.pagibig_deduction > 0";
+                    SUM(wpr.pagibig_deduction) as total_employee_share,
+                    SUM(wpr.pagibig_deduction) as estimated_employer_share,
+                    SUM(wpr.pagibig_deduction) * 2 as total_contribution,
+                    COUNT(DISTINCT wpr.employee_id) as employee_count
+                FROM weekly_payroll_reports wpr
+                WHERE wpr.report_year = YEAR(?) AND wpr.report_month = MONTH(?) AND wpr.pagibig_deduction > 0";
         $stmt = $db->prepare($sql);
-        $stmt->bind_param("ssssss", $startDate, $endDate, $startDate, $endDate, $startDate, $endDate);
+        $stmt->bind_param("ssssss", $startDate, $startDate, $startDate, $startDate, $startDate, $startDate);
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         break;
