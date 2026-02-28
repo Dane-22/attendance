@@ -128,6 +128,12 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
 
   <?php endif; ?>
 
+  <!-- Admin/Super Admin Only: Attendance Audit -->
+  <?php if ($isAdmin): ?>
+    <a href="audit.php" class="menu-item <?= $current === 'audit.php' ? 'active' : '' ?>" data-target="audit.php"><span class="icon">📊</span><span class="label">Attendance Audit</span></a>
+
+  <?php endif; ?>
+
   <!-- Admin/Super Admin Only: Finance Dropdown -->
   <?php if ($isAdmin): ?>
     <div class="menu-dropdown">
@@ -218,7 +224,6 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
     }
     .menu-dropdown .dropdown-toggle .label {
       font-size: 16px;
-      font-weight: 600;
     }
     .menu-dropdown .dropdown-item:hover {
       background: rgba(255,255,255,0.1);

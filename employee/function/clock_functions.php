@@ -6,6 +6,35 @@
 // which is loaded before this file in select_employee.php
 
 /**
+ * Get approved overtime hours for an employee on a specific date
+ * Returns float value of approved overtime hours, or 0 if none found
+ */
+function getApprovedOvertimeHours($db, $employeeId, $date = null) {
+    if ($date === null) {
+        $date = date('Y-m-d');
+    }
+    
+    $sql = "SELECT COALESCE(SUM(requested_hours), 0) as total_hours 
+            FROM overtime_requests 
+            WHERE employee_id = ? 
+            AND request_date = ? 
+            AND status = 'approved'";
+    
+    $stmt = mysqli_prepare($db, $sql);
+    if (!$stmt) {
+        return 0;
+    }
+    
+    mysqli_stmt_bind_param($stmt, 'is', $employeeId, $date);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    return floatval($row['total_hours'] ?? 0);
+}
+
+/**
  * Perform clock-in for an employee
  * Returns array with success, message, time_in, etc.
  */
@@ -210,26 +239,30 @@ function performClockIn($db, $employeeId, $employeeCode, $branchName = null) {
     $hasTotalOtHrsCol = attendanceHasTotalOtHrsColumn($db);
     $hasStatusCol = attendanceHasStatusColumn($db);
 
+    // Check for approved overtime hours before inserting
+    $approvedOtHours = $hasTotalOtHrsCol ? getApprovedOvertimeHours($db, $employeeId) : 0;
+    $approvedOtHoursStr = strval($approvedOtHours);
+
     if ($branchName !== null && $branchName !== '') {
         if ($hasRunningCol) {
             if ($hasOvertimeRunningCol) {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, 0)";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 1, 0)";
                 }
             } else {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_time_running) VALUES (?, ?, CURDATE(), NOW(), 'Present', 1)";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 1, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_time_running) VALUES (?, ?, CURDATE(), NOW(), 1)";
                 }
             }
@@ -237,21 +270,21 @@ function performClockIn($db, $employeeId, $employeeCode, $branchName = null) {
             if ($hasOvertimeRunningCol) {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 'Present', 0)";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_overtime_running, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, is_overtime_running) VALUES (?, ?, CURDATE(), NOW(), 0)";
                 }
             } else {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 'Present', {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status) VALUES (?, ?, CURDATE(), NOW(), 'Present')";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), 0)"
+                        ? "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, total_ot_hrs) VALUES (?, ?, CURDATE(), NOW(), {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in) VALUES (?, ?, CURDATE(), NOW())";
                 }
             }
@@ -266,21 +299,21 @@ function performClockIn($db, $employeeId, $employeeCode, $branchName = null) {
             if ($hasOvertimeRunningCol) {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, status, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 1, 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, status, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 1, 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in, status, is_time_running, is_overtime_running) VALUES (?, NOW(), 'Present', 1, 0)";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 1, 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, is_time_running, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 1, 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in, is_time_running, is_overtime_running) VALUES (?, NOW(), 1, 0)";
                 }
             } else {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, status, is_time_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 1, 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, status, is_time_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 1, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in, status, is_time_running) VALUES (?, NOW(), 'Present', 1)";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, is_time_running, total_ot_hrs) VALUES (?, NOW(), 1, 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, is_time_running, total_ot_hrs) VALUES (?, NOW(), 1, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in, is_time_running) VALUES (?, NOW(), 1)";
                 }
             }
@@ -288,21 +321,21 @@ function performClockIn($db, $employeeId, $employeeCode, $branchName = null) {
             if ($hasOvertimeRunningCol) {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, status, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, status, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 'Present', 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in, status, is_overtime_running) VALUES (?, NOW(), 'Present', 0)";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 0, 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, is_overtime_running, total_ot_hrs) VALUES (?, NOW(), 0, {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in, is_overtime_running) VALUES (?, NOW(), 0)";
                 }
             } else {
                 if ($hasStatusCol) {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, status, total_ot_hrs) VALUES (?, NOW(), 'Present', 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, status, total_ot_hrs) VALUES (?, NOW(), 'Present', {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in, status) VALUES (?, NOW(), 'Present')";
                 } else {
                     $sql = $hasTotalOtHrsCol
-                        ? "INSERT INTO attendance (employee_id, time_in, total_ot_hrs) VALUES (?, NOW(), 0)"
+                        ? "INSERT INTO attendance (employee_id, time_in, total_ot_hrs) VALUES (?, NOW(), {$approvedOtHoursStr})"
                         : "INSERT INTO attendance (employee_id, time_in) VALUES (?, NOW())";
                 }
             }

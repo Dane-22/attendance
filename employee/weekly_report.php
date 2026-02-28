@@ -204,6 +204,9 @@ include __DIR__ . '/function/report.php';
                                 <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
                                     Employee
                                 </th>
+                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600 bg-blue-900/20" rowspan="2">
+                                    Date
+                                </th>
                                 <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" colspan="2">
                                     Days Worked
                                 </th>
@@ -269,10 +272,13 @@ include __DIR__ . '/function/report.php';
                                         <?php echo htmlspecialchars(strtoupper($payroll['employee']['last_name'] . ', ' . $payroll['employee']['first_name'])); ?>
                                     </div>
                                 </td>
-                                <td class="px-2 py-2 text-center text-sm text-white">
-                                    <?php echo $payroll['days_worked']; ?>
+                                <td class="px-2 py-2 text-center text-gray-400">
+                                    <?php echo $date_range_label; ?>
                                 </td>
                                 <td class="px-2 py-2 text-center text-sm text-gray-400">
+                                    <?php echo $payroll['days_worked']; ?>
+                                </td>
+                                <td class="px-2 py-2 text-center text-sm text-white">
                                     <?php echo number_format($payroll['total_hours'], 0); ?>
                                 </td>
                                 <td class="px-2 py-2 text-right text-sm text-gray-300">
@@ -370,6 +376,7 @@ include __DIR__ . '/function/report.php';
                             ?>
                             <tr class="bg-gray-800 font-bold border-t-2 border-yellow-500" id="totalRow">
                                 <td class="px-3 py-3 text-white">TOTAL</td>
+                                <td class="px-2 py-3 text-center text-gray-400">-</td>
                                 <td class="px-2 py-3 text-center text-white" id="totalDays"><?php echo $payroll_totals['total_days']; ?></td>
                                 <td class="px-2 py-3 text-center text-gray-400" id="totalHours"><?php echo number_format($payroll_totals['total_hours'], 0); ?></td>
                                 <td class="px-2 py-3 text-right text-gray-400">-</td>

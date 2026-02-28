@@ -2,9 +2,9 @@
 
 require_once __DIR__ . '/../../conn/db_connection.php';
 
-$employeeName = $_SESSION['first_name'] . ' ' . $_SESSION['last_name'];
+$employeeName = ($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '');
 
-$employeeCode = $_SESSION['employee_code'];
+$employeeCode = $_SESSION['employee_code'] ?? '';
 
 $position = $_SESSION['position'] ?? 'Employee';
 

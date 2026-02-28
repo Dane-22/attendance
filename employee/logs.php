@@ -4,6 +4,59 @@ require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 session_start();
 
+// ===== RATE LIMITER CONFIGURATION =====
+$rateLimitEnabled = true;
+$rateLimitWindow = 60; // 60 seconds window
+$rateLimitMaxRequests = 30; // Max 30 requests per window
+
+function checkRateLimit() {
+    global $rateLimitEnabled, $rateLimitWindow, $rateLimitMaxRequests;
+    
+    if (!$rateLimitEnabled) return true;
+    
+    $currentTime = time();
+    $userId = $_SESSION['employee_id'] ?? $_SESSION['user_id'] ?? 'anonymous';
+    $rateLimitKey = "logs_ratelimit_$userId";
+    
+    if (!isset($_SESSION[$rateLimitKey])) {
+        $_SESSION[$rateLimitKey] = [
+            'count' => 1,
+            'window_start' => $currentTime
+        ];
+        return true;
+    }
+    
+    $rateData = $_SESSION[$rateLimitKey];
+    
+    // Reset if window has passed
+    if ($currentTime - $rateData['window_start'] > $rateLimitWindow) {
+        $_SESSION[$rateLimitKey] = [
+            'count' => 1,
+            'window_start' => $currentTime
+        ];
+        return true;
+    }
+    
+    // Check if limit exceeded
+    if ($rateData['count'] >= $rateLimitMaxRequests) {
+        return false;
+    }
+    
+    // Increment count
+    $_SESSION[$rateLimitKey]['count']++;
+    return true;
+}
+
+// Check rate limit before processing
+if (!checkRateLimit()) {
+    http_response_code(429);
+    die('<div style="padding: 20px; text-align: center; font-family: Arial;">
+        <h2>Rate Limit Exceeded</h2>
+        <p>Too many requests. Please wait a minute before refreshing.</p>
+        <a href="logs.php" style="color: #FFA500;">Try again</a>
+    </div>');
+}
+
 // Check if user is logged in and is admin/super admin
 if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin'])) {
     header('Location: ../login.php');

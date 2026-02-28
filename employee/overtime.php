@@ -147,7 +147,7 @@ uasort($employee_overtime, function($a, $b) {
     <link rel="icon" type="image/x-icon" href="../assets/img/profile/jajr-logo.png">
     <style>
         .ot-card {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: transparent;
             border: 1px solid rgba(255, 215, 0, 0.2);
         }
         .ot-header {
@@ -162,6 +162,25 @@ uasort($employee_overtime, function($a, $b) {
         .summary-card {
             background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
             border-left: 4px solid #FFD700;
+        }
+        /* Transparent table backgrounds */
+        #overtimeTable {
+            background: transparent;
+        }
+        #overtimeTable thead tr {
+            background: rgba(31, 41, 55, 0.5) !important;
+        }
+        #overtimeTable tbody tr {
+            background: transparent;
+        }
+        #overtimeTable tbody tr.employee-row {
+            background: transparent;
+        }
+        #overtimeTable tbody tr.bg-gray-800\/50 {
+            background: rgba(31, 41, 55, 0.3) !important;
+        }
+        #overtimeTable tfoot tr {
+            background: rgba(202, 138, 4, 0.5) !important;
         }
     </style>
 </head>
@@ -431,27 +450,88 @@ uasort($employee_overtime, function($a, $b) {
             const table = document.getElementById('overtimeTable');
             if (!table) return;
             
-            let csv = [];
+            // Create HTML table with enhanced styling for Excel
+            let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            html += '<head><meta charset="utf-8"><style>';
+            // Header styling - dark background with white bold text
+            html += 'th { font-weight: bold; background-color: #1f2937; color: #ffffff; font-size: 11pt; border: 1px solid #4b5563; padding: 8px; text-align: center; }';
+            // Data cell styling
+            html += 'td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 10pt; }';
+            // Alternating row colors
+            html += 'tr:nth-child(even) { background-color: #f3f4f6; }';
+            html += 'tr:nth-child(odd) { background-color: #ffffff; }';
+            // Employee name styling
+            html += 'td.employee-name { font-weight: 600; color: #111827; }';
+            // OT Hours badge styling
+            html += 'td.ot-hours { background-color: #fee2e2; color: #dc2626; font-weight: bold; text-align: center; }';
+            // OT Amount styling
+            html += 'td.ot-amount { color: #059669; font-weight: 600; text-align: right; }';
+            // Employee total row styling
+            html += 'tr.employee-total { background-color: #fef3c7 !important; font-weight: 600; }';
+            html += 'tr.employee-total td { border-top: 2px solid #f59e0b; color: #92400e; }';
+            // Grand total row styling
+            html += 'tr.grand-total { background-color: #10b981 !important; font-weight: bold; }';
+            html += 'tr.grand-total td { color: #ffffff; border: 1px solid #059669; font-size: 11pt; }';
+            html += 'tr.grand-total td.ot-hours { background-color: #10b981 !important; color: #ffffff; }';
+            html += 'tr.grand-total td.ot-amount { color: #ffffff; }';
+            // Table styling
+            html += 'table { border-collapse: collapse; width: 100%; font-family: Calibri, Arial, sans-serif; }';
+            // Center alignment for date, time, branch
+            html += 'td.text-center { text-align: center; }';
+            html += 'td.text-right { text-align: right; }';
+            html += '</style></head><body><table>';
+            
             const rows = table.querySelectorAll('tr');
+            let rowIndex = 0;
             
             rows.forEach(row => {
                 if (row.style.display === 'none') return;
                 
+                html += '<tr>';
                 let cols = row.querySelectorAll('td, th');
-                let rowData = [];
+                const isHeader = row.parentElement.tagName.toLowerCase() === 'thead';
+                const isTfoot = row.parentElement.tagName.toLowerCase() === 'tfoot';
+                const rowClass = row.className || '';
                 
-                cols.forEach(col => {
-                    rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
+                // Reconstruct row with proper classes
+                let rowHtml = '<tr';
+                if (isTfoot) rowHtml = '<tr class="grand-total"';
+                else if (rowClass.includes('bg-gray-800/50')) rowHtml = '<tr class="employee-total"';
+                else rowHtml = '<tr';
+                rowHtml += '>';
+                html = html.replace(/<tr>$/, rowHtml);
+                
+                cols.forEach((col, index) => {
+                    const tag = isHeader ? 'th' : 'td';
+                    let cellClass = '';
+                    let content = col.innerText.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    
+                    // Add classes based on column type
+                    if (!isHeader) {
+                        if (index === 0) {
+                            cellClass = ' class="employee-name"';
+                        } else if (index === 5) {
+                            cellClass = ' class="ot-hours text-center"';
+                        } else if (index === 6) {
+                            cellClass = ' class="ot-amount text-right"';
+                        } else if (index === 1 || index === 2 || index === 3 || index === 4) {
+                            cellClass = ' class="text-center"';
+                        }
+                    }
+                    
+                    html += '<' + tag + cellClass + '>' + content + '</' + tag + '>';
                 });
                 
-                csv.push(rowData.join(','));
+                html += '</tr>';
+                rowIndex++;
             });
             
-            const csvContent = '\uFEFF' + csv.join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            html += '</table></body></html>';
+            
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'Overtime_Report_<?php echo $selected_month; ?>_Week<?php echo $selected_week; ?>.csv';
+            link.download = 'Overtime_Report_<?php echo $selected_month; ?>_Week<?php echo $selected_week; ?>.xls';
             link.click();
         }
     </script>
