@@ -18,7 +18,14 @@ $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 // Trigger weekly aggregation when Generate Report is clicked
 if (isset($_GET['generate_report']) && $_GET['generate_report'] === '1') {
     $cronPath = __DIR__ . '/cron/weekly_aggregate_non_branch33.php';
-    $phpPath = 'c:\wamp64\bin\php\php8.2.29\php.exe';
+    
+    // Detect OS and use appropriate PHP path
+    if (PHP_OS_FAMILY === 'Windows') {
+        $phpPath = 'C:\wamp64\bin\php\php8.2.29\php.exe';
+    } else {
+        // Linux - use system PHP
+        $phpPath = 'php';
+    }
     
     // Run the aggregation script
     $output = [];
