@@ -15,6 +15,27 @@ $filter = isset($_GET['filter']) ? $_GET['filter'] : 'site_salary';
 $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 
+// Trigger weekly aggregation when Generate Report is clicked
+if (isset($_GET['generate_report']) && $_GET['generate_report'] === '1') {
+    $cronPath = __DIR__ . '/cron/weekly_aggregate_non_branch33.php';
+    $phpPath = 'c:\wamp64\bin\php\php8.2.29\php.exe';
+    
+    // Run the aggregation script
+    $output = [];
+    $returnCode = 0;
+    exec("$phpPath $cronPath 2>&1", $output, $returnCode);
+    
+    // Store result in session to display message
+    $_SESSION['aggregation_result'] = [
+        'success' => $returnCode === 0,
+        'output' => implode("\n", $output)
+    ];
+    
+    // Redirect to remove the generate parameter from URL
+    header("Location: billing.php?filter=$filter&start_date=$startDate&end_date=$endDate&aggregated=1");
+    exit;
+}
+
 $data = [];
 $filterTitle = '';
 
@@ -200,12 +221,23 @@ function formatCurrency($amount) {
                     <input type="date" name="end_date" id="end_date" value="<?php echo $endDate; ?>">
                 </div>
 
-                <button type="submit" class="filter-btn">Generate Report</button>
+                <button type="submit" name="generate_report" value="1" class="filter-btn">Generate Report</button>
                 <button type="button" class="filter-btn print-btn" onclick="openPrintPreview()">
                     <i class="fas fa-print"></i> Print Preview
                 </button>
             </form>
         </div>
+
+        <?php if (isset($_SESSION['aggregation_result'])): ?>
+            <div class="alert <?php echo $_SESSION['aggregation_result']['success'] ? 'alert-success' : 'alert-danger'; ?>">
+                <strong><?php echo $_SESSION['aggregation_result']['success'] ? 'Success!' : 'Error:'; ?></strong>
+                Weekly payroll aggregation completed.
+                <?php if (!$_SESSION['aggregation_result']['success']): ?>
+                    <pre><?php echo htmlspecialchars($_SESSION['aggregation_result']['output']); ?></pre>
+                <?php endif; ?>
+            </div>
+            <?php unset($_SESSION['aggregation_result']); ?>
+        <?php endif; ?>
 
         <div class="report-section">
             <h2><?php echo $filterTitle; ?></h2>
