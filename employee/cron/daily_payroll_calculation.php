@@ -50,9 +50,9 @@ if ($week_number > 4) $week_number = 4;
 $log_message("Processing date: $yesterday (Year=$year, Month=$month, Day=$day, Week=$week_number)");
 
 // Load all active employees
-$emp_query = "SELECT e.id, e.daily_rate, e.position, e.branch AS emp_branch, b.branch_name, e.fname, e.lname 
+$emp_query = "SELECT e.id, e.daily_rate, e.position, e.branch_id AS emp_branch, b.branch_name, e.first_name, e.last_name 
               FROM employees e 
-              LEFT JOIN branches b ON e.branch = b.id 
+              LEFT JOIN branches b ON e.branch_id = b.id 
               WHERE e.status = 'Active'
               ORDER BY e.id";
 $emp_result = mysqli_query($db, $emp_query);
@@ -84,11 +84,11 @@ while ($row = mysqli_fetch_assoc($emp_result)) {
 $log_message("Loaded " . count($employees) . " active employees");
 
 // Load attendance for yesterday only
-$attendance_query = "SELECT emp_id, date, status, branch_name, time_in, time_out, total_ot_hrs 
+$attendance_query = "SELECT employee_id, attendance_date as date, status, branch_name, time_in, time_out, total_ot_hrs 
                      FROM attendance 
-                     WHERE date = '$yesterday'
+                     WHERE attendance_date = '$yesterday'
                      AND status != 'Absent'
-                     ORDER BY emp_id";
+                     ORDER BY employee_id";
 $attendance_result = mysqli_query($db, $attendance_query);
 
 if (!$attendance_result) {
@@ -101,7 +101,7 @@ $log_message("Loaded $attendance_count attendance records for $yesterday");
 
 // Process attendance
 while ($row = mysqli_fetch_assoc($attendance_result)) {
-    $emp_id = $row['emp_id'];
+    $emp_id = $row['employee_id'];
     if (!isset($employees[$emp_id])) continue;
     
     $attendance_date = $row['date'];
@@ -212,7 +212,7 @@ foreach ($employees as $emp_id => $payroll) {
     if (empty($payroll['_branches'])) continue;
     
     $daily_rate = $payroll['daily_rate'];
-    $employee_name = $payroll['employee']['fname'] . ' ' . $payroll['employee']['lname'];
+    $employee_name = $payroll['employee']['first_name'] . ' ' . $payroll['employee']['last_name'];
     
     foreach ($payroll['_branches'] as $branch_name => $branch_data) {
         // Get branch_id
@@ -323,17 +323,18 @@ foreach ($employees as $emp_id => $payroll) {
                 ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
                 take_home_pay, status, created_by
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )";
             
+            $status = 'Pending';
             $stmt = mysqli_prepare($db, $query);
-            mysqli_stmt_bind_param($stmt, 'isiiiiddddddddddddddddddi', 
+            mysqli_stmt_bind_param($stmt, 'isiiiiidddddddddddddddddsi', 
                 $emp_id, $yesterday, $year, $month, $day, $week_number, $branch_id,
                 $days_worked, $total_hours, $daily_rate, $gross_pay,
                 $ot_hours, $ot_rate, $ot_amount,
                 $allowance, $gross_pay, $gross_plus_allowance,
                 $ca_deduction, $sss_deduction, $philhealth_deduction, $pagibig_deduction, $sss_loan, $total_deductions,
-                $take_home_pay, $default_user_id
+                $take_home_pay, $status, $default_user_id
             );
         }
         

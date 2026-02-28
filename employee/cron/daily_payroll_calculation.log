@@ -1,0 +1,61 @@
+[2026-02-28 09:53:12] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:53:12] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:54:04] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:54:04] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:54:04] Loaded 77 active employees
+[2026-02-28 09:54:13] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:54:13] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:54:13] Loaded 77 active employees
+[2026-02-28 09:54:24] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:54:24] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:54:24] Loaded 77 active employees
+[2026-02-28 09:55:46] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:55:46] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:55:46] Loaded 77 active employees
+[2026-02-28 09:55:46] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 09:55:46] Processed 0 employees with attendance for 2026-02-27
+[2026-02-28 09:55:46] Total daily records saved: 0
+[2026-02-28 09:55:46] === Daily Payroll Calculation Complete ===
+
+[2026-02-28 09:56:27] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:56:27] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:56:27] Loaded 77 active employees
+[2026-02-28 09:56:27] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 09:56:27] Processed 4 employees with attendance for 2026-02-27
+[2026-02-28 09:57:26] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:57:26] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:57:26] Loaded 77 active employees
+[2026-02-28 09:57:26] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 09:57:26] Processed 4 employees with attendance for 2026-02-27
+[2026-02-28 09:58:15] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:58:15] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:58:15] Loaded 77 active employees
+[2026-02-28 09:58:15] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 09:58:15] Processed 4 employees with attendance for 2026-02-27
+[2026-02-28 09:59:11] === Starting Daily Payroll Calculation ===
+[2026-02-28 09:59:11] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 09:59:11] Loaded 77 active employees
+[2026-02-28 09:59:11] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 09:59:11] Processed 4 employees with attendance for 2026-02-27
+[2026-02-28 10:00:03] === Starting Daily Payroll Calculation ===
+[2026-02-28 10:00:03] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 10:00:03] Loaded 77 active employees
+[2026-02-28 10:00:03] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 10:00:03] Processed 4 employees with attendance for 2026-02-27
+[2026-02-28 10:00:32] === Starting Daily Payroll Calculation ===
+[2026-02-28 10:00:32] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 10:00:32] Loaded 77 active employees
+[2026-02-28 10:00:32] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 10:00:32] Processed 4 employees with attendance for 2026-02-27
+[2026-02-28 10:01:31] === Starting Daily Payroll Calculation ===
+[2026-02-28 10:01:31] Processing date: 2026-02-27 (Year=2026, Month=2, Day=27, Week=4)
+[2026-02-28 10:01:31] Loaded 77 active employees
+[2026-02-28 10:01:31] Loaded 4 attendance records for 2026-02-27
+[2026-02-28 10:01:31] Processed 4 employees with attendance for 2026-02-27
+[2026-02-28 10:01:31] Saved: Employee #24 (KELVIN CALDERON) - BCDA - Admin - Day: 2026-02-27 - Net: 500
+[2026-02-28 10:01:31] Saved: Employee #26 (MELVIN CAMPOS) - BCDA - Admin - Day: 2026-02-27 - Net: 600
+[2026-02-28 10:01:31] Saved: Employee #27 (JERWIN CAMPOS) - BCDA - Admin - Day: 2026-02-27 - Net: 550
+[2026-02-28 10:01:31] Saved: Employee #36 (JOSE IGLECIAS) - BCDA - Admin - Day: 2026-02-27 - Net: 500
+[2026-02-28 10:01:31] Total daily records saved: 4
+[2026-02-28 10:01:31] === Daily Payroll Calculation Complete ===
+
