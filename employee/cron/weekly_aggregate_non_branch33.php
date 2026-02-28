@@ -14,11 +14,6 @@
 
 date_default_timezone_set('Asia/Manila');
 
-if (php_sapi_name() !== 'cli') {
-    http_response_code(403);
-    die("This script can only be run from command line.\n");
-}
-
 require_once __DIR__ . '/../../conn/db_connection.php';
 
 $log_file = __DIR__ . '/weekly_aggregate_non_branch33.log';

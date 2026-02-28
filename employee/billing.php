@@ -17,25 +17,23 @@ $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 
 // Trigger weekly aggregation when Generate Report is clicked
 if (isset($_GET['generate_report']) && $_GET['generate_report'] === '1') {
-    $cronPath = __DIR__ . '/cron/weekly_aggregate_non_branch33.php';
+    // Use HTTP request instead of CLI to ensure proper PHP environment with MySQLi
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $cronUrl = "$protocol://$host/employee/cron/weekly_aggregate_non_branch33.php";
     
-    // Detect OS and use appropriate PHP path
-    if (PHP_OS_FAMILY === 'Windows') {
-        $phpPath = 'C:\wamp64\bin\php\php8.2.29\php.exe';
-    } else {
-        // Linux - use system PHP
-        $phpPath = 'php';
-    }
-    
-    // Run the aggregation script
-    $output = [];
-    $returnCode = 0;
-    exec("$phpPath $cronPath 2>&1", $output, $returnCode);
+    // Run via HTTP GET request
+    $ch = curl_init($cronUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
     
     // Store result in session to display message
     $_SESSION['aggregation_result'] = [
-        'success' => $returnCode === 0,
-        'output' => implode("\n", $output)
+        'success' => $httpCode === 200,
+        'output' => $response ?: "HTTP Error: $httpCode"
     ];
     
     // Redirect to remove the generate parameter from URL
