@@ -152,6 +152,16 @@ while ($row = mysqli_fetch_assoc($result)) {
 
 mysqli_stmt_close($stmt);
 
+// Output summary for HTTP response
+$summary = [
+    'date_range' => "$start_date to $end_date",
+    'records_aggregated' => $total_records,
+    'week_number' => $week_number,
+    'month' => $month,
+    'year' => $year
+];
+echo json_encode($summary);
+
 $log_message("Total weekly records aggregated: $total_records");
 $log_message("=== Weekly Aggregation (Non-Branch 33) Complete ===\n");
 
