@@ -51,8 +51,8 @@ $log_message("Week $week_number (Branch 33): $start_date to $end_date");
 // Aggregate daily records for employees IN branch 33
 $aggregate_query = "SELECT 
     dpr.employee_id,
-    e.fname,
-    e.lname,
+    e.first_name,
+    e.last_name,
     dpr.branch_id,
     b.branch_name,
     SUM(dpr.days_worked) as total_days,
@@ -91,7 +91,7 @@ $view_type = 'weekly';
 while ($row = mysqli_fetch_assoc($result)) {
     $emp_id = $row['employee_id'];
     $branch_id = $row['branch_id'];
-    $employee_name = $row['fname'] . ' ' . $row['lname'];
+    $employee_name = $row['first_name'] . ' ' . $row['last_name'];
     
     // Check if weekly record exists to preserve payment_status
     $check_query = "SELECT payment_status FROM weekly_payroll_reports 
