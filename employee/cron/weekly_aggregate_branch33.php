@@ -1,12 +1,12 @@
 <?php
 /**
  * Weekly Payroll Aggregation Script (Branch 33 Only)
- * Run this script every Saturday midnight to aggregate daily payroll for employees IN branch 33
+ * Run this script every Saturday 9:00 AM to aggregate daily payroll for employees IN branch 33
  * 
  * Windows Task Scheduler Setup:
  * 1. Create Basic Task
  * 2. Name: "Weekly Payroll Aggregation - Branch 33"
- * 3. Trigger: Weekly on Saturday at 12:00:00 AM
+ * 3. Trigger: Weekly on Saturday at 9:00:00 AM
  * 4. Action: Start a program
  * 5. Program: C:\wamp64\bin\php\php8.x.x\php.exe
  * 6. Arguments: c:\wamp64\www\main\employee\cron\weekly_aggregate_branch33.php
