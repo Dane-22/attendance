@@ -114,7 +114,7 @@ while ($row = mysqli_fetch_assoc($result)) {
         ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
         take_home_pay, status, payment_status, created_by
     ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     ) ON DUPLICATE KEY UPDATE
         days_worked = VALUES(days_worked),
         total_hours = VALUES(total_hours),
@@ -136,13 +136,14 @@ while ($row = mysqli_fetch_assoc($result)) {
         updated_at = CURRENT_TIMESTAMP";
     
     $insert_stmt = mysqli_prepare($db, $query);
+    $status = 'Pending';
     mysqli_stmt_bind_param($insert_stmt, 'iiiisiddddddddddddddddsdsi', 
         $emp_id, $year, $month, $week_number, $view_type, $branch_id,
         $row['total_days'], $row['total_hours'], $row['daily_rate'], $row['basic_pay'],
         $row['total_ot_hours'], $row['ot_rate'], $row['total_ot_amount'],
         $row['total_allowance'], $row['total_gross_pay'], $row['total_gross_plus_allowance'],
         $row['total_ca_deduction'], $row['total_sss'], $row['total_philhealth'], $row['total_pagibig'], $row['total_sss_loan'], $row['total_deductions'],
-        $row['total_take_home'], $payment_status, $default_user_id
+        $row['total_take_home'], $status, $payment_status, $default_user_id
     );
     
     if (mysqli_stmt_execute($insert_stmt)) {
