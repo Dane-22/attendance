@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Feb 24, 2026 at 07:06 AM
+-- Generation Time: Feb 28, 2026 at 12:53 AM
 -- Server version: 8.4.7
 -- PHP Version: 8.3.28
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_action` (`action`),
   KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=615 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=711 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `activity_logs`
@@ -50,7 +50,103 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (611, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-23 03:09:16'),
 (612, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 06:24:00'),
 (613, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 06:34:37'),
-(614, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 06:42:43');
+(614, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 06:42:43'),
+(615, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-24 07:13:55'),
+(616, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 07:16:50'),
+(617, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #10 for 5.00 hours on 2026-02-24', '::1', '2026-02-24 07:18:32'),
+(618, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-24 07:18:46'),
+(619, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 08:43:59'),
+(620, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-24 08:44:16'),
+(621, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-24 08:54:50'),
+(622, 68, 'Clocked In', 'Employee #24 clocked in at BCDA - Admin', '::1', '2026-02-24 08:54:58'),
+(623, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 08:55:12'),
+(624, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #11 for 4.00 hours on 2026-02-24', '::1', '2026-02-24 08:55:17'),
+(625, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-24 08:55:26'),
+(626, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-24 08:58:40'),
+(627, 68, 'Clocked Out', 'Employee #24 clocked out, worked 0.07 hours', '::1', '2026-02-24 08:58:52'),
+(628, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 08:59:04'),
+(629, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #12 for 45.00 hours on 2026-02-24', '::1', '2026-02-24 08:59:07'),
+(630, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-24 08:59:24'),
+(631, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-24 23:49:05'),
+(632, 68, 'Clocked In', 'Employee #24 clocked in at BCDA - Admin', '::1', '2026-02-24 23:49:14'),
+(633, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-24 23:49:32'),
+(634, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #13 for 2.00 hours on 2026-02-25', '::1', '2026-02-24 23:49:43'),
+(635, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-24 23:49:52'),
+(636, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-24 23:57:08'),
+(637, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-25 00:02:47'),
+(638, 68, 'Clocked In', 'Employee #27 clocked in at BCDA - Admin', '::1', '2026-02-25 00:03:07'),
+(639, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-25 00:03:27'),
+(640, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #14 for 2.00 hours on 2026-02-25', '::1', '2026-02-25 00:03:31'),
+(641, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #13 for 2.00 hours on 2026-02-25', '::1', '2026-02-25 00:03:33'),
+(642, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #12 for 45.00 hours on 2026-02-24', '::1', '2026-02-25 00:03:34'),
+(643, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #11 for 4.00 hours on 2026-02-24', '::1', '2026-02-25 00:03:35'),
+(644, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #10 for 5.00 hours on 2026-02-24', '::1', '2026-02-25 00:03:35'),
+(645, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-25 00:03:54'),
+(646, 6, 'Overtime Approved', 'Super Admin approved overtime #14 for 2.00 hours on 2026-02-25', '::1', '2026-02-25 00:10:11'),
+(647, 6, 'Overtime Approved', 'Super Admin approved overtime #13 for 2.00 hours on 2026-02-25', '::1', '2026-02-25 00:10:14'),
+(648, 6, 'Overtime Approved', 'Super Admin approved overtime #12 for 45.00 hours on 2026-02-24', '::1', '2026-02-25 00:10:15'),
+(649, 6, 'Overtime Approved', 'Super Admin approved overtime #11 for 4.00 hours on 2026-02-24', '::1', '2026-02-25 00:10:15'),
+(650, 6, 'Overtime Approved', 'Super Admin approved overtime #10 for 5.00 hours on 2026-02-24', '::1', '2026-02-25 00:10:15'),
+(651, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-25 00:10:25'),
+(652, 68, 'Notification Marked Read', 'User marked notification #71 as read', '::1', '2026-02-25 00:10:29'),
+(653, 68, 'Notification Marked Read', 'User marked notification #66 as read', '::1', '2026-02-25 00:10:32'),
+(654, 68, 'Notification Marked Read', 'User marked notification #61 as read', '::1', '2026-02-25 00:10:33'),
+(655, 68, 'Notification Marked Read', 'User marked notification #82 as read', '::1', '2026-02-25 00:10:35'),
+(656, 68, 'Notification Marked Read', 'User marked notification #86 as read', '::1', '2026-02-25 00:10:36'),
+(657, 68, 'Notification Marked Read', 'User marked notification #83 as read', '::1', '2026-02-25 00:10:37'),
+(658, 68, 'Notification Marked Read', 'User marked notification #85 as read', '::1', '2026-02-25 00:10:38'),
+(659, 68, 'Notification Marked Read', 'User marked notification #84 as read', '::1', '2026-02-25 00:10:38'),
+(660, 68, 'Notification Marked Read', 'User marked notification #76 as read', '::1', '2026-02-25 00:10:39'),
+(661, 68, 'Notification Marked Read', 'User marked notification #25 as read', '::1', '2026-02-25 00:10:41'),
+(662, 68, 'Notification Marked Read', 'User marked notification #34 as read', '::1', '2026-02-25 00:10:42'),
+(663, 68, 'Notification Marked Read', 'User marked notification #43 as read', '::1', '2026-02-25 00:10:43'),
+(664, 68, 'Notification Marked Read', 'User marked notification #52 as read', '::1', '2026-02-25 00:10:44'),
+(665, 68, 'Notification Marked Read', 'User marked notification #81 as read', '::1', '2026-02-25 00:10:45'),
+(666, 68, 'Overtime Requested', 'Engineer requested 1 hours overtime on 2026-02-26 at BCDA - Admin', '::1', '2026-02-25 00:10:55'),
+(667, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-25 00:20:17'),
+(668, 68, 'Notification Marked Read', 'User marked notification #87 as read', '::1', '2026-02-25 00:20:21'),
+(669, 68, 'Overtime Requested', 'Engineer requested 1 hours overtime on 2026-02-26 at BCDA - CCTV', '::1', '2026-02-25 00:20:31'),
+(670, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-02-25 00:20:51'),
+(671, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #16 for 1.00 hours on 2026-02-26', '::1', '2026-02-25 00:21:05'),
+(672, 117, 'Overtime Pre-Approved', 'Admin Admin pre-approved overtime #15 for 1.00 hours on 2026-02-26', '::1', '2026-02-25 00:21:07'),
+(673, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-25 00:21:23'),
+(674, 6, 'Overtime Rejected', 'Super Admin rejected overtime #16. Reason: dehrst', '::1', '2026-02-25 00:21:33'),
+(675, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-02-25 00:22:05'),
+(676, 68, 'Notification Marked Read', 'User marked notification #107 as read', '::1', '2026-02-25 00:22:08'),
+(677, 68, 'Notification Marked Read', 'User marked notification #106 as read', '::1', '2026-02-25 00:22:09'),
+(678, 68, 'Notification Deleted', 'User deleted notification #107', '::1', '2026-02-25 00:22:11'),
+(679, 68, 'Notification Deleted', 'User deleted notification #106', '::1', '2026-02-25 00:22:12'),
+(680, 68, 'Notification Deleted', 'User deleted notification #101', '::1', '2026-02-25 00:22:12'),
+(681, 68, 'Notification Deleted', 'User deleted notification #92', '::1', '2026-02-25 00:22:12'),
+(682, 68, 'Notification Deleted', 'User deleted notification #87', '::1', '2026-02-25 00:22:13'),
+(683, 68, 'Notification Deleted', 'User deleted notification #84', '::1', '2026-02-25 00:22:13'),
+(684, 68, 'Notification Deleted', 'User deleted notification #85', '::1', '2026-02-25 00:22:14'),
+(685, 68, 'Notification Deleted', 'User deleted notification #86', '::1', '2026-02-25 00:22:14'),
+(686, 68, 'Notification Deleted', 'User deleted notification #83', '::1', '2026-02-25 00:22:14'),
+(687, 68, 'Notification Deleted', 'User deleted notification #82', '::1', '2026-02-25 00:22:15'),
+(688, 68, 'Notification Deleted', 'User deleted notification #76', '::1', '2026-02-25 00:22:15'),
+(689, 68, 'Notification Deleted', 'User deleted notification #81', '::1', '2026-02-25 00:22:15'),
+(690, 68, 'Notification Deleted', 'User deleted notification #71', '::1', '2026-02-25 00:22:16'),
+(691, 68, 'Notification Deleted', 'User deleted notification #66', '::1', '2026-02-25 00:22:16'),
+(692, 68, 'Notification Deleted', 'User deleted notification #61', '::1', '2026-02-25 00:22:16'),
+(693, 68, 'Notification Deleted', 'User deleted notification #52', '::1', '2026-02-25 00:22:17'),
+(694, 68, 'Notification Deleted', 'User deleted notification #43', '::1', '2026-02-25 00:22:17'),
+(695, 68, 'Notification Deleted', 'User deleted notification #34', '::1', '2026-02-25 00:22:18'),
+(696, 68, 'Notification Deleted', 'User deleted notification #25', '::1', '2026-02-25 00:22:18'),
+(697, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-25 01:28:42'),
+(698, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-25 05:58:43'),
+(699, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-25 07:23:20'),
+(700, 6, 'Clocked Out', 'Employee #24 clocked out, worked 7.68 hours', '::1', '2026-02-25 07:29:48'),
+(701, 6, 'Clocked Out', 'Employee #27 clocked out, worked 7.45 hours', '::1', '2026-02-25 07:29:49'),
+(702, 6, 'Overtime Approved', 'Super Admin approved overtime #17 for 5.00 hours on 2026-02-25', '::1', '2026-02-25 08:50:01'),
+(703, 6, 'Overtime Approved', 'Super Admin approved overtime #15 for 1.00 hours on 2026-02-26', '::1', '2026-02-25 08:50:04'),
+(704, 6, 'Overtime Approved', 'Super Admin approved overtime #18 for 5.00 hours on 2026-02-25', '::1', '2026-02-25 08:50:44'),
+(705, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-26 00:06:00'),
+(706, 6, 'Clocked In', 'Employee #24 clocked in at BCDA - Admin', '::1', '2026-02-27 04:47:40'),
+(707, 6, 'Clocked In', 'Employee #27 clocked in at BCDA - Admin', '::1', '2026-02-27 04:47:41'),
+(708, 6, 'Clocked In', 'Employee #26 clocked in at BCDA - Admin', '::1', '2026-02-27 04:47:42'),
+(709, 6, 'Clocked In', 'Employee #36 clocked in at BCDA - Admin', '::1', '2026-02-27 04:47:42'),
+(710, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-28 00:46:55');
 
 -- --------------------------------------------------------
 
@@ -77,15 +173,29 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `total_ot_hrs` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_attendance_employee_date` (`employee_id`,`attendance_date`)
-) ENGINE=MyISAM AUTO_INCREMENT=1077 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=1091 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `attendance`
 --
 
 INSERT INTO `attendance` (`id`, `employee_id`, `status`, `branch_name`, `attendance_date`, `time_in`, `time_out`, `created_at`, `updated_at`, `is_auto_absent`, `auto_absent_applied`, `absent_notes`, `is_overtime_running`, `is_time_running`, `total_ot_hrs`) VALUES
+(1090, 6, 'Present', 'Main Branch', '2026-02-28', NULL, NULL, '2026-02-28 00:46:55', NULL, 0, 0, NULL, 0, 0, '0'),
+(1089, 36, 'Present', 'BCDA - Admin', '2026-02-27', '2026-02-27 12:47:42', NULL, '2026-02-27 04:47:42', NULL, 0, 0, NULL, 0, 1, '0'),
+(1088, 26, 'Present', 'BCDA - Admin', '2026-02-27', '2026-02-27 12:47:42', NULL, '2026-02-27 04:47:42', NULL, 0, 0, NULL, 0, 1, '0'),
+(1087, 27, 'Present', 'BCDA - Admin', '2026-02-27', '2026-02-27 12:47:41', NULL, '2026-02-27 04:47:41', NULL, 0, 0, NULL, 0, 1, '0'),
+(1086, 24, 'Present', 'BCDA - Admin', '2026-02-27', '2026-02-27 12:47:40', NULL, '2026-02-27 04:47:40', NULL, 0, 0, NULL, 0, 1, '0'),
+(1085, 6, 'Present', 'Main Branch', '2026-02-26', NULL, NULL, '2026-02-26 00:06:00', NULL, 0, 0, NULL, 0, 0, '0'),
+(1084, 27, NULL, 'BCDA - Admin', '2026-02-25', '2026-02-25 08:03:07', '2026-02-25 15:29:49', '2026-02-25 00:03:07', NULL, 0, 0, NULL, 0, 0, '2.00'),
+(1083, 6, 'Present', 'Main Branch', '2026-02-25', NULL, NULL, '2026-02-24 23:49:52', '2026-02-25 07:23:20', 0, 0, NULL, 0, 0, '0'),
+(1082, 117, 'Present', 'Main Branch', '2026-02-25', NULL, NULL, '2026-02-24 23:49:32', '2026-02-25 00:20:51', 0, 0, NULL, 0, 0, '0'),
+(1079, 24, NULL, 'BCDA - Admin', '2026-02-24', '2026-02-24 16:54:58', '2026-02-24 16:58:52', '2026-02-24 08:54:58', NULL, 0, 0, NULL, 0, 0, '0'),
+(1078, 6, 'Present', 'Main Branch', '2026-02-24', NULL, NULL, '2026-02-24 08:44:16', '2026-02-24 08:59:24', 0, 0, NULL, 0, 0, '0'),
+(1080, 68, 'Present', 'Main Branch', '2026-02-25', NULL, NULL, '2026-02-24 23:49:05', '2026-02-25 00:22:05', 0, 0, NULL, 0, 0, '1.00'),
+(1081, 24, NULL, 'BCDA - Admin', '2026-02-25', '2026-02-25 07:49:14', '2026-02-25 15:29:48', '2026-02-24 23:49:14', NULL, 0, 0, NULL, 0, 0, '5.00'),
 (1075, 6, 'Present', 'Main Branch', '2026-02-23', NULL, NULL, '2026-02-23 02:57:42', '2026-02-23 03:09:16', 0, 0, NULL, 0, 0, '0'),
-(1076, 117, 'Present', 'Main Branch', '2026-02-24', NULL, NULL, '2026-02-24 06:24:00', '2026-02-24 06:42:43', 0, 0, NULL, 0, 0, '0');
+(1076, 117, 'Present', 'Main Branch', '2026-02-24', NULL, NULL, '2026-02-24 06:24:00', '2026-02-24 08:59:04', 0, 0, NULL, 0, 0, '0'),
+(1077, 68, 'Present', 'Main Branch', '2026-02-24', NULL, NULL, '2026-02-24 07:13:55', '2026-02-24 08:58:40', 0, 0, NULL, 0, 0, '0');
 
 -- --------------------------------------------------------
 
@@ -384,7 +494,96 @@ CREATE TABLE IF NOT EXISTS `employee_notifications` (
   KEY `idx_created` (`created_at` DESC),
   KEY `overtime_request_id` (`overtime_request_id`),
   KEY `cash_advance_id` (`cash_advance_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=119 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `employee_notifications`
+--
+
+INSERT INTO `employee_notifications` (`id`, `employee_id`, `overtime_request_id`, `notification_type`, `title`, `message`, `is_read`, `created_at`, `read_at`, `cash_advance_id`) VALUES
+(17, 67, 10, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-24 07:16:36', NULL, NULL),
+(18, 117, 10, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-24 07:16:36', NULL, NULL),
+(19, 135, 10, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-24 07:16:36', NULL, NULL),
+(20, 136, 10, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-24 07:16:36', NULL, NULL),
+(21, 6, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 07:18:32', NULL, NULL),
+(22, 120, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 07:18:32', NULL, NULL),
+(23, 118, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 07:18:32', NULL, NULL),
+(24, 119, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 07:18:32', NULL, NULL),
+(26, 67, 11, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 4 hours overtime for BCDA - Admin. Reason: ftyughjmn', 0, '2026-02-24 08:55:04', NULL, NULL),
+(27, 117, 11, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 4 hours overtime for BCDA - Admin. Reason: ftyughjmn', 0, '2026-02-24 08:55:04', NULL, NULL),
+(28, 135, 11, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 4 hours overtime for BCDA - Admin. Reason: ftyughjmn', 0, '2026-02-24 08:55:04', NULL, NULL),
+(29, 136, 11, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 4 hours overtime for BCDA - Admin. Reason: ftyughjmn', 0, '2026-02-24 08:55:04', NULL, NULL),
+(30, 6, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:55:17', NULL, NULL),
+(31, 120, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:55:17', NULL, NULL),
+(32, 118, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:55:17', NULL, NULL),
+(33, 119, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:55:17', NULL, NULL),
+(35, 67, 12, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 45 hours overtime for BCDA - Admin. Reason: yuhvjkm', 0, '2026-02-24 08:58:51', NULL, NULL),
+(36, 117, 12, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 45 hours overtime for BCDA - Admin. Reason: yuhvjkm', 0, '2026-02-24 08:58:51', NULL, NULL),
+(37, 135, 12, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 45 hours overtime for BCDA - Admin. Reason: yuhvjkm', 0, '2026-02-24 08:58:51', NULL, NULL),
+(38, 136, 12, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 45 hours overtime for BCDA - Admin. Reason: yuhvjkm', 0, '2026-02-24 08:58:51', NULL, NULL),
+(39, 6, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:59:07', NULL, NULL),
+(40, 120, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:59:07', NULL, NULL),
+(41, 118, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:59:07', NULL, NULL),
+(42, 119, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-24 08:59:07', NULL, NULL),
+(44, 67, 13, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 2 hours overtime for BCDA - Admin. Reason: adsgf', 0, '2026-02-24 23:49:21', NULL, NULL),
+(45, 117, 13, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 2 hours overtime for BCDA - Admin. Reason: adsgf', 0, '2026-02-24 23:49:21', NULL, NULL),
+(46, 135, 13, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 2 hours overtime for BCDA - Admin. Reason: adsgf', 0, '2026-02-24 23:49:21', NULL, NULL),
+(47, 136, 13, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 2 hours overtime for BCDA - Admin. Reason: adsgf', 0, '2026-02-24 23:49:21', NULL, NULL),
+(48, 6, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-24 23:49:43', NULL, NULL),
+(49, 120, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-24 23:49:43', NULL, NULL),
+(50, 118, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-24 23:49:43', NULL, NULL),
+(51, 119, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-24 23:49:43', NULL, NULL),
+(53, 67, 14, 'overtime_request', 'New Overtime Request', 'JERWIN CAMPOS requested 2 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-25 00:03:17', NULL, NULL),
+(54, 117, 14, 'overtime_request', 'New Overtime Request', 'JERWIN CAMPOS requested 2 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-25 00:03:17', NULL, NULL),
+(55, 135, 14, 'overtime_request', 'New Overtime Request', 'JERWIN CAMPOS requested 2 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-25 00:03:17', NULL, NULL),
+(56, 136, 14, 'overtime_request', 'New Overtime Request', 'JERWIN CAMPOS requested 2 hours overtime for BCDA - Admin. Reason: asdf', 0, '2026-02-25 00:03:17', NULL, NULL),
+(57, 6, 14, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for JERWIN CAMPOS - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:31', NULL, NULL),
+(58, 120, 14, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for JERWIN CAMPOS - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:31', NULL, NULL),
+(59, 118, 14, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for JERWIN CAMPOS - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:31', NULL, NULL),
+(60, 119, 14, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for JERWIN CAMPOS - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:31', NULL, NULL),
+(62, 6, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:33', NULL, NULL),
+(63, 120, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:33', NULL, NULL),
+(64, 118, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:33', NULL, NULL),
+(65, 119, 13, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 2.00 hours on 2026-02-25. Awaiting final approval.', 0, '2026-02-25 00:03:33', NULL, NULL),
+(67, 6, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:34', NULL, NULL),
+(68, 120, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:34', NULL, NULL),
+(69, 118, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:34', NULL, NULL),
+(70, 119, 12, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 45.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:34', NULL, NULL),
+(72, 6, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(73, 120, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(74, 118, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(75, 119, 11, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 4.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(77, 6, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(78, 120, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(79, 118, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(80, 119, 10, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for KELVIN CALDERON - 5.00 hours on 2026-02-24. Awaiting final approval.', 0, '2026-02-25 00:03:35', NULL, NULL),
+(88, 67, 15, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - Admin on 2026-02-26. Reason: ASD', 0, '2026-02-25 00:10:55', NULL, NULL),
+(89, 117, 15, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - Admin on 2026-02-26. Reason: ASD', 0, '2026-02-25 00:10:55', NULL, NULL),
+(90, 135, 15, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - Admin on 2026-02-26. Reason: ASD', 0, '2026-02-25 00:10:55', NULL, NULL),
+(91, 136, 15, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - Admin on 2026-02-26. Reason: ASD', 0, '2026-02-25 00:10:55', NULL, NULL),
+(93, 67, 16, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - CCTV on 2026-02-26. Reason: tygjh', 0, '2026-02-25 00:20:31', NULL, NULL),
+(94, 117, 16, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - CCTV on 2026-02-26. Reason: tygjh', 0, '2026-02-25 00:20:31', NULL, NULL),
+(95, 135, 16, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - CCTV on 2026-02-26. Reason: tygjh', 0, '2026-02-25 00:20:31', NULL, NULL),
+(96, 136, 16, 'overtime_request', 'New Overtime Request', 'MICHELLE F. NORIAL requested 1 hours overtime for BCDA - CCTV on 2026-02-26. Reason: tygjh', 0, '2026-02-25 00:20:31', NULL, NULL),
+(97, 6, 16, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:05', NULL, NULL),
+(98, 120, 16, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:05', NULL, NULL),
+(99, 118, 16, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:05', NULL, NULL),
+(100, 119, 16, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:05', NULL, NULL),
+(102, 6, 15, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:07', NULL, NULL),
+(103, 120, 15, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:07', NULL, NULL),
+(104, 118, 15, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:07', NULL, NULL),
+(105, 119, 15, 'overtime_pre_approved', 'Overtime Pre-Approved by Admin', 'Admin Admin pre-approved overtime request for MICHELLE F. NORIAL - 1.00 hours on 2026-02-26. Awaiting final approval.', 0, '2026-02-25 00:21:07', NULL, NULL),
+(108, 67, 17, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: drthgh', 0, '2026-02-25 08:49:58', NULL, NULL),
+(109, 117, 17, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: drthgh', 0, '2026-02-25 08:49:58', NULL, NULL),
+(110, 135, 17, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: drthgh', 0, '2026-02-25 08:49:58', NULL, NULL),
+(111, 136, 17, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: drthgh', 0, '2026-02-25 08:49:58', NULL, NULL),
+(112, 6, 17, 'overtime_approved', 'Overtime Approved', 'Your overtime request for KELVIN CALDERON on 2026-02-25 has been approved. Hours: 5.00, Project: BCDA - Admin', 0, '2026-02-25 08:50:01', NULL, NULL),
+(113, 68, 15, 'overtime_approved', 'Overtime Approved', 'Your overtime request for MICHELLE F. NORIAL on 2026-02-26 has been approved. Hours: 1.00, Project: BCDA - Admin', 0, '2026-02-25 08:50:04', NULL, NULL),
+(114, 67, 18, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: dchnbnvdgth', 0, '2026-02-25 08:50:39', NULL, NULL),
+(115, 117, 18, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: dchnbnvdgth', 0, '2026-02-25 08:50:39', NULL, NULL),
+(116, 135, 18, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: dchnbnvdgth', 0, '2026-02-25 08:50:39', NULL, NULL),
+(117, 136, 18, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: dchnbnvdgth', 0, '2026-02-25 08:50:39', NULL, NULL),
+(118, 6, 18, 'overtime_approved', 'Overtime Approved', 'Your overtime request for KELVIN CALDERON on 2026-02-25 has been approved. Hours: 5.00, Project: BCDA - Admin', 0, '2026-02-25 08:50:44', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -524,7 +723,7 @@ CREATE TABLE IF NOT EXISTS `overtime_requests` (
   `request_date` date NOT NULL,
   `requested_hours` decimal(5,2) NOT NULL,
   `overtime_reason` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `status` enum('pending','approved','rejected') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
+  `status` enum('pending','approved','rejected','pre-approved') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
   `requested_by` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `requested_by_user_id` int DEFAULT NULL,
   `requested_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -537,7 +736,22 @@ CREATE TABLE IF NOT EXISTS `overtime_requests` (
   KEY `idx_status` (`status`),
   KEY `idx_requested_at` (`requested_at`),
   KEY `idx_requested_by_user` (`requested_by_user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `overtime_requests`
+--
+
+INSERT INTO `overtime_requests` (`id`, `employee_id`, `branch_name`, `request_date`, `requested_hours`, `overtime_reason`, `status`, `requested_by`, `requested_by_user_id`, `requested_at`, `approved_by`, `approved_at`, `rejection_reason`, `attendance_id`) VALUES
+(10, 24, 'BCDA - Admin', '2026-02-24', 5.00, 'asdf', 'approved', 'KELVIN CALDERON', 68, '2026-02-24 07:16:36', 'Admin', '2026-02-25 00:10:15', NULL, 1081),
+(11, 24, 'BCDA - Admin', '2026-02-24', 4.00, 'ftyughjmn', 'approved', 'KELVIN CALDERON', 68, '2026-02-24 08:55:04', 'Admin', '2026-02-25 00:10:15', NULL, 1081),
+(12, 24, 'BCDA - Admin', '2026-02-24', 45.00, 'yuhvjkm', 'approved', 'KELVIN CALDERON', 68, '2026-02-24 08:58:51', 'Admin', '2026-02-25 00:10:15', NULL, 1081),
+(13, 24, 'BCDA - Admin', '2026-02-25', 2.00, 'adsgf', 'approved', 'KELVIN CALDERON', 68, '2026-02-24 23:49:21', 'Admin', '2026-02-25 00:10:14', NULL, 1081),
+(14, 27, 'BCDA - Admin', '2026-02-25', 2.00, 'asdf', 'approved', 'JERWIN CAMPOS', 68, '2026-02-25 00:03:17', 'Admin', '2026-02-25 00:10:11', NULL, 1084),
+(15, 68, 'BCDA - Admin', '2026-02-26', 1.00, 'ASD', 'approved', 'MICHELLE F. NORIAL', 68, '2026-02-25 00:10:55', 'Admin', '2026-02-25 08:50:04', NULL, 1080),
+(16, 68, 'BCDA - CCTV', '2026-02-26', 1.00, 'tygjh', 'rejected', 'MICHELLE F. NORIAL', 68, '2026-02-25 00:20:31', 'Admin', '2026-02-25 00:21:33', 'dehrst', NULL),
+(17, 24, 'BCDA - Admin', '2026-02-25', 5.00, 'drthgh', 'approved', 'KELVIN CALDERON', 6, '2026-02-25 08:49:58', 'Admin', '2026-02-25 08:50:01', NULL, 1081),
+(18, 24, 'BCDA - Admin', '2026-02-25', 5.00, 'dchnbnvdgth', 'approved', 'KELVIN CALDERON', 6, '2026-02-25 08:50:39', 'Admin', '2026-02-25 08:50:44', NULL, 1081);
 
 -- --------------------------------------------------------
 
@@ -640,14 +854,16 @@ CREATE TABLE IF NOT EXISTS `rate_limit` (
   `timestamp` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_ip_timestamp` (`ip`,`timestamp`)
-) ENGINE=MyISAM AUTO_INCREMENT=147 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=185 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `rate_limit`
 --
 
 INSERT INTO `rate_limit` (`id`, `ip`, `user_id`, `timestamp`) VALUES
-(146, '::1', 0, 1771916479);
+(184, '::1', 0, 1772064491),
+(183, '::1', 0, 1772064490),
+(182, '::1', 0, 1772064489);
 
 -- --------------------------------------------------------
 

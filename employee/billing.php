@@ -25,18 +25,18 @@ switch ($filter) {
                     COALESCE(a.branch_name, 'Unassigned') as branch_name,
                     COUNT(DISTINCT e.id) as employee_count,
                     SUM(pr.basic_pay) as total_basic_pay,
-                    SUM(pr.ot_pay) as total_ot_pay,
+                    SUM(pr.ot_amount) as total_ot_pay,
                     SUM(pr.gross_pay) as total_gross_pay,
                     SUM(pr.total_deductions) as total_deductions,
-                    SUM(pr.net_pay) as total_net_pay
+                    SUM(pr.take_home_pay) as total_net_pay
                 FROM employees e
                 LEFT JOIN (
                     SELECT DISTINCT employee_id, branch_name
                     FROM attendance
                     WHERE attendance_date BETWEEN ? AND ?
                 ) a ON e.id = a.employee_id
-                LEFT JOIN payroll_records pr ON e.id = pr.employee_id 
-                    AND pr.pay_period_start >= ? AND pr.pay_period_end <= ?
+                LEFT JOIN daily_payroll_reports pr ON e.id = pr.employee_id 
+                    AND pr.report_date BETWEEN ? AND ?
                 WHERE COALESCE(a.branch_name, '') != 'Main Branch'
                 GROUP BY a.branch_name
                 ORDER BY a.branch_name";
@@ -52,18 +52,18 @@ switch ($filter) {
                     COALESCE(a.branch_name, 'Unassigned') as branch_name,
                     COUNT(DISTINCT e.id) as employee_count,
                     SUM(pr.basic_pay) as total_basic_pay,
-                    SUM(pr.ot_pay) as total_ot_pay,
+                    SUM(pr.ot_amount) as total_ot_pay,
                     SUM(pr.gross_pay) as total_gross_pay,
                     SUM(pr.total_deductions) as total_deductions,
-                    SUM(pr.net_pay) as total_net_pay
+                    SUM(pr.take_home_pay) as total_net_pay
                 FROM employees e
                 LEFT JOIN (
                     SELECT DISTINCT employee_id, branch_name
                     FROM attendance
                     WHERE attendance_date BETWEEN ? AND ?
                 ) a ON e.id = a.employee_id
-                LEFT JOIN payroll_records pr ON e.id = pr.employee_id 
-                    AND pr.pay_period_start >= ? AND pr.pay_period_end <= ?
+                LEFT JOIN daily_payroll_reports pr ON e.id = pr.employee_id 
+                    AND pr.report_date BETWEEN ? AND ?
                 WHERE COALESCE(a.branch_name, '') = 'Main Branch'
                 GROUP BY a.branch_name
                 ORDER BY a.branch_name";
@@ -116,8 +116,8 @@ switch ($filter) {
                     SUM(pr.sss_deduction) * 0.0733 as estimated_employer_share,
                     SUM(pr.sss_deduction) * 1.0733 as total_contribution,
                     COUNT(DISTINCT pr.employee_id) as employee_count
-                FROM payroll_records pr
-                WHERE pr.pay_period_start >= ? AND pr.pay_period_end <= ? AND pr.sss_deduction > 0
+                FROM daily_payroll_reports pr
+                WHERE pr.report_date BETWEEN ? AND ? AND pr.sss_deduction > 0
                 
                 UNION ALL
                 
@@ -127,8 +127,8 @@ switch ($filter) {
                     SUM(pr.philhealth_deduction) as estimated_employer_share,
                     SUM(pr.philhealth_deduction) * 2 as total_contribution,
                     COUNT(DISTINCT pr.employee_id) as employee_count
-                FROM payroll_records pr
-                WHERE pr.pay_period_start >= ? AND pr.pay_period_end <= ? AND pr.philhealth_deduction > 0
+                FROM daily_payroll_reports pr
+                WHERE pr.report_date BETWEEN ? AND ? AND pr.philhealth_deduction > 0
                 
                 UNION ALL
                 
@@ -138,8 +138,8 @@ switch ($filter) {
                     SUM(pr.pagibig_deduction) as estimated_employer_share,
                     SUM(pr.pagibig_deduction) * 2 as total_contribution,
                     COUNT(DISTINCT pr.employee_id) as employee_count
-                FROM payroll_records pr
-                WHERE pr.pay_period_start >= ? AND pr.pay_period_end <= ? AND pr.pagibig_deduction > 0";
+                FROM daily_payroll_reports pr
+                WHERE pr.report_date BETWEEN ? AND ? AND pr.pagibig_deduction > 0";
         $stmt = $db->prepare($sql);
         $stmt->bind_param("ssssss", $startDate, $endDate, $startDate, $endDate, $startDate, $endDate);
         $stmt->execute();
