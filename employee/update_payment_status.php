@@ -84,12 +84,13 @@ if ($record_exists) {
         ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
         take_home_pay, status, payment_status, created_by
     ) VALUES (
-        ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Pending', ?, ?
+        ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ?, ?, ?
     )";
     
     $stmt = mysqli_prepare($db, $query);
     $created_by = $_SESSION['user_id'] ?? 0;
-    mysqli_stmt_bind_param($stmt, 'iiiissi', $employee_id, $year, $month, $week_num, $view_type, $payment_status, $created_by);
+    $status = 'Pending';
+    mysqli_stmt_bind_param($stmt, 'iiiisssi', $employee_id, $year, $month, $week_num, $view_type, $status, $payment_status, $created_by);
 }
 
 if (mysqli_stmt_execute($stmt)) {
