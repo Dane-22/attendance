@@ -89,7 +89,7 @@ if ($record_exists) {
     
     $stmt = mysqli_prepare($db, $query);
     $created_by = $_SESSION['user_id'] ?? 0;
-    $status = 'Pending';
+    $status = 'Draft';
     mysqli_stmt_bind_param($stmt, 'iiiisssi', $employee_id, $year, $month, $week_num, $view_type, $status, $payment_status, $created_by);
 }
 
