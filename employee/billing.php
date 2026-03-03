@@ -81,7 +81,7 @@ switch ($filter) {
                         SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) + SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_net_pay
                     FROM attendance a
                     LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN branches b ON a.branch_id = b.id
+                    LEFT JOIN branches b ON a.branch_name = b.branch_name
                     WHERE a.attendance_date BETWEEN ? AND ?
                       AND a.time_out IS NOT NULL
                       AND COALESCE(b.branch_name, '') != 'Main Branch'
@@ -130,7 +130,7 @@ switch ($filter) {
                         SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) + SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_net_pay
                     FROM attendance a
                     LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN branches b ON a.branch_id = b.id
+                    LEFT JOIN branches b ON a.branch_name = b.branch_name
                     WHERE a.attendance_date BETWEEN ? AND ?
                       AND a.time_out IS NOT NULL
                       AND COALESCE(b.branch_name, '') = 'Main Branch'
