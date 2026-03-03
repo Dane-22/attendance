@@ -143,7 +143,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
         <span class="dropdown-arrow">▼</span>
       </button>
       <div class="dropdown-menu <?= in_array($current, ['weekly_report.php', 'overtime.php', 'billing.php', 'cash_advance.php']) ? 'show' : '' ?>">
-        <a href="weekly_report.php" class="dropdown-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php">Weekly Report</a>
+        <a href="weekly_report.php" class="dropdown-item <?= $current === 'weekly_report.php' ? 'active' : '' ?>" data-target="weekly_report.php">Payroll</a>
         <a href="overtime.php" class="dropdown-item <?= $current === 'overtime.php' ? 'active' : '' ?>" data-target="overtime.php">Overtime</a>
         <a href="billing.php" class="dropdown-item <?= $current === 'billing.php' ? 'active' : '' ?>" data-target="billing.php">Billing</a>
         <a href="cash_advance.php" class="dropdown-item <?= $current === 'cash_advance.php' ? 'active' : '' ?>" data-target="cash_advance.php">Cash Advance</a>
