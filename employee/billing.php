@@ -47,6 +47,8 @@ $filterTitle = '';
 switch ($filter) {
     case 'site_salary':
         $filterTitle = 'Site Salary (Total Salary per Branch)';
+        
+        // First try daily_payroll_reports
         $sql = "SELECT 
                     COALESCE(b.branch_name, 'Unassigned') as branch_name,
                     COUNT(DISTINCT dpr.employee_id) as employee_count,
@@ -66,10 +68,36 @@ switch ($filter) {
         $stmt->bind_param("ss", $startDate, $endDate);
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        
+        // If no data, fallback to calculating from attendance
+        if (empty($data)) {
+            $sql = "SELECT 
+                        COALESCE(b.branch_name, 'Unassigned') as branch_name,
+                        COUNT(DISTINCT a.employee_id) as employee_count,
+                        SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) as total_basic_pay,
+                        SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_ot_pay,
+                        SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) + SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_gross_pay,
+                        0 as total_deductions,
+                        SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) + SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_net_pay
+                    FROM attendance a
+                    LEFT JOIN employees e ON a.employee_id = e.id
+                    LEFT JOIN branches b ON a.branch_id = b.id
+                    WHERE a.attendance_date BETWEEN ? AND ?
+                      AND a.time_out IS NOT NULL
+                      AND COALESCE(b.branch_name, '') != 'Main Branch'
+                    GROUP BY b.branch_name
+                    ORDER BY b.branch_name";
+            $stmt = $db->prepare($sql);
+            $stmt->bind_param("ss", $startDate, $endDate);
+            $stmt->execute();
+            $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        }
         break;
 
     case 'office_salary':
         $filterTitle = 'Office Salary (Main Branch Total)';
+        
+        // First try daily_payroll_reports
         $sql = "SELECT 
                     COALESCE(b.branch_name, 'Unassigned') as branch_name,
                     COUNT(DISTINCT dpr.employee_id) as employee_count,
@@ -89,6 +117,30 @@ switch ($filter) {
         $stmt->bind_param("ss", $startDate, $endDate);
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        
+        // If no data, fallback to calculating from attendance
+        if (empty($data)) {
+            $sql = "SELECT 
+                        COALESCE(b.branch_name, 'Unassigned') as branch_name,
+                        COUNT(DISTINCT a.employee_id) as employee_count,
+                        SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) as total_basic_pay,
+                        SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_ot_pay,
+                        SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) + SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_gross_pay,
+                        0 as total_deductions,
+                        SUM(e.daily_rate * (CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END)) + SUM((e.daily_rate / 8) * COALESCE(a.total_ot_hrs, 0)) as total_net_pay
+                    FROM attendance a
+                    LEFT JOIN employees e ON a.employee_id = e.id
+                    LEFT JOIN branches b ON a.branch_id = b.id
+                    WHERE a.attendance_date BETWEEN ? AND ?
+                      AND a.time_out IS NOT NULL
+                      AND COALESCE(b.branch_name, '') = 'Main Branch'
+                    GROUP BY b.branch_name
+                    ORDER BY b.branch_name";
+            $stmt = $db->prepare($sql);
+            $stmt->bind_param("ss", $startDate, $endDate);
+            $stmt->execute();
+            $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        }
         break;
 
     case 'cash_advance':
