@@ -457,8 +457,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             mysqli_stmt_close($updateStmt);
         } else {
             // Create new attendance record with overtime
-            $insertSql = "INSERT INTO attendance (employee_id, attendance_date, branch_name, status, total_ot_hrs, is_overtime_running, created_at) 
-                          VALUES (?, CURDATE(), ?, 'Present', ?, 0, NOW())";
+            $insertSql = "INSERT INTO attendance (employee_id, attendance_date, branch_name, status, total_ot_hrs, is_overtime_running, is_time_running, created_at) 
+                          VALUES (?, CURDATE(), ?, 'Present', ?, 0, 0, NOW())";
             $insertStmt = mysqli_prepare($db, $insertSql);
             mysqli_stmt_bind_param($insertStmt, 'iss', $request['employee_id'], $request['branch_name'], $request['requested_hours']);
             mysqli_stmt_execute($insertStmt);
