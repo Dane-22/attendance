@@ -74,7 +74,57 @@ $total_branch_pages = ceil($total_branches / $branches_per_page);
 $branch_offset = ($branch_page - 1) * $branches_per_page;
 $paginated_branches = array_slice($all_branches_list, $branch_offset, $branches_per_page);
 
-// Fetch attendance data for the date range - Get all employees and their attendance
+// Fetch payroll data from daily_payroll_reports for the date range (primary source)
+$payroll_query = "SELECT 
+                    dpr.employee_id,
+                    dpr.report_date,
+                    dpr.days_worked,
+                    dpr.total_hours,
+                    dpr.daily_rate,
+                    dpr.basic_pay,
+                    dpr.ot_hours,
+                    dpr.ot_rate,
+                    dpr.ot_amount,
+                    dpr.performance_allowance,
+                    dpr.gross_pay,
+                    dpr.gross_plus_allowance,
+                    dpr.ca_deduction,
+                    dpr.sss_deduction,
+                    dpr.philhealth_deduction,
+                    dpr.pagibig_deduction,
+                    dpr.sss_loan,
+                    dpr.total_deductions,
+                    dpr.take_home_pay,
+                    dpr.status,
+                    dpr.branch_id,
+                    b.branch_name,
+                    e.first_name,
+                    e.last_name,
+                    e.employee_code,
+                    e.position
+                 FROM daily_payroll_reports dpr
+                 JOIN employees e ON dpr.employee_id = e.id
+                 LEFT JOIN branches b ON dpr.branch_id = b.id
+                 WHERE dpr.report_date BETWEEN ? AND ?
+                 AND LOWER(e.position) = 'worker'";
+
+// Add branch filter if not 'all'
+if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
+    $payroll_query .= " AND dpr.branch_id = ?";
+}
+$payroll_query .= " ORDER BY dpr.report_date, b.branch_name";
+
+$stmt = mysqli_prepare($db, $payroll_query);
+if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
+    mysqli_stmt_bind_param($stmt, 'ssi', $start_date, $end_date, $selected_branch);
+} else {
+    mysqli_stmt_bind_param($stmt, 'ss', $start_date, $end_date);
+}
+
+mysqli_stmt_execute($stmt);
+$payroll_result = mysqli_stmt_get_result($stmt);
+
+// Fetch attendance data as fallback/supplement (for dates not in daily_payroll_reports)
 $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name, a.time_in, a.time_out, a.total_ot_hrs,
                             e.first_name, e.last_name, e.employee_code, e.daily_rate, e.position
                      FROM attendance a
@@ -89,15 +139,15 @@ if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
 }
 $attendance_query .= " ORDER BY a.attendance_date, a.branch_name";
 
-$stmt = mysqli_prepare($db, $attendance_query);
+$stmt2 = mysqli_prepare($db, $attendance_query);
 if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
-    mysqli_stmt_bind_param($stmt, 'ssi', $start_date, $end_date, $selected_branch);
+    mysqli_stmt_bind_param($stmt2, 'ssi', $start_date, $end_date, $selected_branch);
 } else {
-    mysqli_stmt_bind_param($stmt, 'ss', $start_date, $end_date);
+    mysqli_stmt_bind_param($stmt2, 'ss', $start_date, $end_date);
 }
 
-mysqli_stmt_execute($stmt);
-$attendance_result = mysqli_stmt_get_result($stmt);
+mysqli_stmt_execute($stmt2);
+$attendance_result = mysqli_stmt_get_result($stmt2);
 
 // Government deduction constants (monthly)
 $MONTHLY_PHILHEALTH = 250.00;
@@ -164,10 +214,49 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
         'total_deductions' => 0,
         'net_pay' => 0,
         '_daily' => [],
-        '_branches' => []  // Track per-branch totals: [branch_name => ['days'=>x, 'hours'=>y, 'ot_hours'=>z]]
+        '_branches' => [],  // Track per-branch totals: [branch_name => ['days'=>x, 'hours'=>y, 'ot_hours'=>z]]
+        '_has_payroll_record' => []  // Track dates covered by daily_payroll_reports
     ];
 }
 
+// Process daily_payroll_reports data first (primary source)
+while ($row = mysqli_fetch_assoc($payroll_result)) {
+    $emp_id = $row['employee_id'];
+    
+    if (isset($employee_payroll[$emp_id])) {
+        $report_date = $row['report_date'];
+        $branch_name = trim($row['branch_name'] ?? 'Unassigned');
+        
+        // Mark this date as having payroll data
+        $employee_payroll[$emp_id]['_has_payroll_record'][$report_date] = true;
+        
+        // Accumulate totals from daily records
+        $employee_payroll[$emp_id]['days_worked'] += floatval($row['days_worked'] ?? 0);
+        $employee_payroll[$emp_id]['total_hours'] += floatval($row['total_hours'] ?? 0);
+        $employee_payroll[$emp_id]['total_ot_hrs'] += floatval($row['ot_hours'] ?? 0);
+        $employee_payroll[$emp_id]['gross_pay'] += floatval($row['gross_pay'] ?? 0);
+        
+        // Track per-branch totals
+        if (!isset($employee_payroll[$emp_id]['_branches'][$branch_name])) {
+            $employee_payroll[$emp_id]['_branches'][$branch_name] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
+        }
+        $employee_payroll[$emp_id]['_branches'][$branch_name]['days'] += floatval($row['days_worked'] ?? 0);
+        $employee_payroll[$emp_id]['_branches'][$branch_name]['hours'] += floatval($row['total_hours'] ?? 0);
+        $employee_payroll[$emp_id]['_branches'][$branch_name]['ot_hours'] += floatval($row['ot_hours'] ?? 0);
+        
+        // Track daily breakdown
+        if (!isset($employee_payroll[$emp_id]['_daily'][$report_date])) {
+            $employee_payroll[$emp_id]['_daily'][$report_date] = [];
+        }
+        $employee_payroll[$emp_id]['_daily'][$report_date][$branch_name] = [
+            'status' => $row['status'] ?? 'Present',
+            'hours' => floatval($row['total_hours'] ?? 0),
+            'ot_hours' => floatval($row['ot_hours'] ?? 0)
+        ];
+    }
+}
+
+// Process attendance data as fallback (for dates not in daily_payroll_reports)
 while ($row = mysqli_fetch_assoc($attendance_result)) {
     $emp_id = $row['employee_id'];
     
@@ -177,6 +266,11 @@ while ($row = mysqli_fetch_assoc($attendance_result)) {
         $branch_name = trim($row['branch_name'] ?? '');
 
         if (!$attendance_date) {
+            continue;
+        }
+        
+        // Skip if this date is already covered by daily_payroll_reports
+        if (isset($employee_payroll[$emp_id]['_has_payroll_record'][$attendance_date])) {
             continue;
         }
 
