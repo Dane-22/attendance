@@ -14,22 +14,21 @@ if (empty($_SESSION['logged_in']) || $_SESSION['position'] !== 'Super Admin') {
     exit;
 }
 
-// Get parameters
-$filter = $_GET['filter'] ?? 'day';
-$selectedDate = $_GET['date'] ?? date('Y-m-d');
+// Get parameters from date selector
+$startDate = $_GET['start_date'] ?? date('Y-m-d');
+$endDate = $_GET['end_date'] ?? date('Y-m-d');
 
-// Determine date range
-if ($filter === 'week') {
-    $startDate = date('Y-m-d', strtotime('monday this week'));
-    $endDate = date('Y-m-d', strtotime('sunday this week'));
-    $periodLabel = date('M d', strtotime($startDate)) . ' - ' . date('M d, Y', strtotime($endDate));
-} elseif ($filter === 'month') {
-    $startDate = date('Y-m-01');
-    $endDate = date('Y-m-t');
-    $periodLabel = date('F Y');
+// Validate dates
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+    header('Location: audit_report_selector.php');
+    exit;
+}
+
+// Format period label
+if ($startDate === $endDate) {
+    $periodLabel = date('F d, Y (l)', strtotime($startDate));
 } else {
-    $startDate = $endDate = $selectedDate;
-    $periodLabel = date('F d, Y (l)', strtotime($selectedDate));
+    $periodLabel = date('M d', strtotime($startDate)) . ' - ' . date('M d, Y', strtotime($endDate));
 }
 
 // ============================================
