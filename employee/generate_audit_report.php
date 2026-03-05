@@ -182,6 +182,47 @@ while ($row = mysqli_fetch_assoc($durationResult)) {
     }
 }
 
+// Detailed per-branch breakdown
+$branchDetailSql = "SELECT 
+    b.branch_name,
+    COUNT(DISTINCT a.employee_id) as unique_staff,
+    COUNT(*) as total_shifts,
+    SUM(CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END) as completed_shifts,
+    SUM(CASE WHEN a.time_out IS NULL THEN 1 ELSE 0 END) as open_shifts,
+    AVG(TIMESTAMPDIFF(MINUTE, a.time_in, COALESCE(a.time_out, NOW()))) as avg_duration,
+    SUM(TIMESTAMPDIFF(MINUTE, a.time_in, COALESCE(a.time_out, NOW()))) as total_minutes,
+    SUM(COALESCE(a.total_ot_hrs, 0)) as total_ot_hours
+FROM attendance a
+LEFT JOIN branches b ON a.branch_name = b.branch_name
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL
+GROUP BY b.branch_name
+ORDER BY total_shifts DESC";
+$branchDetailStmt = mysqli_prepare($db, $branchDetailSql);
+mysqli_stmt_bind_param($branchDetailStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($branchDetailStmt);
+$branchDetailResult = mysqli_stmt_get_result($branchDetailStmt);
+
+$efficiencyData['branch_details'] = [];
+while ($row = mysqli_fetch_assoc($branchDetailResult)) {
+    $row['completion_rate'] = $row['total_shifts'] > 0 
+        ? round(($row['completed_shifts'] / $row['total_shifts']) * 100, 1) 
+        : 0;
+    $row['avg_shift_hours'] = round(($row['avg_duration'] ?? 0) / 60, 2);
+    $row['total_man_hours'] = round(($row['total_minutes'] ?? 0) / 60, 1);
+    $efficiencyData['branch_details'][] = $row;
+}
+
+// Productivity indicators
+$efficiencyData['productivity'] = [
+    'total_branches_active' => count($efficiencyData['branch_details']),
+    'highest_performing_branch' => $efficiencyData['branch_details'][0]['branch_name'] ?? 'N/A',
+    'total_ot_hours' => array_sum(array_column($efficiencyData['branch_details'], 'total_ot_hours')),
+    'avg_completion_rate' => count($efficiencyData['branch_details']) > 0 
+        ? round(array_sum(array_column($efficiencyData['branch_details'], 'completion_rate')) / count($efficiencyData['branch_details']), 1)
+        : 0
+];
+
 // ============================================
 // IV. ANOMALY DETECTION
 // ============================================
@@ -498,34 +539,179 @@ $reportDate = date('F d, Y');
                 <h2 class="text-xl font-bold"><i class="fas fa-cogs mr-3"></i>III. OPERATIONAL EFFICIENCY</h2>
             </div>
             <div class="section-content">
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100">
-                                <th class="p-3 text-left font-semibold text-gray-700 border">Location</th>
-                                <th class="p-3 text-center font-semibold text-gray-700 border">Staff Deployed</th>
-                                <th class="p-3 text-center font-semibold text-gray-700 border">Shifts Completed</th>
-                                <th class="p-3 text-center font-semibold text-gray-700 border">Completion Rate</th>
-                                <th class="p-3 text-center font-semibold text-gray-700 border">Avg Shift Duration</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($efficiencyData['locations'] as $location => $data): ?>
-                            <tr>
-                                <td class="p-3 border font-medium"><?= $location ?></td>
-                                <td class="p-3 border text-center"><?= $data['staff'] ?></td>
-                                <td class="p-3 border text-center"><?= $data['completed'] ?> / <?= $data['records'] ?></td>
-                                <td class="p-3 border text-center">
-                                    <span class="px-2 py-1 rounded <?= $data['completion_rate'] >= 90 ? 'bg-green-100 text-green-800' : ($data['completion_rate'] >= 70 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') ?>">
-                                        <?= $data['completion_rate'] ?>%
-                                    </span>
-                                </td>
-                                <td class="p-3 border text-center"><?= $data['avg_shift_hours'] ?? 'N/A' ?> hrs</td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                <!-- Productivity Summary Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="metric-card text-center">
+                        <div class="text-3xl font-bold text-blue-700"><?= $efficiencyData['productivity']['total_branches_active'] ?></div>
+                        <div class="text-sm text-gray-600 mt-1">Active Branches</div>
+                    </div>
+                    <div class="metric-card text-center">
+                        <div class="text-3xl font-bold text-green-700"><?= number_format($efficiencyData['productivity']['avg_completion_rate'], 1) ?>%</div>
+                        <div class="text-sm text-gray-600 mt-1">Avg Completion Rate</div>
+                    </div>
+                    <div class="metric-card text-center">
+                        <div class="text-3xl font-bold text-orange-700"><?= number_format($efficiencyData['productivity']['total_ot_hours'], 1) ?></div>
+                        <div class="text-sm text-gray-600 mt-1">Total OT Hours</div>
+                    </div>
+                    <div class="metric-card text-center">
+                        <div class="text-2xl font-bold text-purple-700 truncate"><?= htmlspecialchars($efficiencyData['productivity']['highest_performing_branch'] ?? 'N/A') ?></div>
+                        <div class="text-sm text-gray-600 mt-1">Top Performing Branch</div>
+                    </div>
                 </div>
+
+                <!-- Location Summary Table -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3"><i class="fas fa-building mr-2"></i>Location Summary</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="p-3 text-left font-semibold text-gray-700 border">Location Type</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Staff Deployed</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Shifts Completed</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Completion Rate</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Avg Shift Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($efficiencyData['locations'] as $location => $data): ?>
+                                <tr>
+                                    <td class="p-3 border font-medium"><?= $location ?></td>
+                                    <td class="p-3 border text-center"><?= $data['staff'] ?></td>
+                                    <td class="p-3 border text-center"><?= $data['completed'] ?> / <?= $data['records'] ?></td>
+                                    <td class="p-3 border text-center">
+                                        <span class="px-2 py-1 rounded <?= $data['completion_rate'] >= 90 ? 'bg-green-100 text-green-800' : ($data['completion_rate'] >= 70 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') ?>">
+                                            <?= $data['completion_rate'] ?>%
+                                        </span>
+                                    </td>
+                                    <td class="p-3 border text-center"><?= $data['avg_shift_hours'] ?? 'N/A' ?> hrs</td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Detailed Per-Branch Breakdown -->
+                <?php if (!empty($efficiencyData['branch_details'])): ?>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3"><i class="fas fa-sitemap mr-2"></i>Detailed Branch Performance</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="p-3 text-left font-semibold text-gray-700 border">Branch Name</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Unique Staff</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Total Shifts</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Completed</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Open</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Completion Rate</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Avg Shift</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">Total Hours</th>
+                                    <th class="p-3 text-center font-semibold text-gray-700 border">OT Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($efficiencyData['branch_details'] as $branch): ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-3 border font-medium">
+                                        <?php if ($branch['branch_name'] === 'Main Branch'): ?>
+                                            <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                        <?php elseif (empty($branch['branch_name'])): ?>
+                                            <span class="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                                        <?php else: ?>
+                                            <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                        <?php endif; ?>
+                                        <?= htmlspecialchars($branch['branch_name'] ?: 'Unassigned') ?>
+                                    </td>
+                                    <td class="p-3 border text-center font-semibold"><?= $branch['unique_staff'] ?></td>
+                                    <td class="p-3 border text-center"><?= $branch['total_shifts'] ?></td>
+                                    <td class="p-3 border text-center text-green-600"><?= $branch['completed_shifts'] ?></td>
+                                    <td class="p-3 border text-center <?= $branch['open_shifts'] > 0 ? 'text-red-600 font-semibold' : 'text-gray-400' ?>"><?= $branch['open_shifts'] ?></td>
+                                    <td class="p-3 border text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="bg-<?= $branch['completion_rate'] >= 90 ? 'green' : ($branch['completion_rate'] >= 70 ? 'yellow' : 'red') ?>-500 h-2 rounded-full" style="width: <?= $branch['completion_rate'] ?>"></div>
+                                            </div>
+                                            <span class="text-xs font-semibold"><?= $branch['completion_rate'] ?>%</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 border text-center"><?= $branch['avg_shift_hours'] ?> hrs</td>
+                                    <td class="p-3 border text-center font-medium text-blue-700"><?= $branch['total_man_hours'] ?></td>
+                                    <td class="p-3 border text-center <?= $branch['total_ot_hours'] > 0 ? 'text-orange-600 font-semibold' : 'text-gray-400' ?>"><?= number_format($branch['total_ot_hours'], 1) ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Performance Insights -->
+                <?php if (!empty($efficiencyData['branch_details'])): ?>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-chart-bar mr-2"></i>Performance Insights</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <?php
+                        // Find best and worst performing branches
+                        $sortedBranches = $efficiencyData['branch_details'];
+                        usort($sortedBranches, function($a, $b) {
+                            return $b['completion_rate'] <=> $a['completion_rate'];
+                        });
+                        $bestBranch = $sortedBranches[0] ?? null;
+                        $worstBranch = $sortedBranches[count($sortedBranches) - 1] ?? null;
+                        ?>
+                        <?php if ($bestBranch && $bestBranch['completion_rate'] >= 90): ?>
+                        <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                            <div class="text-sm text-green-800 font-semibold mb-1">
+                                <i class="fas fa-trophy mr-1"></i>Top Performer
+                            </div>
+                            <div class="text-sm text-green-700">
+                                <strong><?= htmlspecialchars($bestBranch['branch_name'] ?: 'Unassigned') ?></strong> leads with 
+                                <?= $bestBranch['completion_rate'] ?>% completion rate and 
+                                <?= $bestBranch['unique_staff'] ?> staff deployed.
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($worstBranch && $worstBranch['completion_rate'] < 80 && count($sortedBranches) > 1): ?>
+                        <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                            <div class="text-sm text-red-800 font-semibold mb-1">
+                                <i class="fas fa-exclamation-circle mr-1"></i>Attention Required
+                            </div>
+                            <div class="text-sm text-red-700">
+                                <strong><?= htmlspecialchars($worstBranch['branch_name'] ?: 'Unassigned') ?></strong> has 
+                                <?= $worstBranch['completion_rate'] ?>% completion rate with 
+                                <?= $worstBranch['open_shifts'] ?> open shift(s) requiring follow-up.
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($efficiencyData['productivity']['total_ot_hours'] > 0): ?>
+                        <div class="bg-orange-50 border-l-4 border-orange-500 p-3 rounded">
+                            <div class="text-sm text-orange-800 font-semibold mb-1">
+                                <i class="fas fa-clock mr-1"></i>Overtime Activity
+                            </div>
+                            <div class="text-sm text-orange-700">
+                                Total of <?= number_format($efficiencyData['productivity']['total_ot_hours'], 1) ?> overtime hours 
+                                logged across all branches. Review for payroll processing.
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
+                            <div class="text-sm text-blue-800 font-semibold mb-1">
+                                <i class="fas fa-users mr-1"></i>Workforce Distribution
+                            </div>
+                            <div class="text-sm text-blue-700">
+                                <?= count($efficiencyData['branch_details']) ?> branch(es) active with 
+                                <?= array_sum(array_column($efficiencyData['branch_details'], 'unique_staff')) ?> total unique staff 
+                                contributing <?= array_sum(array_column($efficiencyData['branch_details'], 'total_man_hours')) ?> man-hours.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <?php if (empty($efficiencyData['locations'])): ?>
                 <div class="text-center py-8 text-gray-500">
@@ -606,26 +792,107 @@ $reportDate = date('F d, Y');
                     <?php endif; ?>
 
                     <?php if (!empty($anomalies['missing_attendance'])): ?>
-                    <div class="metric-card anomaly-warning mb-4">
-                        <div class="font-semibold text-yellow-800 mb-2">
-                            <i class="fas fa-user-slash mr-2"></i>Missing Attendance Records
+                    <div class="bg-white border border-yellow-200 rounded-lg overflow-hidden mb-4">
+                        <div class="bg-yellow-50 p-3 border-b border-yellow-200">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-yellow-800">
+                                    <i class="fas fa-user-slash mr-2"></i>Missing Attendance Records
+                                </span>
+                                <span class="px-3 py-1 bg-yellow-200 text-yellow-800 rounded text-sm font-semibold">
+                                    <?= count($anomalies['missing_attendance']) ?> EMPLOYEES
+                                </span>
+                            </div>
                         </div>
-                        <div class="text-yellow-700">
-                            <?= count($anomalies['missing_attendance']) ?> active employee(s) without attendance records 
-                            for the reporting period. This may indicate leave without approval, system access issues, or non-compliance.
+                        <div class="p-3 bg-yellow-50/50 text-sm text-yellow-700 mb-0">
+                            The following active employees have no attendance records for the reporting period. 
+                            This may indicate leave without approval, system access issues, or non-compliance.
                         </div>
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-3 text-left font-semibold">Employee Name</th>
+                                    <th class="p-3 text-left font-semibold">Employee ID</th>
+                                    <th class="p-3 text-left font-semibold">Branch</th>
+                                    <th class="p-3 text-center font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                foreach ($anomalies['missing_attendance'] as $record): 
+                                    // Get branch name
+                                    $branchName = 'Unassigned';
+                                    if ($record['branch_id']) {
+                                        $branchQuery = "SELECT branch_name FROM branches WHERE id = ?";
+                                        $branchStmt = mysqli_prepare($db, $branchQuery);
+                                        mysqli_stmt_bind_param($branchStmt, 'i', $record['branch_id']);
+                                        mysqli_stmt_execute($branchStmt);
+                                        $branchResult = mysqli_stmt_get_result($branchStmt);
+                                        if ($branchRow = mysqli_fetch_assoc($branchResult)) {
+                                            $branchName = $branchRow['branch_name'];
+                                        }
+                                    }
+                                ?>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3 font-medium"><?= htmlspecialchars($record['first_name'] . ' ' . $record['last_name']) ?></td>
+                                    <td class="p-3 text-gray-600"><?= htmlspecialchars($record['id']) ?></td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 rounded text-xs <?= $branchName === 'Main Branch' ? 'bg-blue-100 text-blue-800' : ($branchName === 'Unassigned' ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-800') ?>">
+                                            <?= htmlspecialchars($branchName) ?>
+                                        </span>
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold">NO ATTENDANCE</span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                     <?php endif; ?>
 
                     <?php if (!empty($anomalies['short_shifts'])): ?>
-                    <div class="metric-card anomaly-warning">
-                        <div class="font-semibold text-yellow-800 mb-2">
-                            <i class="fas fa-clock mr-2"></i>Short Shift Anomalies (< 4 hours)
+                    <div class="bg-white border border-yellow-200 rounded-lg overflow-hidden mb-4">
+                        <div class="bg-yellow-50 p-3 border-b border-yellow-200">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-yellow-800">
+                                    <i class="fas fa-clock mr-2"></i>Short Shift Anomalies (< 4 hours)
+                                </span>
+                                <span class="px-3 py-1 bg-yellow-200 text-yellow-800 rounded text-sm font-semibold">
+                                    <?= count($anomalies['short_shifts']) ?> SHIFTS
+                                </span>
+                            </div>
                         </div>
-                        <div class="text-yellow-700">
-                            <?= count($anomalies['short_shifts']) ?> shift(s) recorded under 4 hours duration. 
-                            These instances may indicate partial attendance capture or operational irregularities requiring review.
+                        <div class="p-3 bg-yellow-50/50 text-sm text-yellow-700 mb-0">
+                            Shifts recorded under 4 hours duration may indicate partial attendance capture, early departures, or operational irregularities requiring review.
                         </div>
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-3 text-left font-semibold">Employee Name</th>
+                                    <th class="p-3 text-left font-semibold">Date</th>
+                                    <th class="p-3 text-center font-semibold">Duration</th>
+                                    <th class="p-3 text-center font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($anomalies['short_shifts'] as $record): 
+                                    $hours = floor($record['minutes'] / 60);
+                                    $mins = $record['minutes'] % 60;
+                                    $durationText = $hours > 0 ? "{$hours}h {$mins}m" : "{$mins}m";
+                                ?>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3 font-medium"><?= htmlspecialchars($record['first_name'] . ' ' . $record['last_name']) ?></td>
+                                    <td class="p-3 text-gray-600"><?= date('M d, Y', strtotime($record['attendance_date'])) ?></td>
+                                    <td class="p-3 text-center">
+                                        <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-semibold"><?= $durationText ?></span>
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-semibold">SHORT SHIFT</span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                     <?php endif; ?>
 
