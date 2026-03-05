@@ -62,7 +62,7 @@ $execSummary['session_status'] = $healthData['clocked_out'] . ' of ' . $healthDa
 $workforceData = [];
 
 // Attendance percentage
-$totalEmployeesQuery = "SELECT COUNT(*) as total FROM employees WHERE status = 'Active' AND LOWER(position) = 'worker'";
+$totalEmployeesQuery = "SELECT COUNT(*) as total FROM employees WHERE status = 'Active' AND LOWER(position) != 'super admin'";
 $totalResult = mysqli_query($db, $totalEmployeesQuery);
 $totalActiveEmployees = mysqli_fetch_assoc($totalResult)['total'];
 
@@ -72,60 +72,125 @@ $attendanceRate = $totalActiveEmployees > 0
 
 $workforceData['attendance_percentage'] = $attendanceRate;
 
-// Punctuality analysis (arrivals 7:00-8:00 AM)
-$punctualSql = "SELECT COUNT(*) as punctual_count
-FROM attendance 
-WHERE attendance_date BETWEEN ? AND ?
-AND time_in IS NOT NULL
-AND TIME(time_in) BETWEEN '07:00:00' AND '08:00:00'";
-$punctualStmt = mysqli_prepare($db, $punctualSql);
-mysqli_stmt_bind_param($punctualStmt, 'ss', $startDate, $endDate);
-mysqli_stmt_execute($punctualStmt);
-$punctualCount = mysqli_fetch_assoc(mysqli_stmt_get_result($punctualStmt))['punctual_count'];
+// Punctuality by position - Engineers & Workers: 7am-4pm, Others: 8am-5pm
+// Engineers/Workers on-time: 7:00-7:30 AM, Others on-time: 8:00-8:30 AM
 
-$workforceData['punctual_arrivals'] = $punctualCount;
-$workforceData['punctual_percentage'] = $healthData['clocked_in'] > 0 
-    ? round(($punctualCount / $healthData['clocked_in']) * 100, 1) 
+// Engineers & Workers punctuality (7:00-7:30 AM)
+$earlyShiftPunctualSql = "SELECT COUNT(*) as count FROM attendance a
+JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL
+AND (LOWER(e.position) = 'engineer' OR LOWER(e.position) = 'worker')
+AND TIME(a.time_in) BETWEEN '07:00:00' AND '07:30:00'";
+$earlyShiftPunctualStmt = mysqli_prepare($db, $earlyShiftPunctualSql);
+mysqli_stmt_bind_param($earlyShiftPunctualStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($earlyShiftPunctualStmt);
+$earlyShiftPunctual = mysqli_fetch_assoc(mysqli_stmt_get_result($earlyShiftPunctualStmt))['count'];
+
+// Others punctuality (8:00-8:30 AM)  
+$regularPunctualSql = "SELECT COUNT(*) as count FROM attendance a
+JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL
+AND LOWER(e.position) != 'engineer'
+AND LOWER(e.position) != 'worker'
+AND LOWER(e.position) != 'super admin'
+AND TIME(a.time_in) BETWEEN '08:00:00' AND '08:30:00'";
+$regularPunctualStmt = mysqli_prepare($db, $regularPunctualSql);
+mysqli_stmt_bind_param($regularPunctualStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($regularPunctualStmt);
+$regularPunctual = mysqli_fetch_assoc(mysqli_stmt_get_result($regularPunctualStmt))['count'];
+
+// Total punctual arrivals
+$workforceData['punctual_arrivals'] = $earlyShiftPunctual + $regularPunctual;
+
+// Early/Late arrivals by position
+// Engineers/Workers early: before 7:00, late: after 7:30
+// Others early: before 8:00, late: after 8:30
+
+$workforceData['early_shift_on_time'] = $earlyShiftPunctual;
+$workforceData['regular_shift_on_time'] = $regularPunctual;
+
+// Early Engineers/Workers (before 7:00)
+$earlyShiftEarlySql = "SELECT COUNT(*) as count FROM attendance a
+JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL 
+AND (LOWER(e.position) = 'engineer' OR LOWER(e.position) = 'worker')
+AND TIME(a.time_in) < '07:00:00'";
+$earlyShiftEarlyStmt = mysqli_prepare($db, $earlyShiftEarlySql);
+mysqli_stmt_bind_param($earlyShiftEarlyStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($earlyShiftEarlyStmt);
+$earlyShiftEarly = mysqli_fetch_assoc(mysqli_stmt_get_result($earlyShiftEarlyStmt))['count'];
+
+// Late Engineers/Workers (after 7:30)
+$earlyShiftLateSql = "SELECT COUNT(*) as count FROM attendance a
+JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL 
+AND (LOWER(e.position) = 'engineer' OR LOWER(e.position) = 'worker')
+AND TIME(a.time_in) > '07:30:00'";
+$earlyShiftLateStmt = mysqli_prepare($db, $earlyShiftLateSql);
+mysqli_stmt_bind_param($earlyShiftLateStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($earlyShiftLateStmt);
+$earlyShiftLate = mysqli_fetch_assoc(mysqli_stmt_get_result($earlyShiftLateStmt))['count'];
+
+// Early Others (before 8:00)
+$regularEarlySql = "SELECT COUNT(*) as count FROM attendance a
+JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL 
+AND LOWER(e.position) != 'engineer' 
+AND LOWER(e.position) != 'worker'
+AND LOWER(e.position) != 'super admin'
+AND TIME(a.time_in) < '08:00:00'";
+$regularEarlyStmt = mysqli_prepare($db, $regularEarlySql);
+mysqli_stmt_bind_param($regularEarlyStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($regularEarlyStmt);
+$regularEarly = mysqli_fetch_assoc(mysqli_stmt_get_result($regularEarlyStmt))['count'];
+
+// Late Others (after 8:30)
+$regularLateSql = "SELECT COUNT(*) as count FROM attendance a
+JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL 
+AND LOWER(e.position) != 'engineer' 
+AND LOWER(e.position) != 'worker'
+AND LOWER(e.position) != 'super admin'
+AND TIME(a.time_in) > '08:30:00'";
+$regularLateStmt = mysqli_prepare($db, $regularLateSql);
+mysqli_stmt_bind_param($regularLateStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($regularLateStmt);
+$regularLate = mysqli_fetch_assoc(mysqli_stmt_get_result($regularLateStmt))['count'];
+
+$workforceData['early_arrivals'] = $earlyShiftEarly + $regularEarly;
+$workforceData['late_arrivals'] = $earlyShiftLate + $regularLate;
+$workforceData['early_shift_early'] = $earlyShiftEarly;
+$workforceData['early_shift_late'] = $earlyShiftLate;
+$workforceData['regular_early'] = $regularEarly;
+$workforceData['regular_late'] = $regularLate;
+
+// Total clock-ins (exclude Super Admin)
+$totalClockinsSql = "SELECT COUNT(*) as count FROM attendance a
+JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?
+AND a.time_in IS NOT NULL
+AND LOWER(e.position) != 'super admin'";
+$totalClockinsStmt = mysqli_prepare($db, $totalClockinsSql);
+mysqli_stmt_bind_param($totalClockinsStmt, 'ss', $startDate, $endDate);
+mysqli_stmt_execute($totalClockinsStmt);
+$totalClockins = mysqli_fetch_assoc(mysqli_stmt_get_result($totalClockinsStmt))['count'];
+
+$workforceData['punctual_percentage'] = $totalClockins > 0 
+    ? round((($earlyShiftPunctual + $regularPunctual) / $totalClockins) * 100, 1) 
     : 0;
-
-// Total man-hours
-$hoursSql = "SELECT 
-    SUM(TIMESTAMPDIFF(MINUTE, time_in, COALESCE(time_out, NOW()))) as total_minutes
-FROM attendance 
-WHERE attendance_date BETWEEN ? AND ?
-AND time_in IS NOT NULL";
-$hoursStmt = mysqli_prepare($db, $hoursSql);
-mysqli_stmt_bind_param($hoursStmt, 'ss', $startDate, $endDate);
-mysqli_stmt_execute($hoursStmt);
-$totalMinutes = mysqli_fetch_assoc(mysqli_stmt_get_result($hoursStmt))['total_minutes'] ?? 0;
-$workforceData['total_man_hours'] = round($totalMinutes / 60, 2);
-
-// Early arrivals (before 7 AM) and late arrivals (after 8 AM)
-$earlySql = "SELECT COUNT(*) as count FROM attendance 
-WHERE attendance_date BETWEEN ? AND ?
-AND time_in IS NOT NULL AND TIME(time_in) < '07:00:00'";
-$earlyStmt = mysqli_prepare($db, $earlySql);
-mysqli_stmt_bind_param($earlyStmt, 'ss', $startDate, $endDate);
-mysqli_stmt_execute($earlyStmt);
-$earlyCount = mysqli_fetch_assoc(mysqli_stmt_get_result($earlyStmt))['count'];
-
-$lateSql = "SELECT COUNT(*) as count FROM attendance 
-WHERE attendance_date BETWEEN ? AND ?
-AND time_in IS NOT NULL AND TIME(time_in) > '08:00:00'";
-$lateStmt = mysqli_prepare($db, $lateSql);
-mysqli_stmt_bind_param($lateStmt, 'ss', $startDate, $endDate);
-mysqli_stmt_execute($lateStmt);
-$lateCount = mysqli_fetch_assoc(mysqli_stmt_get_result($lateStmt))['count'];
-
-$workforceData['early_arrivals'] = $earlyCount;
-$workforceData['late_arrivals'] = $lateCount;
 
 // ============================================
 // III. OPERATIONAL EFFICIENCY DATA
 // ============================================
 $efficiencyData = [];
 
-// Main Office vs Field Branches comparison
+// Main Office vs Field Branches comparison (exclude Super Admin)
 $branchSql = "SELECT 
     CASE 
         WHEN b.branch_name = 'Main Branch' THEN 'Main Office'
@@ -133,12 +198,14 @@ $branchSql = "SELECT
         ELSE 'Unassigned'
     END as location_type,
     COUNT(*) as record_count,
-    SUM(CASE WHEN time_out IS NOT NULL THEN 1 ELSE 0 END) as completed,
+    SUM(CASE WHEN a.time_out IS NOT NULL THEN 1 ELSE 0 END) as completed,
     COUNT(DISTINCT a.employee_id) as staff_count
 FROM attendance a
 LEFT JOIN branches b ON a.branch_name = b.branch_name
+JOIN employees e ON a.employee_id = e.id
 WHERE a.attendance_date BETWEEN ? AND ?
 AND a.time_in IS NOT NULL
+AND LOWER(e.position) != 'super admin'
 GROUP BY location_type";
 $branchStmt = mysqli_prepare($db, $branchSql);
 mysqli_stmt_bind_param($branchStmt, 'ss', $startDate, $endDate);
@@ -157,18 +224,20 @@ while ($row = mysqli_fetch_assoc($branchResult)) {
     ];
 }
 
-// Average shift duration by location
+// Average shift duration by location (exclude Super Admin)
 $durationSql = "SELECT 
     CASE 
         WHEN b.branch_name = 'Main Branch' THEN 'Main Office'
         WHEN b.branch_name IS NOT NULL THEN 'Field Branches'
         ELSE 'Unassigned'
     END as location_type,
-    AVG(TIMESTAMPDIFF(MINUTE, time_in, time_out)) as avg_duration
+    AVG(TIMESTAMPDIFF(MINUTE, a.time_in, a.time_out)) as avg_duration
 FROM attendance a
 LEFT JOIN branches b ON a.branch_name = b.branch_name
+JOIN employees e ON a.employee_id = e.id
 WHERE a.attendance_date BETWEEN ? AND ?
 AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL
+AND LOWER(e.position) != 'super admin'
 GROUP BY location_type";
 $durationStmt = mysqli_prepare($db, $durationSql);
 mysqli_stmt_bind_param($durationStmt, 'ss', $startDate, $endDate);
@@ -182,7 +251,7 @@ while ($row = mysqli_fetch_assoc($durationResult)) {
     }
 }
 
-// Detailed per-branch breakdown
+// Detailed per-branch breakdown (exclude Super Admin)
 $branchDetailSql = "SELECT 
     b.branch_name,
     COUNT(DISTINCT a.employee_id) as unique_staff,
@@ -194,8 +263,10 @@ $branchDetailSql = "SELECT
     SUM(COALESCE(a.total_ot_hrs, 0)) as total_ot_hours
 FROM attendance a
 LEFT JOIN branches b ON a.branch_name = b.branch_name
+JOIN employees e ON a.employee_id = e.id
 WHERE a.attendance_date BETWEEN ? AND ?
 AND a.time_in IS NOT NULL
+AND LOWER(e.position) != 'super admin'
 GROUP BY b.branch_name
 ORDER BY total_shifts DESC";
 $branchDetailStmt = mysqli_prepare($db, $branchDetailSql);
@@ -228,11 +299,12 @@ $efficiencyData['productivity'] = [
 // ============================================
 $anomalies = [];
 
-// Forgotten clock-outs (sessions open > 12 hours)
+// Forgotten clock-outs (sessions open > 12 hours) - exclude Super Admin
 $forgottenSql = "SELECT 
     a.employee_id,
     e.first_name,
     e.last_name,
+    e.position,
     a.attendance_date,
     a.time_in,
     TIMESTAMPDIFF(HOUR, a.time_in, NOW()) as hours_open
@@ -240,6 +312,7 @@ FROM attendance a
 JOIN employees e ON a.employee_id = e.id
 WHERE a.attendance_date BETWEEN ? AND ?
 AND a.time_in IS NOT NULL AND a.time_out IS NULL
+AND LOWER(e.position) != 'super admin'
 AND TIMESTAMPDIFF(HOUR, a.time_in, NOW()) > 12";
 $forgottenStmt = mysqli_prepare($db, $forgottenSql);
 mysqli_stmt_bind_param($forgottenStmt, 'ss', $startDate, $endDate);
@@ -253,17 +326,19 @@ while ($row = mysqli_fetch_assoc($forgottenResult)) {
 // Excessive open sessions count
 $anomalies['open_sessions_count'] = $healthData['open_sessions'] ?? 0;
 
-// Short shifts (< 4 hours) - potential incomplete data
+// Short shifts (< 4 hours) - exclude Super Admin
 $shortSql = "SELECT 
     a.employee_id,
     e.first_name,
     e.last_name,
+    e.position,
     a.attendance_date,
     TIMESTAMPDIFF(MINUTE, a.time_in, a.time_out) as minutes
 FROM attendance a
 JOIN employees e ON a.employee_id = e.id
 WHERE a.attendance_date BETWEEN ? AND ?
 AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL
+AND LOWER(e.position) != 'super admin'
 AND TIMESTAMPDIFF(MINUTE, a.time_in, a.time_out) < 240";
 $shortStmt = mysqli_prepare($db, $shortSql);
 mysqli_stmt_bind_param($shortStmt, 'ss', $startDate, $endDate);
@@ -274,11 +349,11 @@ while ($row = mysqli_fetch_assoc($shortResult)) {
     $anomalies['short_shifts'][] = $row;
 }
 
-// Missing attendance (Active employees with no records)
-$missingSql = "SELECT e.id, e.first_name, e.last_name, e.branch_id
+// Missing attendance (Active employees with no records) - exclude Super Admin
+$missingSql = "SELECT e.id, e.first_name, e.last_name, e.branch_id, e.position
 FROM employees e
 WHERE e.status = 'Active'
-AND LOWER(e.position) = 'worker'
+AND LOWER(e.position) != 'super admin'
 AND e.id NOT IN (
     SELECT DISTINCT employee_id 
     FROM attendance 
@@ -501,7 +576,7 @@ $reportDate = date('F d, Y');
                     </div>
                     <div class="metric-card text-center">
                         <div class="text-3xl font-bold text-green-700"><?= $workforceData['punctual_arrivals'] ?></div>
-                        <div class="text-sm text-gray-600 mt-1">Punctual Arrivals<br><span class="text-xs text-gray-400">(07:00-08:00 AM)</span></div>
+                        <div class="text-sm text-gray-600 mt-1">On-Time Arrivals</div>
                     </div>
                     <div class="metric-card text-center">
                         <div class="text-3xl font-bold text-orange-700"><?= number_format($workforceData['total_man_hours'], 1) ?></div>
@@ -514,19 +589,49 @@ $reportDate = date('F d, Y');
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-gray-800 mb-3">Punctuality Distribution</h4>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Early Arrivals (Before 07:00 AM)</span>
-                            <span class="font-semibold text-green-700"><?= $workforceData['early_arrivals'] ?> staff</span>
+                    <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-user-clock mr-2"></i>Punctuality by Position</h4>
+                    
+                    <!-- Early Shift: Engineers & Workers -->
+                    <div class="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-semibold text-blue-800"><i class="fas fa-hard-hat mr-2"></i>Engineers & Workers (7:00 AM - 4:00 PM)</span>
+                            <span class="text-sm text-blue-600">On-time window: 7:00-7:30 AM</span>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Standard Hours (07:00-08:00 AM)</span>
-                            <span class="font-semibold text-blue-700"><?= $workforceData['punctual_arrivals'] ?> staff</span>
+                        <div class="grid grid-cols-3 gap-2 text-sm">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-green-600"><?= $workforceData['early_shift_early'] ?></div>
+                                <div class="text-gray-500">Early (Before 7:00)</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-600"><?= $workforceData['early_shift_on_time'] ?></div>
+                                <div class="text-gray-500">On-Time (7:00-7:30)</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-red-600"><?= $workforceData['early_shift_late'] ?></div>
+                                <div class="text-gray-500">Late (After 7:30)</div>
+                            </div>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Late Arrivals (After 08:00 AM)</span>
-                            <span class="font-semibold text-red-700"><?= $workforceData['late_arrivals'] ?> staff</span>
+                    </div>
+                    
+                    <!-- Regular Shift: Others -->
+                    <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-semibold text-green-800"><i class="fas fa-users mr-2"></i>Others (8:00 AM - 5:00 PM)</span>
+                            <span class="text-sm text-green-600">On-time window: 8:00-8:30 AM</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-sm">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-green-600"><?= $workforceData['regular_early'] ?></div>
+                                <div class="text-gray-500">Early (Before 8:00)</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-600"><?= $workforceData['regular_shift_on_time'] ?></div>
+                                <div class="text-gray-500">On-Time (8:00-8:30)</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-red-600"><?= $workforceData['regular_late'] ?></div>
+                                <div class="text-gray-500">Late (After 8:30)</div>
+                            </div>
                         </div>
                     </div>
                 </div>
