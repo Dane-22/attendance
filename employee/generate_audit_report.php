@@ -616,7 +616,7 @@ $reportDate = date('F d, Y');
                     <!-- Regular Shift: Others -->
                     <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-semibold text-green-800"><i class="fas fa-users mr-2"></i>Others (8:00 AM - 5:00 PM)</span>
+                            <span class="font-semibold text-green-800"><i class="fas fa-users mr-2"></i>Admin, Developer & Others (8:00 AM - 5:00 PM)</span>
                             <span class="text-sm text-green-600">On-time window: 8:00-8:30 AM</span>
                         </div>
                         <div class="grid grid-cols-3 gap-2 text-sm">
