@@ -1,0 +1,122 @@
+[13-Mar-2026 10:46:06 Asia/Manila] Session: logged_in=1, position=Admin
+[13-Mar-2026 10:46:06 Asia/Manila] Received: emp_id=12, allowance=100, year=2026, month=3, week=1
+[13-Mar-2026 10:46:06 Asia/Manila] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in C:\wamp64\www\main\employee\update_allowance.php:65
+Stack trace:
+#0 C:\wamp64\www\main\employee\update_allowance.php(65): mysqli_stmt_bind_param(Object(mysqli_stmt), 'diiiiis', 100.0, 12, 2026, 3, 1, 'weekly')
+#1 {main}
+  thrown in C:\wamp64\www\main\employee\update_allowance.php on line 65
+[13-Mar-2026 10:47:38 Asia/Manila] Session: logged_in=1, position=Admin
+[13-Mar-2026 10:47:38 Asia/Manila] Received: emp_id=12, allowance=100, year=2026, month=3, week=1
+[13-Mar-2026 10:48:08 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 10:48:08 Asia/Manila] Received: emp_id=12, allowance=100, year=2026, month=3, week=1
+[13-Mar-2026 10:50:02 Asia/Manila] Session: logged_in=1, position=Admin
+[13-Mar-2026 10:51:14 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 10:52:36 Asia/Manila] Session: logged_in=1, position=Admin
+[13-Mar-2026 10:52:36 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=2
+[13-Mar-2026 10:54:24 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 10:54:24 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=1
+[13-Mar-2026 10:57:14 Asia/Manila] Session: logged_in=1, position=Admin
+[13-Mar-2026 10:57:14 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=2
+[13-Mar-2026 10:57:24 Asia/Manila] Session: logged_in=1, position=Admin
+[13-Mar-2026 10:57:24 Asia/Manila] UPSERT result: affected_rows=1 for emp=13, year=2026, month=3, week=2
+[13-Mar-2026 10:58:11 Asia/Manila] Session: logged_in=1, position=Admin
+[13-Mar-2026 10:58:11 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=2
+[13-Mar-2026 11:02:59 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 11:02:59 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=2
+[13-Mar-2026 11:04:02 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:04:39 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:06:01 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:06:01 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 11:06:05 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 11:06:05 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=2
+[13-Mar-2026 11:06:09 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:06:09 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 11:06:54 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:06:54 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 11:06:54 Asia/Manila] [report.php] Payroll data fetched successfully
+[13-Mar-2026 11:06:54 Asia/Manila] [report.php] Attendance data fetched successfully
+[13-Mar-2026 11:06:54 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Mar-2026 11:06:54 Asia/Manila] [report.php] About to process attendance data
+[13-Mar-2026 11:06:54 Asia/Manila] [report.php] About to calculate payroll
+[13-Mar-2026 11:07:00 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:07:00 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 11:07:00 Asia/Manila] [report.php] Payroll data fetched successfully
+[13-Mar-2026 11:07:00 Asia/Manila] [report.php] Attendance data fetched successfully
+[13-Mar-2026 11:07:00 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Mar-2026 11:07:00 Asia/Manila] [report.php] About to process attendance data
+[13-Mar-2026 11:07:00 Asia/Manila] [report.php] About to calculate payroll
+[13-Mar-2026 11:07:12 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:07:12 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 11:07:12 Asia/Manila] [report.php] Payroll data fetched successfully
+[13-Mar-2026 11:07:12 Asia/Manila] [report.php] Attendance data fetched successfully
+[13-Mar-2026 11:07:12 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Mar-2026 11:07:12 Asia/Manila] [report.php] About to process attendance data
+[13-Mar-2026 11:07:12 Asia/Manila] [report.php] About to calculate payroll
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Payroll data fetched successfully
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Attendance data fetched successfully
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] About to process attendance data
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] About to calculate payroll
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=2, view=weekly
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=100.00
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Found in DB: emp_id=12, allowance=100.00
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Total employees with allowances: 2
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Employee IDs with allowances: 13, 12
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Loaded allowance for emp 12: 100
+[13-Mar-2026 11:08:23 Asia/Manila] [report.php] Loaded allowance for emp 13: 100
+[13-Mar-2026 11:36:05 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 11:36:05 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=2
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Payroll data fetched successfully
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Attendance data fetched successfully
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] About to process attendance data
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] About to calculate payroll
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=2, view=weekly
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=100.00
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Found in DB: emp_id=12, allowance=200.00
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Total employees with allowances: 2
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Employee IDs with allowances: 13, 12
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Loaded allowance for emp 12: 200
+[13-Mar-2026 11:36:07 Asia/Manila] [report.php] Loaded allowance for emp 13: 100
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Payroll data fetched successfully
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Attendance data fetched successfully
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] About to process attendance data
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] About to calculate payroll
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=2, view=weekly
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=100.00
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Found in DB: emp_id=12, allowance=200.00
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Total employees with allowances: 2
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Employee IDs with allowances: 13, 12
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Loaded allowance for emp 12: 200
+[13-Mar-2026 14:56:15 Asia/Manila] [report.php] Loaded allowance for emp 13: 100
+[13-Mar-2026 14:56:38 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 14:56:38 Asia/Manila] UPSERT result: affected_rows=1 for emp=12, year=2026, month=3, week=2
+[13-Mar-2026 14:56:48 Asia/Manila] Session: logged_in=1, position=Super Admin
+[13-Mar-2026 14:56:48 Asia/Manila] UPSERT result: affected_rows=1 for emp=13, year=2026, month=3, week=2
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] File loaded - starting execution
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] About to fetch payroll data
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Payroll data fetched successfully
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Attendance data fetched successfully
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] About to process attendance data
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] About to calculate payroll
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=2, view=weekly
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Found in DB: emp_id=12, allowance=0.00
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=0.00
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Total employees with allowances: 2
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] Employee IDs with allowances: 12, 13
+[13-Mar-2026 14:57:11 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63

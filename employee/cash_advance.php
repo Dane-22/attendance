@@ -13,7 +13,7 @@ if (empty($_SESSION['logged_in'])) {
 $employeeId = $_SESSION['employee_id'] ?? null;
 $employeeName = ($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? '');
 $position = $_SESSION['position'] ?? 'Employee';
-$isAdmin = in_array($position, ['Admin', 'Super Admin']);
+$isAdmin = in_array($position, ['Admin', 'Super Admin', 'Developer']);
 
 // Handle AJAX add transaction request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_transaction_ajax'])) {

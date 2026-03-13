@@ -14,8 +14,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit();
 }
 
-// Check if user is Super Admin
-$isAdmin = ($_SESSION['position'] ?? '') === 'Super Admin';
+// Check if user is Super Admin or Developer
+$userRole = $_SESSION['position'] ?? '';
+$isAdmin = ($userRole === 'Super Admin' || $userRole === 'Developer');
 if (!$isAdmin) {
     header('Location: dashboard.php');
     exit();

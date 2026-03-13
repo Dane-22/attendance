@@ -9,10 +9,11 @@ $userRole = isset($_SESSION['position']) ? $_SESSION['position'] : 'Employee';
 // Check if user is Admin or Super Admin
 $isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
 $isSuperAdmin = ($userRole === 'Super Admin');
+$isDeveloper = ($userRole === 'Developer');
 
 // Get pending count for badge (function defined in notification.php if included)
 $pendingOvertimeCount = 0;
-if ($isAdmin && function_exists('getPendingOvertimeCount') && isset($db)) {
+if (($isAdmin || $isDeveloper) && function_exists('getPendingOvertimeCount') && isset($db)) {
     $pendingOvertimeCount = getPendingOvertimeCount($db);
 }
 
@@ -65,7 +66,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
     </button>
     
   <!-- Engineer Only: Dashboard -->
-  <?php if ($userRole === 'Engineer' || $userRole === 'Admin'): ?>
+  <?php if ($userRole === 'Engineer' || $userRole === 'Admin' || $isDeveloper): ?>
     <a href="eng_dashboard.php" class="menu-item <?= $current === 'eng_dashboard.php' ? 'active' : '' ?>" data-target="eng_dashboard.php"><span class="icon">🏗️</span><span class="label">Dashboard</span></a>
   <?php endif; ?>
 
@@ -79,7 +80,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <a href="select_employee.php" class="menu-item <?= $current === 'select_employee.php' ? 'active' : '' ?>" data-target="select_employee.php"><span class="icon">📋</span><span class="label">Site Attendance</span></a>
 
   <!-- Super Admin Only: Overtime Request Management -->
-<?php if ($isSuperAdmin): ?>
+<?php if ($isSuperAdmin || $isDeveloper): ?>
     <a href="notification.php" class="menu-item <?= $current === 'notification.php' ? 'active' : '' ?>" data-target="notification.php">
       <span class="icon">🔔</span>
       <span class="label">Notification</span>
@@ -90,7 +91,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
 <?php endif; ?>
 
   <!-- Admin Only: View Notifications (read-only) -->
-  <?php if ($userRole === 'Admin'): ?>
+  <?php if ($userRole === 'Admin' && !$isDeveloper): ?>
     <a href="admin_notification.php" class="menu-item <?= $current === 'admin_notification.php' ? 'active' : '' ?>" data-target="admin_notification.php">
       <span class="icon">🔔</span>
       <span class="label">Notifications</span>
@@ -100,8 +101,8 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
     </a>
   <?php endif; ?>
 
-  <!-- All Users: My Notifications (Non-Super Admin only) -->
-  <?php if (!$isAdmin): ?>
+  <!-- All Users: My Notifications (Non-Admin and Non-Developer only) -->
+  <?php if (!$isAdmin && !$isDeveloper): ?>
     <a href="my_notifications.php" class="menu-item <?= $current === 'my_notifications.php' ? 'active' : '' ?>" data-target="my_notifications.php">
       <span class="icon">📨</span>
       <span class="label">My Notifications</span>
@@ -117,25 +118,31 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
  
 
   <!-- Admin/Super Admin Only: Documents -->
-  <?php if ($isAdmin): ?>
+  <?php if ($isAdmin || $isDeveloper): ?>
     <a href="documents.php" class="menu-item <?= $current === 'documents.php' ? 'active' : '' ?>" data-target="documents.php"><span class="icon">🏥</span><span class="label">Documents</span></a>
 
   <?php endif; ?>
 
   <!-- Super Admin Only: Activity Logs -->
-  <?php if ($isSuperAdmin): ?>
+  <?php if ($isSuperAdmin || $isDeveloper): ?>
     <a href="logs.php" class="menu-item <?= $current === 'logs.php' ? 'active' : '' ?>" data-target="logs.php"><span class="icon">🗂️</span><span class="label">Activity Logs</span></a>
 
   <?php endif; ?>
 
+  <!-- Developer Only: Database Manager -->
+  <?php if ($isDeveloper): ?>
+    <a href="developer_db_manager.php" class="menu-item <?= $current === 'developer_db_manager.php' ? 'active' : '' ?>" data-target="developer_db_manager.php"><span class="icon">🗄️</span><span class="label">DB Manager</span></a>
+
+  <?php endif; ?>
+
   <!-- Admin/Super Admin Only: Attendance Audit -->
-  <?php if ($isAdmin): ?>
+  <?php if ($isAdmin || $isDeveloper): ?>
     <a href="audit.php" class="menu-item <?= $current === 'audit.php' ? 'active' : '' ?>" data-target="audit.php"><span class="icon">📊</span><span class="label">Attendance Audit</span></a>
 
   <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Finance Dropdown -->
-  <?php if ($isAdmin): ?>
+  <?php if ($isAdmin || $isDeveloper): ?>
     <div class="menu-dropdown">
       <button class="menu-item dropdown-toggle <?= in_array($current, ['weekly_report.php', 'overtime.php', 'billing.php', 'cash_advance.php']) ? 'active' : '' ?>" onclick="toggleDropdown(this)">
         <span class="icon">💰</span>
@@ -152,7 +159,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <?php endif; ?>
 
   <!-- Admin/Super Admin/Engineer Only: Procurement (External Link) -->
-  <?php if ($isAdmin || $userRole === 'Engineer'): ?>
+  <?php if ($isAdmin || $userRole === 'Engineer' || $isDeveloper): ?>
     <a href="<?php echo $basePath; ?>procurement_redirect.php" class="menu-item"><span class="icon">🛒</span><span class="label">Procurement</span></a>
   <?php endif; ?>
 

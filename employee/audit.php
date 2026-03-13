@@ -4,8 +4,8 @@ require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 session_start();
 
-// Check if user is logged in and is admin/super admin
-if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin'])) {
+// Check if user is logged in and is admin/super admin/developer
+if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin', 'Developer'])) {
     header('Location: ../login.php');
     exit;
 }

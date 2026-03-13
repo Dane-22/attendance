@@ -11,7 +11,7 @@ require_once __DIR__ . '/../functions.php';
 
 // Check if user is Engineer or Admin
 $userRole = isset($_SESSION['position']) ? $_SESSION['position'] : '';
-if (!in_array($userRole, ['Engineer', 'Admin'])) {
+if (!in_array($userRole, ['Engineer', 'Admin', 'Developer'])) {
     header('Location: select_employee.php');
     exit();
 }
