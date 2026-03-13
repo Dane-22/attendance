@@ -1,5 +1,8 @@
-
 <?php
+// Log that report.php is being loaded
+ini_set('error_log', __DIR__ . '/../update_allowance_errors.log');
+error_log("[report.php] File loaded - starting execution");
+
 // Get current month and year
 $current_month = date('Y-m');
 $current_year = date('Y');
@@ -75,6 +78,7 @@ $branch_offset = ($branch_page - 1) * $branches_per_page;
 $paginated_branches = array_slice($all_branches_list, $branch_offset, $branches_per_page);
 
 // Fetch payroll data from daily_payroll_reports for the date range (primary source)
+error_log("[report.php] About to fetch payroll data");
 $payroll_query = "SELECT 
                     dpr.employee_id,
                     dpr.report_date,
@@ -123,6 +127,7 @@ if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
 
 mysqli_stmt_execute($stmt);
 $payroll_result = mysqli_stmt_get_result($stmt);
+error_log("[report.php] Payroll data fetched successfully");
 
 // Fetch attendance data as fallback/supplement (for dates not in daily_payroll_reports)
 $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name, a.time_in, a.time_out, a.total_ot_hrs,
@@ -148,6 +153,7 @@ if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
 
 mysqli_stmt_execute($stmt2);
 $attendance_result = mysqli_stmt_get_result($stmt2);
+error_log("[report.php] Attendance data fetched successfully");
 
 // Government deduction constants (monthly)
 $MONTHLY_PHILHEALTH = 250.00;
@@ -213,6 +219,7 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
         'pagibig_deduction' => 0,
         'total_deductions' => 0,
         'net_pay' => 0,
+        'performance_allowance' => 0,
         '_daily' => [],
         '_branches' => [],  // Track per-branch totals: [branch_name => ['days'=>x, 'hours'=>y, 'ot_hours'=>z]]
         '_has_payroll_record' => []  // Track dates covered by daily_payroll_reports
@@ -220,6 +227,7 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
 }
 
 // Process daily_payroll_reports data first (primary source)
+error_log("[report.php] About to process daily_payroll_reports data");
 while ($row = mysqli_fetch_assoc($payroll_result)) {
     $emp_id = $row['employee_id'];
     
@@ -235,6 +243,9 @@ while ($row = mysqli_fetch_assoc($payroll_result)) {
         $employee_payroll[$emp_id]['total_hours'] += floatval($row['total_hours'] ?? 0);
         $employee_payroll[$emp_id]['total_ot_hrs'] += floatval($row['ot_hours'] ?? 0);
         $employee_payroll[$emp_id]['gross_pay'] += floatval($row['gross_pay'] ?? 0);
+        
+        // Accumulate performance allowance from daily records (take the max or latest)
+        $employee_payroll[$emp_id]['performance_allowance'] = floatval($row['performance_allowance'] ?? 0);
         
         // Track per-branch totals
         if (!isset($employee_payroll[$emp_id]['_branches'][$branch_name])) {
@@ -257,6 +268,7 @@ while ($row = mysqli_fetch_assoc($payroll_result)) {
 }
 
 // Process attendance data as fallback (for dates not in daily_payroll_reports)
+error_log("[report.php] About to process attendance data");
 while ($row = mysqli_fetch_assoc($attendance_result)) {
     $emp_id = $row['employee_id'];
     
@@ -355,6 +367,7 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
 unset($payroll);
 
 // Calculate payroll for each employee
+error_log("[report.php] About to calculate payroll");
 $payroll_totals = [
     'total_employees' => 0,
     'total_days' => 0,
@@ -401,11 +414,13 @@ $employee_payroll = array_filter($employee_payroll, function($p) {
     return $p['employee']['status'] === 'Active';
 });
 
+error_log("[report.php] Payroll calculated, about to load allowances");
+
 // Save report data to database
 function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch) {
     // Check if weekly_payroll_reports table exists
     $table_check = mysqli_query($db, "SHOW TABLES LIKE 'weekly_payroll_reports'");
-    if (mysqli_num_rows($table_check) == 0) {
+    // ... rest of the code remains the same ...
         // Table doesn't exist, skip saving
         return;
     }
@@ -496,9 +511,11 @@ function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $m
 //     saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch);
 // }
 
-// Load payment status from database for each employee
+// Load payment status and performance allowance from database for each employee
 $week_num_for_db = ($view_type === 'monthly') ? 0 : $selected_week;
-$payment_status_query = "SELECT employee_id, payment_status FROM weekly_payroll_reports AS wpr1 
+ini_set('error_log', __DIR__ . '/../update_allowance_errors.log');
+error_log("[report.php] Loading allowances for year=$year, month=$month, week=$week_num_for_db, view=$view_type");
+$payment_status_query = "SELECT employee_id, payment_status, performance_allowance FROM weekly_payroll_reports AS wpr1 
                          WHERE report_year = ? AND report_month = ? AND week_number = ? AND view_type = ?
                          AND id = (SELECT MAX(id) FROM weekly_payroll_reports AS wpr2 
                                    WHERE wpr2.employee_id = wpr1.employee_id 
@@ -512,14 +529,26 @@ mysqli_stmt_execute($payment_stmt);
 $payment_result = mysqli_stmt_get_result($payment_stmt);
 
 $payment_statuses = [];
+$weekly_allowances = [];
 while ($row = mysqli_fetch_assoc($payment_result)) {
     $payment_statuses[$row['employee_id']] = $row['payment_status'];
+    $weekly_allowances[$row['employee_id']] = floatval($row['performance_allowance'] ?? 0);
+    error_log("[report.php] Found in DB: emp_id=" . $row['employee_id'] . ", allowance=" . $row['performance_allowance']);
 }
 mysqli_stmt_close($payment_stmt);
 
-// Merge payment status into employee payroll data
+error_log("[report.php] Total employees with allowances: " . count($weekly_allowances));
+error_log("[report.php] Employee IDs with allowances: " . implode(', ', array_keys($weekly_allowances)));
+
+// Merge payment status and performance allowance into employee payroll data
+error_log("[report.php] About to merge allowances into employee data. Employee count: " . count($employee_payroll));
 foreach ($employee_payroll as $emp_id => &$payroll) {
     $payroll['payment_status'] = $payment_statuses[$emp_id] ?? 'Not Paid';
+    // Override with weekly_allowance if it exists (from weekly_payroll_reports)
+    if (isset($weekly_allowances[$emp_id]) && $weekly_allowances[$emp_id] > 0) {
+        $payroll['performance_allowance'] = $weekly_allowances[$emp_id];
+        error_log("[report.php] Loaded allowance for emp $emp_id: " . $weekly_allowances[$emp_id]);
+    }
 }
 unset($payroll);
 
@@ -568,5 +597,3 @@ if ($view_type === 'monthly') {
         }
     }
 }
-}
-?>

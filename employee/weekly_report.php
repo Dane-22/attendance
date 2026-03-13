@@ -4,8 +4,8 @@ require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 session_start();
 
-// Check if user is logged in and is admin/super admin
-if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin'])) {
+// Check if user is logged in and is admin/super admin/developer
+if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin', 'Developer'])) {
     header('Location: ../login.php');
     exit;
 }
@@ -259,7 +259,7 @@ include __DIR__ . '/function/report.php';
                                 $ot_hours = $payroll['total_ot_hrs'];
                                 $ot_rate = $payroll['daily_rate'] / 8;
                                 $ot_amount = $ot_hours * $ot_rate;
-                                $allowance = 0; // Placeholder for performance allowance - will be filled by user input
+                                $allowance = floatval($payroll['performance_allowance'] ?? 0);
                                 $gross_plus_allowance = $payroll['gross_pay'] + $allowance;
                                 $ca_deduction = 0; // Placeholder for cash advance
                                 $sss_loan = 0; // Placeholder for SSS loan
@@ -297,12 +297,12 @@ include __DIR__ . '/function/report.php';
                                     <input type="number" 
                                            name="allowance_<?php echo $emp_id; ?>" 
                                            id="allowance_<?php echo $emp_id; ?>"
-                                           value="0" 
+                                           value="<?php echo number_format($allowance, 2, '.', ''); ?>" 
                                            min="0"
                                            step="0.01"
                                            class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-right text-blue-400 focus:border-yellow-500 focus:outline-none allowance-input"
                                            data-emp-id="<?php echo $emp_id; ?>"
-                                           onchange="updateCalculations(<?php echo $emp_id; ?>)">
+                                           onchange="updateCalculations(<?php echo $emp_id; ?>); saveAllowance(<?php echo $emp_id; ?>, this.value);">
                                 </td>
                                 <td class="px-2 py-2 text-right text-sm font-medium text-white">
                                     <?php echo number_format($gross_plus_allowance + $ot_amount, 0); ?>
@@ -674,6 +674,42 @@ include __DIR__ . '/function/report.php';
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+        
+        // Save Performance Allowance Function
+        function saveAllowance(empId, allowanceValue) {
+            const input = document.getElementById('allowance_' + empId);
+            
+            // Get employee name from the row
+            const row = input.closest('tr');
+            const empName = row.querySelector('td:first-child .font-medium').textContent.trim();
+            
+            // Send AJAX request to update database
+            const formData = new FormData();
+            formData.append('employee_id', empId);
+            formData.append('performance_allowance', allowanceValue);
+            formData.append('year', <?php echo $year; ?>);
+            formData.append('month', <?php echo $month; ?>);
+            formData.append('week', <?php echo $selected_week; ?>);
+            formData.append('view_type', '<?php echo $view_type; ?>');
+            
+            fetch('update_allowance.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`Performance allowance saved for ${empName}`, 'success');
+                } else {
+                    console.error('Failed to save allowance:', data.error);
+                    showToast('Failed to save allowance. Please try again.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error saving allowance. Please check your connection.', 'error');
+            });
         }
         
         // Auto-export when triggered from Admin Quick Actions
