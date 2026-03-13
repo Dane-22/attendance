@@ -332,7 +332,8 @@ if (!isset($_SESSION['employee_code'])) {
       <form method="POST">
         <input type="hidden" name="action" value="add">
         <div class="form-row" style="margin-bottom: 1rem;">
-          <input name="employee_code" required placeholder="Employee code" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+          <input name="employee_code" id="addEmployeeCode" required placeholder="Employee code" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+          <small id="employeeCodeHint" style="color: #FFD700; font-size: 0.8rem; margin-top: 4px; display: none;">Auto-generated based on position</small>
         </div>
         <div class="form-row" style="margin-bottom: 1rem;">
           <input name="first_name" required placeholder="First name" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
@@ -347,7 +348,14 @@ if (!isset($_SESSION['employee_code'])) {
           <input name="email" type="email" placeholder="Email" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
         </div>
         <div class="form-row" style="margin-bottom: 1rem;">
-          <input name="position" placeholder="Position" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+          <select name="position" id="addPosition" required style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white; cursor: pointer;">
+            <option value="">Select Position</option>
+            <option value="Worker">Worker</option>
+            <option value="Admin">Admin</option>
+            <option value="Engineer">Engineer</option>
+            <option value="Developer">Developer</option>
+            <option value="Super Admin">Super Admin</option>
+          </select>
         </div>
         <div class="form-row" style="margin-bottom: 1.5rem;">
           <input name="password" type="password" placeholder="Password (optional)" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
@@ -492,6 +500,62 @@ if (!isset($_SESSION['employee_code'])) {
     });
   </script>
   <script src="js/employees.js.php"></script>
+  <script>
+    // Auto-generate employee code based on position selection
+    (function() {
+      const positionSelect = document.getElementById('addPosition');
+      const employeeCodeInput = document.getElementById('addEmployeeCode');
+      const employeeCodeHint = document.getElementById('employeeCodeHint');
+      const addModal = document.getElementById('addModal');
+      
+      // Positions that support auto-generation
+      const autoGeneratePositions = ['worker', 'admin', 'engineer', 'developer'];
+      
+      // Store original openAddModal function and override it
+      const originalOpenAddModal = window.openAddModal;
+      window.openAddModal = function() {
+        // Clear hint when opening modal
+        if (employeeCodeHint) employeeCodeHint.style.display = 'none';
+        if (employeeCodeInput) employeeCodeInput.value = '';
+        if (positionSelect) positionSelect.value = '';
+        // Call original function
+        if (originalOpenAddModal) originalOpenAddModal();
+        else if (addModal) addModal.style.display = 'flex';
+      };
+      
+      positionSelect?.addEventListener('change', function() {
+        const selectedPosition = this.value.toLowerCase().trim();
+        
+        if (autoGeneratePositions.includes(selectedPosition)) {
+          employeeCodeInput.placeholder = 'Loading...';
+          
+          // Fetch next employee code from API
+          fetch('api/get_next_employee_code.php?position=' + encodeURIComponent(selectedPosition))
+            .then(response => response.json())
+            .then(data => {
+              if (data.success && data.employee_code) {
+                employeeCodeInput.value = data.employee_code;
+                employeeCodeHint.style.display = 'block';
+                employeeCodeHint.textContent = 'Auto-generated ' + selectedPosition.charAt(0).toUpperCase() + selectedPosition.slice(1) + ' code';
+              } else {
+                employeeCodeHint.style.display = 'none';
+              }
+              employeeCodeInput.placeholder = 'Employee code';
+            })
+            .catch(error => {
+              console.error('Error fetching employee code:', error);
+              employeeCodeHint.style.display = 'none';
+              employeeCodeInput.placeholder = 'Employee code';
+            });
+        } else {
+          // For Super Admin or other positions, clear and let user input manually
+          employeeCodeInput.value = '';
+          employeeCodeInput.placeholder = 'Employee code';
+          employeeCodeHint.style.display = 'none';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
 
