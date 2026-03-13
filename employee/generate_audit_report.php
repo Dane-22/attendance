@@ -8,8 +8,8 @@ require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 session_start();
 
-// Super Admin access only
-if (empty($_SESSION['logged_in']) || $_SESSION['position'] !== 'Super Admin') {
+// Super Admin or Developer access only
+if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Super Admin', 'Developer'])) {
     header('Location: ../login.php');
     exit;
 }
