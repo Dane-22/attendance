@@ -48,6 +48,7 @@
             document.getElementById('editEmail').value = employee.email;
             document.getElementById('editPosition').value = employee.position;
             document.getElementById('editStatus').value = employee.status;
+            document.getElementById('editDailyRate').value = employee.daily_rate || '';
             
             // Update profile image preview
             const profileImagePreview = document.getElementById('profileImagePreview');

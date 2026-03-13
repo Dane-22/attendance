@@ -124,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $email = trim($_POST['email'] ?? '');
                 $position = trim($_POST['position'] ?? '');
                 $status = trim($_POST['status'] ?? 'Active');
+                $daily_rate = floatval($_POST['daily_rate'] ?? 600.00);
                 
                 if ($id > 0) {
                     // Check if the new employee code conflicts with another employee
@@ -135,8 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (mysqli_stmt_num_rows($check) > 0) {
                         $msg = 'Error: Employee code already exists for another employee.';
                     } else {
-                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ? WHERE id = ?");
-                        mysqli_stmt_bind_param($up, 'sssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $id);
+                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ?, daily_rate = ? WHERE id = ?");
+                        mysqli_stmt_bind_param($up, 'ssssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $daily_rate, $id);
                         if (mysqli_stmt_execute($up)) {
                             $msg = 'Employee updated.';
                             

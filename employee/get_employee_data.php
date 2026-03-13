@@ -48,6 +48,7 @@ if ($row = mysqli_fetch_assoc($result)) {
             'email' => $row['email'],
             'position' => $row['position'],
             'status' => $row['status'],
+            'daily_rate' => $row['daily_rate'] ?? 600.00,
             'profile_image' => $row['profile_image'] ?? '',
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at']

@@ -291,6 +291,10 @@ if (!isset($_SESSION['employee_code'])) {
                 <option value="On Leave">On Leave</option>
               </select>
             </div>
+            <div class="form-group">
+              <label class="form-label">Daily Rate (₱)</label>
+              <input type="number" name="daily_rate" id="editDailyRate" class="form-input" step="0.01" min="0" placeholder="600.00">
+            </div>
           </div>
         </div>
 
