@@ -212,6 +212,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 exit();
             }
             
+            // Ensure status column can accept 'pre-approved' value
+            @mysqli_query($db, "ALTER TABLE overtime_requests MODIFY COLUMN status ENUM('pending','approved','rejected','pre-approved') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending'");
+            
             // Get request details first for notification
             $getSql = "SELECT * FROM overtime_requests WHERE id = ? AND status = 'pending' LIMIT 1";
             $getStmt = mysqli_prepare($db, $getSql);
@@ -294,8 +297,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 exit();
             }
             
+            // Ensure status column can accept 'pre_approved' value - modify to ENUM if it's VARCHAR
+            @mysqli_query($db, "ALTER TABLE cash_advances MODIFY COLUMN status ENUM('Pending','Approved','Rejected','Pre-Approved') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending'");
+            
             // Get request details first
-            $getSql = "SELECT * FROM cash_advances WHERE id = ? AND status = 'pending' LIMIT 1";
+            $getSql = "SELECT * FROM cash_advances WHERE id = ? AND status = 'Pending' LIMIT 1";
             $getStmt = mysqli_prepare($db, $getSql);
             mysqli_stmt_bind_param($getStmt, 'i', $requestId);
             mysqli_stmt_execute($getStmt);
@@ -308,8 +314,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 exit();
             }
             
-            // Update request status to pre-approved (hyphen to match DB schema)
-            $updateSql = "UPDATE cash_advances SET status = 'pre-approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'pending'";
+            // Update request status to Pre-Approved (matching ENUM case)
+            $updateSql = "UPDATE cash_advances SET status = 'Pre-Approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'Pending'";
             $updateStmt = mysqli_prepare($db, $updateSql);
             mysqli_stmt_bind_param($updateStmt, 'si', $adminName, $requestId);
             
