@@ -7,9 +7,12 @@
  * - Engineers: 
  *   - Time-in: 6:50 AM, Mon-Sat
  *   - Time-out: 3:50 PM, Mon-Sat
- * - Admin & Developer:
+ * - Admin, Developer & Super Admin:
  *   - Time-in: 7:30 AM, Mon-Sat
  *   - Time-out: 4:50 PM, Mon-Fri only
+ * - Workers & Employees:
+ *   - Time-in: 8:00 AM, Mon-Sat
+ *   - Time-out: 5:00 PM, Mon-Sat
  */
 
 // Suppress PHP warnings
@@ -55,25 +58,45 @@ $schedules = [
         'url' => '/employee/attendance.php',
         'days' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     ],
-    // Admin & Developer Time-in: 7:30 AM, Mon-Sat
+    // Admin, Developer & Super Admin Time-in: 7:30 AM, Mon-Sat
     [
         'time' => '07:30',
-        'positions' => ['Admin', 'Developer'],
+        'positions' => ['Admin', 'Developer', 'Super Admin'],
         'type' => 'time_in',
         'title' => 'Time In Reminder',
         'message' => 'Good morning! Please don\'t forget to time in for your shift. Have a productive day!',
         'url' => '/employee/attendance.php',
         'days' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     ],
-    // Admin & Developer Time-out: 4:50 PM, Mon-Fri only
+    // Admin, Developer & Super Admin Time-out: 4:50 PM, Mon-Sat
     [
         'time' => '16:50',
-        'positions' => ['Admin', 'Developer'],
+        'positions' => ['Admin', 'Developer', 'Super Admin'],
         'type' => 'time_out',
         'title' => 'Time Out Reminder',
         'message' => 'Reminder: Please don\'t forget to time out before leaving. Have a great evening!',
         'url' => '/employee/attendance.php',
-        'days' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        'days' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    ],
+    // Worker Time-in: 8:00 AM, Mon-Sat
+    [
+        'time' => '08:00',
+        'positions' => ['Worker', 'Employee'],
+        'type' => 'time_in',
+        'title' => 'Time In Reminder',
+        'message' => 'Good morning! Please don\'t forget to time in for your shift. Have a great day!',
+        'url' => '/employee/attendance.php',
+        'days' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    ],
+    // Worker Time-out: 5:00 PM, Mon-Sat
+    [
+        'time' => '17:00',
+        'positions' => ['Worker', 'Employee'],
+        'type' => 'time_out',
+        'title' => 'Time Out Reminder',
+        'message' => 'Reminder: Please don\'t forget to time out before leaving. Have a safe trip home!',
+        'url' => '/employee/attendance.php',
+        'days' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     ],
 ];
 
