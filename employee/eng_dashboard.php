@@ -201,6 +201,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_cash_advance'
             mysqli_stmt_close($notifStmt);
         }
         
+        // Send push notifications to Super Admin and Developer
+        $superAdminNotifTitle = "New Cash Advance Request";
+        $superAdminNotifMessage = "{$currentUserName} requested ₱" . number_format($amount, 2) . " cash advance. Reason: {$reason}";
+        $superAdminNotifType = 'cash_advance_request';
+        
+        // Get all Super Admin and Developer users
+        $superAdminSql = "SELECT id FROM employees WHERE position IN ('Super Admin', 'Developer') AND status = 'Active'";
+        $superAdminResult = mysqli_query($db, $superAdminSql);
+        if ($superAdminResult) {
+            while ($superAdminRow = mysqli_fetch_assoc($superAdminResult)) {
+                $superAdminId = $superAdminRow['id'];
+                
+                // Insert notification
+                $superAdminNotifInsertSql = "INSERT INTO employee_notifications (employee_id, cash_advance_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $superAdminNotifStmt = mysqli_prepare($db, $superAdminNotifInsertSql);
+                if ($superAdminNotifStmt) {
+                    mysqli_stmt_bind_param($superAdminNotifStmt, 'iisss', $superAdminId, $newId, $superAdminNotifType, $superAdminNotifTitle, $superAdminNotifMessage);
+                    mysqli_stmt_execute($superAdminNotifStmt);
+                    mysqli_stmt_close($superAdminNotifStmt);
+                }
+                
+                // Send push notification
+                sendPushNotification($db, $superAdminId, $superAdminNotifTitle, $superAdminNotifMessage, '/employee/notification.php');
+            }
+        }
+        
         echo json_encode(['success' => true, 'id' => $newId, 'message' => 'Cash advance request submitted successfully']);
         logActivity($db, 'Cash Advance Requested', "Engineer requested ₱{$amount} cash advance - {$reason}");
     } else {
@@ -279,6 +305,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_overtime'])) 
                     mysqli_stmt_execute($adminNotifStmt);
                     mysqli_stmt_close($adminNotifStmt);
                 }
+            }
+        }
+        
+        // Send push notifications to Super Admin and Developer
+        $superAdminNotifTitle = "New Overtime Request";
+        $superAdminNotifMessage = "{$currentUserName} requested {$requestedHours} hours overtime for {$branchName} on {$requestDate}. Reason: {$overtimeReason}";
+        $superAdminNotifType = 'overtime_request';
+        
+        // Get all Super Admin and Developer users
+        $superAdminSql = "SELECT id FROM employees WHERE position IN ('Super Admin', 'Developer') AND status = 'Active'";
+        $superAdminResult = mysqli_query($db, $superAdminSql);
+        if ($superAdminResult) {
+            while ($superAdminRow = mysqli_fetch_assoc($superAdminResult)) {
+                $superAdminId = $superAdminRow['id'];
+                
+                // Insert notification
+                $superAdminNotifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $superAdminNotifStmt = mysqli_prepare($db, $superAdminNotifInsertSql);
+                if ($superAdminNotifStmt) {
+                    mysqli_stmt_bind_param($superAdminNotifStmt, 'iisss', $superAdminId, $overtimeRequestId, $superAdminNotifType, $superAdminNotifTitle, $superAdminNotifMessage);
+                    mysqli_stmt_execute($superAdminNotifStmt);
+                    mysqli_stmt_close($superAdminNotifStmt);
+                }
+                
+                // Send push notification
+                sendPushNotification($db, $superAdminId, $superAdminNotifTitle, $superAdminNotifMessage, '/employee/notification.php');
             }
         }
         
