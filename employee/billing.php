@@ -66,7 +66,7 @@ switch ($filter) {
                 LEFT JOIN employees e ON dpr.employee_id = e.id
                 LEFT JOIN branches b ON dpr.branch_id = b.id
                 WHERE dpr.report_date BETWEEN ? AND ?
-                  AND (b.branch_name IS NULL OR UPPER(b.branch_name) != 'MAIN BRANCH')
+                  AND (b.branch_name IS NULL OR UPPER(b.branch_name) != 'MAIN OFFICE')
                 GROUP BY b.branch_name
                 ORDER BY b.branch_name";
         $stmt = $db->prepare($sql);
@@ -89,7 +89,7 @@ switch ($filter) {
                     LEFT JOIN branches b ON a.branch_name = b.branch_name
                     WHERE a.attendance_date BETWEEN ? AND ?
                       AND a.time_out IS NOT NULL
-                      AND (b.branch_name IS NULL OR UPPER(b.branch_name) != 'MAIN BRANCH')
+                      AND (b.branch_name IS NULL OR UPPER(b.branch_name) != 'MAIN OFFICE')
                     GROUP BY b.branch_name
                     ORDER BY b.branch_name";
             $stmt = $db->prepare($sql);
