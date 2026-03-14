@@ -287,13 +287,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_overtime'])) 
         mysqli_stmt_execute($notifStmt);
         mysqli_stmt_close($notifStmt);
         
-        // Create notification for all Admin users
+        // Create notification for all Admin and Super Admin users
         $adminNotifTitle = "New Overtime Request";
         $adminNotifMessage = "{$currentUserName} requested {$requestedHours} hours overtime for {$branchName} on {$requestDate}. Reason: {$overtimeReason}";
         $adminNotifType = 'overtime_request';
         
-        // Get all Admin users
-        $adminSql = "SELECT id FROM employees WHERE position = 'Admin' AND status = 'Active'";
+        // Get all Admin and Super Admin users
+        $adminSql = "SELECT id FROM employees WHERE position IN ('Admin', 'Super Admin') AND status = 'Active'";
         $adminResult = mysqli_query($db, $adminSql);
         if ($adminResult) {
             while ($adminRow = mysqli_fetch_assoc($adminResult)) {
@@ -305,32 +305,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_overtime'])) 
                     mysqli_stmt_execute($adminNotifStmt);
                     mysqli_stmt_close($adminNotifStmt);
                 }
+                
+                // Send push notification
+                sendPushNotification($db, $adminId, $adminNotifTitle, $adminNotifMessage, '/employee/notification.php');
             }
         }
         
-        // Send push notifications to Super Admin and Developer
-        $superAdminNotifTitle = "New Overtime Request";
-        $superAdminNotifMessage = "{$currentUserName} requested {$requestedHours} hours overtime for {$branchName} on {$requestDate}. Reason: {$overtimeReason}";
-        $superAdminNotifType = 'overtime_request';
+        // Send push notifications to Developer users only
+        $devNotifTitle = "New Overtime Request";
+        $devNotifMessage = "{$currentUserName} requested {$requestedHours} hours overtime for {$branchName} on {$requestDate}. Reason: {$overtimeReason}";
+        $devNotifType = 'overtime_request';
         
-        // Get all Super Admin and Developer users
-        $superAdminSql = "SELECT id FROM employees WHERE position IN ('Super Admin', 'Developer') AND status = 'Active'";
-        $superAdminResult = mysqli_query($db, $superAdminSql);
-        if ($superAdminResult) {
-            while ($superAdminRow = mysqli_fetch_assoc($superAdminResult)) {
-                $superAdminId = $superAdminRow['id'];
+        // Get all Developer users
+        $devSql = "SELECT id FROM employees WHERE position = 'Developer' AND status = 'Active'";
+        $devResult = mysqli_query($db, $devSql);
+        if ($devResult) {
+            while ($devRow = mysqli_fetch_assoc($devResult)) {
+                $devId = $devRow['id'];
                 
                 // Insert notification
-                $superAdminNotifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
-                $superAdminNotifStmt = mysqli_prepare($db, $superAdminNotifInsertSql);
-                if ($superAdminNotifStmt) {
-                    mysqli_stmt_bind_param($superAdminNotifStmt, 'iisss', $superAdminId, $overtimeRequestId, $superAdminNotifType, $superAdminNotifTitle, $superAdminNotifMessage);
-                    mysqli_stmt_execute($superAdminNotifStmt);
-                    mysqli_stmt_close($superAdminNotifStmt);
+                $devNotifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $devNotifStmt = mysqli_prepare($db, $devNotifInsertSql);
+                if ($devNotifStmt) {
+                    mysqli_stmt_bind_param($devNotifStmt, 'iisss', $devId, $overtimeRequestId, $devNotifType, $devNotifTitle, $devNotifMessage);
+                    mysqli_stmt_execute($devNotifStmt);
+                    mysqli_stmt_close($devNotifStmt);
                 }
                 
                 // Send push notification
-                sendPushNotification($db, $superAdminId, $superAdminNotifTitle, $superAdminNotifMessage, '/employee/notification.php');
+                sendPushNotification($db, $devId, $devNotifTitle, $devNotifMessage, '/employee/notification.php');
             }
         }
         
