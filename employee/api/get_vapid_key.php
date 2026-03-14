@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Check if user is logged in (any authenticated user can get VAPID key)
-if (empty($_SESSION['logged_in']) || empty($_SESSION['user_id'])) {
+if (empty($_SESSION['logged_in']) || empty($_SESSION['employee_id'])) {
     http_response_code(403);
     echo json_encode([
         'success' => false,
