@@ -20,7 +20,12 @@ if (isset($_GET['generate_report']) && $_GET['generate_report'] === '1') {
     // Use HTTP request instead of CLI to ensure proper PHP environment with MySQLi
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'];
-    $cronUrl = "$protocol://$host/main/employee/cron/weekly_aggregate_non_branch33.php";
+    
+    // Detect base path (works on both localhost /main/ and production root)
+    $scriptPath = dirname($_SERVER['SCRIPT_NAME']); // /main/employee or /employee
+    $basePath = str_replace('/employee', '', $scriptPath); // /main or ''
+    
+    $cronUrl = "$protocol://$host$basePath/employee/cron/weekly_aggregate_non_branch33.php";
     
     // Run via HTTP GET request
     $ch = curl_init($cronUrl);
