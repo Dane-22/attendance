@@ -20,7 +20,7 @@ if (isset($_GET['generate_report']) && $_GET['generate_report'] === '1') {
     // Use HTTP request instead of CLI to ensure proper PHP environment with MySQLi
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'];
-    $cronUrl = "$protocol://$host/employee/cron/weekly_aggregate_non_branch33.php";
+    $cronUrl = "$protocol://$host/main/employee/cron/weekly_aggregate_non_branch33.php";
     
     // Run via HTTP GET request
     $ch = curl_init($cronUrl);
@@ -61,7 +61,7 @@ switch ($filter) {
                 LEFT JOIN employees e ON dpr.employee_id = e.id
                 LEFT JOIN branches b ON dpr.branch_id = b.id
                 WHERE dpr.report_date BETWEEN ? AND ?
-                  AND COALESCE(b.branch_name, '') != 'Main Branch'
+                  AND (b.branch_name IS NULL OR UPPER(b.branch_name) != 'MAIN BRANCH')
                 GROUP BY b.branch_name
                 ORDER BY b.branch_name";
         $stmt = $db->prepare($sql);
@@ -84,7 +84,7 @@ switch ($filter) {
                     LEFT JOIN branches b ON a.branch_name = b.branch_name
                     WHERE a.attendance_date BETWEEN ? AND ?
                       AND a.time_out IS NOT NULL
-                      AND COALESCE(b.branch_name, '') != 'Main Branch'
+                      AND (b.branch_name IS NULL OR UPPER(b.branch_name) != 'MAIN BRANCH')
                     GROUP BY b.branch_name
                     ORDER BY b.branch_name";
             $stmt = $db->prepare($sql);

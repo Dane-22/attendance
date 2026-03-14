@@ -120,3 +120,17 @@ Stack trace:
 [13-Mar-2026 14:57:11 Asia/Manila] [report.php] Total employees with allowances: 2
 [13-Mar-2026 14:57:11 Asia/Manila] [report.php] Employee IDs with allowances: 12, 13
 [13-Mar-2026 14:57:11 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] File loaded - starting execution
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] About to fetch payroll data
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Payroll data fetched successfully
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Attendance data fetched successfully
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] About to process attendance data
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] About to calculate payroll
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=2, view=weekly
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Found in DB: emp_id=12, allowance=0.00
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=0.00
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Total employees with allowances: 2
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] Employee IDs with allowances: 12, 13
+[14-Mar-2026 09:21:41 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
