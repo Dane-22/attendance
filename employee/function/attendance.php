@@ -2713,38 +2713,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         }
 
-
-
         $requestId = mysqli_insert_id($db);
 
         mysqli_stmt_close($insertStmt);
 
+        // Create notification for all Admin and Super Admin users
+        $notifTitle = "New Overtime Request";
+        $notifMessage = "{$employeeName} requested {$totalOtHrs} hours overtime for {$branch}. Reason: {$overtimeReason}";
+        $notifType = 'overtime_request';
         
-    // Get all Admin and Super Admin users
-    $adminSql = "SELECT id FROM employees WHERE position IN ('Admin', 'Super Admin') AND status = 'Active'";
-    $adminResult = mysqli_query($db, $adminSql);
-    if ($adminResult) {
-        while ($adminRow = mysqli_fetch_assoc($adminResult)) {
-            $adminId = $adminRow['id'];
-            $notifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
-            $notifStmt = mysqli_prepare($db, $notifInsertSql);
-            if ($notifStmt) {
-                mysqli_stmt_bind_param($notifStmt, 'iisss', $adminId, $requestId, $notifType, $notifTitle, $notifMessage);
-                mysqli_stmt_execute($notifStmt);
-                mysqli_stmt_close($notifStmt);
+        // Get all Admin and Super Admin users
+        $adminSql = "SELECT id FROM employees WHERE position IN ('Admin', 'Super Admin') AND status = 'Active'";
+        $adminResult = mysqli_query($db, $adminSql);
+        if ($adminResult) {
+            while ($adminRow = mysqli_fetch_assoc($adminResult)) {
+                $adminId = $adminRow['id'];
+                $notifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $notifStmt = mysqli_prepare($db, $notifInsertSql);
+                if ($notifStmt) {
+                    mysqli_stmt_bind_param($notifStmt, 'iisss', $adminId, $requestId, $notifType, $notifTitle, $notifMessage);
+                    mysqli_stmt_execute($notifStmt);
+                    mysqli_stmt_close($notifStmt);
+                }
             }
         }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Overtime request sent to Admin for approval',
+            'request_id' => $requestId
+        ]);
+
+        exit();
+
     }
 
-    echo json_encode([
-        'success' => true,
-        'message' => 'Overtime request sent to Admin for approval',
-        'request_id' => $requestId
-    ]);
-
-    exit();
-
-    } // Added closing brace here
 
 
     if ($_POST['action'] === 'get_shift_logs') {
