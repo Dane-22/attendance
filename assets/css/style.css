@@ -853,11 +853,11 @@ button, a[role="button"]{ touch-action:manipulation; }
 }
 
 /* Backdrop styling for sidebar */
-.sidebar-backdrop{ position:fixed; inset:0; background: rgba(0,0,0,0.45); opacity:0; transition: opacity .22s ease; z-index:85; pointer-events:none; }
+.sidebar-backdrop{ position:fixed; inset:0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity:0; transition: opacity .22s ease; z-index:9998; pointer-events:none; }
 .sidebar-backdrop.show{ opacity:1; pointer-events:auto; }
 
 /* Mobile open button base style */
-.mobile-open-btn{ display:none; position:fixed; left:12px; top:12px; z-index:95; background:var(--accent); border-radius:8px; padding:.5rem; border:none; color:#111; }
+.mobile-open-btn{ display:none; position:fixed; left:12px; top:12px; z-index:10001; background:var(--accent); border-radius:8px; padding:.5rem; border:none; color:#111; cursor:pointer; }
 @media (max-width: 1023px){ .mobile-open-btn{ display:block; } }
 
 
@@ -899,7 +899,7 @@ button, a[role="button"]{ touch-action:manipulation; }
 }
 
 /* Mobile header on top of sidebar so buttons remain tappable */
-.mobile-header{ z-index: 1100; }
+.mobile-header{ z-index: 1000; }
 
 /* Consistent gold color for hamburger/toggle */
 #mobileOpenBtn,

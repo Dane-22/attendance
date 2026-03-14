@@ -57,14 +57,6 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
     </div>
   </div>
   
-    <!-- Backdrop for mobile sidebar -->
-    <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
-  
-    <!-- Floating mobile open button (visible via CSS) -->
-    <button id="mobileOpenBtn" aria-label="Open menu" class="mobile-open-btn">
-      <i class="fa-solid fa-bars"></i>
-    </button>
-    
   <!-- Engineer Only: Dashboard -->
   <?php if ($userRole === 'Engineer' || $userRole === 'Admin' || $isDeveloper): ?>
     <a href="eng_dashboard.php" class="menu-item <?= $current === 'eng_dashboard.php' ? 'active' : '' ?>" data-target="eng_dashboard.php"><span class="icon">🏗️</span><span class="label">Dashboard</span></a>
@@ -173,6 +165,14 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <a href="../logout.php" class="menu-item logout"><span class="icon">🚪</span><span class="label">Log Out</span></a>
 
   </aside>
+
+<!-- Backdrop for mobile sidebar (moved outside sidebar) -->
+<div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+<!-- Floating mobile open button (moved outside sidebar) -->
+<button id="mobileOpenBtn" aria-label="Open menu" class="mobile-open-btn">
+  <i class="fa-solid fa-bars"></i>
+</button>
 
   <!-- Dropdown Styles -->
   <style>
