@@ -603,7 +603,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         </div>
     </div>
 
-    <?php if ($isSuperAdmin): ?>
+    <?php if ($isAdmin || $isSuperAdmin): ?>
     <!-- Push Notification Component - Super Admin Only -->
     <div id="pushNotificationWidget" class="push-notification-widget">
         <div id="pushNotificationStatus" class="push-notification-status">
