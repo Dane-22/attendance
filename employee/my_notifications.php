@@ -504,5 +504,301 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             loadNotifications(currentFilter);
         }, 60000);
     </script>
+
+    <!-- Push Notification Widget for Employees -->
+    <div id="pushNotificationWidget" class="push-notification-widget">
+        <div id="pushNotificationStatus" class="push-notification-status">
+            <span id="pushNotificationIcon">🔔</span>
+            <span id="pushNotificationText">Checking notifications...</span>
+            <button id="pushNotificationBtn" class="push-notification-btn" style="display: none;">
+                Enable Notifications
+            </button>
+        </div>
+    </div>
+
+    <style>
+        /* Push Notification Widget - Dark/Gold Theme */
+        .push-notification-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: rgba(22, 22, 22, 0.95);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            min-width: 280px;
+            max-width: 360px;
+            transition: all 0.3s ease;
+        }
+
+        .push-notification-widget:hover {
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 12px 40px rgba(255, 165, 0, 0.15);
+        }
+
+        .push-notification-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            font-size: 14px;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .push-notification-status #pushNotificationIcon {
+            font-size: 20px;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+        }
+
+        .push-notification-status #pushNotificationText {
+            flex: 1;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .push-notification-btn {
+            background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%);
+            border: none;
+            border-radius: 8px;
+            color: #0b0b0b;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .push-notification-btn:hover {
+            background: linear-gradient(135deg, #FFD700 0%, #FFD66B 100%);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .push-notification-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+        }
+
+        .push-notification-status.enabled #pushNotificationIcon {
+            filter: drop-shadow(0 0 12px rgba(76, 175, 80, 0.8));
+        }
+
+        .push-notification-status.enabled #pushNotificationText {
+            color: #4CAF50;
+        }
+
+        .push-notification-status.denied #pushNotificationIcon {
+            filter: drop-shadow(0 0 8px rgba(244, 67, 54, 0.6));
+        }
+
+        .push-notification-status.denied #pushNotificationText {
+            color: #F44336;
+        }
+
+        .push-notification-status.unsupported #pushNotificationIcon {
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+
+        .push-notification-status.unsupported #pushNotificationText {
+            color: #9CA3AF;
+        }
+
+        @media (max-width: 768px) {
+            .push-notification-widget {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+        }
+    </style>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const widget = document.getElementById('pushNotificationWidget');
+            const statusEl = document.getElementById('pushNotificationStatus');
+            const iconEl = document.getElementById('pushNotificationIcon');
+            const textEl = document.getElementById('pushNotificationText');
+            const btnEl = document.getElementById('pushNotificationBtn');
+
+            let vapidPublicKey = null;
+
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                statusEl.classList.add('unsupported');
+                iconEl.textContent = '🔕';
+                textEl.textContent = 'Notifications not supported';
+                return;
+            }
+
+            async function initPushNotifications() {
+                try {
+                    const registration = await navigator.serviceWorker.register('../sw.js');
+                    console.log('[Push] Service Worker registered:', registration);
+
+                    const permission = Notification.permission;
+                    updateUI(permission);
+
+                    if (permission === 'granted') {
+                        await subscribeToPush(registration);
+                    } else if (permission === 'default') {
+                        btnEl.style.display = 'block';
+                        btnEl.addEventListener('click', () => requestPermission(registration));
+                    }
+                } catch (error) {
+                    console.error('[Push] Initialization error:', error);
+                    statusEl.classList.add('unsupported');
+                    iconEl.textContent = '⚠️';
+                    textEl.textContent = 'Notification error';
+                }
+            }
+
+            function updateUI(permission) {
+                statusEl.classList.remove('enabled', 'denied', 'unsupported');
+
+                switch (permission) {
+                    case 'granted':
+                        statusEl.classList.add('enabled');
+                        iconEl.textContent = '🔔';
+                        textEl.textContent = 'Notifications enabled';
+                        btnEl.style.display = 'none';
+                        break;
+                    case 'denied':
+                        statusEl.classList.add('denied');
+                        iconEl.textContent = '🔕';
+                        textEl.textContent = 'Notifications blocked';
+                        btnEl.style.display = 'none';
+                        break;
+                    default:
+                        iconEl.textContent = '🔔';
+                        textEl.textContent = 'Enable notifications?';
+                        btnEl.style.display = 'block';
+                }
+            }
+
+            async function requestPermission(registration) {
+                try {
+                    const permission = await Notification.requestPermission();
+                    updateUI(permission);
+
+                    if (permission === 'granted') {
+                        await subscribeToPush(registration);
+                    }
+                } catch (error) {
+                    textEl.textContent = 'Permission error';
+                }
+            }
+
+            async function subscribeToPush(registration) {
+                try {
+                    if (!vapidPublicKey) {
+                        vapidPublicKey = await fetchVapidPublicKey();
+                    }
+
+                    if (!vapidPublicKey) {
+                        throw new Error('VAPID public key not available');
+                    }
+
+                    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: applicationServerKey
+                    });
+
+                    console.log('[Push] Subscribed:', subscription);
+
+                    await saveSubscription(subscription);
+
+                    statusEl.classList.add('enabled');
+                    iconEl.textContent = '🔔';
+                    textEl.textContent = 'Notifications active';
+
+                } catch (error) {
+                    console.error('[Push] Subscription error:', error);
+                    textEl.textContent = 'Subscription failed';
+                }
+            }
+
+            async function fetchVapidPublicKey() {
+                try {
+                    const response = await fetch('api/get_vapid_key.php');
+                    const result = await response.json();
+                    
+                    if (result.success && result.publicKey) {
+                        return result.publicKey;
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('[Push] Error fetching VAPID key:', error);
+                    return null;
+                }
+            }
+
+            async function saveSubscription(subscription) {
+                try {
+                    const response = await fetch('api/save_push_subscription.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint,
+                            keys: {
+                                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                                auth: arrayBufferToBase64(subscription.getKey('auth'))
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+                    console.log('[Push] Subscription saved:', result);
+
+                } catch (error) {
+                    console.error('[Push] Save subscription error:', error);
+                }
+            }
+
+            function arrayBufferToBase64(buffer) {
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            }
+
+            function urlBase64ToUint8Array(base64String) {
+                const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding)
+                    .replace(/\-/g, '+')
+                    .replace(/_/g, '/');
+
+                const rawData = atob(base64);
+                const outputArray = new Uint8Array(rawData.length);
+
+                for (let i = 0; i < rawData.length; ++i) {
+                    outputArray[i] = rawData.charCodeAt(i);
+                }
+                return outputArray;
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initPushNotifications);
+            } else {
+                initPushNotifications();
+            }
+
+        })();
+    </script>
 </body>
 </html>

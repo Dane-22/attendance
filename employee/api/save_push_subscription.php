@@ -8,12 +8,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Check if user is logged in and is Admin or Super Admin
-if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin'])) {
+// Check if user is logged in and is any active employee (Admin, Super Admin, Engineer, or Worker)
+$allowedPositions = ['Admin', 'Super Admin', 'Engineer', 'Employee', 'Worker'];
+if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], $allowedPositions)) {
     http_response_code(403);
     echo json_encode([
         'success' => false,
-        'message' => 'Access denied. Admin or Super Admin access required.'
+        'message' => 'Access denied. Please log in to enable notifications.'
     ]);
     exit;
 }

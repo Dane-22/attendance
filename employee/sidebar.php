@@ -13,7 +13,24 @@ $isDeveloper = ($userRole === 'Developer');
 
 // Get pending count for badge (function defined in notification.php if included)
 $pendingOvertimeCount = 0;
-if (($isAdmin || $isDeveloper) && function_exists('getPendingOvertimeCount') && isset($db)) {
+
+// Define the function directly in sidebar if not already defined
+if (!function_exists('getPendingOvertimeCount')) {
+    function getPendingOvertimeCount($db) {
+        if (!$db) return 0;
+        $checkTable = @mysqli_query($db, "SHOW TABLES LIKE 'overtime_requests'");
+        if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
+            return 0;
+        }
+        $sql = "SELECT COUNT(*) as cnt FROM overtime_requests WHERE status IN ('pending', 'pre_approved')";
+        $result = @mysqli_query($db, $sql);
+        if (!$result) return 0;
+        $row = mysqli_fetch_assoc($result);
+        return intval($row['cnt'] ?? 0);
+    }
+}
+
+if (($isAdmin || $isDeveloper) && isset($db)) {
     $pendingOvertimeCount = getPendingOvertimeCount($db);
 }
 
