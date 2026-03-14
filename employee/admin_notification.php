@@ -242,8 +242,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $superAdminNotifMessage = "Admin {$adminName} pre-approved overtime request for {$requestDetails['requested_by']} - {$requestDetails['requested_hours']} hours on {$requestDetails['request_date']}. Awaiting final approval.";
                 $superAdminNotifType = 'overtime_pre_approved';
                 
-                // Get all Super Admin users
-                $superAdminSql = "SELECT id FROM employees WHERE position = 'Super Admin' AND status = 'Active'";
+                // Get all Super Admin and Developer users
+                $superAdminSql = "SELECT id FROM employees WHERE position IN ('Super Admin', 'Developer') AND status = 'Active'";
                 $superAdminResult = mysqli_query($db, $superAdminSql);
                 if ($superAdminResult) {
                     while ($superAdminRow = mysqli_fetch_assoc($superAdminResult)) {
@@ -254,6 +254,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             mysqli_stmt_bind_param($notifStmt, 'iisss', $superAdminId, $requestId, $superAdminNotifType, $superAdminNotifTitle, $superAdminNotifMessage);
                             mysqli_stmt_execute($notifStmt);
                             mysqli_stmt_close($notifStmt);
+                            
+                            // Send push notification
+                            sendPushNotification($db, $superAdminId, $superAdminNotifTitle, $superAdminNotifMessage, '/employee/notification.php');
                         }
                     }
                 }
@@ -327,7 +330,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $superAdminNotifMessage = "Admin {$adminName} pre-approved cash advance request for ₱" . number_format($requestDetails['amount'], 2) . " - Awaiting final approval.";
                 $superAdminNotifType = 'cash_advance_pre_approved';
                 
-                $superAdminSql = "SELECT id FROM employees WHERE position = 'Super Admin' AND status = 'Active'";
+                $superAdminSql = "SELECT id FROM employees WHERE position IN ('Super Admin', 'Developer') AND status = 'Active'";
                 $superAdminResult = mysqli_query($db, $superAdminSql);
                 if ($superAdminResult) {
                     while ($superAdminRow = mysqli_fetch_assoc($superAdminResult)) {
@@ -338,6 +341,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             mysqli_stmt_bind_param($notifStmt, 'iisss', $superAdminId, $requestId, $superAdminNotifType, $superAdminNotifTitle, $superAdminNotifMessage);
                             mysqli_stmt_execute($notifStmt);
                             mysqli_stmt_close($notifStmt);
+                            
+                            // Send push notification
+                            sendPushNotification($db, $superAdminId, $superAdminNotifTitle, $superAdminNotifMessage, '/employee/notification.php');
                         }
                     }
                 }

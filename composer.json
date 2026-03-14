@@ -1,0 +1,12 @@
+{
+    "name": "jajr/attendance",
+    "description": "JAJR Attendance System with Web Push Notifications",
+    "require": {
+        "minishlink/web-push": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "JAJR\\": "src/"
+        }
+    }
+}

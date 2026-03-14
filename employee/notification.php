@@ -220,6 +220,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         mysqli_stmt_bind_param($notifStmt, 'iisss', $employeeId, $requestId, $notifType, $notifTitle, $notifMessage);
                         mysqli_stmt_execute($notifStmt);
                         mysqli_stmt_close($notifStmt);
+                        
+                        // Send push notification to employee
+                        sendPushNotification($db, $employeeId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
                     }
                 }
                 
@@ -301,6 +304,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         mysqli_stmt_bind_param($notifStmt, 'iisss', $employeeId, $requestId, $notifType, $notifTitle, $notifMessage);
                         mysqli_stmt_execute($notifStmt);
                         mysqli_stmt_close($notifStmt);
+                        
+                        // Send push notification to employee
+                        sendPushNotification($db, $employeeId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
                     }
                 }
                 
@@ -488,6 +494,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     mysqli_stmt_bind_param($notifStmt, 'iisss', $requesterId, $requestId, $notifType, $notifTitle, $notifMessage);
                     mysqli_stmt_execute($notifStmt);
                     mysqli_stmt_close($notifStmt);
+                    
+                    // Send push notification to requester
+                    sendPushNotification($db, $requesterId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
                 }
             }
             
@@ -543,6 +552,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         mysqli_stmt_bind_param($notifStmt, 'iisss', $requesterId, $requestId, $notifType, $notifTitle, $notifMessage);
                         mysqli_stmt_execute($notifStmt);
                         mysqli_stmt_close($notifStmt);
+                        
+                        // Send push notification to requester
+                        sendPushNotification($db, $requesterId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
                     }
                 }
             }

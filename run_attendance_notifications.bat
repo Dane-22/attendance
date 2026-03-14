@@ -1,0 +1,6 @@
+@echo off
+echo Running Scheduled Attendance Notifications...
+C:\wamp64\bin\php\php8.0.30\php.exe "C:\wamp64\www\main\employee\scheduled_attendance_notifications.php"
+echo.
+echo Press any key to exit...
+pause > nul
