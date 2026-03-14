@@ -746,8 +746,8 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             // Initialize push notifications
             async function initPushNotifications() {
                 try {
-                    // Register service worker
-                    const registration = await navigator.serviceWorker.register('/main/sw.js');
+                    // Register service worker - use relative path for compatibility
+                    const registration = await navigator.serviceWorker.register('../sw.js');
                     console.log('[Push] Service Worker registered:', registration);
 
                     // Check notification permission
