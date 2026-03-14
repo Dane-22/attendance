@@ -41,6 +41,9 @@ if (!$vapidPublicKey) {
     exit;
 }
 
+// Sanitize the VAPID key - remove any whitespace and ensure valid base64url characters
+$vapidPublicKey = preg_replace('/[^A-Za-z0-9_-]/', '', trim($vapidPublicKey));
+
 // Return the public key
 echo json_encode([
     'success' => true,
