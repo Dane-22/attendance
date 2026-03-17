@@ -15,8 +15,8 @@ error_log("DEBUG save_push_subscription: position=" . ($_SESSION['position'] ?? 
 error_log("DEBUG save_push_subscription: employee_id=" . ($_SESSION['employee_id'] ?? 'not set'));
 error_log("DEBUG save_push_subscription: REQUEST_HEADERS=" . json_encode(getallheaders()));
 
-// Check if user is logged in and is any active employee (Admin, Super Admin, Engineer, or Worker)
-$allowedPositions = ['Admin', 'Super Admin', 'Engineer', 'Employee', 'Worker'];
+// Check if user is logged in and is any active employee (Admin, Super Admin, Engineer, Developer, or Worker)
+$allowedPositions = ['Admin', 'Super Admin', 'Engineer', 'Developer', 'Employee', 'Worker'];
 if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], $allowedPositions)) {
     http_response_code(403);
     echo json_encode([
