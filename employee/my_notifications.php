@@ -751,6 +751,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         headers: {
                             'Content-Type': 'application/json'
                         },
+                        credentials: 'include', // Include session cookies
                         body: JSON.stringify({
                             endpoint: subscription.endpoint,
                             keys: {

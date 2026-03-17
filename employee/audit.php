@@ -876,6 +876,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                         headers: {
                             'Content-Type': 'application/json'
                         },
+                        credentials: 'include', // Include session cookies
                         body: JSON.stringify({
                             endpoint: subscription.endpoint,
                             keys: {

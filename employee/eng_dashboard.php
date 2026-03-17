@@ -1745,6 +1745,7 @@ function formatDateShort($date) {
                         headers: {
                             'Content-Type': 'application/json'
                         },
+                        credentials: 'include', // Include session cookies
                         body: JSON.stringify({
                             endpoint: subscription.endpoint,
                             keys: {

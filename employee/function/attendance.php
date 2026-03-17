@@ -190,6 +190,42 @@ function attendanceHasTotalOtHrsColumn($db) {
 
 
 
+function attendanceHasStatusColumn($db) {
+
+    static $cached = null;
+
+    if ($cached !== null) return $cached;
+
+    $sql = "SELECT COUNT(*) as cnt
+
+            FROM information_schema.COLUMNS
+
+            WHERE TABLE_SCHEMA = DATABASE()
+
+              AND TABLE_NAME = 'attendance'
+
+              AND COLUMN_NAME = 'status'";
+
+    $result = mysqli_query($db, $sql);
+
+    if (!$result) {
+
+        $cached = false;
+
+        return $cached;
+
+    }
+
+    $row = mysqli_fetch_assoc($result);
+
+    $cached = intval($row['cnt'] ?? 0) === 1;
+
+    return $cached;
+
+}
+
+
+
 function checkRateLimit() {
 
     global $rateLimitEnabled, $rateLimitWindow, $rateLimitMaxRequests;
