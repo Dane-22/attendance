@@ -139,10 +139,7 @@ $basePath = ($scriptDir === '/main' || $scriptDir === '/main/' || (!str_contains
   <?php endif; ?>
 
   <!-- Developer Only: Database Manager -->
-  <?php if ($isDeveloper): ?>
-    <a href="developer_db_manager.php" class="menu-item <?= $current === 'developer_db_manager.php' ? 'active' : '' ?>" data-target="developer_db_manager.php"><span class="icon">🗄️</span><span class="label">DB Manager</span></a>
 
-  <?php endif; ?>
 
   <!-- Admin/Super Admin Only: Attendance Audit -->
   <?php if ($isAdmin || $isDeveloper): ?>
