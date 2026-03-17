@@ -1,14 +1,62 @@
 <?php
-// employee/audit.php - Attendance Audit with Calendar View
+// employee/audit.php - Attendance Audit with Calendar View, Pagination, Rate Limiting, and Search
 require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 session_start();
+
+// Rate Limiting Configuration
+$RATE_LIMIT_MAX_REQUESTS = 60; // Max requests per minute
+$RATE_LIMIT_WINDOW = 60; // Window in seconds
+
+// Initialize rate limiting in session
+if (!isset($_SESSION['audit_rate_limit'])) {
+    $_SESSION['audit_rate_limit'] = [
+        'requests' => [],
+        'blocked_until' => null
+    ];
+}
+
+$now = time();
+
+// Check if user is currently blocked
+if ($_SESSION['audit_rate_limit']['blocked_until'] && $now < $_SESSION['audit_rate_limit']['blocked_until']) {
+    $retryAfter = $_SESSION['audit_rate_limit']['blocked_until'] - $now;
+    http_response_code(429);
+    die(json_encode(['error' => 'Too many requests. Please try again in ' . $retryAfter . ' seconds.']));
+}
+
+// Clean old requests outside the window
+$_SESSION['audit_rate_limit']['requests'] = array_filter(
+    $_SESSION['audit_rate_limit']['requests'],
+    function($timestamp) use ($now, $RATE_LIMIT_WINDOW) {
+        return ($now - $timestamp) < $RATE_LIMIT_WINDOW;
+    }
+);
+
+// Check if limit exceeded
+if (count($_SESSION['audit_rate_limit']['requests']) >= $RATE_LIMIT_MAX_REQUESTS) {
+    $_SESSION['audit_rate_limit']['blocked_until'] = $now + $RATE_LIMIT_WINDOW;
+    http_response_code(429);
+    die(json_encode(['error' => 'Rate limit exceeded. Please try again in ' . $RATE_LIMIT_WINDOW . ' seconds.']));
+}
+
+// Record this request
+$_SESSION['audit_rate_limit']['requests'][] = $now;
 
 // Check if user is logged in and is admin/super admin/developer
 if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin', 'Developer'])) {
     header('Location: ../login.php');
     exit;
 }
+
+// Pagination Configuration
+$RECORDS_PER_PAGE = 25;
+$currentPage = max(1, intval($_GET['page'] ?? 1));
+$offset = ($currentPage - 1) * $RECORDS_PER_PAGE;
+
+// Search Parameters
+$searchQuery = trim($_GET['search'] ?? '');
+$searchType = $_GET['search_type'] ?? 'all'; // all, name, code, branch
 
 // Get selected date (default to today)
 $selectedDate = $_GET['date'] ?? date('Y-m-d');
@@ -34,7 +82,87 @@ if ($filter === 'week') {
     $dateRangeLabel = date('F d, Y (l)', strtotime($selectedDate));
 }
 
-// Get attendance summary based on filter
+// Build search condition for SQL
+$searchCondition = '';
+$searchParams = [];
+$searchTypes = '';
+
+if (!empty($searchQuery)) {
+    $searchPattern = '%' . $searchQuery . '%';
+    switch ($searchType) {
+        case 'name':
+            $searchCondition = " AND (e.first_name LIKE ? OR e.last_name LIKE ?)";
+            $searchParams = [$searchPattern, $searchPattern];
+            $searchTypes = 'ss';
+            break;
+        case 'code':
+            $searchCondition = " AND e.employee_code LIKE ?";
+            $searchParams = [$searchPattern];
+            $searchTypes = 's';
+            break;
+        case 'branch':
+            $searchCondition = " AND a.branch_name LIKE ?";
+            $searchParams = [$searchPattern];
+            $searchTypes = 's';
+            break;
+        case 'all':
+        default:
+            $searchCondition = " AND (e.first_name LIKE ? OR e.last_name LIKE ? OR e.employee_code LIKE ? OR a.branch_name LIKE ?)";
+            $searchParams = [$searchPattern, $searchPattern, $searchPattern, $searchPattern];
+            $searchTypes = 'ssss';
+            break;
+    }
+}
+
+// Get total count for pagination
+$totalRecords = 0;
+if ($filter === 'week') {
+    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition;
+    $countStmt = mysqli_prepare($db, $countSql);
+    if ($countStmt) {
+        $params = array_merge([$weekStart, $weekEnd], $searchParams);
+        $types = 'ss' . $searchTypes;
+        mysqli_stmt_bind_param($countStmt, $types, ...$params);
+        mysqli_stmt_execute($countStmt);
+        $countResult = mysqli_stmt_get_result($countStmt);
+        $countRow = mysqli_fetch_assoc($countResult);
+        $totalRecords = $countRow['total'] ?? 0;
+        mysqli_stmt_close($countStmt);
+    }
+} elseif ($filter === 'month') {
+    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition;
+    $countStmt = mysqli_prepare($db, $countSql);
+    if ($countStmt) {
+        $params = array_merge([$monthStart, $monthEnd], $searchParams);
+        $types = 'ss' . $searchTypes;
+        mysqli_stmt_bind_param($countStmt, $types, ...$params);
+        mysqli_stmt_execute($countStmt);
+        $countResult = mysqli_stmt_get_result($countStmt);
+        $countRow = mysqli_fetch_assoc($countResult);
+        $totalRecords = $countRow['total'] ?? 0;
+        mysqli_stmt_close($countStmt);
+    }
+} else {
+    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date = ?" . $searchCondition;
+    $countStmt = mysqli_prepare($db, $countSql);
+    if ($countStmt) {
+        $params = array_merge([$selectedDate], $searchParams);
+        $types = 's' . $searchTypes;
+        mysqli_stmt_bind_param($countStmt, $types, ...$params);
+        mysqli_stmt_execute($countStmt);
+        $countResult = mysqli_stmt_get_result($countStmt);
+        $countRow = mysqli_fetch_assoc($countResult);
+        $totalRecords = $countRow['total'] ?? 0;
+        mysqli_stmt_close($countStmt);
+    }
+}
+
+// Calculate pagination values
+$totalPages = max(1, ceil($totalRecords / $RECORDS_PER_PAGE));
+$currentPage = min($currentPage, $totalPages);
+$offset = ($currentPage - 1) * $RECORDS_PER_PAGE;
+
+// Get attendance summary based on filter (unchanged summary query)
 $attendanceSummary = [];
 if ($filter === 'week') {
     $summarySql = "SELECT 
@@ -80,7 +208,7 @@ if ($summaryStmt) {
     mysqli_stmt_close($summaryStmt);
 }
 
-// Get detailed attendance based on filter
+// Get detailed attendance based on filter with search and pagination
 $attendanceData = [];
 if ($filter === 'week') {
     $detailSql = "SELECT 
@@ -98,11 +226,14 @@ if ($filter === 'week') {
         e.position
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date BETWEEN ? AND ?
-    ORDER BY a.attendance_date DESC, a.time_in DESC";
+    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
+    ORDER BY a.attendance_date DESC, a.time_in DESC
+    LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
-        mysqli_stmt_bind_param($detailStmt, 'ss', $weekStart, $weekEnd);
+        $params = array_merge([$weekStart, $weekEnd], $searchParams, [$RECORDS_PER_PAGE, $offset]);
+        $types = 'ss' . $searchTypes . 'ii';
+        mysqli_stmt_bind_param($detailStmt, $types, ...$params);
     }
 } elseif ($filter === 'month') {
     $detailSql = "SELECT 
@@ -120,11 +251,14 @@ if ($filter === 'week') {
         e.position
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date BETWEEN ? AND ?
-    ORDER BY a.attendance_date DESC, a.time_in DESC";
+    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
+    ORDER BY a.attendance_date DESC, a.time_in DESC
+    LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
-        mysqli_stmt_bind_param($detailStmt, 'ss', $monthStart, $monthEnd);
+        $params = array_merge([$monthStart, $monthEnd], $searchParams, [$RECORDS_PER_PAGE, $offset]);
+        $types = 'ss' . $searchTypes . 'ii';
+        mysqli_stmt_bind_param($detailStmt, $types, ...$params);
     }
 } else {
     $detailSql = "SELECT 
@@ -142,11 +276,14 @@ if ($filter === 'week') {
         e.position
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date = ?
-    ORDER BY a.time_in DESC";
+    WHERE a.attendance_date = ?" . $searchCondition . "
+    ORDER BY a.time_in DESC
+    LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
-        mysqli_stmt_bind_param($detailStmt, 's', $selectedDate);
+        $params = array_merge([$selectedDate], $searchParams, [$RECORDS_PER_PAGE, $offset]);
+        $types = 's' . $searchTypes . 'ii';
+        mysqli_stmt_bind_param($detailStmt, $types, ...$params);
     }
 }
 if ($detailStmt) {
@@ -353,11 +490,50 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-white mb-2">Attendance Audit</h1>
             <p class="text-gray-300 mb-4">Review daily attendance records by selecting a date</p>
-            <div class="flex gap-3">
-                <a href="?filter=week" class="btn-nav <?= $filter === 'week' ? 'bg-orange-500 text-black' : '' ?>">
+            
+            <!-- Search Form -->
+            <div class="mb-4 p-4 bg-white/5 rounded-lg border border-orange-500/20">
+                <form method="GET" class="flex flex-wrap gap-3 items-end">
+                    <input type="hidden" name="date" value="<?php echo htmlspecialchars($selectedDate); ?>">
+                    <input type="hidden" name="month" value="<?php echo $currentMonth; ?>">
+                    <input type="hidden" name="year" value="<?php echo $currentYear; ?>">
+                    <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filter); ?>">
+                    
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="text-sm text-gray-400 block mb-1">Search</label>
+                        <input type="text" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>" 
+                               placeholder="Search employees, codes, or branches..."
+                               class="w-full px-3 py-2 bg-black/30 border border-orange-500/30 rounded text-white placeholder-gray-500 focus:outline-none focus:border-orange-500">
+                    </div>
+                    
+                    <div class="min-w-[150px]">
+                        <label class="text-sm text-gray-400 block mb-1">Search By</label>
+                        <select name="search_type" class="w-full px-3 py-2 bg-black/30 border border-orange-500/30 rounded text-white focus:outline-none focus:border-orange-500">
+                            <option value="all" <?php echo $searchType === 'all' ? 'selected' : ''; ?>>All Fields</option>
+                            <option value="name" <?php echo $searchType === 'name' ? 'selected' : ''; ?>>Employee Name</option>
+                            <option value="code" <?php echo $searchType === 'code' ? 'selected' : ''; ?>>Employee Code</option>
+                            <option value="branch" <?php echo $searchType === 'branch' ? 'selected' : ''; ?>>Branch</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-nav h-[38px]">
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                    
+                    <?php if (!empty($searchQuery)): ?>
+                    <a href="?date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?>" 
+                       class="btn-nav h-[38px] bg-red-500/20 border-red-500/30 hover:bg-red-500">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </a>
+                    <?php endif; ?>
+                </form>
+            </div>
+            
+            <div class="flex gap-3 flex-wrap">
+                <a href="?filter=week<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" class="btn-nav <?= $filter === 'week' ? 'bg-orange-500 text-black' : '' ?>">
                     <i class="fas fa-calendar-week mr-2"></i>This Week
                 </a>
-                <a href="?filter=month" class="btn-nav <?= $filter === 'month' ? 'bg-orange-500 text-black' : '' ?>">
+                <a href="?filter=month<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" class="btn-nav <?= $filter === 'month' ? 'bg-orange-500 text-black' : '' ?>">
                     <i class="fas fa-calendar-alt mr-2"></i>This Month
                 </a>
                 <a href="?date=<?= date('Y-m-d') ?>" class="btn-nav <?= $filter === 'day' ? 'bg-orange-500 text-black' : '' ?>">
@@ -586,6 +762,83 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Pagination Controls -->
+                        <?php if ($totalPages > 1): ?>
+                        <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+                            <div class="text-sm text-gray-400">
+                                Showing <?php echo (($currentPage - 1) * $RECORDS_PER_PAGE) + 1; ?> - 
+                                <?php echo min($currentPage * $RECORDS_PER_PAGE, $totalRecords); ?> of 
+                                <?php echo $totalRecords; ?> records
+                                <?php if (!empty($searchQuery)): ?>
+                                    <span class="text-orange-400">(filtered by "<?php echo htmlspecialchars($searchQuery); ?>")</span>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <!-- Previous Page -->
+                                <?php if ($currentPage > 1): ?>
+                                    <a href="?page=<?php echo $currentPage - 1; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                       class="btn-nav px-3 py-2">
+                                        <i class="fas fa-chevron-left mr-1"></i> Prev
+                                    </a>
+                                <?php else: ?>
+                                    <span class="px-3 py-2 bg-gray-700/50 text-gray-500 rounded cursor-not-allowed">
+                                        <i class="fas fa-chevron-left mr-1"></i> Prev
+                                    </span>
+                                <?php endif; ?>
+                                
+                                <!-- Page Numbers -->
+                                <?php
+                                $startPage = max(1, $currentPage - 2);
+                                $endPage = min($totalPages, $currentPage + 2);
+                                
+                                if ($startPage > 1): ?>
+                                    <a href="?page=1&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                       class="btn-nav px-3 py-2 min-w-[40px] text-center">1</a>
+                                    <?php if ($startPage > 2): ?>
+                                        <span class="text-gray-500 px-2">...</span>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                
+                                <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                                    <?php if ($i == $currentPage): ?>
+                                        <span class="px-3 py-2 bg-orange-500 text-black rounded min-w-[40px] text-center font-bold"><?php echo $i; ?></span>
+                                    <?php else: ?>
+                                        <a href="?page=<?php echo $i; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                           class="btn-nav px-3 py-2 min-w-[40px] text-center"><?php echo $i; ?></a>
+                                    <?php endif; ?>
+                                <?php endfor; ?>
+                                
+                                <?php if ($endPage < $totalPages): ?>
+                                    <?php if ($endPage < $totalPages - 1): ?>
+                                        <span class="text-gray-500 px-2">...</span>
+                                    <?php endif; ?>
+                                    <a href="?page=<?php echo $totalPages; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                       class="btn-nav px-3 py-2 min-w-[40px] text-center"><?php echo $totalPages; ?></a>
+                                <?php endif; ?>
+                                
+                                <!-- Next Page -->
+                                <?php if ($currentPage < $totalPages): ?>
+                                    <a href="?page=<?php echo $currentPage + 1; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                       class="btn-nav px-3 py-2">
+                                        Next <i class="fas fa-chevron-right ml-1"></i>
+                                    </a>
+                                <?php else: ?>
+                                    <span class="px-3 py-2 bg-gray-700/50 text-gray-500 rounded cursor-not-allowed">
+                                        Next <i class="fas fa-chevron-right ml-1"></i>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php elseif ($totalRecords > 0): ?>
+                        <div class="mt-4 text-sm text-gray-400">
+                            Showing <?php echo $totalRecords; ?> record<?php echo $totalRecords > 1 ? 's' : ''; ?>
+                            <?php if (!empty($searchQuery)): ?>
+                                <span class="text-orange-400">(filtered by "<?php echo htmlspecialchars($searchQuery); ?>")</span>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
                     <?php else: ?>
                         <div class="text-center py-12">
                             <i class="fas fa-inbox text-4xl text-gray-500 mb-4"></i>
