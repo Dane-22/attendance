@@ -8,13 +8,24 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// DEBUG: Log session info
+error_log("DEBUG save_push_subscription: Session status: " . session_status());
+error_log("DEBUG save_push_subscription: logged_in=" . ($_SESSION['logged_in'] ?? 'not set'));
+error_log("DEBUG save_push_subscription: position=" . ($_SESSION['position'] ?? 'not set'));
+error_log("DEBUG save_push_subscription: employee_id=" . ($_SESSION['employee_id'] ?? 'not set'));
+error_log("DEBUG save_push_subscription: REQUEST_HEADERS=" . json_encode(getallheaders()));
+
 // Check if user is logged in and is any active employee (Admin, Super Admin, Engineer, or Worker)
 $allowedPositions = ['Admin', 'Super Admin', 'Engineer', 'Employee', 'Worker'];
 if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], $allowedPositions)) {
     http_response_code(403);
     echo json_encode([
         'success' => false,
-        'message' => 'Access denied. Please log in to enable notifications.'
+        'message' => 'Access denied. Please log in to enable notifications.',
+        'debug' => [
+            'logged_in' => $_SESSION['logged_in'] ?? null,
+            'position' => $_SESSION['position'] ?? null
+        ]
     ]);
     exit;
 }
