@@ -15,9 +15,9 @@ $filter = isset($_GET['filter']) ? $_GET['filter'] : 'site_salary';
 $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 
-// Trigger weekly aggregation when Generate Report is clicked
+// Trigger daily payroll generation when Generate Report is clicked
 if (isset($_GET['generate_report']) && $_GET['generate_report'] === '1') {
-    // Use HTTP request instead of CLI to ensure proper PHP environment with MySQLi
+    // Use HTTP request to generate daily payroll reports with date range
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'];
     
@@ -25,12 +25,13 @@ if (isset($_GET['generate_report']) && $_GET['generate_report'] === '1') {
     $scriptPath = dirname($_SERVER['SCRIPT_NAME']); // /main/employee or /employee
     $basePath = str_replace('/employee', '', $scriptPath); // /main or ''
     
-    $cronUrl = "$protocol://$host$basePath/employee/cron/weekly_aggregate_non_branch33.php";
+    // Call generate_daily_payroll.php to populate daily_payroll_reports with deductions
+    $cronUrl = "$protocol://$host$basePath/employee/cron/generate_daily_payroll.php?start_date=$startDate&end_date=$endDate";
     
     // Run via HTTP GET request
     $ch = curl_init($cronUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 120); // Increased timeout for date range processing
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
@@ -291,7 +292,7 @@ function formatCurrency($amount) {
         <?php if (isset($_SESSION['aggregation_result'])): ?>
             <div class="alert <?php echo $_SESSION['aggregation_result']['success'] ? 'alert-success' : 'alert-danger'; ?>">
                 <strong><?php echo $_SESSION['aggregation_result']['success'] ? 'Success!' : 'Error:'; ?></strong>
-                Weekly payroll aggregation completed.
+                Daily payroll generation completed.
                 <?php if (!$_SESSION['aggregation_result']['success']): ?>
                     <pre><?php echo htmlspecialchars($_SESSION['aggregation_result']['output']); ?></pre>
                 <?php endif; ?>
