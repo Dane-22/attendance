@@ -948,6 +948,7 @@ function formatDateShort($date) {
                 
                 <div class="current-time" id="currentTime">--:--:--</div>
                 <div class="current-date" id="currentDate">--</div>
+                <div class="last-refresh-time" id="lastRefreshTime" style="text-align: center; color: #888; font-size: 12px; margin-bottom: 8px;">Last updated: --</div>
                 
                 <div class="time-tracking-status">
                     <div class="status-indicator <?php echo $hasOpenShift ? '' : 'inactive'; ?>"></div>
@@ -1255,14 +1256,72 @@ function formatDateShort($date) {
         updateTime();
         setInterval(updateTime, 1000);
         
-        // Time In functionality
-        document.getElementById('btnTimeIn').addEventListener('click', function() {
+        // Double-submit protection flag
+        let isProcessingAttendance = false;
+        
+        // Last refresh timestamp display
+        function updateRefreshTimestamp() {
+            const now = new Date();
+            const timestampEl = document.getElementById('lastRefreshTime');
+            if (timestampEl) {
+                timestampEl.textContent = 'Last updated: ' + now.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+        }
+        updateRefreshTimestamp();
+        
+        // Check current attendance status from server
+        async function checkAttendanceStatus(employeeId) {
+            try {
+                const response = await fetch('api/get_attendance_status.php?employee_id=' + employeeId);
+                const data = await response.json();
+                return data;
+            } catch (err) {
+                console.error('Error checking attendance status:', err);
+                return null;
+            }
+        }
+        
+        // Time In functionality with real-time validation
+        document.getElementById('btnTimeIn').addEventListener('click', async function() {
+            // Prevent double-submit
+            if (isProcessingAttendance) {
+                alert('Please wait, a request is already being processed.');
+                return;
+            }
+            
             const btn = this;
             const employeeId = btn.dataset.employeeId;
             const employeeCode = btn.dataset.employeeCode;
             const currentBranch = btn.dataset.branch;
             
-            // Always show branch selection modal first
+            // Check current status from server before showing modal
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            
+            const status = await checkAttendanceStatus(employeeId);
+            
+            if (!status || !status.success) {
+                alert('Unable to verify attendance status. Please refresh the page and try again.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play"></i> Time In';
+                return;
+            }
+            
+            // If already clocked in, alert user and reload page
+            if (status.hasOpenShift) {
+                alert('You are already clocked in (since ' + (status.timeIn ? new Date(status.timeIn).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}) : 'earlier') + ').\n\nThe page will refresh to show the correct status.');
+                location.reload();
+                return;
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play"></i> Time In';
+            
+            // Show branch selection modal
             const modal = document.getElementById('branchSelectionModal');
             
             // Pre-select current branch if assigned
@@ -1307,8 +1366,12 @@ function formatDateShort($date) {
             });
             
             // Handle confirm button click
-            confirmBtn.addEventListener('click', function() {
+            confirmBtn.addEventListener('click', async function() {
                 if (!selectedBranchName) return;
+                
+                // Set processing flag to prevent double-submit
+                if (isProcessingAttendance) return;
+                isProcessingAttendance = true;
                 
                 const employeeId = timeInBtn.dataset.employeeId;
                 const employeeCode = timeInBtn.dataset.employeeCode;
@@ -1316,9 +1379,18 @@ function formatDateShort($date) {
                 // Close modal
                 bootstrap.Modal.getInstance(modal).hide();
                 
-                // Disable time in button
+                // Disable time in button and show processing
                 timeInBtn.disabled = true;
                 timeInBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                
+                // Double-check status before submitting (prevent race conditions)
+                const status = await checkAttendanceStatus(employeeId);
+                if (status && status.success && status.hasOpenShift) {
+                    alert('You were already clocked in by another device or session.\n\nThe page will refresh to show the correct status.');
+                    isProcessingAttendance = false;
+                    location.reload();
+                    return;
+                }
                 
                 const formData = new FormData();
                 formData.append('employee_id', employeeId);
@@ -1331,6 +1403,7 @@ function formatDateShort($date) {
                 })
                 .then(r => r.json())
                 .then(data => {
+                    isProcessingAttendance = false;
                     if (data.success) {
                         alert('Time In recorded successfully at ' + (data.time_in || 'now'));
                         location.reload();
@@ -1341,6 +1414,7 @@ function formatDateShort($date) {
                     }
                 })
                 .catch(err => {
+                    isProcessingAttendance = false;
                     console.error(err);
                     alert('Error recording Time In');
                     timeInBtn.disabled = false;
@@ -1349,15 +1423,42 @@ function formatDateShort($date) {
             });
         })();
         
-        // Time Out functionality
-        document.getElementById('btnTimeOut').addEventListener('click', function() {
+        // Time Out functionality with real-time validation
+        document.getElementById('btnTimeOut').addEventListener('click', async function() {
+            // Prevent double-submit
+            if (isProcessingAttendance) {
+                alert('Please wait, a request is already being processed.');
+                return;
+            }
+            
             const btn = this;
             const employeeId = btn.dataset.employeeId;
             const shiftId = btn.dataset.shiftId;
             
             if (!confirm('Confirm Time Out?')) return;
             
+            // Check current status from server before proceeding
             btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            
+            const status = await checkAttendanceStatus(employeeId);
+            
+            if (!status || !status.success) {
+                alert('Unable to verify attendance status. Please refresh the page and try again.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-stop"></i> Time Out';
+                return;
+            }
+            
+            // If NOT clocked in, alert user and reload page
+            if (!status.hasOpenShift) {
+                alert('You are not currently clocked in (you may have already timed out or not timed in yet).\n\nThe page will refresh to show the correct status.');
+                location.reload();
+                return;
+            }
+            
+            // Set processing flag
+            isProcessingAttendance = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             
             const formData = new FormData();
@@ -1370,6 +1471,7 @@ function formatDateShort($date) {
             })
             .then(r => r.json())
             .then(data => {
+                isProcessingAttendance = false;
                 if (data.success) {
                     alert('Time Out recorded successfully at ' + (data.time_out || 'now'));
                     location.reload();
@@ -1380,6 +1482,7 @@ function formatDateShort($date) {
                 }
             })
             .catch(err => {
+                isProcessingAttendance = false;
                 console.error(err);
                 alert('Error recording Time Out');
                 btn.disabled = false;
