@@ -1725,12 +1725,12 @@ foreach ($employeeList as $emp) {
                         if (data.success) {
                             printEmployeeDataDirectly(data.employee, data.transactions, empName);
                         } else {
-                            alert('Error loading employee data');
+                            alert('Error: ' + (data.message || 'Failed to load employee data'));
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Error loading employee data');
+                        alert('Network error loading employee data. Check console for details.');
                     });
             });
         }
