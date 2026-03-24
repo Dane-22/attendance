@@ -544,6 +544,10 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     <i class="fas fa-file-pdf mr-2"></i>Generate Report
                 </a>
                 <?php endif; ?>
+                <a href="export_attendance_excel.php?date=<?php echo $selectedDate; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                   class="btn-nav bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 border-green-500">
+                    <i class="fas fa-file-excel mr-2"></i>Export Excel
+                </a>
             </div>
         </div>
 
