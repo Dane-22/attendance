@@ -19,23 +19,38 @@ $selectedDate = $_GET['date'] ?? date('Y-m-d');
 $filter = $_GET['filter'] ?? 'day';
 $searchQuery = trim($_GET['search'] ?? '');
 $searchType = $_GET['search_type'] ?? 'all';
+$startDate = $_GET['start_date'] ?? null;
+$endDate = $_GET['end_date'] ?? null;
 
-// Validate date
+// Validate dates
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
     $selectedDate = date('Y-m-d');
 }
 
-// Determine date range based on filter
-if ($filter === 'week') {
-    $weekStart = date('Y-m-d', strtotime('monday this week', strtotime($selectedDate)));
-    $weekEnd = date('Y-m-d', strtotime('sunday this week', strtotime($selectedDate)));
-    $dateRangeLabel = date('M d', strtotime($weekStart)) . ' - ' . date('M d, Y', strtotime($weekEnd));
-} elseif ($filter === 'month') {
-    $monthStart = date('Y-m-01', strtotime($selectedDate));
-    $monthEnd = date('Y-m-t', strtotime($selectedDate));
-    $dateRangeLabel = date('F Y', strtotime($selectedDate));
+// Validate custom date range if provided
+$isCustomRange = false;
+if ($startDate && $endDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+    $isCustomRange = true;
+    $dateRangeLabel = date('M d', strtotime($startDate)) . ' - ' . date('M d, Y', strtotime($endDate));
 } else {
-    $dateRangeLabel = date('F d, Y', strtotime($selectedDate));
+    // Determine date range based on filter
+    if ($filter === 'week') {
+        $weekStart = date('Y-m-d', strtotime('monday this week', strtotime($selectedDate)));
+        $weekEnd = date('Y-m-d', strtotime('sunday this week', strtotime($selectedDate)));
+        $startDate = $weekStart;
+        $endDate = $weekEnd;
+        $dateRangeLabel = date('M d', strtotime($weekStart)) . ' - ' . date('M d, Y', strtotime($weekEnd));
+    } elseif ($filter === 'month') {
+        $monthStart = date('Y-m-01', strtotime($selectedDate));
+        $monthEnd = date('Y-m-t', strtotime($selectedDate));
+        $startDate = $monthStart;
+        $endDate = $monthEnd;
+        $dateRangeLabel = date('F Y', strtotime($selectedDate));
+    } else {
+        $startDate = $selectedDate;
+        $endDate = $selectedDate;
+        $dateRangeLabel = date('F d, Y', strtotime($selectedDate));
+    }
 }
 
 // Build search condition
@@ -69,78 +84,29 @@ if (!empty($searchQuery)) {
     }
 }
 
-// Get attendance data
-$attendanceData = [];
-if ($filter === 'week') {
-    $sql = "SELECT 
-        a.id,
-        a.employee_id,
-        a.attendance_date,
-        a.time_in,
-        a.time_out,
-        a.branch_name,
-        a.status,
-        TIMESTAMPDIFF(MINUTE, a.time_in, COALESCE(a.time_out, NOW())) as minutes_worked,
-        e.first_name,
-        e.last_name,
-        e.employee_code,
-        e.position
-    FROM attendance a
-    LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
-    ORDER BY a.branch_name, e.last_name, e.first_name, a.attendance_date";
-    
-    $stmt = mysqli_prepare($db, $sql);
-    $params = array_merge([$weekStart, $weekEnd], $searchParams);
-    $types = 'ss' . $searchTypes;
-    mysqli_stmt_bind_param($stmt, $types, ...$params);
-} elseif ($filter === 'month') {
-    $sql = "SELECT 
-        a.id,
-        a.employee_id,
-        a.attendance_date,
-        a.time_in,
-        a.time_out,
-        a.branch_name,
-        a.status,
-        TIMESTAMPDIFF(MINUTE, a.time_in, COALESCE(a.time_out, NOW())) as minutes_worked,
-        e.first_name,
-        e.last_name,
-        e.employee_code,
-        e.position
-    FROM attendance a
-    LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
-    ORDER BY a.branch_name, e.last_name, e.first_name, a.attendance_date";
-    
-    $stmt = mysqli_prepare($db, $sql);
-    $params = array_merge([$monthStart, $monthEnd], $searchParams);
-    $types = 'ss' . $searchTypes;
-    mysqli_stmt_bind_param($stmt, $types, ...$params);
-} else {
-    $sql = "SELECT 
-        a.id,
-        a.employee_id,
-        a.attendance_date,
-        a.time_in,
-        a.time_out,
-        a.branch_name,
-        a.status,
-        TIMESTAMPDIFF(MINUTE, a.time_in, COALESCE(a.time_out, NOW())) as minutes_worked,
-        e.first_name,
-        e.last_name,
-        e.employee_code,
-        e.position
-    FROM attendance a
-    LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date = ?" . $searchCondition . "
-    ORDER BY a.branch_name, e.last_name, e.first_name";
-    
-    $stmt = mysqli_prepare($db, $sql);
-    $params = array_merge([$selectedDate], $searchParams);
-    $types = 's' . $searchTypes;
-    mysqli_stmt_bind_param($stmt, $types, ...$params);
-}
+// Get attendance data using unified date range
+$sql = "SELECT 
+    a.id,
+    a.employee_id,
+    a.attendance_date,
+    a.time_in,
+    a.time_out,
+    a.branch_name,
+    a.status,
+    TIMESTAMPDIFF(MINUTE, a.time_in, COALESCE(a.time_out, NOW())) as minutes_worked,
+    e.first_name,
+    e.last_name,
+    e.employee_code,
+    e.position
+FROM attendance a
+LEFT JOIN employees e ON a.employee_id = e.id
+WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
+ORDER BY a.branch_name, e.last_name, e.first_name, a.attendance_date";
+
+$stmt = mysqli_prepare($db, $sql);
+$params = array_merge([$startDate, $endDate], $searchParams);
+$types = 'ss' . $searchTypes;
+mysqli_stmt_bind_param($stmt, $types, ...$params);
 
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
