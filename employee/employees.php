@@ -514,7 +514,7 @@ if (!isset($_SESSION['employee_code'])) {
   <script>
     // Apply saved theme from localStorage (set via settings.php)
     (function() {
-      const savedTheme = localStorage.getItem('theme') || 'dark';
+      const savedTheme = localStorage.getItem('jajr_theme_preference') || 'dark';
       const body = document.getElementById('appBody');
       
       if (savedTheme === 'light' && body) {
