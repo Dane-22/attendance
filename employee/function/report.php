@@ -330,6 +330,11 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
             continue;
         }
 
+        // Skip if this date was already covered by daily_payroll_reports
+        if (isset($payroll['_has_payroll_record'][$attendance_date])) {
+            continue;
+        }
+
         // If employee worked at exactly 2 branches on the same date (transfer scenario),
         // split day=0.5 for each branch
         if (count($branches) === 2) {
