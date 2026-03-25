@@ -167,15 +167,30 @@ if ($view_type === 'monthly') {
     $philhealth_deduction = $MONTHLY_PHILHEALTH;
     $pagibig_deduction = $MONTHLY_PAGIBIG;
 } else {
-    // Weekly view: Divide monthly deductions by 3 (for weeks 1-3), zero for week 4
-    if ($selected_week === 4) {
-        $sss_deduction = 0.00;
-        $philhealth_deduction = 0.00;
-        $pagibig_deduction = 0.00;
-    } else {
-        $sss_deduction = $MONTHLY_SSS / 3;
-        $philhealth_deduction = $MONTHLY_PHILHEALTH / 3;
-        $pagibig_deduction = $MONTHLY_PAGIBIG / 3;
+    // Weekly view: Custom prorated deduction amounts
+    switch ($selected_week) {
+        case 1:
+            $sss_deduction = 250.00;
+            $philhealth_deduction = 100.00;
+            $pagibig_deduction = 50.00;
+            break;
+        case 2:
+            $sss_deduction = 100.00;
+            $philhealth_deduction = 100.00;
+            $pagibig_deduction = 50.00;
+            break;
+        case 3:
+            $sss_deduction = 100.00;
+            $philhealth_deduction = 50.00;
+            $pagibig_deduction = 100.00;
+            break;
+        case 4:
+        case 5:
+        default:
+            $sss_deduction = 0.00;
+            $philhealth_deduction = 0.00;
+            $pagibig_deduction = 0.00;
+            break;
     }
 }
 $total_deductions_amount = $sss_deduction + $philhealth_deduction + $pagibig_deduction;
@@ -184,11 +199,24 @@ $total_deductions_amount = $sss_deduction + $philhealth_deduction + $pagibig_ded
 $employee_payroll = [];
 
 // Also fetch employees with no attendance (for complete payroll)
-$all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, b.branch_name
-                        FROM employees e
-                        LEFT JOIN branches b ON e.branch_id = b.id
-                        WHERE e.status = 'Active'
-                        AND LOWER(e.position) = 'worker'";
+// Check if performance_allowance column exists
+$column_check = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'performance_allowance'");
+$has_allowance_column = mysqli_num_rows($column_check) > 0;
+
+if ($has_allowance_column) {
+    $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, b.branch_name
+                            FROM employees e
+                            LEFT JOIN branches b ON e.branch_id = b.id
+                            WHERE e.status = 'Active'
+                            AND LOWER(e.position) = 'worker'";
+} else {
+    // Fallback query without performance_allowance column
+    $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name
+                            FROM employees e
+                            LEFT JOIN branches b ON e.branch_id = b.id
+                            WHERE e.status = 'Active'
+                            AND LOWER(e.position) = 'worker'";
+}
 
 // Add branch filter if not 'all'
 $has_branch_filter = ($selected_branch !== 'all' && $selected_branch !== '' && is_numeric($selected_branch));
