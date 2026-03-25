@@ -121,6 +121,42 @@
       }
     });
 
+    // ===== RESET PASSWORD FUNCTIONALITY =====
+    function resetPasswordToDefault() {
+      if (!currentEditEmployeeId) {
+        alert('Error: No employee selected.');
+        return;
+      }
+      
+      const employeeCode = document.getElementById('editEmployeeCode').value;
+      const employeeName = document.getElementById('editFirstName').value + ' ' + document.getElementById('editLastName').value;
+      
+      if (!confirm(`Are you sure you want to reset the password for "${employeeName}" (${employeeCode}) to the default password "jajrconstruction"?`)) {
+        return;
+      }
+      
+      // Send AJAX request to reset password
+      fetch('../employee/function/employees_function.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=reset_password&id=${currentEditEmployeeId}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message || 'Password reset successfully.');
+        } else {
+          alert(data.message || 'Error resetting password.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error resetting password. Please try again.');
+      });
+    }
+
     // ===== EMPLOYEE ACTIONS =====
     function deleteEmployee(event, employeeId, employeeName) {
       event.stopPropagation();

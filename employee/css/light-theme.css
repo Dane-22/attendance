@@ -1689,6 +1689,79 @@ body.light-mode section h2 {
 }
 
 /* ============================================
+   ADD EMPLOYEE MODAL - Light Mode
+   ============================================ */
+body.light-mode .add-modal-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .add-modal-panel {
+  background: #ffffff;
+  border: 1px solid #e8e8ec;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .add-modal-panel h3 {
+  color: #D4AF37;
+}
+
+body.light-mode .add-modal-title {
+  color: #D4AF37;
+}
+
+body.light-mode .add-form-input {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .add-form-input:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .add-form-select {
+  background: #ffffff;
+  border: 1px solid #e0e0e5;
+  color: #1a1a2e;
+}
+
+body.light-mode .add-form-select:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light-mode .add-form-select option {
+  background: #ffffff;
+  color: #1a1a2e;
+}
+
+body.light-mode .employee-code-hint {
+  color: #D4AF37;
+}
+
+body.light-mode .btn-cancel-modal {
+  background: #f8f8fa;
+  color: #4a4a5a;
+  border: 1px solid #e0e0e5;
+}
+
+body.light-mode .btn-cancel-modal:hover {
+  background: #ffffff;
+  border-color: #D4AF37;
+  color: #1a1a2e;
+}
+
+body.light-mode .btn-add-employee {
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  color: #ffffff;
+}
+
+body.light-mode .btn-add-employee:hover {
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+/* ============================================
    WEEKLY_REPORT.PHP SPECIFIC
    ============================================ */
 

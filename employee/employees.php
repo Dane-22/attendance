@@ -28,7 +28,7 @@ if (!isset($_SESSION['employee_code'])) {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
  
 </head>
-<body class="dark-engineering">
+<body class="dark-engineering" id="appBody">
   <?php include __DIR__ . '/sidebar.php'; ?>
 
   <main class="main-content" id="mainContent">
@@ -295,6 +295,11 @@ if (!isset($_SESSION['employee_code'])) {
               <label class="form-label">Daily Rate (₱)</label>
               <input type="number" name="daily_rate" id="editDailyRate" class="form-input" step="0.01" min="0" placeholder="600.00">
             </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <div class="text-muted" style="font-size: 0.85rem; color: rgba(255,255,255,0.5); padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                <i class="fas fa-info-circle"></i> Use "Reset Password" button below to set password to default (jajrconstruction)
+              </div>
+            </div>
           </div>
         </div>
 
@@ -321,6 +326,9 @@ if (!isset($_SESSION['employee_code'])) {
 
         <div class="form-actions">
           <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+          <button type="button" class="btn-reset-password" onclick="resetPasswordToDefault()" style="background: rgba(255, 165, 0, 0.2); color: #FFA500; border: 1px solid rgba(255, 165, 0, 0.5); padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            <i class="fas fa-key"></i> Reset Password
+          </button>
           <button type="submit" class="btn-save">
             <i class="fas fa-save"></i> Save Changes
           </button>
@@ -330,29 +338,29 @@ if (!isset($_SESSION['employee_code'])) {
   </div>
 
   <!-- Add Employee Modal -->
-  <div class="modal-backdrop" id="addModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="modal-panel" style="background: #0b0b0b; border: 1px solid rgba(255,215,0,0.3); border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
-      <h3 style="margin-top:0; color: #FFD700; margin-bottom: 1.5rem;">Add New Employee</h3>
+  <div class="add-modal-backdrop" id="addModal">
+    <div class="add-modal-panel">
+      <h3 class="add-modal-title">Add New Employee</h3>
       <form method="POST">
         <input type="hidden" name="action" value="add">
-        <div class="form-row" style="margin-bottom: 1rem;">
-          <input name="employee_code" id="addEmployeeCode" required placeholder="Employee code" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
-          <small id="employeeCodeHint" style="color: #FFD700; font-size: 0.8rem; margin-top: 4px; display: none;">Auto-generated based on position</small>
+        <div class="add-form-row">
+          <input name="employee_code" id="addEmployeeCode" required placeholder="Employee code" class="add-form-input">
+          <small id="employeeCodeHint" class="employee-code-hint">Auto-generated based on position</small>
         </div>
-        <div class="form-row" style="margin-bottom: 1rem;">
-          <input name="first_name" required placeholder="First name" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+        <div class="add-form-row">
+          <input name="first_name" required placeholder="First name" class="add-form-input">
         </div>
-        <div class="form-row" style="margin-bottom: 1rem;">
-          <input name="middle_name" placeholder="Middle Name" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+        <div class="add-form-row">
+          <input name="middle_name" placeholder="Middle Name" class="add-form-input">
         </div>
-        <div class="form-row" style="margin-bottom: 1rem;">
-          <input name="last_name" required placeholder="Last name" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+        <div class="add-form-row">
+          <input name="last_name" required placeholder="Last name" class="add-form-input">
         </div>
-        <div class="form-row" style="margin-bottom: 1rem;">
-          <input name="email" type="email" placeholder="Email" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+        <div class="add-form-row">
+          <input name="email" type="email" placeholder="Email" class="add-form-input">
         </div>
-        <div class="form-row" style="margin-bottom: 1rem;">
-          <select name="position" id="addPosition" required style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white; cursor: pointer;">
+        <div class="add-form-row">
+          <select name="position" id="addPosition" required class="add-form-select">
             <option value="">Select Position</option>
             <option value="Worker">Worker</option>
             <option value="Admin">Admin</option>
@@ -361,12 +369,12 @@ if (!isset($_SESSION['employee_code'])) {
             <option value="Super Admin">Super Admin</option>
           </select>
         </div>
-        <div class="form-row" style="margin-bottom: 1.5rem;">
-          <input name="password" type="password" placeholder="Password (optional)" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; background: rgba(0,0,0,0.5); color: white;">
+        <div class="add-form-row">
+          <input name="password" type="password" placeholder="Password (optional)" class="add-form-input">
         </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
-          <button type="button" class="btn" id="closeAdd" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Cancel</button>
-          <button type="submit" class="add-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #0b0b0b; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Employee</button>
+        <div class="add-modal-actions">
+          <button type="button" class="btn-cancel-modal" id="closeAdd">Cancel</button>
+          <button type="submit" class="btn-add-employee">Add Employee</button>
         </div>
       </form>
     </div>
@@ -502,6 +510,18 @@ if (!isset($_SESSION['employee_code'])) {
         closeQRModal();
       }
     });
+  </script>
+  <script>
+    // Apply saved theme from localStorage (set via settings.php)
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      const body = document.getElementById('appBody');
+      
+      if (savedTheme === 'light' && body) {
+        body.classList.remove('dark-engineering');
+        body.classList.add('light-mode');
+      }
+    })();
   </script>
   <script src="js/employees.js.php"></script>
   <script>

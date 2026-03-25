@@ -213,6 +213,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // ===== RESET PASSWORD ACTION =====
+            if ($action === 'reset_password') {
+                $id = intval($_POST['id'] ?? 0);
+                
+                if ($id > 0) {
+                    // Hash the default password using MD5 (consistent with existing system)
+                    $default_password = 'jajrconstruction';
+                    $password_hash = md5($default_password);
+                    
+                    $stmt = mysqli_prepare($db, "UPDATE employees SET password_hash = ? WHERE id = ?");
+                    mysqli_stmt_bind_param($stmt, 'si', $password_hash, $id);
+                    
+                    if (mysqli_stmt_execute($stmt)) {
+                        // Return JSON response for AJAX requests
+                        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                            header('Content-Type: application/json');
+                            echo json_encode(['success' => true, 'message' => 'Password reset successfully to default.']);
+                            exit;
+                        }
+                        $msg = 'Password reset successfully to default.';
+                    } else {
+                        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                            header('Content-Type: application/json');
+                            echo json_encode(['success' => false, 'message' => 'Error resetting password: ' . mysqli_error($db)]);
+                            exit;
+                        }
+                        $msg = 'Error resetting password: ' . mysqli_error($db);
+                    }
+                    mysqli_stmt_close($stmt);
+                } else {
+                    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => false, 'message' => 'Invalid employee ID.']);
+                        exit;
+                    }
+                    $msg = 'Invalid employee ID.';
+                }
+            }
+
             if ($action === 'upload_profile') {
                 $id = intval($_POST['employee_id'] ?? 0);
                 
