@@ -78,6 +78,16 @@ try {
     
     // affected_rows = 1 for insert, 2 for update
     if ($affected_rows > 0) {
+        // Also update employee's default performance allowance (permanent)
+        $update_employee = "UPDATE employees SET performance_allowance = ? WHERE id = ?";
+        $emp_stmt = @mysqli_prepare($db, $update_employee);
+        if ($emp_stmt) {
+            @mysqli_stmt_bind_param($emp_stmt, 'di', $performance_allowance, $employee_id);
+            @mysqli_stmt_execute($emp_stmt);
+            @mysqli_stmt_close($emp_stmt);
+            error_log("Updated employee $employee_id default allowance to $performance_allowance");
+        }
+        
         echo json_encode([
             'success' => true, 
             'message' => 'Performance allowance saved successfully',

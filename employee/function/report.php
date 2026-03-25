@@ -184,7 +184,7 @@ $total_deductions_amount = $sss_deduction + $philhealth_deduction + $pagibig_ded
 $employee_payroll = [];
 
 // Also fetch employees with no attendance (for complete payroll)
-$all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name
+$all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, b.branch_name
                         FROM employees e
                         LEFT JOIN branches b ON e.branch_id = b.id
                         WHERE e.status = 'Active'
@@ -219,7 +219,7 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
         'pagibig_deduction' => 0,
         'total_deductions' => 0,
         'net_pay' => 0,
-        'performance_allowance' => 0,
+        'performance_allowance' => floatval($emp['performance_allowance'] ?? 0),
         '_daily' => [],
         '_branches' => [],  // Track per-branch totals: [branch_name => ['days'=>x, 'hours'=>y, 'ot_hours'=>z]]
         '_has_payroll_record' => []  // Track dates covered by daily_payroll_reports
@@ -549,10 +549,13 @@ error_log("[report.php] Employee IDs with allowances: " . implode(', ', array_ke
 error_log("[report.php] About to merge allowances into employee data. Employee count: " . count($employee_payroll));
 foreach ($employee_payroll as $emp_id => &$payroll) {
     $payroll['payment_status'] = $payment_statuses[$emp_id] ?? 'Not Paid';
-    // Override with weekly_allowance if it exists (from weekly_payroll_reports)
-    if (isset($weekly_allowances[$emp_id]) && $weekly_allowances[$emp_id] > 0) {
+    // Load employee's default performance allowance
+    $default_allowance = floatval($payroll['employee']['performance_allowance'] ?? 0);
+    $payroll['performance_allowance'] = $default_allowance;
+    
+    // Override with weekly-specific value if exists
+    if (isset($weekly_allowances[$emp_id])) {
         $payroll['performance_allowance'] = $weekly_allowances[$emp_id];
-        error_log("[report.php] Loaded allowance for emp $emp_id: " . $weekly_allowances[$emp_id]);
     }
 }
 unset($payroll);

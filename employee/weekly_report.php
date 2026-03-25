@@ -368,6 +368,9 @@ include __DIR__ . '/function/report.php';
                                 $total_ot_hours += $emp_ot_hours;
                                 $total_ot += $emp_ot_hours * $emp_ot_rate;
                                 
+                                // Accumulate performance allowance from each employee
+                                $total_allowance += floatval($payroll['performance_allowance'] ?? 0);
+                                
                                 // Use the pre-calculated total_deductions from the payroll array
                                 $sum_total_deductions += $payroll['total_deductions'];
                             }
