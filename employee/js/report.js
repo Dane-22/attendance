@@ -9,6 +9,39 @@ if (menuToggle) {
     });
 }
 
+// Search functionality
+function initEmployeeSearch() {
+    const searchInput = document.getElementById('employeeSearch');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const table = document.getElementById('reportTable');
+        if (!table) return;
+
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            // Skip the total row
+            if (row.id === 'totalRow') return;
+
+            const employeeCell = row.querySelector('td:first-child .font-medium');
+            if (!employeeCell) return;
+
+            const employeeName = employeeCell.textContent.toLowerCase();
+            if (employeeName.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+}
+
+// Initialize search on DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    initEmployeeSearch();
+});
+
 // Close sidebar when clicking outside on mobile
 document.addEventListener('click', (event) => {
     const sidebar = document.querySelector('.sidebar');
