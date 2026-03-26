@@ -46,6 +46,29 @@ try {
 
     $empName = $employee['first_name'] . ' ' . $employee['last_name'];
 
+    if ($action === 'check') {
+        // Check attendance status without modifying anything
+        $checkSql = "SELECT id, time_in FROM attendance 
+                     WHERE employee_id = ? AND attendance_date = CURDATE() 
+                     AND time_in IS NOT NULL AND time_out IS NULL 
+                     ORDER BY time_in DESC LIMIT 1";
+        $stmt = mysqli_prepare($db, $checkSql);
+        mysqli_stmt_bind_param($stmt, "i", $employeeId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_store_result($stmt);
+        
+        $alreadyIn = mysqli_stmt_num_rows($stmt) > 0;
+        mysqli_stmt_close($stmt);
+        
+        echo json_encode([
+            'success' => true,
+            'already_in' => $alreadyIn,
+            'employee_name' => $empName,
+            'employee_id' => $employeeId
+        ]);
+        exit();
+    }
+
     if ($action === 'in') {
         // Check if already clocked in
         $checkSql = "SELECT id FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() AND time_in IS NOT NULL AND time_out IS NULL";

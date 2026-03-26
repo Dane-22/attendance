@@ -594,6 +594,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         return null;
       }
 
+      // Check employee attendance status
+      async function checkAttendanceStatus(empId) {
+        const url = `${window.location.origin}/employee/api/qr_clock.php`;
+        const formData = new FormData();
+        formData.append('action', 'check');
+        formData.append('employee_id', empId);
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await response.json();
+          return data;
+        } catch (err) {
+          return { success: false, message: 'Error checking status' };
+        }
+      }
+
+      // Show confirmation modal
+      function showConfirmation(empInfo, statusData) {
+        const isClockedIn = statusData.already_in || false;
+        const empName = statusData.employee_name || 'this worker';
+        
+        const title = isClockedIn ? 'Time Out Confirmation' : 'Time In Confirmation';
+        const message = isClockedIn 
+          ? `Done for today, are you sure?` 
+          : `Are you sure you want to time in ${empName}?`;
+        const confirmText = isClockedIn ? 'Yes, Time Out' : 'Yes, Time In';
+        
+        // Create confirmation dialog
+        const confirmDialog = document.createElement('div');
+        confirmDialog.id = 'qrConfirmDialog';
+        confirmDialog.innerHTML = `
+          <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 16px;">
+            <div style="width: 100%; max-width: 400px; background: rgba(15, 15, 15, 0.95); border: 1px solid rgba(255,165,0,0.4); border-radius: 14px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 16px;">${isClockedIn ? '🌙' : '☀️'}</div>
+              <h3 style="color: #FFA500; font-weight: 700; font-size: 20px; margin-bottom: 12px;">${title}</h3>
+              <p style="color: #e2e8f0; margin-bottom: 24px; font-size: 16px; line-height: 1.5;">${message}</p>
+              <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="confirmCancelBtn" style="background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button id="confirmProceedBtn" style="background: ${isClockedIn ? '#ef4444' : '#10b981'}; border: none; color: #fff; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">${confirmText}</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(confirmDialog);
+        
+        return new Promise((resolve) => {
+          const cancelBtn = document.getElementById('confirmCancelBtn');
+          const proceedBtn = document.getElementById('confirmProceedBtn');
+          
+          cancelBtn.addEventListener('click', () => {
+            confirmDialog.remove();
+            resolve(false);
+          });
+          
+          proceedBtn.addEventListener('click', () => {
+            confirmDialog.remove();
+            resolve(true);
+          });
+          
+          // Close on backdrop click
+          confirmDialog.addEventListener('click', (e) => {
+            if (e.target === confirmDialog.firstElementChild) {
+              confirmDialog.remove();
+              resolve(false);
+            }
+          });
+          
+          // Close on Escape key
+          document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+              document.removeEventListener('keydown', escapeHandler);
+              if (document.getElementById('qrConfirmDialog')) {
+                confirmDialog.remove();
+                resolve(false);
+              }
+            }
+          });
+        });
+      }
+
       // Call QR clock API via AJAX
       async function processClockIn(empId, empCode) {
         const url = `${window.location.origin}/employee/api/qr_clock.php`;
@@ -685,10 +768,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   return;
                 }
 
-                setStatus('Processing...');
+                setStatus('Checking status...');
                 await stopScanner();
 
-                // Process clock-in/out via AJAX
+                // Check employee attendance status first
+                const statusData = await checkAttendanceStatus(empInfo.emp_id);
+                
+                // Show confirmation dialog
+                const confirmed = await showConfirmation(empInfo, statusData);
+                
+                if (!confirmed) {
+                  // User cancelled - resume scanning
+                  setStatus('Cancelled. Scan another QR code.');
+                  setTimeout(() => startScanner(), 500);
+                  return;
+                }
+
+                // User confirmed - proceed with clock-in/out
+                setStatus('Processing...');
                 const result = await processClockIn(empInfo.emp_id, empInfo.emp_code);
                 showResult(result.success, result.message);
               },
