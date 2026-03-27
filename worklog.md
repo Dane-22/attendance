@@ -88,6 +88,65 @@
 - UI is cleaner with single pagination at bottom of employee list
 
 ---
+
+### 2026-03-27 (Update)
+
+**Task:** Implement QR scanner time-based access control
+
+**Files Modified:**
+- `login.php` - Added time restriction for QR scanner
+  - Added PHP time check: scanner enabled at 6:40 AM (20 min before 7:00 AM work start)
+  - Added `data-scanner-enabled` attribute to QR button with server-side value
+  - Modified `openModal()` JavaScript to check enabled state before opening
+  - Shows alert "QR scanner is only available from 6:40 AM onwards" when disabled
+  - Added visual feedback: reduced opacity and `cursor-not-allowed` when before 6:40 AM
+
+**Features:**
+- QR scanner disabled before 6:40 AM
+- Alert message when user tries to open scanner before allowed time
+- Visual indication (dimmed button) when scanner is unavailable
+- Server-side time validation prevents bypassing the restriction
+
+---
+
+### 2026-03-27 (Update)
+
+**Task:** Improve pagination interface styling
+
+**Files Modified:**
+- `employee/css/select_employee.css` - Enhanced pagination layout
+  - Added container styling with background, border, and padding
+  - Improved spacing between pagination elements
+  - Enhanced button styling with better hover effects
+  - Fixed page-jump alignment to stay inline with controls
+  - Improved responsive layout for mobile devices
+
+**Features:**
+- Cleaner, more compact pagination layout
+- Better visual separation from employee list
+- Improved button hover states with gold accent
+- Responsive design maintains usability on mobile
+
+---
+
+### 2026-03-27 (Update)
+
+**Task:** Make pagination fit on single line for mobile
+
+**Files Modified:**
+- `employee/css/select_employee.css` - Mobile pagination layout
+  - Changed flex-direction from column to row for single-line layout
+  - Hidden page-size-selector ("Show: X" dropdown) on mobile to save space
+  - Reduced font sizes, padding, and button sizes for compact layout
+  - All pagination elements now fit on one horizontal line
+
+**Features:**
+- Mobile pagination displays as: "Page X of Y [buttons] [Go input]"
+- More compact design frees up vertical space
+- Maintains full functionality on small screens
+
+---
+
 - [ ] Track all future code changes in this log
 
 ---

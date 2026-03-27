@@ -7,6 +7,11 @@ session_start();
 $errors = [];
 $warnings = [];
 
+// QR Scanner time restriction: Enabled at 6:40 AM (20 min before 7:00 AM work start)
+$currentTime = date('H:i:s');
+$scannerStartTime = '06:40:00';
+$scannerEnabled = $currentTime >= $scannerStartTime;
+
 function procurementApiLogin(string $employeeNo, string $password): array {
     $url = 'https://procurement-api.xandree.com/api/auth/login';
     $payload = json_encode([
@@ -413,7 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="auth-right px-8 py-10">
         <div class="flex items-center justify-between">
           <h3 class="text-2xl font-semibold">Log In</h3>
-          <button type="button" id="openQrScannerBtn" aria-label="Open QR Scanner" class="text-orange-400 hover:text-orange-300" style="font-size: 20px; padding: 6px 8px; border-radius: 8px;">
+          <button type="button" id="openQrScannerBtn" aria-label="Open QR Scanner" class="text-orange-400 hover:text-orange-300 <?php echo !$scannerEnabled ? 'opacity-50 cursor-not-allowed disabled' : ''; ?>" style="font-size: 20px; padding: 6px 8px; border-radius: 8px;" data-scanner-enabled="<?php echo $scannerEnabled ? 'true' : 'false'; ?>">
             <i class="fa-solid fa-qrcode"></i>
           </button>
         </div>
@@ -820,6 +825,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
 
       function openModal() {
+        // Check if scanner is enabled (based on time restriction)
+        const isEnabled = openBtn && openBtn.dataset.scannerEnabled === 'true';
+        if (!isEnabled) {
+          alert('QR scanner is only available from 6:40 AM onwards');
+          return;
+        }
         backdrop.style.display = 'flex';
         backdrop.setAttribute('aria-hidden', 'false');
         if (qrReader) qrReader.style.display = 'block';

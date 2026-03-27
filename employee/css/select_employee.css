@@ -1342,21 +1342,22 @@
 
     /* ===== PAGINATION STYLES ===== */
     .pagination-container {
-        background: #1a1a1a;
-        border: 1px solid #333;
-        border-radius: 8px;
-        padding: 14px;
-        margin: 14px 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
+        padding: 16px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        margin-top: 16px;
     }
 
     .pagination-info {
-        font-size: 13px;
+        font-size: 14px;
         color: #888;
+        font-weight: 500;
     }
 
     .pagination-info strong {
@@ -1366,29 +1367,24 @@
     .pagination-controls {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .page-size-selector {
         display: flex;
         align-items: center;
-        gap: 6px;
-    }
-
-    .page-size-label {
-        font-size: 13px;
-        color: #888;
     }
 
     .page-size-select {
         background: #2a2a2a;
         border: 1px solid #444;
         border-radius: 6px;
-        padding: 4px 8px;
+        padding: 6px 10px;
         color: #ffffff;
         font-size: 13px;
         cursor: pointer;
-        min-width: 60px;
+        min-width: 70px;
     }
 
     .page-size-select:focus {
@@ -1406,17 +1402,20 @@
         background: #2a2a2a;
         border: 1px solid #444;
         border-radius: 6px;
-        padding: 4px 10px;
+        padding: 6px 12px;
         color: #ffffff;
         font-size: 13px;
         cursor: pointer;
-        transition: all 0.3s ease;
-        min-width: 30px;
+        transition: all 0.2s ease;
+        min-width: 36px;
         text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .page-btn:hover:not(:disabled):not(.active) {
-        border-color: #666;
+        border-color: #FFD700;
         background: #3a3a3a;
     }
 
@@ -1432,6 +1431,7 @@
         border-color: #333;
         color: #555;
         cursor: not-allowed;
+        opacity: 0.5;
     }
 
     .page-dots {
@@ -1444,34 +1444,28 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-left: 8px;
     }
 
     .page-jump-input {
         background: #2a2a2a;
         border: 1px solid #444;
         border-radius: 6px;
-        padding: 4px 8px;
+        padding: 6px 8px;
         color: #ffffff;
         font-size: 13px;
         width: 50px;
         text-align: center;
     }
 
-    .page-jump-input:focus {
-        outline: none;
-        border-color: #FFD700;
-    }
-
     .page-jump-btn {
         background: #2a2a2a;
         border: 1px solid #444;
         border-radius: 6px;
-        padding: 4px 8px;
+        padding: 6px 12px;
         color: #ffffff;
-        font-size: 12px;
+        font-size: 13px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
 
     .page-jump-btn:hover {
@@ -1616,40 +1610,58 @@
             padding: 5px 12px;
         }
 
-        /* Responsive pagination */
+        /* Responsive pagination - single line */
         .pagination-container {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 10px;
-            padding: 12px;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 6px;
         }
 
         .pagination-info {
-            text-align: center;
-            order: 1;
+            font-size: 11px;
+            white-space: nowrap;
         }
 
         .pagination-controls {
-            flex-direction: column;
-            gap: 10px;
-            order: 2;
+            flex-direction: row;
+            gap: 6px;
+            flex-wrap: nowrap;
         }
 
         .page-size-selector {
-            justify-content: center;
-            width: 100%;
+            display: none;
         }
 
         .pagination-buttons {
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-wrap: nowrap;
+            gap: 3px;
+        }
+
+        .page-btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            min-width: 28px;
+            height: 28px;
         }
 
         .page-jump {
-            margin-left: 0;
-            margin-top: 5px;
-            justify-content: center;
-            width: 100%;
+            margin-left: 4px;
+            margin-top: 0;
+        }
+
+        .page-jump-input {
+            width: 36px;
+            padding: 4px 6px;
+            font-size: 12px;
+            height: 28px;
+        }
+
+        .page-jump-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            height: 28px;
         }
     }
 
