@@ -2098,3 +2098,13 @@
         height: 200px;
     }
 }
+
+/* Clickable stat values */
+.stat-value {
+    transition: transform 0.2s ease, text-shadow 0.2s ease;
+}
+
+.stat-value:hover {
+    transform: scale(1.1);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}

@@ -318,8 +318,62 @@
         }
       };
 
-      renderNameList(presentListEl, presentEmployees, summary.present);
-      renderNameList(absentListEl, absentEmployees, summary.absent);
+      // renderNameList(presentListEl, presentEmployees, summary.present);
+      // renderNameList(absentListEl, absentEmployees, summary.absent);
+
+      // Store data for click handlers
+      window._presentEmployees = presentEmployees;
+      window._absentEmployees = absentEmployees;
+      window._presentListEl = presentListEl;
+      window._absentListEl = absentListEl;
+
+      // Clear lists initially  
+      if (presentListEl) {
+        presentListEl.innerHTML = '';
+        presentListEl.style.display = 'none';
+      }
+      if (absentListEl) {
+        absentListEl.innerHTML = '';
+        absentListEl.style.display = 'none';
+      }
+
+      // Make numbers clickable
+      if (presentEl && summary.present > 0) {
+        presentEl.style.cursor = 'pointer';
+        presentEl.onclick = () => toggleStatList('present');
+      }
+      if (absentEl && summary.absent > 0) {
+        absentEl.style.cursor = 'pointer';
+        absentEl.onclick = () => toggleStatList('absent');
+      }
+    }
+
+    function toggleStatList(type) {
+      const listEl = type === 'present' ? window._presentListEl : window._absentListEl;
+      const employees = type === 'present' ? window._presentEmployees : window._absentEmployees;
+      if (!listEl) return;
+      const isVisible = listEl.style.display === 'block';
+      if (isVisible) {
+        listEl.style.display = 'none';
+      } else {
+        const names = employees.map(e => e.name || '').filter(Boolean);
+        const rows = names.slice(0, 5).map((n, i) => `<div class="stat-list-item">${i + 1}. ${escapeHtml(n)}</div>`);
+        if (names.length > 5) {
+          rows.push(`<button class="stat-list-more" onclick="expandStatList('${type}')">and ${names.length - 5} more</button>`);
+        }
+        listEl.innerHTML = rows.join('');
+        listEl.style.display = 'block';
+      }
+    }
+
+    function expandStatList(type) {
+      const listEl = type === 'present' ? window._presentListEl : window._absentListEl;
+      const employees = type === 'present' ? window._presentEmployees : window._absentEmployees;
+      if (!listEl) return;
+      const names = employees.map(e => e.name || '').filter(Boolean);
+      const rows = names.map((n, i) => `<div class="stat-list-item">${i + 1}. ${escapeHtml(n)}</div>`);
+      rows.push(`<button class="stat-list-more" onclick="toggleStatList('${type}')">show less</button>`);
+      listEl.innerHTML = rows.join('');
     }
 
     // Function to update time display
