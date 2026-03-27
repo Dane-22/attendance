@@ -147,6 +147,41 @@
 
 ---
 
+### 2026-03-27 (Update)
+
+**Task:** Exclude "main branch" and "main office" from Excel export
+
+**Files Modified:**
+- `employee/export_attendance_excel.php` - Added branch exclusion filter
+  - Added SQL condition to exclude branches containing "main branch" or "main office" (case-insensitive)
+  - Added secondary safety check in output loop to skip these branches
+
+**Features:**
+- Excel export now automatically filters out "main branch" and "main office" records
+- Case-insensitive matching ensures all variations are caught
+- Double protection: SQL filter + output loop check
+
+---
+
+### 2026-03-27 (Update)
+
+**Task:** Implement proper Excel export using PhpSpreadsheet to eliminate format warning
+
+**Files Modified:**
+- `composer.json` - Added PhpSpreadsheet dependency and disabled security blocking
+- `employee/export_attendance_excel.php` - Complete rewrite using PhpSpreadsheet
+  - Uses native .xlsx format (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+  - Same color-coded formatting: gold headers, green names, blue times, orange status
+  - Proper cell borders and alignment
+  - Same branch exclusion for "main branch" and "main office"
+
+**Features:**
+- No more Excel format warning dialog
+- Native Excel file that opens directly without security prompts
+- Maintains all existing functionality and visual styling
+
+---
+
 - [ ] Track all future code changes in this log
 
 ---
