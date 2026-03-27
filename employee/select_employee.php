@@ -174,46 +174,6 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
           Timezone: <?php echo date_default_timezone_get(); ?>
       </div>
 
-      <div class="branch-stats" id="branchStats" aria-live="polite">
-        <div class="stat-card">
-          <div class="stat-label">Total Workers</div>
-          <div class="stat-value" id="statTotalWorkers">--</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Present</div>
-          <div class="stat-value" id="statPresent">--</div>
-          <div class="stat-list" id="statPresentList"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Absent</div>
-          <div class="stat-value" id="statAbsent">--</div>
-          <div class="stat-list" id="statAbsentList"></div>
-        </div>
-      </div>
-
-      <!-- Time Alert -->
-      <!-- <div class="time-alert <?php echo $isBeforeCutoff ? 'before-cutoff' : 'after-cutoff'; ?>">
-        <?php if ($isBeforeCutoff): ?>
-          <i class="fas fa-clock"></i>
-          <div class="time-alert-content">
-            <div class="time-alert-title">Before 9:00 AM Cutoff (Philippine Time)</div>
-            <div class="time-alert-message">
-              Current Philippine Time: <strong><?php echo $currentTime; ?></strong> | 
-              Mark employees as Present before 9:00 AM (PH Time). After cutoff, unmarked employees will be automatically marked as Absent.
-            </div>
-          </div>
-        <?php else: ?>
-          <i class="fas fa-exclamation-triangle"></i>
-          <div class="time-alert-content">
-            <div class="time-alert-title">After 9:00 AM Cutoff (Philippine Time)</div>
-            <div class="time-alert-message">
-              Current Philippine Time: <strong><?php echo $currentTime; ?></strong> | 
-              Unmarked employees have been automatically marked as Absent. You can still override to mark as Present (Late).
-            </div>
-          </div>
-        <?php endif; ?>
-      </div> -->
-
       <!-- Project Selection -->
       <div class="branch-selection">
         <div class="branch-header">
@@ -306,6 +266,24 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
           </div>
         </div>
       <?php endif; ?>
+
+      <!-- Branch Statistics -->
+      <div class="branch-stats" id="branchStats" aria-live="polite">
+        <div class="stat-card">
+          <div class="stat-label">Total Workers</div>
+          <div class="stat-value" id="statTotalWorkers">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Present</div>
+          <div class="stat-value" id="statPresent">--</div>
+          <div class="stat-list" id="statPresentList"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Absent</div>
+          <div class="stat-value" id="statAbsent">--</div>
+          <div class="stat-list" id="statAbsentList"></div>
+        </div>
+      </div>
 
       <div id="timeLogsModal" class="modal-backdrop">
         <div class="modal-panel" style="width: 520px;">

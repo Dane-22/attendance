@@ -1870,18 +1870,95 @@
         border-top: 1px solid rgba(255,255,255,0.1);
     }
     
-    /* Employee info layout */
-    .employee-cell {
-        min-width: 0 !important;
-        width: 100%;
+    /* Summary view row layout - all in one row */
+    .employee-table tbody tr:has(.employee-cell.summary-view) {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
     }
     
-    /* Ensure name doesn't overflow */
-    .employee-name {
+    /* Row number badge inline */
+    .employee-table tbody tr:has(.employee-cell.summary-view) td:first-child {
+        display: inline-flex;
+        width: auto;
+        padding: 2px 6px;
+        background: rgba(255, 215, 0, 0.15);
+        border-radius: 10px;
+        font-size: 10px;
+        margin-bottom: 0;
+        color: #FFD700;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+    
+    /* Employee cell takes available space */
+    .employee-table tbody tr:has(.employee-cell.summary-view) td:nth-child(2) {
+        flex: 1;
+        padding: 0;
+        min-width: 0;
+    }
+    
+    /* Remarks cell inline */
+    .employee-table tbody tr:has(.employee-cell.summary-view) td:last-child {
+        padding: 0;
+        border-top: none;
+        flex-shrink: 0;
+        width: auto;
+    }
+    
+    /* Employee cell summary-view layout */
+    .employee-cell.summary-view {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .employee-cell.summary-view .employee-avatar {
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+
+    .employee-cell.summary-view .employee-avatar:active {
+        transform: scale(0.95);
+    }
+
+    .employee-cell.summary-view .employee-meta {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .employee-cell.summary-view .employee-name {
+        flex: 1;
+        min-width: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: calc(100vw - 100px);
+        max-width: none;
+        font-size: 14px;
+    }
+
+    /* Hide Current Project */
+    .employee-cell.summary-view .employee-branch {
+        display: none !important;
+    }
+
+    /* Remarks badge styling */
+    .employee-table tbody tr:has(.employee-cell.summary-view) td:last-child .remark-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+        margin: 0;
     }
     
     /* Actions buttons */

@@ -552,13 +552,13 @@
         const menuId = `emp-menu-${employee.id}`;
 
         const absentNotes = employee.absent_notes || '';
-
+        
         html += `
           <tr id="employee-${employee.id}" data-shift-id="${employee.shift_id || ''}" data-has-open-shift="${hasOpenShift ? '1' : '0'}">
             <td class="mono" style="font-weight: bold; color: #FFD700;">${index + 1}</td>
             <td>
-              <div class="employee-cell">
-                <div class="employee-avatar" aria-hidden="true">${escapeAttr(initials)}</div>
+              <div class="employee-cell ${isSummaryView ? 'summary-view' : ''}">
+                <div class="employee-avatar" aria-hidden="true" ${isSummaryView ? `onclick="toggleEmployeeMenu('${menuId}', ${employee.id})"` : ''}>${escapeAttr(initials)}</div>
                 <div class="employee-meta">
                   <div class="employee-name">${escapeAttr(name)}</div>
                   <div class="employee-sub employee-branch">
