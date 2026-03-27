@@ -410,6 +410,18 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
     </main>
   </div>
 
+  <!-- Profile Image Modal -->
+  <div id="profileImageModal" class="profile-modal" style="display: none;">
+    <div class="profile-modal-overlay" onclick="closeProfileModal()"></div>
+    <div class="profile-modal-content">
+      <button class="profile-modal-close" onclick="closeProfileModal()">&times;</button>
+      <div class="profile-modal-image-container">
+        <img id="profileModalImage" src="" alt="Employee Profile" class="profile-modal-image">
+      </div>
+      <div class="profile-modal-name" id="profileModalName"></div>
+    </div>
+  </div>
+
   <script>
     window.attendanceConfig = {
       isBeforeCutoff: <?php echo $isBeforeCutoff ? 'true' : 'false'; ?>,

@@ -558,7 +558,7 @@
             <td class="mono" style="font-weight: bold; color: #FFD700;">${index + 1}</td>
             <td>
               <div class="employee-cell ${isSummaryView ? 'summary-view' : ''}">
-                <div class="employee-avatar" aria-hidden="true" ${isSummaryView ? `onclick="toggleEmployeeMenu('${menuId}', ${employee.id})"` : ''}>${escapeAttr(initials)}</div>
+                <div class="employee-avatar" aria-hidden="true" ${isSummaryView ? `onclick="showProfileModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.profile_image || '')}')"` : ''}>${escapeAttr(initials)}</div>
                 <div class="employee-meta">
                   <div class="employee-name">${escapeAttr(name)}</div>
                   <div class="employee-sub employee-branch">
@@ -694,6 +694,42 @@
 
       menu.style.display = isOpen ? 'none' : 'block';
     }
+
+    function showProfileModal(employeeId, employeeName, profileImage) {
+      const modal = document.getElementById('profileImageModal');
+      const img = document.getElementById('profileModalImage');
+      const nameEl = document.getElementById('profileModalName');
+      
+      if (!modal || !img || !nameEl) return;
+      
+      // Set employee name
+      nameEl.textContent = employeeName;
+      
+      // Set image source - use profile image if available, otherwise show default avatar
+      if (profileImage && profileImage.trim() !== '') {
+        img.src = '../uploads/profile_images/' + profileImage;
+      } else {
+        // Generate initials avatar as fallback
+        const initials = employeeName.trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '?';
+        img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23FFD700"/><text x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-size="80" fill="%230b0b0b" font-weight="bold">' + initials + '</text></svg>';
+      }
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeProfileModal() {
+      const modal = document.getElementById('profileImageModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+    }
+
+    // Close profile modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeProfileModal();
+      }
+    });
 
     function closeTimeLogsModal() {
       const modal = document.getElementById('timeLogsModal');

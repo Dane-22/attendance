@@ -1991,3 +1991,110 @@
         padding: 5px 6px;
     }
 }
+
+/* Profile Image Modal */
+.profile-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+}
+
+.profile-modal-content {
+    position: relative;
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 90vw;
+    max-height: 90vh;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+}
+
+.profile-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.profile-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.profile-modal-image-container {
+    width: 280px;
+    height: 280px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0b0b0b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-modal-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-modal-name {
+    margin-top: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #FFD700;
+    text-align: center;
+}
+
+/* Mobile adjustments for profile modal */
+@media (max-width: 767px) {
+    .profile-modal-content {
+        padding: 16px;
+    }
+    
+    .profile-modal-image-container {
+        width: 240px;
+        height: 240px;
+    }
+    
+    .profile-modal-name {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 375px) {
+    .profile-modal-image-container {
+        width: 200px;
+        height: 200px;
+    }
+}

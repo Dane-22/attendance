@@ -1291,6 +1291,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                             e.position,
 
+                            e.profile_image,
+
                             ob.branch_name as original_branch,
 
                             a.branch_name as logged_branch,
@@ -1362,6 +1364,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 e.last_name,
 
                                 e.position,
+
+                                e.profile_image,
 
                                 ob.branch_name as original_branch,
 
@@ -1439,6 +1443,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                                 e.position,
 
+                                e.profile_image,
+
                                 ob.branch_name as original_branch,
 
                                 a.branch_name as logged_branch,
@@ -1514,6 +1520,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.last_name,
 
                             e.position,
+
+                            e.profile_image,
 
                             ob.branch_name as original_branch,
 
@@ -1601,6 +1609,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                             e.position,
 
+                            e.profile_image,
+
                             ob.branch_name as original_branch,
 
                             a.branch_name as logged_branch,
@@ -1672,6 +1682,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             e.last_name,
 
                             e.position,
+
+                            e.profile_image,
 
                             ob.branch_name as original_branch,
 
@@ -1956,6 +1968,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'name' => trim($row['first_name'] . ' ' . ($row['middle_name'] ? $row['middle_name'] . ' ' : '') . $row['last_name']),
 
                     'position' => $row['position'],
+
+                    'profile_image' => $row['profile_image'] ?? null,
 
                     'original_branch' => $row['original_branch'],
 
