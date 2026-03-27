@@ -411,20 +411,12 @@
       
       showPagination();
       
-      // Calculate display range
-      const from = Math.min((currentPage - 1) * perPage + 1, totalEmployees);
-      const to = Math.min(currentPage * perPage, totalEmployees);
-      
-      // Update pagination info
-      document.getElementById('paginationFrom').textContent = from;
-      document.getElementById('paginationTo').textContent = to;
-      document.getElementById('paginationTotal').textContent = totalEmployees;
+      // Update pagination info (bottom only)
       document.getElementById('currentPage').textContent = currentPage;
       document.getElementById('totalPages').textContent = totalPages;
       document.getElementById('pageJumpInput').value = currentPage;
       
-      // Generate pagination buttons
-      generatePaginationButtons('paginationButtonsTop');
+      // Generate pagination buttons (bottom only)
       generatePaginationButtons('paginationButtonsBottom');
     }
     
@@ -507,27 +499,16 @@
     }
     
     function showPagination() {
-      document.getElementById('paginationTop').style.display = 'flex';
       document.getElementById('paginationBottom').style.display = 'flex';
     }
     
     function hidePagination() {
-      document.getElementById('paginationTop').style.display = 'none';
       document.getElementById('paginationBottom').style.display = 'none';
     }
     
     function showPaginationLoading(show) {
-      const loadingHTML = '<span class="pagination-loading"><i class="fas fa-spinner fa-spin"></i></span>';
-      
-      if (show) {
-        document.getElementById('paginationFrom').innerHTML += loadingHTML;
-      } else {
-        const fromEl = document.getElementById('paginationFrom');
-        const loadingEl = fromEl.querySelector('.pagination-loading');
-        if (loadingEl) {
-          loadingEl.remove();
-        }
-      }
+      // Loading indicator disabled - top pagination removed
+      // This function is kept for compatibility but does nothing
     }
 
     // Render employees - ONLY LIST VIEW

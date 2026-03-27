@@ -339,27 +339,6 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
         </div>
       </div>
 
-      <!-- Pagination Top -->
-      <div id="paginationTop" class="pagination-container" style="display: none;">
-        <div class="pagination-info">
-          Showing <strong id="paginationFrom">0</strong> to <strong id="paginationTo">0</strong> of <strong id="paginationTotal">0</strong> employees
-        </div>
-        <div class="pagination-controls">
-          <div class="page-size-selector">
-            <span class="page-size-label">Show:</span>
-            <select id="pageSizeSelect" class="page-size-select" onchange="changePageSize(this.value)">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-          <div id="paginationButtonsTop" class="pagination-buttons">
-            <!-- Pagination buttons will be generated here -->
-          </div>
-        </div>
-      </div>
-
       <!-- Employee List -->
       <div id="employeeContainer">
         <div class="no-employees">
@@ -458,7 +437,7 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
     };
   </script>
   <script src="../assets/js/sidebar-toggle.js"></script>
-  <script src="js/attendance.js?v=2"></script>
+  <script src="js/attendance.js?v=3"></script>
 
   <!-- QR Scan Auto-Select Branch -->
   <script>
