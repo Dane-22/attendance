@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Feb 28, 2026 at 12:53 AM
+-- Generation Time: Mar 28, 2026 at 05:58 AM
 -- Server version: 8.4.7
 -- PHP Version: 8.3.28
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_action` (`action`),
   KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=711 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=750 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `activity_logs`
@@ -146,7 +146,46 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `action`, `details`, `ip_address`,
 (707, 6, 'Clocked In', 'Employee #27 clocked in at BCDA - Admin', '::1', '2026-02-27 04:47:41'),
 (708, 6, 'Clocked In', 'Employee #26 clocked in at BCDA - Admin', '::1', '2026-02-27 04:47:42'),
 (709, 6, 'Clocked In', 'Employee #36 clocked in at BCDA - Admin', '::1', '2026-02-27 04:47:42'),
-(710, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-28 00:46:55');
+(710, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-28 00:46:55'),
+(711, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-28 01:11:21'),
+(712, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-02-28 02:11:44'),
+(713, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-05 03:22:45'),
+(714, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 00:42:31'),
+(715, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 00:54:33'),
+(716, 137, 'Logged In', 'User Daniel Rillera logged in from branch: Main Branch', '::1', '2026-03-13 00:58:48'),
+(717, 137, 'Logged In', 'User Daniel Rillera logged in from branch: Main Branch', '::1', '2026-03-13 00:59:12'),
+(718, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-13 02:39:53'),
+(719, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 02:40:27'),
+(720, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-13 02:40:55'),
+(721, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 02:47:52'),
+(722, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-13 02:48:22'),
+(723, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 02:50:11'),
+(724, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 02:51:01'),
+(725, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-13 02:51:22'),
+(726, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-13 02:52:32'),
+(727, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 02:53:00'),
+(728, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-13 02:54:39'),
+(729, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-13 02:55:41'),
+(730, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 03:02:13'),
+(731, 137, 'Logged In', 'User Daniel Rillera logged in from branch: Main Branch', '::1', '2026-03-13 04:28:16'),
+(732, 137, 'Clocked In', 'Employee #137 clocked in at MAIN OFFICE', '::1', '2026-03-13 04:31:10'),
+(733, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-13 06:17:35'),
+(734, 137, 'Logged In', 'User Daniel Rillera logged in from branch: Main Branch', '127.0.0.1', '2026-03-14 01:21:39'),
+(735, 137, 'Logged In', 'User Daniel Rillera logged in from branch: Main Branch', '::1', '2026-03-14 02:02:15'),
+(736, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-14 02:02:42'),
+(737, 137, 'Logged In', 'User Daniel Rillera logged in from branch: Main Branch', '::1', '2026-03-14 03:03:36'),
+(738, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-14 03:04:15'),
+(739, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-14 03:17:20'),
+(740, 68, 'Logged In', 'User MICHELLE F. NORIAL logged in from branch: Main Branch', '::1', '2026-03-14 05:41:24'),
+(741, 68, 'Notification Marked Read', 'User marked notification #113 as read', '::1', '2026-03-14 05:41:30'),
+(742, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-20 00:35:39'),
+(743, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-24 01:57:32'),
+(744, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-25 02:07:43'),
+(745, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-27 02:03:27'),
+(746, 6, 'Clocked In', 'Employee #12 clocked in at Sto. Rosario', '::1', '2026-03-27 03:21:16'),
+(747, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-28 00:33:51'),
+(748, 6, 'Logged In', 'User Super Adminesu logged in from branch: Main Branch', '::1', '2026-03-28 05:56:38'),
+(749, 117, 'Logged In', 'User ELAINE Aguilar logged in from branch: Main Branch', '::1', '2026-03-28 05:57:02');
 
 -- --------------------------------------------------------
 
@@ -173,14 +212,31 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `total_ot_hrs` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_attendance_employee_date` (`employee_id`,`attendance_date`)
-) ENGINE=MyISAM AUTO_INCREMENT=1091 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=1108 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `attendance`
 --
 
 INSERT INTO `attendance` (`id`, `employee_id`, `status`, `branch_name`, `attendance_date`, `time_in`, `time_out`, `created_at`, `updated_at`, `is_auto_absent`, `auto_absent_applied`, `absent_notes`, `is_overtime_running`, `is_time_running`, `total_ot_hrs`) VALUES
-(1090, 6, 'Present', 'Main Branch', '2026-02-28', NULL, NULL, '2026-02-28 00:46:55', NULL, 0, 0, NULL, 0, 0, '0'),
+(1107, 117, 'Present', 'Main Branch', '2026-03-28', NULL, NULL, '2026-03-28 05:57:02', NULL, 0, 0, NULL, 0, 0, '0'),
+(1106, 6, 'Present', 'Main Branch', '2026-03-28', NULL, NULL, '2026-03-28 00:33:51', '2026-03-28 05:56:38', 0, 0, NULL, 0, 0, '0'),
+(1105, 14, 'Absent', 'Sto. Rosario', '2026-03-27', NULL, NULL, '2026-03-27 03:21:25', NULL, 0, 0, '', 0, 0, '0'),
+(1104, 12, 'Present', 'Sto. Rosario', '2026-03-27', '2026-03-27 11:21:16', NULL, '2026-03-27 03:21:16', NULL, 0, 0, NULL, 0, 1, '0'),
+(1103, 6, 'Present', 'Main Branch', '2026-03-27', NULL, NULL, '2026-03-27 02:03:27', NULL, 0, 0, NULL, 0, 0, '0'),
+(1102, 6, 'Present', 'Main Branch', '2026-03-25', NULL, NULL, '2026-03-25 02:07:43', NULL, 0, 0, NULL, 0, 0, '0'),
+(1101, 6, 'Present', 'Main Branch', '2026-03-24', NULL, NULL, '2026-03-24 01:57:32', NULL, 0, 0, NULL, 0, 0, '0'),
+(1100, 6, 'Present', 'Main Branch', '2026-03-20', NULL, NULL, '2026-03-20 00:35:39', NULL, 0, 0, NULL, 0, 0, '0'),
+(1099, 68, 'Present', 'Main Branch', '2026-03-14', NULL, NULL, '2026-03-14 05:41:24', NULL, 0, 0, NULL, 0, 0, '0'),
+(1098, 117, 'Present', 'Main Branch', '2026-03-14', NULL, NULL, '2026-03-14 03:04:15', NULL, 0, 0, NULL, 0, 0, '0'),
+(1097, 6, 'Present', 'Main Branch', '2026-03-14', NULL, NULL, '2026-03-14 02:02:42', '2026-03-14 03:17:20', 0, 0, NULL, 0, 0, '0'),
+(1096, 137, 'Present', 'Main Branch', '2026-03-14', NULL, NULL, '2026-03-14 01:21:39', '2026-03-14 03:03:36', 0, 0, NULL, 0, 0, '0'),
+(1095, 137, 'Present', 'MAIN OFFICE', '2026-03-13', '2026-03-13 12:31:10', NULL, '2026-03-13 04:31:10', NULL, 0, 0, NULL, 0, 1, '0'),
+(1094, 117, 'Present', 'Main Branch', '2026-03-13', NULL, NULL, '2026-03-13 02:39:53', '2026-03-13 02:55:41', 0, 0, NULL, 0, 0, '0'),
+(1093, 137, 'Present', 'MAIN OFFICE', '2026-03-13', '2026-03-13 07:28:30', '0000-00-00 00:00:00', '2026-03-13 00:58:48', '2026-03-13 04:28:16', 0, 0, '', 0, 1, '0'),
+(1092, 6, 'Present', 'Main Branch', '2026-03-13', NULL, NULL, '2026-03-13 00:42:31', '2026-03-13 06:17:35', 0, 0, NULL, 0, 0, '0'),
+(1091, 6, 'Present', 'Main Branch', '2026-03-05', NULL, NULL, '2026-03-05 03:22:45', NULL, 0, 0, NULL, 0, 0, '0'),
+(1090, 6, 'Present', 'Main Branch', '2026-02-28', NULL, NULL, '2026-02-28 00:46:55', '2026-02-28 02:11:44', 0, 0, NULL, 0, 0, '0'),
 (1089, 36, 'Present', 'BCDA - Admin', '2026-02-27', '2026-02-27 12:47:42', NULL, '2026-02-27 04:47:42', NULL, 0, 0, NULL, 0, 1, '0'),
 (1088, 26, 'Present', 'BCDA - Admin', '2026-02-27', '2026-02-27 12:47:42', NULL, '2026-02-27 04:47:42', NULL, 0, 0, NULL, 0, 1, '0'),
 (1087, 27, 'Present', 'BCDA - Admin', '2026-02-27', '2026-02-27 12:47:41', NULL, '2026-02-27 04:47:41', NULL, 0, 0, NULL, 0, 1, '0'),
@@ -211,6 +267,8 @@ CREATE TABLE IF NOT EXISTS `branches` (
   `branch_address` varchar(55) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `is_active` tinyint DEFAULT '1',
+  `lat` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Latitude',
+  `long` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Longitude',
   PRIMARY KEY (`id`),
   UNIQUE KEY `branch_name` (`branch_name`),
   KEY `idx_branch_name` (`branch_name`),
@@ -221,22 +279,22 @@ CREATE TABLE IF NOT EXISTS `branches` (
 -- Dumping data for table `branches`
 --
 
-INSERT INTO `branches` (`id`, `order_number`, `branch_name`, `branch_address`, `created_at`, `is_active`) VALUES
-(23, '393859493', 'BCDA - Fence', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:29', 1),
-(22, '393859493', 'BCDA - Control Tower', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:11', 1),
-(21, '393859493', 'BCDA - Admin', 'Poro point, San Fernando City, La Union', '2026-02-06 01:00:59', 1),
-(10, '299269388', 'Sto. Rosario', 'Sto. Rosario, San Juan, La Union', '2026-01-29 03:19:23', 1),
-(20, '393859493', 'BCDA - CCA', 'Poro point, San Fernando City, La Union', '2026-02-06 01:00:44', 1),
-(32, '488809024', 'Maintenance', NULL, '2026-02-06 01:03:08', 1),
-(24, '393859493', 'BCDA - Fire Station', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:46', 1),
-(25, '393859493', 'BCDA - CCTV', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:55', 1),
-(26, '159166591', 'Panicsican', 'Panicsican, San Juan, La Union', '2026-02-06 01:02:07', 1),
-(27, '149744923', 'Dallangayan', NULL, '2026-02-06 01:02:16', 1),
-(28, '228984422', 'Pias - Sundara', NULL, '2026-02-06 01:02:25', 1),
-(29, '228984422', 'Pias - Office', NULL, '2026-02-06 01:02:33', 1),
-(30, '473768962', 'Capitol - Roadwork', NULL, '2026-02-06 01:02:59', 1),
-(31, '473768962', 'Capitol - Accounting', NULL, '2026-02-06 01:03:08', 1),
-(33, '458762594', 'MAIN OFFICE', NULL, '2026-02-10 08:10:39', 1);
+INSERT INTO `branches` (`id`, `order_number`, `branch_name`, `branch_address`, `created_at`, `is_active`, `lat`, `long`) VALUES
+(23, '393859493', 'BCDA - Fence', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:29', 1, '16.609022838414607', '120.30142068898999'),
+(22, '393859493', 'BCDA - Control Tower', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:11', 1, '16.5969775', '120.3077657'),
+(21, '393859493', 'BCDA - Admin', 'Poro point, San Fernando City, La Union', '2026-02-06 01:00:59', 1, '16.5969775', '120.3077657'),
+(10, '299269388', 'Sto. Rosario', 'Sto. Rosario, San Juan, La Union', '2026-01-29 03:19:23', 1, '16.6849388', '120.3522885'),
+(20, '393859493', 'BCDA - CCA', 'Poro point, San Fernando City, La Union', '2026-02-06 01:00:44', 1, '16.6076835', '120.293763'),
+(32, '488809024', 'Maintenance', NULL, '2026-02-06 01:03:08', 1, '16.61376', '120.3429949'),
+(24, '393859493', 'BCDA - Fire Station', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:46', 1, '16.5969775', '120.3077657'),
+(25, '393859493', 'BCDA - CCTV', 'Poro point, San Fernando City, La Union', '2026-02-06 01:01:55', 1, NULL, NULL),
+(26, '159166591', 'Panicsican', 'Panicsican, San Juan, La Union', '2026-02-06 01:02:07', 1, '16.6625973', '120.3322308'),
+(27, '149744923', 'Dallangayan', NULL, '2026-02-06 01:02:16', 1, '16.62798076575308', '120.34489528617755'),
+(28, '228984422', 'Pias - Sundara', NULL, '2026-02-06 01:02:25', 1, NULL, NULL),
+(29, '228984422', 'Pias - Office', NULL, '2026-02-06 01:02:33', 1, NULL, NULL),
+(30, '473768962', 'Capitol - Roadwork', NULL, '2026-02-06 01:02:59', 1, NULL, NULL),
+(31, '473768962', 'Capitol - Accounting', NULL, '2026-02-06 01:03:08', 1, '16.61397741592491', '120.31865176981339'),
+(33, '458762594', 'MAIN OFFICE', NULL, '2026-02-10 08:10:39', 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -339,7 +397,20 @@ CREATE TABLE IF NOT EXISTS `daily_payroll_reports` (
   KEY `idx_report_date` (`report_date`),
   KEY `idx_employee` (`employee_id`),
   KEY `idx_year_month` (`report_year`,`report_month`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `daily_payroll_reports`
+--
+
+INSERT INTO `daily_payroll_reports` (`id`, `employee_id`, `report_date`, `report_year`, `report_month`, `report_day`, `week_number`, `branch_id`, `days_worked`, `total_hours`, `daily_rate`, `basic_pay`, `ot_hours`, `ot_rate`, `ot_amount`, `performance_allowance`, `gross_pay`, `gross_plus_allowance`, `ca_deduction`, `sss_deduction`, `philhealth_deduction`, `pagibig_deduction`, `sss_loan`, `total_deductions`, `take_home_pay`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 24, '2026-02-27', 2026, 2, 27, 4, 21, 1.0, 0.00, 500.00, 500.00, 0.00, 62.50, 0.00, 0.00, 500.00, 500.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 500.00, 'Pending', 1, '2026-02-28 02:01:31', '2026-02-28 02:01:31'),
+(2, 26, '2026-02-27', 2026, 2, 27, 4, 21, 1.0, 0.00, 600.00, 600.00, 0.00, 75.00, 0.00, 0.00, 600.00, 600.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 600.00, 'Pending', 1, '2026-02-28 02:01:31', '2026-02-28 02:01:31'),
+(3, 27, '2026-02-27', 2026, 2, 27, 4, 21, 1.0, 0.00, 550.00, 550.00, 0.00, 68.75, 0.00, 0.00, 550.00, 550.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 550.00, 'Pending', 1, '2026-02-28 02:01:31', '2026-02-28 02:01:31'),
+(4, 36, '2026-02-27', 2026, 2, 27, 4, 21, 1.0, 0.00, 500.00, 500.00, 0.00, 62.50, 0.00, 0.00, 500.00, 500.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 500.00, 'Pending', 1, '2026-02-28 02:01:31', '2026-02-28 02:01:31'),
+(5, 24, '2026-02-24', 2026, 2, 24, 4, 21, 1.0, 0.07, 500.00, 500.00, 0.00, 62.50, 0.00, 0.00, 500.00, 500.00, 0.00, 16.07, 8.93, 7.14, 0.00, 32.14, 467.86, 'Pending', NULL, '2026-03-03 01:07:58', '2026-03-03 01:07:58'),
+(6, 24, '2026-02-25', 2026, 2, 25, 4, 21, 1.0, 7.68, 500.00, 500.00, 5.00, 62.50, 312.50, 0.00, 812.50, 812.50, 0.00, 16.07, 8.93, 7.14, 0.00, 32.14, 780.36, 'Pending', NULL, '2026-03-03 01:07:58', '2026-03-03 01:07:58'),
+(7, 27, '2026-02-25', 2026, 2, 25, 4, 21, 1.0, 7.45, 550.00, 550.00, 2.00, 68.75, 137.50, 0.00, 687.50, 687.50, 0.00, 16.07, 8.93, 7.14, 0.00, 32.14, 655.36, 'Pending', NULL, '2026-03-03 01:07:58', '2026-03-03 01:07:58');
 
 -- --------------------------------------------------------
 
@@ -454,6 +525,7 @@ INSERT INTO `employees` (`id`, `employee_code`, `first_name`, `middle_name`, `la
 (125, 'E0056', 'SONNY', NULL, 'OCCIANO', 'sonny.occiano@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:22', '2026-02-09 00:23:00', NULL, 1400.00, 22),
 (126, 'E0065', 'RANDY', NULL, 'ATON', 'randy.aton@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:34', '2026-02-06 08:47:34', NULL, 600.00, 10),
 (120, 'SA-2026-004', 'Marc', '', 'Arzadon', 'arzadon@gmail.com', '$2y$10$qSf327Nylr1l.TkboICD6ujkKmYGEaiTvixotQ.Jh/XP.MYOZsJIe', 'Super Admin', 'Active', '2026-02-06 07:18:15', '2026-02-07 07:33:06', NULL, 600.00, NULL),
+(137, 'IT-2026-001', 'Daniel', 'Obaldo', 'Rillera', 'danrillera.va@gmail.com', '$2y$10$mOaX9fFaC31bF29mfysmQeb8GgcPjIcxGXmyRHlkgPDS9XJPjLjsu', 'Developer', 'active', '2026-03-12 16:00:00', '2026-03-13 04:28:30', '', 0.00, 33),
 (115, 'PRO-2026-0001', 'Junell', '', 'Tadina', 'tadina@gmail.com', '$2y$10$Nc0l0GkWV9crcUj7dc1vie4ry1up7kwrYBJGeH5oDSvJlhKCOgUt6', 'Engineer', 'Active', '2026-02-06 07:12:32', '2026-02-10 02:31:56', NULL, 600.00, NULL),
 (114, 'ENG-2026-0003', 'Julius John', '', 'Echague', 'echague@gmail.com', '$2y$10$5vYYVwzl3qRA1ClmqUBjJu/YM8SrszeIhO6oEtaoFXcuVxIpmvrV2', 'Engineer', 'Active', '2026-02-06 07:12:00', '2026-02-07 07:34:38', NULL, 600.00, NULL),
 (121, 'E0052', 'JOSHUA', NULL, 'ARQUITOLA', 'joshua.arquitola@example.com', 'df0156a0e0f8f16e44f3878b6be24a0d', 'Worker', 'Active', '2026-02-06 08:47:22', '2026-02-06 08:48:07', NULL, 600.00, 22),
@@ -578,7 +650,7 @@ INSERT INTO `employee_notifications` (`id`, `employee_id`, `overtime_request_id`
 (110, 135, 17, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: drthgh', 0, '2026-02-25 08:49:58', NULL, NULL),
 (111, 136, 17, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: drthgh', 0, '2026-02-25 08:49:58', NULL, NULL),
 (112, 6, 17, 'overtime_approved', 'Overtime Approved', 'Your overtime request for KELVIN CALDERON on 2026-02-25 has been approved. Hours: 5.00, Project: BCDA - Admin', 0, '2026-02-25 08:50:01', NULL, NULL),
-(113, 68, 15, 'overtime_approved', 'Overtime Approved', 'Your overtime request for MICHELLE F. NORIAL on 2026-02-26 has been approved. Hours: 1.00, Project: BCDA - Admin', 0, '2026-02-25 08:50:04', NULL, NULL),
+(113, 68, 15, 'overtime_approved', 'Overtime Approved', 'Your overtime request for MICHELLE F. NORIAL on 2026-02-26 has been approved. Hours: 1.00, Project: BCDA - Admin', 1, '2026-02-25 08:50:04', '2026-03-14 05:41:30', NULL),
 (114, 67, 18, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: dchnbnvdgth', 0, '2026-02-25 08:50:39', NULL, NULL),
 (115, 117, 18, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: dchnbnvdgth', 0, '2026-02-25 08:50:39', NULL, NULL),
 (116, 135, 18, 'overtime_request', 'New Overtime Request', 'KELVIN CALDERON requested 5.00 hours overtime for BCDA - Admin. Reason: dchnbnvdgth', 0, '2026-02-25 08:50:39', NULL, NULL),
@@ -843,6 +915,34 @@ CREATE TABLE IF NOT EXISTS `performance_adjustments` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `push_subscriptions`
+--
+
+DROP TABLE IF EXISTS `push_subscriptions`;
+CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `endpoint` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `p256dh` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `auth` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_endpoint` (`user_id`,`endpoint`(255)),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores Web Push API subscription data for Super Admin notifications';
+
+--
+-- Dumping data for table `push_subscriptions`
+--
+
+INSERT INTO `push_subscriptions` (`id`, `user_id`, `endpoint`, `p256dh`, `auth`, `created_at`, `updated_at`) VALUES
+(1, 6, 'https://fcm.googleapis.com/fcm/send/eSsiEJvZFyY:APA91bHpYkLFR4K_spdzizdib2VM11w2ZQYWbjmRZMo4WU5pWc80NXGoG3dvw4iygij16tlNO9FYmPvVD2Jl7y8EJUaEERZOyeylHhagCI5YmkmfATSwj7iHbZOuo1Ab9BDEcew0o83K', 'BF/aXWwD0VsQUJLhIpZhhLx3IPNBZYUKqdyHSkIevkFkZSP2XvlBQyTpl9Og67nqh5+6Z5rmsTmnMPaT2bmcLBI=', 'jm0m7ZYliMxxEAfCk8c2BA==', '2026-03-14 02:08:10', '2026-03-27 07:21:35'),
+(2, 68, 'https://fcm.googleapis.com/fcm/send/eSsiEJvZFyY:APA91bHpYkLFR4K_spdzizdib2VM11w2ZQYWbjmRZMo4WU5pWc80NXGoG3dvw4iygij16tlNO9FYmPvVD2Jl7y8EJUaEERZOyeylHhagCI5YmkmfATSwj7iHbZOuo1Ab9BDEcew0o83K', 'BF/aXWwD0VsQUJLhIpZhhLx3IPNBZYUKqdyHSkIevkFkZSP2XvlBQyTpl9Og67nqh5+6Z5rmsTmnMPaT2bmcLBI=', 'jm0m7ZYliMxxEAfCk8c2BA==', '2026-03-14 05:41:26', '2026-03-14 05:41:32');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `rate_limit`
 --
 
@@ -854,16 +954,16 @@ CREATE TABLE IF NOT EXISTS `rate_limit` (
   `timestamp` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_ip_timestamp` (`ip`,`timestamp`)
-) ENGINE=MyISAM AUTO_INCREMENT=185 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=196 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `rate_limit`
 --
 
 INSERT INTO `rate_limit` (`id`, `ip`, `user_id`, `timestamp`) VALUES
-(184, '::1', 0, 1772064491),
-(183, '::1', 0, 1772064490),
-(182, '::1', 0, 1772064489);
+(195, '::1', 0, 1774398676),
+(194, '::1', 0, 1774398675),
+(193, '::1', 0, 1774398675);
 
 -- --------------------------------------------------------
 
@@ -911,7 +1011,31 @@ CREATE TABLE IF NOT EXISTS `weekly_payroll_reports` (
   KEY `idx_branch_id` (`branch_id`),
   KEY `idx_status` (`status`),
   KEY `idx_view_type` (`view_type`)
-) ENGINE=InnoDB AUTO_INCREMENT=15941 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15959 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `weekly_payroll_reports`
+--
+
+INSERT INTO `weekly_payroll_reports` (`id`, `employee_id`, `report_year`, `report_month`, `week_number`, `view_type`, `branch_id`, `days_worked`, `total_hours`, `daily_rate`, `basic_pay`, `ot_hours`, `ot_rate`, `ot_amount`, `performance_allowance`, `gross_pay`, `gross_plus_allowance`, `ca_deduction`, `sss_deduction`, `philhealth_deduction`, `pagibig_deduction`, `sss_loan`, `total_deductions`, `take_home_pay`, `status`, `payment_status`, `created_by`, `finalized_by`, `finalized_at`, `created_at`, `updated_at`) VALUES
+(15941, 24, 2026, 2, 4, 'weekly', 21, 1, 0, 500.00, 500.00, 0.00, 62.50, 0.00, 0.00, 500.00, 500.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 500.00, '', 'Not Paid', 1, NULL, NULL, '2026-02-28 02:10:24', '2026-02-28 02:10:24'),
+(15942, 26, 2026, 2, 4, 'weekly', 21, 1, 0, 600.00, 600.00, 0.00, 75.00, 0.00, 0.00, 600.00, 600.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 600.00, '', 'Not Paid', 1, NULL, NULL, '2026-02-28 02:10:24', '2026-02-28 02:10:24'),
+(15943, 27, 2026, 2, 4, 'weekly', 21, 1, 0, 550.00, 550.00, 0.00, 68.75, 0.00, 0.00, 550.00, 550.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 550.00, '', 'Not Paid', 1, NULL, NULL, '2026-02-28 02:10:24', '2026-02-28 02:10:24'),
+(15944, 36, 2026, 2, 4, 'weekly', 21, 1, 0, 500.00, 500.00, 0.00, 62.50, 0.00, 0.00, 500.00, 500.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 500.00, '', 'Not Paid', 1, NULL, NULL, '2026-02-28 02:10:24', '2026-02-28 02:10:24'),
+(15945, 12, 2026, 3, 1, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:47:38', '2026-03-13 02:47:38'),
+(15946, 12, 2026, 3, 1, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:48:08', '2026-03-13 02:48:08'),
+(15947, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:50:02', '2026-03-13 02:50:02'),
+(15948, 12, 2026, 3, 1, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:51:14', '2026-03-13 02:51:14'),
+(15949, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:52:36', '2026-03-13 02:52:36'),
+(15950, 12, 2026, 3, 1, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:54:24', '2026-03-13 02:54:24'),
+(15951, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:57:14', '2026-03-13 02:57:14'),
+(15952, 13, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:57:24', '2026-03-13 02:57:24'),
+(15953, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 02:58:11', '2026-03-13 02:58:11'),
+(15954, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 03:02:59', '2026-03-13 03:02:59'),
+(15955, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 03:06:05', '2026-03-13 03:06:05'),
+(15956, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 200.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 03:36:05', '2026-03-13 03:36:05'),
+(15957, 12, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 06:56:38', '2026-03-13 06:56:38'),
+(15958, 13, 2026, 3, 2, 'weekly', NULL, 0, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'Draft', 'Not Paid', NULL, NULL, NULL, '2026-03-13 06:56:48', '2026-03-13 06:56:48');
 
 -- --------------------------------------------------------
 

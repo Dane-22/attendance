@@ -217,13 +217,99 @@
 - Fallback to initials if image is missing or fails to load
 - Profile modal also uses correct uploads folder path
 
----
-
-- [ ] Track all future code changes in this log
 
 ---
 
-## Format
+### 2026-03-28 (Update)
+
+**Task:** Plan implementation of monthly leave credits system (o1 leave per month)
+
+**Status:** Planning phase complete, awaiting implementation approval
+
+**Files Created:**
+- `C:\Users\averi\.windsurf\plans\monthly-leave-credits-f9a03d.md` - Implementation plan document
+
+**Planned Database Tables:**
+- `employee_leaves` - Stores leave balance per employee
+- `leave_transactions` - Audit trail for all leave credits/usage
+
+**Key Features Planned:**
+- Monthly cron job to credit 1 leave per active employee
+- Leave balance tracking (total, used, remaining)
+- Leave history/transaction log
+- Admin interface for manual adjustments
+- Employee leave balance widget
+- Integration with attendance marking
+
+**Notes:**
+- Awaiting user go signal before implementation begins
+- Plan created in .windsurf/plans/ directory for review
+
+
+---
+
+### 2026-03-28 (Update)
+
+**Task:** Plan location for leave balance display in employee/settings.php
+
+**Status:** Planning phase complete, awaiting implementation approval
+
+**File Reviewed:**
+- `employee/settings.php` - Analyzed tab-based layout structure
+
+**Files Created:**
+- `C:\Users\averi\.windsurf\plans\leave-display-location-f9a03d.md` - Location options plan
+
+**Recommended Approach:**
+Add new "Leave & Benefits" tab between Profile and Security tabs with:
+- Large leave balance number display
+- Stats cards for Total/Used leaves
+- Next credit date info
+- Action buttons for history view
+
+**Alternative Options Considered:**
+1. Profile tab widget - Rejected to avoid cluttering personal info section
+2. Header badge - Rejected due to limited space for meaningful information
+
+**Notes:**
+- Plan recommends dedicated tab for future scalability (leave history, request forms)
+- Can reuse existing CSS classes: `.tool-card`, `.form-grid`, `.settings-tabs`
+- Awaiting user go signal before implementation
+
+---
+
+### 2026-03-28 (Update)
+
+**Task:** Implement leave balance display in employee/settings.php
+
+**Status:** Implementation completed
+
+**Files Created:**
+- `dbschema/create_leave_tables.sql` - SQL migration for leave tables
+- `employee/setup_leave_system.php` - Browser-based setup script for tables
+
+**Files Modified:**
+- `employee/settings.php` - Added Leave & Benefits tab with:
+  - PHP code to fetch leave balance from `employee_leaves` table
+  - New "Leave & Benefits" tab between Profile and Security
+  - Leave balance card showing remaining days
+  - Stats grid showing Total/Used leaves
+  - Next credit date display
+  - Leave policy information box
+  - CSS styles for all leave components
+
+**Database Tables Created:**
+- `employee_leaves` - Stores leave balance per employee (total, used, remaining, last_credited_month)
+- `leave_transactions` - Audit trail for leave credits/usage
+
+**Features:**
+- Real-time leave balance display
+- Visual status indicators (available/unavailable)
+- Next credit date calculation
+- Responsive design for mobile devices
+- Fallback handling if tables don't exist yet
+
+---
 
 Each entry should include:
 - Date

@@ -52,7 +52,19 @@ function getPendingCashAdvanceCount($db) {
     return intval($row['cnt'] ?? 0);
 }
 
-// Handle AJAX requests - Admin can view but not approve/reject
+// Helper function to get pending leave request count
+function getPendingLeaveCount($db) {
+    if (!$db) return 0;
+    $checkTable = @mysqli_query($db, "SHOW TABLES LIKE 'leave_requests'");
+    if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
+        return 0;
+    }
+    $sql = "SELECT COUNT(*) as cnt FROM leave_requests WHERE status = 'pending'";
+    $result = @mysqli_query($db, $sql);
+    if (!$result) return 0;
+    $row = mysqli_fetch_assoc($result);
+    return intval($row['cnt'] ?? 0);
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
     
@@ -359,12 +371,228 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         exit();
     }
+    
+    // Load leave requests
+    if ($_POST['action'] === 'load_leave_requests') {
+        $checkTable = @mysqli_query($db, "SHOW TABLES LIKE 'leave_requests'");
+        if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
+            echo json_encode([
+                'success' => true,
+                'requests' => [],
+                'counts' => ['pending' => 0, 'approved' => 0, 'rejected' => 0, 'all' => 0]
+            ]);
+            exit();
+        }
+        
+        $status = isset($_POST['status']) ? $_POST['status'] : 'pending';
+        
+        $whereClause = "WHERE 1=1";
+        if ($status !== 'all') {
+            $whereClause = "WHERE l.status = '" . mysqli_real_escape_string($db, $status) . "'";
+        }
+        
+        $sql = "SELECT l.*, e.first_name, e.last_name 
+                FROM leave_requests l 
+                LEFT JOIN employees e ON l.employee_id = e.id 
+                $whereClause 
+                ORDER BY l.requested_at DESC";
+        
+        $result = @mysqli_query($db, $sql);
+        $requests = [];
+        
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $initials = strtoupper(substr($row['first_name'] ?? '', 0, 1) . substr($row['last_name'] ?? '', 0, 1));
+                
+                $requests[] = [
+                    'id' => $row['id'],
+                    'employee_id' => $row['employee_id'],
+                    'employee_name' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')),
+                    'employee_initials' => $initials,
+                    'leave_date' => $row['leave_date'],
+                    'leave_type' => $row['leave_type'],
+                    'days_requested' => $row['days_requested'],
+                    'reason' => $row['reason'],
+                    'status' => $row['status'],
+                    'requested_at' => $row['requested_at'],
+                    'approved_by' => $row['approved_by'],
+                    'approved_at' => $row['approved_at'],
+                    'rejection_reason' => $row['rejection_reason']
+                ];
+            }
+        }
+        
+        // Get counts for tabs
+        $countsSql = "SELECT status, COUNT(*) as cnt FROM leave_requests GROUP BY status";
+        $countsResult = mysqli_query($db, $countsSql);
+        $counts = ['pending' => 0, 'approved' => 0, 'rejected' => 0, 'all' => 0];
+        
+        if ($countsResult) {
+            while ($row = mysqli_fetch_assoc($countsResult)) {
+                $counts[$row['status']] = intval($row['cnt']);
+                $counts['all'] += intval($row['cnt']);
+            }
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'requests' => $requests,
+            'counts' => $counts
+        ]);
+        exit();
+    }
+    
+    // Approve leave request
+    if ($_POST['action'] === 'approve_leave') {
+        try {
+            $requestId = isset($_POST['request_id']) ? intval($_POST['request_id']) : 0;
+            $adminName = $_SESSION['username'] ?? 'Admin';
+            $adminId = $_SESSION['employee_id'] ?? 0;
+            
+            if ($requestId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid request ID']);
+                exit();
+            }
+            
+            // Get request details first for notification
+            $getSql = "SELECT * FROM leave_requests WHERE id = ? AND status = 'pending' LIMIT 1";
+            $getStmt = mysqli_prepare($db, $getSql);
+            mysqli_stmt_bind_param($getStmt, 'i', $requestId);
+            mysqli_stmt_execute($getStmt);
+            $getResult = mysqli_stmt_get_result($getStmt);
+            $requestDetails = mysqli_fetch_assoc($getResult);
+            mysqli_stmt_close($getStmt);
+            
+            if (!$requestDetails) {
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+                exit();
+            }
+            
+            // Update request status
+            $updateSql = "UPDATE leave_requests SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'pending'";
+            $updateStmt = mysqli_prepare($db, $updateSql);
+            mysqli_stmt_bind_param($updateStmt, 'si', $adminName, $requestId);
+            
+            if (mysqli_stmt_execute($updateStmt) && mysqli_stmt_affected_rows($updateStmt) > 0) {
+                mysqli_stmt_close($updateStmt);
+                
+                // Create notification for the employee
+                $employeeId = intval($requestDetails['employee_id']);
+                $notifTitle = "Leave Request Approved";
+                $notifMessage = "Your leave request for {$requestDetails['days_requested']} day(s) on {$requestDetails['leave_date']} ({$requestDetails['leave_type']}) has been approved.";
+                $notifType = 'leave_approved';
+                
+                $notifSql = "INSERT INTO employee_notifications (employee_id, leave_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $notifStmt = mysqli_prepare($db, $notifSql);
+                if ($notifStmt) {
+                    mysqli_stmt_bind_param($notifStmt, 'iisss', $employeeId, $requestId, $notifType, $notifTitle, $notifMessage);
+                    mysqli_stmt_execute($notifStmt);
+                    mysqli_stmt_close($notifStmt);
+                    
+                    // Send push notification
+                    sendPushNotification($db, $employeeId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
+                }
+                
+                // Deduct leave days from employee balance
+                $deductSql = "UPDATE employee_leaves SET remaining_leaves = remaining_leaves - ?, used_leaves = used_leaves + ? 
+                             WHERE employee_id = ? AND remaining_leaves >= ?";
+                $deductStmt = mysqli_prepare($db, $deductSql);
+                $days = floatval($requestDetails['days_requested']);
+                mysqli_stmt_bind_param($deductStmt, 'ddid', $days, $days, $employeeId, $days);
+                mysqli_stmt_execute($deductStmt);
+                mysqli_stmt_close($deductStmt);
+                
+                // Log the transaction
+                $transSql = "INSERT INTO leave_transactions (employee_id, transaction_type, days, balance_after, reason, created_by, created_at) 
+                            VALUES (?, 'used', ?, (SELECT remaining_leaves FROM employee_leaves WHERE employee_id = ?), ?, ?, NOW())";
+                $transStmt = mysqli_prepare($db, $transSql);
+                $reason = "Leave approved: " . $requestDetails['leave_date'];
+                mysqli_stmt_bind_param($transStmt, 'idisi', $employeeId, $days, $employeeId, $reason, $adminId);
+                mysqli_stmt_execute($transStmt);
+                mysqli_stmt_close($transStmt);
+                
+                echo json_encode(['success' => true, 'message' => 'Leave request approved successfully']);
+                logActivity($db, 'Leave Approved', "Admin {$adminName} approved leave #{$requestId} for {$requestDetails['days_requested']} day(s)");
+            } else {
+                mysqli_stmt_close($updateStmt);
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Exception: ' . $e->getMessage()]);
+        }
+        exit();
+    }
+    
+    // Reject leave request
+    if ($_POST['action'] === 'reject_leave') {
+        try {
+            $requestId = isset($_POST['request_id']) ? intval($_POST['request_id']) : 0;
+            $rejectionReason = isset($_POST['rejection_reason']) ? trim($_POST['rejection_reason']) : '';
+            $adminName = $_SESSION['username'] ?? 'Admin';
+            
+            if ($requestId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid request ID']);
+                exit();
+            }
+            
+            // Get request details first for notification
+            $getSql = "SELECT * FROM leave_requests WHERE id = ? AND status = 'pending' LIMIT 1";
+            $getStmt = mysqli_prepare($db, $getSql);
+            mysqli_stmt_bind_param($getStmt, 'i', $requestId);
+            mysqli_stmt_execute($getStmt);
+            $getResult = mysqli_stmt_get_result($getStmt);
+            $requestDetails = mysqli_fetch_assoc($getResult);
+            mysqli_stmt_close($getStmt);
+            
+            if (!$requestDetails) {
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+                exit();
+            }
+            
+            // Update request status
+            $updateSql = "UPDATE leave_requests SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND status = 'pending'";
+            $updateStmt = mysqli_prepare($db, $updateSql);
+            mysqli_stmt_bind_param($updateStmt, 'ssi', $adminName, $rejectionReason, $requestId);
+            
+            if (mysqli_stmt_execute($updateStmt) && mysqli_stmt_affected_rows($updateStmt) > 0) {
+                mysqli_stmt_close($updateStmt);
+                
+                // Create notification for the employee
+                $employeeId = intval($requestDetails['employee_id']);
+                $reasonText = $rejectionReason ? " Reason: {$rejectionReason}" : "";
+                $notifTitle = "Leave Request Rejected";
+                $notifMessage = "Your leave request for {$requestDetails['days_requested']} day(s) on {$requestDetails['leave_date']} ({$requestDetails['leave_type']}) was rejected." . $reasonText;
+                $notifType = 'leave_rejected';
+                
+                $notifSql = "INSERT INTO employee_notifications (employee_id, leave_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $notifStmt = mysqli_prepare($db, $notifSql);
+                if ($notifStmt) {
+                    mysqli_stmt_bind_param($notifStmt, 'iisss', $employeeId, $requestId, $notifType, $notifTitle, $notifMessage);
+                    mysqli_stmt_execute($notifStmt);
+                    mysqli_stmt_close($notifStmt);
+                    
+                    // Send push notification
+                    sendPushNotification($db, $employeeId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
+                }
+                
+                echo json_encode(['success' => true, 'message' => 'Leave request rejected']);
+                logActivity($db, 'Leave Rejected', "Admin {$adminName} rejected leave #{$requestId}. Reason: {$rejectionReason}");
+            } else {
+                mysqli_stmt_close($updateStmt);
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Exception: ' . $e->getMessage()]);
+        }
+        exit();
+    }
 }
 
 // Get initial pending count
 $pendingCount = getPendingOvertimeCount($db);
 $pendingCashAdvanceCount = getPendingCashAdvanceCount($db);
-$totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
+$pendingLeaveCount = getPendingLeaveCount($db);
+$totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCount;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -507,6 +735,10 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                         <i class="fas fa-money-bill-wave"></i> Cash Advance
                         <span class="type-count" id="type-count-cash-advance"><?php echo $pendingCashAdvanceCount; ?></span>
                     </button>
+                    <button class="type-tab" data-type="leave" onclick="switchRequestType('leave')">
+                        <i class="fas fa-umbrella-beach"></i> Leave
+                        <span class="type-count" id="type-count-leave"><?php echo $pendingLeaveCount; ?></span>
+                    </button>
                 </div>
                 
                 <div class="notification-tabs">
@@ -571,6 +803,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 const formData = new FormData();
                 if (currentRequestType === 'cash_advance') {
                     formData.append('action', 'load_cash_advance_requests');
+                } else if (currentRequestType === 'leave') {
+                    formData.append('action', 'load_leave_requests');
                 } else {
                     formData.append('action', 'load_requests');
                 }
@@ -598,6 +832,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                     updateCounts(data.counts);
                     if (currentRequestType === 'cash_advance') {
                         renderCashAdvanceRequests(data.requests);
+                    } else if (currentRequestType === 'leave') {
+                        renderLeaveRequests(data.requests);
                     } else {
                         renderRequests(data.requests);
                     }
@@ -894,6 +1130,161 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
             }
         }
         
+        // Render Leave Requests
+        function renderLeaveRequests(requests) {
+            const container = document.getElementById('requestsContainer');
+            
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No ${currentTab} leave requests</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="requests-grid">';
+            
+            requests.forEach(request => {
+                const statusClass = request.status;
+                const statusIcon = request.status.toLowerCase() === 'pending' ? 'fa-clock' : 
+                                  request.status.toLowerCase() === 'approved' ? 'fa-check' : 'fa-times';
+                
+                html += `
+                    <div class="request-card ${statusClass}" data-request-id="${request.id}">
+                        <div class="request-header">
+                            <div class="employee-info">
+                                <div class="employee-avatar">
+                                    ${request.employee_avatar ? 
+                                        `<img src="${request.employee_avatar}" alt="">` : 
+                                        `<span class="initials">${request.employee_initials}</span>`
+                                    }
+                                </div>
+                                <div class="employee-details">
+                                    <h4>${escapeHtml(request.employee_name)}</h4>
+                                    <span class="request-type"><i class="fas fa-umbrella-beach"></i> Leave Request</span>
+                                </div>
+                            </div>
+                            <div class="status-badge ${statusClass}">
+                                <i class="fas ${statusIcon}"></i>
+                                ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                            </div>
+                        </div>
+                        
+                        <div class="request-body">
+                            <div class="info-row">
+                                <span class="label">Leave Date:</span>
+                                <span class="value">${formatDate(request.leave_date)}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Leave Type:</span>
+                                <span class="value">${escapeHtml(request.leave_type)}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Days Requested:</span>
+                                <span class="value hours">${request.days_requested} day(s)</span>
+                            </div>
+                            <div class="info-row reason">
+                                <span class="label">Reason:</span>
+                                <span class="value">${escapeHtml(request.reason)}</span>
+                            </div>
+                            ${request.rejection_reason ? `
+                                <div class="info-row rejection">
+                                    <span class="label">Rejection Reason:</span>
+                                    <span class="value">${escapeHtml(request.rejection_reason)}</span>
+                                </div>
+                            ` : ''}
+                            <div class="info-row meta">
+                                <span class="label">Requested:</span>
+                                <span class="value">${formatDateTime(request.requested_at)}</span>
+                            </div>
+                            ${request.approved_by ? `
+                                <div class="info-row meta">
+                                    <span class="label">${request.status.toLowerCase() === 'approved' ? 'Approved' : 'Rejected'} by:</span>
+                                    <span class="value">${escapeHtml(request.approved_by)} on ${formatDateTime(request.approved_at)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${request.status.toLowerCase() === 'pending' ? `
+                            <div class="request-actions">
+                                <button class="btn-approve" onclick="approveLeave(${request.id})">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="btn-reject" onclick="showRejectLeaveModal(${request.id})">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        async function approveLeave(requestId) {
+            if (!confirm('Approve this leave request?')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'approve_leave');
+                formData.append('request_id', requestId);
+                
+                const response = await fetch('admin_notification.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    loadRequests(currentTab);
+                    updatePendingBadge();
+                } else {
+                    showToast(data.message || 'Failed to approve leave request', 'error');
+                }
+            } catch (error) {
+                console.error('Error approving leave:', error);
+                showToast('Error approving leave request', 'error');
+            }
+        }
+        
+        async function showRejectLeaveModal(requestId) {
+            const reason = prompt('Enter rejection reason (optional):');
+            if (reason === null) return; // User cancelled
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'reject_leave');
+                formData.append('request_id', requestId);
+                formData.append('rejection_reason', reason);
+                
+                const response = await fetch('admin_notification.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    loadRequests(currentTab);
+                    updatePendingBadge();
+                } else {
+                    showToast(data.message || 'Failed to reject leave request', 'error');
+                }
+            } catch (error) {
+                console.error('Error rejecting leave:', error);
+                showToast('Error rejecting leave request', 'error');
+            }
+        }
+        
         function showToast(message, type) {
             const toast = document.createElement('div');
             toast.style.cssText = `
@@ -946,12 +1337,24 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 });
                 const caData = await caResponse.json();
                 
+                // Get leave count
+                const leaveFormData = new FormData();
+                leaveFormData.append('action', 'load_leave_requests');
+                leaveFormData.append('status', 'pending');
+                const leaveResponse = await fetch('admin_notification.php', {
+                    method: 'POST',
+                    body: leaveFormData
+                });
+                const leaveData = await leaveResponse.json();
+                
                 const otPending = data.success ? ((data.counts?.pending || 0) + (data.counts?.pre_approved || 0)) : 0;
                 const caPending = caData.success ? ((caData.counts?.pending || 0) + (caData.counts?.pre_approved || 0)) : 0;
+                const leavePending = leaveData.success ? (leaveData.counts?.pending || 0) : 0;
                 
-                document.getElementById('pendingBadge').textContent = otPending + caPending;
+                document.getElementById('pendingBadge').textContent = otPending + caPending + leavePending;
                 document.getElementById('type-count-overtime').textContent = otPending;
                 document.getElementById('type-count-cash-advance').textContent = caPending;
+                document.getElementById('type-count-leave').textContent = leavePending;
             } catch (e) {
                 console.error('Error updating badge:', e);
             }

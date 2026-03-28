@@ -102,6 +102,46 @@ if (!empty($profile_image_path) && file_exists('../' . $profile_image_path)) {
     }
 }
 
+// ============ FETCH EMPLOYEE LEAVE BALANCE ============
+$leaveBalance = [
+    'total_leaves' => 0,
+    'used_leaves' => 0,
+    'remaining_leaves' => 0,
+    'last_credited_month' => null
+];
+
+// Check if employee_leaves table exists
+$tableCheckQuery = "SHOW TABLES LIKE 'employee_leaves'";
+$tableCheckResult = mysqli_query($db, $tableCheckQuery);
+if ($tableCheckResult && mysqli_num_rows($tableCheckResult) > 0) {
+    // Fetch leave balance for current employee
+    $leaveQuery = "SELECT total_leaves, used_leaves, remaining_leaves, last_credited_month 
+                   FROM employee_leaves 
+                   WHERE employee_id = ?";
+    $stmt = mysqli_prepare($db, $leaveQuery);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $employeeId);
+        mysqli_stmt_execute($stmt);
+        $leaveResult = mysqli_stmt_get_result($stmt);
+        if ($leaveResult && $leaveData = mysqli_fetch_assoc($leaveResult)) {
+            $leaveBalance = $leaveData;
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
+// Calculate next credit date - always show first day of NEXT month
+$nextCreditDate = null;
+if (!empty($leaveBalance['last_credited_month'])) {
+    $lastCredit = new DateTime($leaveBalance['last_credited_month']);
+    $lastCredit->modify('+1 month');
+    $nextCreditDate = $lastCredit->format('F 1, Y');
+} else {
+    // No credit yet - show first day of next month from today
+    $nextMonth = new DateTime('first day of next month');
+    $nextCreditDate = $nextMonth->format('F 1, Y');
+}
+
 // ============ PROFILE UPDATE HANDLING ============
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $first_name = mysqli_real_escape_string($db, $_POST['first_name'] ?? '');
@@ -1259,6 +1299,190 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
             display: none; /* Hide icons on very small screens */
         }
     }
+    /* Leave Balance Styles */
+    .leave-balance-card {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(255, 140, 66, 0.05));
+        border: 2px solid var(--accent-gold);
+        border-radius: var(--radius);
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
+    }
+    
+    .leave-balance-number {
+        font-size: 56px;
+        font-weight: 700;
+        color: var(--accent-gold);
+        line-height: 1;
+        text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    }
+    
+    .leave-balance-label {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+        font-weight: 500;
+    }
+    
+    .leave-balance-status {
+        margin-top: 16px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        display: inline-block;
+    }
+    
+    .leave-balance-status.available {
+        background: rgba(40, 167, 69, 0.15);
+        color: #28a745;
+    }
+    
+    .leave-balance-status.unavailable {
+        background: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+    }
+    
+    .leave-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    
+    .leave-stat-card {
+        background: var(--input-dark);
+        border: 1px solid var(--border-dark);
+        border-radius: var(--radius);
+        padding: 24px;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    
+    .leave-stat-card:hover {
+        border-color: var(--accent-gold);
+        transform: translateY(-2px);
+    }
+    
+    .leave-stat-icon {
+        font-size: 24px;
+        margin-bottom: 12px;
+    }
+    
+    .leave-stat-icon.total {
+        color: var(--accent-gold);
+    }
+    
+    .leave-stat-icon.used {
+        color: var(--accent-orange);
+    }
+    
+    .leave-stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+    
+    .leave-stat-label {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    
+    .leave-info-box {
+        background: var(--input-dark);
+        border: 1px solid var(--border-dark);
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    
+    .leave-info-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent-gold), #ff8c42);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: var(--charcoal);
+        flex-shrink: 0;
+    }
+    
+    .leave-info-content {
+        flex: 1;
+    }
+    
+    .leave-info-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+    
+    .leave-info-text {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+    
+    .leave-policy-box {
+        background: rgba(33, 150, 243, 0.05);
+        border: 1px solid rgba(33, 150, 243, 0.2);
+        border-radius: var(--radius);
+        padding: 24px;
+    }
+    
+    .leave-policy-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .leave-policy-list li {
+        position: relative;
+        padding-left: 24px;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+    
+    .leave-policy-list li:before {
+        content: '•';
+        position: absolute;
+        left: 8px;
+        color: var(--accent-gold);
+        font-weight: bold;
+    }
+    
+    .leave-policy-list li:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Responsive adjustments for leave section */
+    @media (max-width: 768px) {
+        .leave-balance-card {
+            padding: 32px 20px;
+        }
+        
+        .leave-balance-number {
+            font-size: 42px;
+        }
+        
+        .leave-stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .leave-info-box {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+    
   </style>
 </head>
 <body class="settings-page">
@@ -1315,6 +1539,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
           <a href="#profile" class="tab-link active" onclick="switchTab('profile', event)">
             <i class="fas fa-user-circle tab-icon"></i>
             <span>Profile</span>
+          </a>
+          <a href="#leave" class="tab-link" onclick="switchTab('leave', event)">
+            <i class="fas fa-umbrella-beach tab-icon"></i>
+            <span>Leave & Benefits</span>
           </a>
           <a href="#security" class="tab-link" onclick="switchTab('security', event)">
             <i class="fas fa-shield-alt tab-icon"></i>
@@ -1418,6 +1646,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
                 <i class="fas fa-save"></i> Save Changes
               </button>
             </form>
+          </div>
+
+          <!-- Leave & Benefits Tab -->
+          <div id="leave-tab" class="tab-pane">
+            <div class="section-title">Leave & Benefits</div>
+            <div class="section-subtitle">View your available leave credits and benefits information</div>
+            
+            <!-- Leave Balance Card -->
+            <div class="leave-balance-card">
+              <div class="leave-balance-number"><?php echo number_format($leaveBalance['remaining_leaves'], 2); ?></div>
+              <div class="leave-balance-label">Days Available</div>
+              <?php if ($leaveBalance['remaining_leaves'] > 0): ?>
+                <div class="leave-balance-status available">
+                  <i class="fas fa-check-circle"></i> You have leave credits available
+                </div>
+              <?php else: ?>
+                <div class="leave-balance-status unavailable">
+                  <i class="fas fa-info-circle"></i> No leave credits available
+                </div>
+              <?php endif; ?>
+            </div>
+            
+            <!-- Leave Stats Grid -->
+            <div class="leave-stats-grid">
+              <div class="leave-stat-card">
+                <div class="leave-stat-icon total">
+                  <i class="fas fa-calendar-plus"></i>
+                </div>
+                <div class="leave-stat-value"><?php echo number_format($leaveBalance['total_leaves'], 2); ?></div>
+                <div class="leave-stat-label">Total Leaves Earned</div>
+              </div>
+              <div class="leave-stat-card">
+                <div class="leave-stat-icon used">
+                  <i class="fas fa-calendar-minus"></i>
+                </div>
+                <div class="leave-stat-value"><?php echo number_format($leaveBalance['used_leaves'], 2); ?></div>
+                <div class="leave-stat-label">Leaves Used</div>
+              </div>
+            </div>
+            
+            <!-- Next Credit Info -->
+            <div class="leave-info-box">
+              <div class="leave-info-icon">
+                <i class="fas fa-calendar-alt"></i>
+              </div>
+              <div class="leave-info-content">
+                <div class="leave-info-title">Next Leave Credit</div>
+                <div class="leave-info-text">
+                  You will receive <strong>1.00 leave credit</strong> on <strong><?php echo htmlspecialchars($nextCreditDate); ?></strong>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Leave Policy Info -->
+            <div class="leave-policy-box">
+              <div class="section-subtitle" style="margin-bottom: 16px;">
+                <i class="fas fa-info-circle" style="color: var(--accent-gold);"></i> Leave Policy
+              </div>
+              <ul class="leave-policy-list">
+                <li>Each active employee receives <strong>1 leave credit per month</strong></li>
+                <li>Leave credits accumulate if unused</li>
+                <li>Leave credits can be used for sick days, vacation, or personal time</li>
+                <li>Contact your administrator to use leave credits</li>
+              </ul>
+            </div>
           </div>
 
           <!-- Security Tab -->

@@ -30,6 +30,7 @@ $totalSites = 0;
 $activeProjects = 0;
 $pendingRequests = 0;
 $pendingOvertimeRequests = 0;
+$pendingLeaveRequests = 0;
 $recentTransfers = [];
 $dbError = null;
 
@@ -136,6 +137,18 @@ try {
         $pendingOvertimeRequests = $row['count'];
     }
     mysqli_stmt_close($otStmt);
+
+    // 4c. Get pending leave requests count
+    $leaveQuery = "SELECT COUNT(*) as count FROM leave_requests 
+                   WHERE employee_id = ? AND status = 'pending'";
+    $leaveStmt = mysqli_prepare($db, $leaveQuery);
+    mysqli_stmt_bind_param($leaveStmt, 'i', $employeeId);
+    mysqli_stmt_execute($leaveStmt);
+    $leaveResult = mysqli_stmt_get_result($leaveStmt);
+    if ($row = mysqli_fetch_assoc($leaveResult)) {
+        $pendingLeaveRequests = $row['count'];
+    }
+    mysqli_stmt_close($leaveStmt);
 
     // 5. Recent Employee Transfers
     $query = "SELECT 
@@ -344,6 +357,127 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_overtime'])) 
     }
     exit();
 }
+// Handle Leave Request AJAX
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_leave'])) {
+    // Start output buffering to catch any errors
+    ob_start();
+    header('Content-Type: application/json');
+    
+    try {
+        $leaveDate = $_POST['leave_date'] ?? '';
+        $leaveType = $_POST['leave_type'] ?? 'Personal';
+        $daysRequested = floatval($_POST['days_requested'] ?? 1);
+        $leaveReason = trim($_POST['leave_reason'] ?? '');
+        
+        if (empty($leaveDate)) {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'Please select a leave date']);
+            exit();
+        }
+        
+        if ($daysRequested <= 0) {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'Please enter valid number of days']);
+            exit();
+        }
+        
+        if (empty($leaveReason)) {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'Please provide a reason for your leave']);
+            exit();
+        }
+        
+        // Check available leave balance
+        $availableLeaves = 0;
+        $checkTable = @mysqli_query($db, "SHOW TABLES LIKE 'employee_leaves'");
+        if ($checkTable && mysqli_num_rows($checkTable) > 0) {
+            $balanceSql = "SELECT remaining_leaves FROM employee_leaves WHERE employee_id = ?";
+            $balanceStmt = @mysqli_prepare($db, $balanceSql);
+            if ($balanceStmt) {
+                mysqli_stmt_bind_param($balanceStmt, 'i', $employeeId);
+                @mysqli_stmt_execute($balanceStmt);
+                $balanceResult = @mysqli_stmt_get_result($balanceStmt);
+                if ($balanceResult) {
+                    $balanceRow = mysqli_fetch_assoc($balanceResult);
+                    $availableLeaves = floatval($balanceRow['remaining_leaves'] ?? 0);
+                }
+                mysqli_stmt_close($balanceStmt);
+            }
+        }
+        
+        if ($availableLeaves <= 0) {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'You have no available leave credits. Please contact your administrator.']);
+            exit();
+        }
+        
+        if ($daysRequested > $availableLeaves) {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => "You only have {$availableLeaves} day(s) available. You cannot request {$daysRequested} day(s)."]);
+            exit();
+        }
+        
+        // Insert into leave_requests table
+        $query = "INSERT INTO leave_requests (employee_id, leave_date, leave_type, days_requested, reason, status, requested_by, requested_at) 
+                  VALUES (?, ?, ?, ?, ?, 'pending', ?, NOW())";
+        $stmt = mysqli_prepare($db, $query);
+        mysqli_stmt_bind_param($stmt, 'issdss', $employeeId, $leaveDate, $leaveType, $daysRequested, $leaveReason, $currentUserName);
+        
+        if (mysqli_stmt_execute($stmt)) {
+            $leaveRequestId = mysqli_insert_id($db);
+            mysqli_stmt_close($stmt);
+            
+            // Insert notification for the employee
+            $notificationTitle = 'Leave Request Submitted';
+            $notificationMessage = "Your leave request for {$daysRequested} day(s) on {$leaveDate} ({$leaveType}) has been submitted and is pending approval.";
+            $notifQuery = "INSERT INTO employee_notifications (employee_id, leave_request_id, notification_type, title, message, is_read, created_at) 
+                           VALUES (?, ?, 'leave_submitted', ?, ?, 0, NOW())";
+            $notifStmt = mysqli_prepare($db, $notifQuery);
+            mysqli_stmt_bind_param($notifStmt, 'iiss', $employeeId, $leaveRequestId, $notificationTitle, $notificationMessage);
+            mysqli_stmt_execute($notifStmt);
+            mysqli_stmt_close($notifStmt);
+            
+            // Create notification for Admin and Super Admin users
+            $adminNotifTitle = "New Leave Request";
+            $adminNotifMessage = "{$currentUserName} requested {$daysRequested} day(s) leave for {$leaveDate} ({$leaveType}). Reason: {$leaveReason}";
+            $adminNotifType = 'leave_request';
+            
+            $adminSql = "SELECT id FROM employees WHERE position IN ('Admin', 'Super Admin') AND status = 'Active'";
+            $adminResult = mysqli_query($db, $adminSql);
+            if ($adminResult) {
+                while ($adminRow = mysqli_fetch_assoc($adminResult)) {
+                    $adminId = $adminRow['id'];
+                    $adminNotifInsertSql = "INSERT INTO employee_notifications (employee_id, leave_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                    $adminNotifStmt = mysqli_prepare($db, $adminNotifInsertSql);
+                    if ($adminNotifStmt) {
+                        mysqli_stmt_bind_param($adminNotifStmt, 'iisss', $adminId, $leaveRequestId, $adminNotifType, $adminNotifTitle, $adminNotifMessage);
+                        mysqli_stmt_execute($adminNotifStmt);
+                        mysqli_stmt_close($adminNotifStmt);
+                    }
+                    
+                    // Send push notification
+                    if (function_exists('sendPushNotification')) {
+                        @sendPushNotification($db, $adminId, $adminNotifTitle, $adminNotifMessage, '/employee/admin_notification.php');
+                    }
+                }
+            }
+            
+            ob_end_clean();
+            echo json_encode(['success' => true, 'id' => $leaveRequestId, 'message' => 'Leave request submitted successfully']);
+            if (function_exists('logActivity')) {
+                logActivity($db, 'Leave Requested', "Engineer requested {$daysRequested} day(s) leave on {$leaveDate}");
+            }
+        } else {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'Failed to submit leave request']);
+        }
+    } catch (Exception $e) {
+        ob_end_clean();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+    exit();
+}
+
 function formatDateShort($date) {
     return date('M d, Y', strtotime($date));
 }
@@ -365,7 +499,6 @@ function formatDateShort($date) {
     <link rel="stylesheet" href="../assets/css/theme-variables.css">
     <link rel="stylesheet" href="css/light-theme.css">
     <link rel="stylesheet" href="css/dashboard.css">
-    <link rel="stylesheet" href="dashboard.css">
     <style>
         /* Time In/Out Section Styles */
         .time-tracking-section {
@@ -725,6 +858,141 @@ function formatDateShort($date) {
             color: #F44336;
         }
         
+        /* Leave Request Section Styles */
+        .leave-request-section {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(0, 0, 0, 0.2) 100%);
+            border: 1px solid rgba(76, 175, 80, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .leave-request-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .leave-request-header i {
+            font-size: 24px;
+            color: var(--gold-2);
+        }
+        
+        .leave-request-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .leave-form {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .leave-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .leave-field {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .leave-field label {
+            color: #b5b5b5;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .leave-field input,
+        .leave-field select,
+        .leave-field textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .leave-field input:focus,
+        .leave-field select:focus,
+        .leave-field textarea:focus {
+            outline: none;
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+        
+        .leave-field select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+        
+        .leave-field select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        .leave-field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .btn-submit-leave {
+            background: linear-gradient(180deg, #4CAF50 0%, #45a049 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 24px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .btn-submit-leave:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .leave-alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        .leave-alert.show {
+            display: block;
+        }
+        
+        .leave-alert.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+        
+        .leave-alert.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #F44336;
+            color: #F44336;
+        }
+        
         .current-time {
             font-size: 32px;
             font-weight: 700;
@@ -1051,6 +1319,49 @@ function formatDateShort($date) {
                     <button type="submit" class="btn-submit-ot">
                         <i class="fas fa-paper-plane"></i>
                         Submit Overtime Request
+                    </button>
+                </form>
+            </div>
+
+            <!-- Leave Request Section -->
+            <div class="leave-request-section">
+                <div class="leave-request-header">
+                    <i class="fas fa-umbrella-beach"></i>
+                    <h3>Request Leave</h3>
+                    <?php if ($pendingLeaveRequests > 0): ?>
+                        <span class="notification-badge" style="margin-left: auto;"><?php echo $pendingLeaveRequests; ?> Pending</span>
+                    <?php endif; ?>
+                </div>
+                
+                <div id="leaveAlert" class="leave-alert"></div>
+                
+                <form class="leave-form" id="leaveForm">
+                    <div class="leave-row">
+                        <div class="leave-field">
+                            <label for="leaveDate">Leave Date</label>
+                            <input type="date" id="leaveDate" name="leave_date" required>
+                        </div>
+                        <div class="leave-field">
+                            <label for="leaveType">Leave Type</label>
+                            <select id="leaveType" name="leave_type" required>
+                                <option value="Personal">Personal</option>
+                                <option value="Sick">Sick</option>
+                                <option value="Vacation">Vacation</option>
+                                <option value="Emergency">Emergency</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="leave-field">
+                        <label for="daysRequested">Days Requested</label>
+                        <input type="number" id="daysRequested" name="days_requested" min="0.5" max="30" step="0.5" value="1" placeholder="e.g. 1 or 1.5" required>
+                    </div>
+                    <div class="leave-field">
+                        <label for="leaveReason">Reason / Justification</label>
+                        <textarea id="leaveReason" name="leave_reason" placeholder="Explain why you need leave..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit-leave">
+                        <i class="fas fa-paper-plane"></i>
+                        Submit Leave Request
                     </button>
                 </form>
             </div>
@@ -1585,6 +1896,54 @@ function formatDateShort($date) {
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Overtime Request';
             });
         });
+        
+        // Leave Request Form submission
+        document.getElementById('leaveForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const alertDiv = document.getElementById('leaveAlert');
+            const submitBtn = form.querySelector('.btn-submit-leave');
+            
+            const formData = new FormData(form);
+            formData.append('request_leave', '1');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+            .then(async r => {
+                const text = await r.text();
+                console.log('Raw server response:', text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    throw new Error('Server returned non-JSON: ' + text.substring(0, 200));
+                }
+            })
+            .then(data => {
+                alertDiv.className = 'leave-alert ' + (data.success ? 'success show' : 'error show');
+                alertDiv.textContent = data.message;
+                
+                if (data.success) {
+                    form.reset();
+                    setTimeout(() => location.reload(), 1500);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alertDiv.className = 'leave-alert error show';
+                alertDiv.textContent = 'Error submitting request. Please try again.';
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Leave Request';
+            });
+        });
     </script>
 
     <!-- Push Notification Widget for Engineers -->
@@ -1760,6 +2119,8 @@ function formatDateShort($date) {
                         iconEl.textContent = '🔔';
                         textEl.textContent = 'Notifications enabled';
                         btnEl.style.display = 'none';
+                        // Hide the widget when notifications are active
+                        widget.style.display = 'none';
                         break;
                     case 'denied':
                         statusEl.classList.add('denied');

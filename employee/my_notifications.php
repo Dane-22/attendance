@@ -43,20 +43,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         
         $sql = "SELECT n.*, r.requested_hours, r.request_date, r.branch_name, r.rejection_reason, r.status as request_status,
-                       c.amount as ca_amount, c.reason as ca_reason, c.status as ca_status, c.rejection_reason as ca_rejection_reason
+                       c.amount as ca_amount, c.reason as ca_reason, c.status as ca_status, c.rejection_reason as ca_rejection_reason,
+                       l.leave_date, l.leave_type, l.days_requested, l.reason as leave_reason, l.status as leave_status, l.rejection_reason as leave_rejection_reason
                 FROM employee_notifications n
                 LEFT JOIN overtime_requests r ON n.overtime_request_id = r.id
                 LEFT JOIN cash_advances c ON n.cash_advance_id = c.id
+                LEFT JOIN leave_requests l ON n.leave_request_id = l.id
                 $whereClause
                 ORDER BY n.created_at DESC";
         
         $result = @mysqli_query($db, $sql);
         
-        // If query failed (e.g., cash_advance_id column doesn't exist), fallback to simpler query
+        // If query failed (e.g., cash_advance_id or leave_request_id column doesn't exist), fallback to simpler query
         if (!$result) {
-            $sql = "SELECT n.*, r.requested_hours, r.request_date, r.branch_name, r.rejection_reason, r.status as request_status
+            $sql = "SELECT n.*, r.requested_hours, r.request_date, r.branch_name, r.rejection_reason, r.status as request_status,
+                           c.amount as ca_amount, c.reason as ca_reason, c.status as ca_status, c.rejection_reason as ca_rejection_reason
                     FROM employee_notifications n
                     LEFT JOIN overtime_requests r ON n.overtime_request_id = r.id
+                    LEFT JOIN cash_advances c ON n.cash_advance_id = c.id
                     $whereClause
                     ORDER BY n.created_at DESC";
             $result = @mysqli_query($db, $sql);
@@ -81,7 +85,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'ca_amount' => $row['ca_amount'],
                     'ca_reason' => $row['ca_reason'],
                     'ca_status' => $row['ca_status'],
-                    'ca_rejection_reason' => $row['ca_rejection_reason']
+                    'ca_rejection_reason' => $row['ca_rejection_reason'],
+                    'leave_date' => $row['leave_date'],
+                    'leave_type' => $row['leave_type'],
+                    'days_requested' => $row['days_requested'],
+                    'leave_reason' => $row['leave_reason'],
+                    'leave_status' => $row['leave_status'],
+                    'leave_rejection_reason' => $row['leave_rejection_reason']
                 ];
             }
         }
@@ -349,6 +359,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     statusClass = 'rejected';
                     statusText = 'REJECTED';
                     metaInfo = notif.ca_amount ? `Amount: ₱${parseFloat(notif.ca_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}` : '';
+                } else if (notif.type === 'leave_submitted') {
+                    isPending = true;
+                    statusIcon = 'fa-clock';
+                    statusClass = 'pending';
+                    statusText = 'PENDING';
+                    metaInfo = notif.leave_date ? `${formatDate(notif.leave_date)} • ${notif.days_requested} day(s) ${notif.leave_type ? '(' + notif.leave_type + ')' : ''}` : '';
+                } else if (notif.type === 'leave_approved') {
+                    isApproved = true;
+                    statusIcon = 'fa-check-circle';
+                    statusClass = 'approved';
+                    statusText = 'APPROVED';
+                    metaInfo = notif.leave_date ? `${formatDate(notif.leave_date)} • ${notif.days_requested} day(s) ${notif.leave_type ? '(' + notif.leave_type + ')' : ''}` : '';
+                } else if (notif.type === 'leave_rejected') {
+                    statusIcon = 'fa-times-circle';
+                    statusClass = 'rejected';
+                    statusText = 'REJECTED';
+                    metaInfo = notif.leave_date ? `${formatDate(notif.leave_date)} • ${notif.days_requested} day(s) ${notif.leave_type ? '(' + notif.leave_type + ')' : ''}` : '';
                 } else {
                     // Default fallback
                     statusIcon = 'fa-info-circle';
@@ -671,6 +698,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         iconEl.textContent = '🔔';
                         textEl.textContent = 'Notifications enabled';
                         btnEl.style.display = 'none';
+                        // Hide the widget when notifications are active
+                        widget.style.display = 'none';
                         break;
                     case 'denied':
                         statusEl.classList.add('denied');
