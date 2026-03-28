@@ -86,10 +86,10 @@
     color: #0b0b0b;
 }
 
-/* Notifications Grid - Desktop: 5 per row */
+/* Notifications Grid - Desktop: 1 per row */
 .notifications-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: 1fr;
     gap: 16px;
 }
 

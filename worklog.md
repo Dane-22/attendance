@@ -311,6 +311,102 @@ Add new "Leave & Benefits" tab between Profile and Security tabs with:
 
 ---
 
+### 2026-03-28 (Update)
+
+**Task:** Implement leave request notification system
+
+**Status:** Implementation completed and pushed to GitHub
+
+**Files Created:**
+- `dbschema/create_leave_requests_table.sql` - SQL for leave_requests table
+- `dbschema/add_leave_request_to_notifications.sql` - Migration to add leave_request_id column
+- `NOTIFICATION_SYSTEM_DOCUMENTATION.md` - Complete documentation for notification system
+
+**Files Modified:**
+- `employee/eng_dashboard.php` - Added leave request form and AJAX handler
+  - Form with leave date, type, days, and reason fields
+  - Server-side validation for available leave credits
+  - Output buffering and error handling for robust JSON responses
+  - Notifications created for both employee and admins on submission
+- `employee/my_notifications.php` - Added leave request notification display
+  - New notification types: leave_submitted, leave_approved, leave_rejected
+  - Join with leave_requests table for detailed info
+- `employee/admin_notification.php` - Added leave request approval/rejection
+  - New AJAX handlers: load_leave_requests, approve_leave, reject_leave
+  - Leave tab added to request type tabs
+  - Deducts leave balance on approval, creates notification for employee
+- `employee/notification.php` - Added leave request support for Super Admin
+
+**Features:**
+- Employees can submit leave requests with date, type, days, and reason
+- Server-side validation prevents requests without available leave credits
+- Admins can approve/reject leave requests
+- Employees receive notifications on approval/rejection
+- Leave balance automatically deducted upon approval
+- Transaction logging for audit trail
+
+---
+
+### 2026-03-28 (Update)
+
+**Task:** Fix mobile responsiveness for notification pages
+
+**Files Modified:**
+- `employee/css/notification.css` - Mobile responsive updates
+  - Changed desktop grid from 5 columns to 1 column (full width cards)
+  - Added mobile styles for `.request-type-tabs` with flex-wrap
+  - `.type-tab` now flexes to fill available space on mobile
+- `employee/css/my_notifications.css` - Mobile responsive updates
+  - Changed desktop grid from 5 columns to 1 column (full width cards)
+
+**Features:**
+- All notification pages now display cards in single column layout
+- Request type tabs wrap properly on mobile screens
+- Improved readability on small devices
+
+---
+
+### 2026-03-28 (Update)
+
+**Task:** Fix notification widget visibility and 404 errors
+
+**Files Modified:**
+- `employee/eng_dashboard.php` - Fixed duplicate CSS reference causing 404
+  - Removed duplicate `dashboard.css` reference (line 502)
+- `employee/my_notifications.php` - Hide notification widget when active
+  - Added `widget.style.display = 'none'` when permission is 'granted'
+- `employee/eng_dashboard.php` - Hide notification widget when active
+  - Added same hide logic for push notification widget
+
+**Features:**
+- Notification widget hidden when already enabled (prevents content blocking)
+- Fixed 404 error for dashboard.css resource
+
+---
+
+### 2026-03-28 (Update)
+
+**Task:** Implement comprehensive request logging system
+
+**Status:** ✅ Completed
+
+**Files Modified:**
+- `employee/eng_dashboard.php` - Added `logActivity()` calls for request submissions
+- `employee/admin_notification.php` - Added `logActivity()` calls for pre-approvals and leave approvals/rejections  
+- `employee/notification.php` - Added `logActivity()` calls for final approvals/rejections
+- `functions.php` - Verified `logActivity()` function exists and is functional
+- `employee/logs.php` - Verified existing query structure supports new log types
+
+**Features:**
+- Cash advance requests logged (submission, pre-approval, final approval/rejection)
+- Overtime requests logged (submission, pre-approval, final approval/rejection)
+- Leave requests logged (submission, approval, rejection)
+- All actions include relevant details: request ID, amounts, hours, dates, employee names
+- Logs stored in `activity_logs` table with user ID, action type, details, IP address, and timestamp
+- Both admin and employee log viewers can display request-related activities
+
+---
+
 Each entry should include:
 - Date
 - Task description

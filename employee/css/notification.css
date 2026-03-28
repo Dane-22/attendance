@@ -89,10 +89,10 @@
     color: #0b0b0b;
 }
 
-/* Requests Grid - Desktop: 5 per row */
+/* Requests Grid - Desktop: 1 per row */
 .requests-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: 1fr;
     gap: 16px;
 }
 
@@ -568,6 +568,19 @@
         max-width: 90vw;
         margin: 20px;
         padding: 20px;
+    }
+    
+    /* Request type tabs for admin_notification.php */
+    .request-type-tabs {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .type-tab {
+        padding: 10px 16px;
+        font-size: 13px;
+        flex: 1 1 auto;
+        min-width: 120px;
     }
 }
 
