@@ -197,6 +197,28 @@
 
 ---
 
+### 2026-03-28 (Update)
+
+**Task:** Display actual profile images in select_employee.php from employees.php uploads
+
+**Files Modified:**
+- `employee/css/select_employee.css` - Updated employee-avatar styles
+  - Added `overflow: hidden`, `cursor: pointer`, and `position: relative`
+  - Added CSS for `.employee-avatar img` with `object-fit: cover`
+  
+- `employee/js/attendance.js` - Updated avatar rendering and modal
+  - Avatar now renders `<img>` tag when `profile_image` exists
+  - Falls back to initials text if image fails to load or doesn't exist
+  - Updated `showProfileModal()` to use correct path `uploads/` instead of `../uploads/profile_images/`
+
+**Features:**
+- Employee avatars now display actual profile images from `employee/uploads/` folder
+- Images are properly fitted within the circular avatar using `object-fit: cover`
+- Fallback to initials if image is missing or fails to load
+- Profile modal also uses correct uploads folder path
+
+---
+
 - [ ] Track all future code changes in this log
 
 ---

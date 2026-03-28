@@ -593,7 +593,9 @@
             <td class="mono" style="font-weight: bold; color: #FFD700;">${index + 1}</td>
             <td>
               <div class="employee-cell ${isSummaryView ? 'summary-view' : ''}">
-                <div class="employee-avatar" aria-hidden="true" onclick="showProfileModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.profile_image || '')}')">${escapeAttr(initials)}</div>
+                <div class="employee-avatar" aria-hidden="true" onclick="showProfileModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.profile_image || '')}')">
+                  ${employee.profile_image ? `<img src="uploads/${escapeAttr(employee.profile_image)}" alt="${escapeAttr(initials)}" onerror="this.style.display='none'; this.parentElement.textContent='${escapeAttr(initials)}';">` : escapeAttr(initials)}
+                </div>
                 <div class="employee-meta">
                   <div class="employee-name">${escapeAttr(name)}</div>
                   <div class="employee-sub employee-branch">
@@ -740,9 +742,9 @@
       // Set employee name
       nameEl.textContent = employeeName;
       
-      // Set image source - use profile image if available, otherwise show default avatar
+      // Set image source - use profile image from employee/uploads/ folder
       if (profileImage && profileImage.trim() !== '') {
-        img.src = '../uploads/profile_images/' + profileImage;
+        img.src = 'uploads/' + profileImage;
       } else {
         // Generate initials avatar as fallback
         const initials = employeeName.trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '?';
