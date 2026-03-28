@@ -593,7 +593,7 @@
             <td class="mono" style="font-weight: bold; color: #FFD700;">${index + 1}</td>
             <td>
               <div class="employee-cell ${isSummaryView ? 'summary-view' : ''}">
-                <div class="employee-avatar" aria-hidden="true" ${isSummaryView ? `onclick="showProfileModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.profile_image || '')}')"` : ''}>${escapeAttr(initials)}</div>
+                <div class="employee-avatar" aria-hidden="true" onclick="showProfileModal(${employee.id}, '${escapeJsString(name)}', '${escapeJsString(employee.profile_image || '')}')">${escapeAttr(initials)}</div>
                 <div class="employee-meta">
                   <div class="employee-name">${escapeAttr(name)}</div>
                   <div class="employee-sub employee-branch">

@@ -182,6 +182,21 @@
 
 ---
 
+### 2026-03-28 (Update)
+
+**Task:** Make profile image clickable in all filter options
+
+**Files Modified:**
+- `employee/js/attendance.js` - Modified renderEmployees function
+  - Removed `isSummaryView` conditional from avatar click handler
+  - Profile image now clickable in all filters: Available, Summary, Present, Absent
+
+**Features:**
+- Employee avatars open profile modal in all filter views
+- Consistent user experience across all filter options
+
+---
+
 - [ ] Track all future code changes in this log
 
 ---
