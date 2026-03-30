@@ -6,6 +6,12 @@ header('Content-Type: application/json');
 $employeeId = $_POST['employee_id'] ?? null;
 $branchName = $_POST['branch_name'] ?? null;
 
+// Geolocation parameters (optional)
+$latitude = isset($_POST['latitude']) ? floatval($_POST['latitude']) : null;
+$longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
+$accuracy = isset($_POST['accuracy']) ? floatval($_POST['accuracy']) : null;
+$locationVerified = isset($_POST['location_verified']) ? intval($_POST['location_verified']) : 0;
+
 if (!$employeeId || !$branchName) {
     // Log missing parameters
     logApiActivity($db, $employeeId ?? null, 'Time Out Failed', "Missing employee_id or branch_name in time out request");
@@ -23,6 +29,10 @@ function attendanceHasColumn($db, $columnName) {
 $hasTimeIn = attendanceHasColumn($db, 'time_in');
 $hasTimeOut = attendanceHasColumn($db, 'time_out');
 $hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
+$hasClockOutLat = attendanceHasColumn($db, 'clock_out_lat');
+$hasClockOutLng = attendanceHasColumn($db, 'clock_out_lng');
+$hasLocationAccuracy = attendanceHasColumn($db, 'location_accuracy');
+$hasLocationVerified = attendanceHasColumn($db, 'location_verified');
 
 if (!$hasTimeIn) {
     echo json_encode([
@@ -68,19 +78,65 @@ if (!empty($row['branch_name']) && $row['branch_name'] !== $branchName) {
 }
 
 $attendanceId = $row['id'];
-$updateSql = $hasIsTimeRunning
-    ? "UPDATE attendance SET time_out = NOW(), is_time_running = 0, updated_at = NOW() WHERE id = ?"
-    : "UPDATE attendance SET time_out = NOW(), updated_at = NOW() WHERE id = ?";
+$shouldIncludeLocation = $hasClockOutLat && $hasClockOutLng;
+
+// Build dynamic UPDATE based on available columns
+$updateFields = ["time_out = NOW()", "updated_at = NOW()"];
+$updateTypes = '';
+$updateParams = [];
+
+if ($hasIsTimeRunning) {
+    $updateFields[] = "is_time_running = 0";
+}
+
+// Add location columns if available and provided
+if ($shouldIncludeLocation && $latitude !== null && $longitude !== null) {
+    $updateFields[] = "clock_out_lat = ?";
+    $updateFields[] = "clock_out_lng = ?";
+    $updateTypes .= 'dd';
+    $updateParams[] = $latitude;
+    $updateParams[] = $longitude;
+    
+    if ($hasLocationAccuracy && $accuracy !== null) {
+        $updateFields[] = "location_accuracy = ?";
+        $updateTypes .= 'd';
+        $updateParams[] = $accuracy;
+    }
+    
+    if ($hasLocationVerified) {
+        $updateFields[] = "location_verified = ?";
+        $updateTypes .= 'i';
+        $updateParams[] = $locationVerified;
+    }
+}
+
+// Add attendance_id to params
+$updateTypes .= 'i';
+$updateParams[] = $attendanceId;
+
+$updateSql = "UPDATE attendance SET " . implode(', ', $updateFields) . " WHERE id = ?";
 $updateStmt = mysqli_prepare($db, $updateSql);
-mysqli_stmt_bind_param($updateStmt, 'i', $attendanceId);
+mysqli_stmt_bind_param($updateStmt, $updateTypes, ...$updateParams);
 if (mysqli_stmt_execute($updateStmt)) {
-    echo json_encode([
+    $response = [
         'success' => true,
         'message' => 'Time out recorded',
         'attendance_id' => $attendanceId,
         'time_out' => date('Y-m-d H:i:s'),
         'is_time_running' => false
-    ]);
+    ];
+    
+    // Include location data in response if saved
+    if ($shouldIncludeLocation && $latitude !== null && $longitude !== null) {
+        $response['location'] = [
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'accuracy' => $accuracy,
+            'verified' => $locationVerified
+        ];
+    }
+    
+    echo json_encode($response);
     
     // Log activity to database
     logApiActivity($db, $employeeId, 'Time Out', "Employee ID {$employeeId} timed out at branch: {$branchName}");

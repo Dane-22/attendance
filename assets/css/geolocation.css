@@ -1,0 +1,427 @@
+/**
+ * GeoLocator CSS Styles
+ * Map styling and location UI components
+ */
+
+/* Map Container Styles */
+.map-container {
+    width: 100%;
+    height: 400px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.map-container-large {
+    height: 600px;
+}
+
+.map-container-small {
+    height: 250px;
+}
+
+/* Location Status Indicator */
+.location-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.location-status.verifying {
+    background-color: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+}
+
+.location-status.verified {
+    background-color: #D1FAE5;
+    color: #065F46;
+    border: 1px solid #6EE7B7;
+}
+
+.location-status.error {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
+}
+
+.location-status.warning {
+    background-color: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FBBF24;
+}
+
+.location-status.blocked {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #EF4444;
+}
+
+.location-status-icon {
+    font-size: 16px;
+}
+
+.location-status-text {
+    white-space: nowrap;
+}
+
+/* Location Accuracy Badge */
+.location-accuracy {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.location-accuracy.good {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
+
+.location-accuracy.poor {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
+
+.location-accuracy.moderate {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+/* Geofence Modal */
+.geofence-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.geofence-modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.geofence-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.geofence-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1F2937;
+}
+
+.geofence-modal-body {
+    padding: 20px;
+}
+
+.geofence-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #E5E7EB;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Distance Display */
+.distance-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background-color: #F3F4F6;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.distance-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #DC2626;
+}
+
+.distance-value.within-range {
+    color: #059669;
+}
+
+.distance-label {
+    font-size: 14px;
+    color: #6B7280;
+}
+
+/* Map Preview in Modal */
+.geofence-map-preview {
+    height: 200px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border: 1px solid #E5E7EB;
+}
+
+/* Override Reason Input */
+.override-reason-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+.override-reason-input:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Branch Location Manager */
+.branch-location-manager {
+    display: grid;
+    gap: 16px;
+}
+
+.branch-location-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.branch-location-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.branch-location-input label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.branch-location-input input {
+    padding: 8px 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 120px;
+}
+
+/* Radius Slider */
+.radius-control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radius-slider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.radius-slider input[type="range"] {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #E5E7EB;
+    border-radius: 3px;
+    outline: none;
+}
+
+.radius-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #3B82F6;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.radius-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    min-width: 60px;
+}
+
+/* Consent Banner */
+.location-consent-banner {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.location-consent-banner h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+}
+
+.location-consent-banner p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.location-consent-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Map Markers */
+.map-marker {
+    transition: transform 0.2s ease;
+}
+
+.map-marker:hover {
+    transform: scale(1.1);
+}
+
+.map-marker-employee {
+    background-color: #3B82F6 !important;
+}
+
+.map-marker-branch {
+    background-color: #10B981 !important;
+}
+
+/* Loading State */
+.location-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6B7280;
+    font-size: 14px;
+}
+
+.location-loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #E5E7EB;
+    border-top-color: #3B82F6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error States */
+.location-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background-color: #FEE2E2;
+    border: 1px solid #FCA5A5;
+    border-radius: 8px;
+    color: #991B1B;
+}
+
+.location-error-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.location-error-content {
+    flex: 1;
+}
+
+.location-error-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.location-error-message {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* Success States */
+.location-success {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: #D1FAE5;
+    border: 1px solid #6EE7B7;
+    border-radius: 8px;
+    color: #065F46;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .geofence-modal {
+        margin: 10px;
+        max-height: calc(100vh - 20px);
+    }
+    
+    .geofence-modal-footer {
+        flex-direction: column;
+    }
+    
+    .geofence-modal-footer button {
+        width: 100%;
+    }
+    
+    .branch-location-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .branch-location-input input {
+        width: 100%;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .geofence-modal {
+        background: #1F2937;
+        color: #F9FAFB;
+    }
+    
+    .geofence-modal-header {
+        border-color: #374151;
+    }
+    
+    .geofence-modal-header h3 {
+        color: #F9FAFB;
+    }
+    
+    .distance-info {
+        background-color: #374151;
+    }
+    
+    .distance-label {
+        color: #9CA3AF;
+    }
+}
