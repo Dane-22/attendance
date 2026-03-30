@@ -105,12 +105,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($action === 'delete') {
                 $id = intval($_POST['id'] ?? 0);
                 if ($id > 0) {
-                    $del = mysqli_prepare($db, "DELETE FROM employees WHERE id = ?");
+                    // Soft delete: Set status to 'Inactive' instead of deleting
+                    $del = mysqli_prepare($db, "UPDATE employees SET status = 'Inactive', updated_at = NOW() WHERE id = ?");
                     mysqli_stmt_bind_param($del, 'i', $id);
                     if (mysqli_stmt_execute($del)) {
-                        $msg = 'Employee removed.';
+                        $msg = 'Employee deactivated successfully.';
                     } else {
-                        $msg = 'Error removing employee: ' . mysqli_error($db);
+                        $msg = 'Error deactivating employee: ' . mysqli_error($db);
                     }
                 }
             }
@@ -338,9 +339,9 @@ $searchTerm = mysqli_real_escape_string($db, $search);
 $fromClause = "FROM employees e LEFT JOIN branches b ON b.id = e.branch_id";
 
 // Build search condition
-$searchCondition = '';
+$searchCondition = "WHERE e.status = 'Active'";
 if (!empty($search)) {
-    $searchCondition = "WHERE (
+    $searchCondition = "WHERE e.status = 'Active' AND (
         CONCAT(e.first_name, ' ', e.last_name) LIKE '%$searchTerm%' OR
         CONCAT(e.last_name, ', ', e.first_name) LIKE '%$searchTerm%' OR
         e.employee_code LIKE '%$searchTerm%' OR

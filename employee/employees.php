@@ -132,9 +132,9 @@ if (!isset($_SESSION['employee_code'])) {
                 </div>
 
                 <div class="card-actions">
-                  <button class="action-btn action-btn-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')">
-                    <i class="fa-solid fa-trash"></i>
-                    Delete
+                  <button class="action-btn action-btn-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')" title="Deactivate employee">
+                    <i class="fa-solid fa-user-slash"></i>
+                    Deactivate
                   </button>
                   <button class="action-btn action-btn-edit" onclick="openEditModal(event, <?php echo $e['id']; ?>)">
                     <i class="fa-solid fa-pen-to-square"></i>
@@ -179,8 +179,8 @@ if (!isset($_SESSION['employee_code'])) {
                     <i class="fa-solid fa-qrcode"></i>
                   </button>
                   <?php if ($isSuperAdmin): ?>
-                  <button class="row-action-btn row-action-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')" title="Delete">
-                    <i class="fa-solid fa-trash"></i>
+                  <button class="row-action-btn row-action-delete" onclick="deleteEmployee(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>')" title="Deactivate employee">
+                    <i class="fa-solid fa-user-slash"></i>
                   </button>
                   <button class="row-action-btn row-action-edit" onclick="openEditModal(event, <?php echo $e['id']; ?>)" title="Edit">
                     <i class="fa-solid fa-pen-to-square"></i>

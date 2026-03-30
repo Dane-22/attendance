@@ -161,7 +161,7 @@
     function deleteEmployee(event, employeeId, employeeName) {
       event.stopPropagation();
       
-      if (confirm(`Are you sure you want to delete employee "${employeeName}"? This action cannot be undone.`)) {
+      if (confirm(`Are you sure you want to deactivate employee "${employeeName}"?\n\nThe employee will be marked as Inactive but their records will be preserved.`)) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.innerHTML = `
