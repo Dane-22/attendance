@@ -544,11 +544,55 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     <i class="fas fa-file-pdf mr-2"></i>Generate Report
                 </a>
                 <?php endif; ?>
-                <a href="export_attendance_excel.php?date=<?php echo $selectedDate; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
-                   class="btn-nav bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 border-green-500">
+                
+                <!-- Export Excel with Date Range & Branch Selection -->
+                <button onclick="toggleExportForm()" class="btn-nav bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 border-green-500">
                     <i class="fas fa-file-excel mr-2"></i>Export Excel
-                </a>
+                </button>
             </div>
+            
+            <!-- Export Form (Hidden by default) -->
+            <div id="exportForm" class="hidden mt-4 p-4 bg-white/5 rounded-lg border border-green-500/30">
+                <form action="export_attendance_excel.php" method="GET" class="flex flex-wrap gap-3 items-end">
+                    <div class="min-w-[150px]">
+                        <label class="text-sm text-gray-400 block mb-1">Start Date</label>
+                        <input type="date" name="start_date" value="<?php echo date('Y-m-d', strtotime('-7 days')); ?>" 
+                               class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500" required>
+                    </div>
+                    <div class="min-w-[150px]">
+                        <label class="text-sm text-gray-400 block mb-1">End Date</label>
+                        <input type="date" name="end_date" value="<?php echo date('Y-m-d'); ?>" 
+                               class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500" required>
+                    </div>
+                    <div class="min-w-[200px]">
+                        <label class="text-sm text-gray-400 block mb-1">Branch</label>
+                        <select name="branch" class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500">
+                            <option value="">All Branches</option>
+                            <?php
+                            // Fetch all branches
+                            $branchesQuery = "SELECT branch_name FROM branches WHERE is_active = 1 ORDER BY branch_name";
+                            $branchesResult = mysqli_query($db, $branchesQuery);
+                            while ($branch = mysqli_fetch_assoc($branchesResult)):
+                            ?>
+                            <option value="<?php echo htmlspecialchars($branch['branch_name']); ?>"><?php echo htmlspecialchars($branch['branch_name']); ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-nav bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 border-green-500 h-[38px]">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </button>
+                    <button type="button" onclick="toggleExportForm()" class="btn-nav bg-gray-600 hover:bg-gray-500 border-gray-500 h-[38px]">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
+                </form>
+            </div>
+            
+            <script>
+            function toggleExportForm() {
+                const form = document.getElementById('exportForm');
+                form.classList.toggle('hidden');
+            }
+            </script>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

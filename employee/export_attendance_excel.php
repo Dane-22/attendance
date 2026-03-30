@@ -29,6 +29,7 @@ $searchQuery = trim($_GET['search'] ?? '');
 $searchType = $_GET['search_type'] ?? 'all';
 $startDate = $_GET['start_date'] ?? null;
 $endDate = $_GET['end_date'] ?? null;
+$selectedBranch = $_GET['branch'] ?? ''; // New branch parameter
 
 // Validate dates
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
@@ -68,6 +69,14 @@ $searchTypes = '';
 
 // Exclude main branch and main office from export
 $excludeBranchesCondition = " AND (a.branch_name IS NULL OR (LOWER(a.branch_name) NOT LIKE '%main branch%' AND LOWER(a.branch_name) NOT LIKE '%main office%'))";
+
+// Add branch filter if specific branch selected
+$branchCondition = '';
+if (!empty($selectedBranch)) {
+    $branchCondition = " AND a.branch_name = ?";
+    $searchParams[] = $selectedBranch;
+    $searchTypes .= 's';
+}
 
 if (!empty($searchQuery)) {
     $searchPattern = '%' . $searchQuery . '%';
@@ -111,7 +120,7 @@ $sql = "SELECT
     e.position
 FROM attendance a
 LEFT JOIN employees e ON a.employee_id = e.id
-WHERE a.attendance_date BETWEEN ? AND ?" . $excludeBranchesCondition . $searchCondition . "
+WHERE a.attendance_date BETWEEN ? AND ?" . $excludeBranchesCondition . $branchCondition . $searchCondition . "
 ORDER BY a.branch_name, e.last_name, e.first_name, a.attendance_date";
 
 $stmt = mysqli_prepare($db, $sql);
@@ -201,6 +210,12 @@ $sheet->getStyle('A4')->getFont()->setSize(10);
 
 // Search filter if applicable
 $currentRow = 5;
+if (!empty($selectedBranch)) {
+    $sheet->setCellValue('A' . $currentRow, 'Branch Filter: ' . $selectedBranch);
+    $sheet->mergeCells('A' . $currentRow . ':E' . $currentRow);
+    $sheet->getStyle('A' . $currentRow)->getFont()->setSize(10)->setBold(true);
+    $currentRow++;
+}
 if (!empty($searchQuery)) {
     $sheet->setCellValue('A' . $currentRow, 'Search Filter: ' . $searchQuery . ' (' . $searchType . ')');
     $sheet->mergeCells('A' . $currentRow . ':E' . $currentRow);
@@ -282,7 +297,8 @@ if (empty($branchData)) {
 }
 
 // Generate filename
-$filename = 'attendance_' . str_replace(['-', ' '], ['', '_'], $dateRangeLabel) . '_By_Branch.xlsx';
+$branchSuffix = !empty($selectedBranch) ? '_' . str_replace([' ', '-'], ['_', '_'], $selectedBranch) : '_All_Branches';
+$filename = 'attendance_' . str_replace(['-', ' '], ['', '_'], $dateRangeLabel) . $branchSuffix . '.xlsx';
 
 // Set headers for download
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

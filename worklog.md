@@ -407,6 +407,66 @@ Add new "Leave & Benefits" tab between Profile and Security tabs with:
 
 ---
 
+### 2026-03-30
+
+**Task:** Implement employee account deactivation (soft delete)
+
+**Status:** ✅ Completed
+
+**Files Modified:**
+- `employee/function/employees_function.php`
+  - Changed `action === 'delete'` from `DELETE` query to `UPDATE status = 'Inactive'`
+  - Added `WHERE e.status = 'Active'` filter to employee queries
+- `employee/js/employees.js.php`
+  - Updated confirm message from "delete" to "deactivate"
+- `employee/employees.php`
+  - Changed button text from "Delete" to "Deactivate"
+  - Changed icon from `fa-trash` to `fa-user-slash`
+
+**Features:**
+- Employee records preserved when deactivated (attendance history intact)
+- Inactive employees hidden from main employee list
+- Can reactivate by editing employee status back to "Active"
+
+---
+
+### 2026-03-29 to 2026-03-30
+
+**Task:** Geolocation Feature Implementation using MapLibre GL JS
+
+**Status:** 🔄 In Progress (Phase 1 Complete, Phase 2 In Progress)
+
+**Files Created:**
+- `assets/js/geolocation.js` - Core geolocation module with MapLibre integration
+- `assets/css/geolocation.css` - Styles for map components and UI
+- `dbschema/geolocation_migration.sql` - Database schema changes
+- `employee/api/save_attendance_location.php` - API to save location data
+- `employee/api/validate_geofence.php` - Geofence validation API
+- `employee/api/update_branch_location.php` - Branch location update API
+- `employee/branch_location_manager.php` - Admin interface for branch location management
+- `GEOLOCATION_DOCUMENTATION.md` - Comprehensive documentation
+
+**Files Modified:**
+- `time_in_api.php` - Added latitude, longitude, accuracy, location_verified parameters
+- `time_out_api.php` - Added location parameters for clock-out
+- `qr_clock_api.php` - Added location capture for QR-based clock-in/out
+
+**Features Implemented:**
+- MapLibre GL JS with CartoDB Positron map style
+- Geofence validation (200m default radius per branch)
+- Hybrid enforcement policy (soft for regular, hard for high-compliance)
+- Location accuracy warnings (>100m accuracy flagged)
+- Admin branch location picker with map interface
+- Database columns: `geofence_radius_meters`, `clock_in_lat/lng`, `clock_out_lat/lng`, `location_verified`
+
+**Pending:**
+- Admin map dashboard showing all branches
+- Hybrid geofence validation enforcement
+- Warning modal for out-of-range clock-ins
+- Notification system integration
+
+---
+
 Each entry should include:
 - Date
 - Task description
