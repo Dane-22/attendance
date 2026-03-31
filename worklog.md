@@ -4,6 +4,40 @@
 
 ---
 
+### 2026-03-31
+
+**Task:** Create QA Automation Test Suite for Geolocation Phase 2
+
+**Files Created:**
+- `test/geo_mock.js` - JavaScript GPS mocking utility for browser testing
+  - Overrides navigator.geolocation.getCurrentPosition
+  - Methods: enable(), disable(), setLocation(), setSpoofedTimestamp()
+  - Preset test functions: testInsideGeofence(), testOutsideGeofenceWorker(), testSpoofedTimestamp()
+- `test/test_geofence_logic.php` - Backend PHP unit testing suite
+  - 5 automated test cases: Inside-Worker, Outside-Worker, Outside-Manager, Spoofed-Timestamp, Low-Accuracy
+  - Simulates geofence validation logic without production code modification
+  - CLI and browser compatible with JSON output option (?format=json)
+  - Configured for Branch 21 (BCDA - Admin): 16.5969775, 120.3077657, 250m radius
+- `test/check_logs.sql` - Database verification script
+  - Queries geofence_violations, activity_logs, manager_overrides, location_logs
+  - Includes logical checks with PASS/FAIL indicators
+  - Verification sections: Violations, Activity Logs, Overrides, Location Logs
+- `test/QA_TEST_SUITE.md` - Complete QA documentation
+  - Test coverage matrix, usage instructions, troubleshooting guide
+  - Configuration guide for employee IDs and branch settings
+
+**Testing Results:**
+- Fixed SQL reserved keyword issue (`long` → `` `long` ``)
+- Updated branch configuration to actual database values
+- All test infrastructure ready for validation
+
+**Notes:**
+- Run tests: `php test/test_geofence_logic.php`
+- Web mock: Include geo_mock.js in login.php, use GeoMock.enable()
+- Database verification: Run check_logs.sql in PHPMyAdmin
+
+---
+
 ### 2026-03-27
 
 **Task:** Review login.php and create documentation file. Initialize worklog.md.
@@ -464,6 +498,32 @@ Add new "Leave & Benefits" tab between Profile and Security tabs with:
 - Hybrid geofence validation enforcement
 - Warning modal for out-of-range clock-ins
 - Notification system integration
+
+---
+
+### 2026-03-30 (Update)
+
+**Task:** Enhance Excel export with date range and branch selection
+
+**Status:** ✅ Completed
+
+**Files Modified:**
+- `employee/audit.php`
+  - Changed "Export Excel" link to toggle button
+  - Added export form with date range inputs (start_date, end_date)
+  - Added branch dropdown with "All Branches" option
+  - Populated branch list from database
+- `employee/export_attendance_excel.php`
+  - Added `branch` parameter handling
+  - Added SQL condition for branch filtering
+  - Added branch filter info to Excel header
+  - Updated filename to include branch name or "All_Branches"
+
+**Features:**
+- Custom date range selection for exports
+- Select specific branch or export all branches
+- Branch name included in exported filename
+- Form hidden by default, toggled via button click
 
 ---
 

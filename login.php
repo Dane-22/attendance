@@ -599,6 +599,164 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         return null;
       }
 
+      // Phase 2: Validate geofence for employee
+      async function validateGeofence(employeeId) {
+        try {
+          // Get current position
+          const position = await getCurrentPosition();
+          if (!position) {
+            return { success: false, message: 'Unable to get location. Please enable location services.' };
+          }
+
+          const { latitude, longitude, accuracy } = position;
+          
+          // Get employee's branch info
+          const branchResponse = await fetch(`${window.location.origin}/get_branch_api.php?employee_id=${employeeId}`);
+          const branchData = await branchResponse.json();
+          
+          if (!branchData.success || !branchData.branch) {
+            return { success: false, message: 'Unable to get branch information.' };
+          }
+
+          const branch = branchData.branch;
+          
+          // Validate geofence
+          const formData = new FormData();
+          formData.append('branch_id', branch.id);
+          formData.append('lat', latitude);
+          formData.append('lng', longitude);
+          formData.append('employee_id', employeeId);
+          formData.append('accuracy', accuracy);
+          formData.append('gps_timestamp', Math.floor(Date.now() / 1000));
+          formData.append('device_info', navigator.userAgent);
+          formData.append('action_type', 'qr_scan');
+
+          const validateResponse = await fetch(`${window.location.origin}/validate_geofence.php`, {
+            method: 'POST',
+            body: formData
+          });
+
+          const validationResult = await validateResponse.json();
+          
+          return {
+            success: validationResult.success && validationResult.is_valid,
+            ...validationResult,
+            location: { latitude, longitude, accuracy }
+          };
+          
+        } catch (error) {
+          console.error('Geofence validation error:', error);
+          return { success: false, message: 'Location validation failed: ' + error.message };
+        }
+      }
+
+      // Get current GPS position
+      function getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error('Geolocation not supported'));
+            return;
+          }
+
+          const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          };
+
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp
+              });
+            },
+            (error) => {
+              let message = 'Location access denied';
+              switch(error.code) {
+                case error.PERMISSION_DENIED:
+                  message = 'Location permission denied. Please enable location services.';
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  message = 'Location information unavailable.';
+                  break;
+                case error.TIMEOUT:
+                  message = 'Location request timed out.';
+                  break;
+              }
+              reject(new Error(message));
+            },
+            options
+          );
+        });
+      }
+
+      // Show override dialog for managers
+      function showOverrideDialog(locationValidation) {
+        return new Promise((resolve) => {
+          const overrideDialog = document.createElement('div');
+          overrideDialog.id = 'overrideDialog';
+          overrideDialog.innerHTML = `
+            <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 16px;">
+              <div style="width: 100%; max-width: 450px; background: rgba(15, 15, 15, 0.95); border: 1px solid rgba(239,68,68,0.4); border-radius: 14px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                <h3 style="color: #ef4444; font-weight: 700; font-size: 20px; margin-bottom: 12px;">Geofence Violation Detected</h3>
+                <p style="color: #e2e8f0; margin-bottom: 16px; font-size: 16px; line-height: 1.5;">
+                  ${locationValidation.override_reason || 'Employee is outside the geofence.'}
+                </p>
+                <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                  <p style="color: #fca5a5; font-size: 14px; margin: 0;">
+                    Distance: ${locationValidation.outside_by_meters || 0}m outside geofence<br>
+                    Accuracy: ${locationValidation.accuracy || 'Unknown'}m
+                  </p>
+                </div>
+                <div style="margin-bottom: 20px;">
+                  <label style="display: block; color: #9ca3af; font-size: 14px; margin-bottom: 8px;">Override Reason (Required):</label>
+                  <textarea id="overrideReason" style="width: 100%; background: rgba(55,65,81,0.5); border: 1px solid rgba(156,163,175,0.3); border-radius: 6px; padding: 8px; color: #fff; resize: vertical; min-height: 60px;" placeholder="Enter reason for override..."></textarea>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                  <button id="overrideCancelBtn" style="background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                  <button id="overrideConfirmBtn" style="background: #ef4444; border: none; color: #fff; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">Bypass & Continue</button>
+                </div>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(overrideDialog);
+          
+          const cancelBtn = document.getElementById('overrideCancelBtn');
+          const confirmBtn = document.getElementById('overrideConfirmBtn');
+          const reasonTextarea = document.getElementById('overrideReason');
+          
+          cancelBtn.addEventListener('click', () => {
+            overrideDialog.remove();
+            resolve({ confirmed: false });
+          });
+          
+          confirmBtn.addEventListener('click', () => {
+            const reason = reasonTextarea.value.trim();
+            if (!reason) {
+              alert('Please provide a reason for the override.');
+              return;
+            }
+            overrideDialog.remove();
+            resolve({ confirmed: true, reason: reason });
+          });
+          
+          // Close on Escape key
+          document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+              document.removeEventListener('keydown', escapeHandler);
+              if (document.getElementById('overrideDialog')) {
+                overrideDialog.remove();
+                resolve({ confirmed: false });
+              }
+            }
+          });
+        });
+      }
+
       // Check employee attendance status
       async function checkAttendanceStatus(empId) {
         const url = `${window.location.origin}/employee/api/qr_clock.php`;
@@ -779,8 +937,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Check employee attendance status first
                 const statusData = await checkAttendanceStatus(empInfo.emp_id);
                 
-                // Show confirmation dialog
-                const confirmed = await showConfirmation(empInfo, statusData);
+                // Phase 2: Get current location and validate geofence
+                const locationValidation = await validateGeofence(empInfo.emp_id);
+                
+                if (!locationValidation.success) {
+                  // Location validation failed
+                  if (locationValidation.requires_override && locationValidation.can_override) {
+                    // Show override dialog for managers
+                    const overrideResult = await showOverrideDialog(locationValidation);
+                    if (!overrideResult.confirmed) {
+                      setStatus('Location validation failed. Scan another QR code.');
+                      setTimeout(() => startScanner(), 500);
+                      return;
+                    }
+                    // Proceed with override reason
+                    locationValidation.override_reason = overrideResult.reason;
+                  } else if (locationValidation.action === 'block') {
+                    // Hard block for regular employees
+                    setStatus(locationValidation.override_reason || 'Location validation failed. You are outside the geofence.');
+                    setTimeout(() => startScanner(), 2000);
+                    return;
+                  } else {
+                    // Warning - show but allow
+                    setStatus(`Warning: ${locationValidation.override_reason || 'Location accuracy issues detected.'}`);
+                  }
+                }
+                
+                // Show confirmation dialog with location info
+                const confirmed = await showConfirmation(empInfo, statusData, locationValidation);
                 
                 if (!confirmed) {
                   // User cancelled - resume scanning

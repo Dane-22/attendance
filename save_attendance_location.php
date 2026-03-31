@@ -35,9 +35,13 @@ $action = trim((string)($_POST['action'] ?? ''));
 $latitude = $_POST['latitude'] ?? null;
 $longitude = $_POST['longitude'] ?? null;
 $accuracy = $_POST['accuracy'] ?? null;
+$gpsTimestamp = isset($_POST['gps_timestamp']) ? (int)$_POST['gps_timestamp'] : null;
+$deviceFingerprint = trim((string)($_POST['device_fingerprint'] ?? ''));
 
 $isValidated = isset($_POST['is_validated']) ? (int)$_POST['is_validated'] : null;
 $failureReason = trim((string)($_POST['validation_failure_reason'] ?? ''));
+$overrideReason = trim((string)($_POST['override_reason'] ?? ''));
+$overrideApprovedBy = isset($_POST['override_approved_by']) ? (int)$_POST['override_approved_by'] : null;
 
 $deviceInfo = trim((string)($_POST['device_info'] ?? ''));
 $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
@@ -45,6 +49,30 @@ $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
 if ($attendanceId <= 0 || $employeeId <= 0 || $branchId <= 0 || $latitude === null || $longitude === null || $action === '') {
     echo json_encode(['success' => false, 'message' => 'Missing attendance_id, employee_id, branch_id, latitude, longitude, or action']);
     exit;
+}
+
+// Phase 2: Validate GPS timestamp to prevent location spoofing
+$timestampValidation = ['is_valid' => true, 'time_diff_seconds' => 0];
+if ($gpsTimestamp !== null) {
+    $serverTime = time();
+    $timeDiff = abs($serverTime - $gpsTimestamp);
+    $maxAllowedDiff = 300; // 5 minutes
+    
+    $timestampValidation = [
+        'is_valid' => $timeDiff <= $maxAllowedDiff,
+        'time_diff_seconds' => $timeDiff,
+        'server_timestamp' => $serverTime,
+        'gps_timestamp' => $gpsTimestamp,
+        'max_allowed_diff' => $maxAllowedDiff
+    ];
+    
+    // If timestamp is invalid, mark as validation failure
+    if (!$timestampValidation['is_valid']) {
+        $isValidated = 0;
+        if ($failureReason === '') {
+            $failureReason = 'Location timestamp validation failed (possible spoofing)';
+        }
+    }
 }
 
 $latitude = (float)$latitude;
@@ -103,10 +131,27 @@ if ($isValidated === null) {
     }
 }
 
+// Phase 2: Check accuracy flagging
+$isFlaggedAccuracy = ($accuracy !== null && $accuracy > 100);
+if ($isFlaggedAccuracy && $isValidated === 1) {
+    // If accuracy is poor but was marked as validated, downgrade to warning
+    $isValidated = 0;
+    if ($failureReason === '') {
+        $failureReason = 'Poor GPS accuracy (>100m)';
+    }
+}
+
+// Phase 2: Generate device fingerprint if not provided
+if ($deviceFingerprint === '') {
+    $deviceFingerprint = md5(($deviceInfo ?? '') . ($ipAddress ?? '') . 'JAJR_SALT');
+}
+
+// Phase 2: Enhanced location_logs insert with new fields
 $insertSql = "INSERT INTO location_logs
     (employee_id, attendance_id, action_type, latitude, longitude, accuracy_meters, branch_id, distance_from_branch_meters,
-     device_info, ip_address, is_validated, validation_failure_reason, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+     device_info, ip_address, is_validated, validation_failure_reason, flagged_accuracy, gps_timestamp, server_timestamp_diff,
+     is_geofence_violation, override_reason, device_fingerprint, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
 $ins = mysqli_prepare($db, $insertSql);
 if (!$ins) {
@@ -116,10 +161,12 @@ if (!$ins) {
 
 $distBind = ($distanceMeters !== null) ? (int)$distanceMeters : 0;
 $accBind = ($accuracy !== null) ? (float)$accuracy : null;
+$isGeofenceViolation = ($isValidated === 0 && $failureReason === 'Outside geofence') ? 1 : 0;
+$serverTimestampDiff = $timestampValidation['time_diff_seconds'] ?? null;
 
 mysqli_stmt_bind_param(
     $ins,
-    'iisdddiissis',
+    'iisdddiissisiiisssi',
     $employeeId,
     $attendanceId,
     $action,
@@ -131,7 +178,13 @@ mysqli_stmt_bind_param(
     $deviceInfo,
     $ipAddress,
     $isValidated,
-    $failureReason
+    $failureReason,
+    $isFlaggedAccuracy ? 1 : 0,
+    $gpsTimestamp,
+    $serverTimestampDiff,
+    $isGeofenceViolation,
+    $overrideReason,
+    $deviceFingerprint
 );
 
 $ok = mysqli_stmt_execute($ins);
@@ -144,13 +197,18 @@ if (!$ok) {
     exit;
 }
 
+// Phase 2: Enhanced attendance update with new fields
 if ($action === 'clock_in' || $action === 'qr_scan') {
     $uSql = "UPDATE attendance
-             SET clock_in_lat = ?, clock_in_lng = ?, location_accuracy = ?, location_verified = ?, updated_at = NOW()
+             SET clock_in_lat = ?, clock_in_lng = ?, location_accuracy = ?, location_verified = ?, 
+                 location_timestamp = ?, flagged_accuracy = ?, geofence_violation_count = ?, 
+                 override_reason = ?, override_approved_by = ?, override_approved_at = ?, updated_at = NOW()
              WHERE id = ? LIMIT 1";
 } elseif ($action === 'clock_out') {
     $uSql = "UPDATE attendance
-             SET clock_out_lat = ?, clock_out_lng = ?, location_accuracy = ?, location_verified = ?, updated_at = NOW()
+             SET clock_out_lat = ?, clock_out_lng = ?, location_accuracy = ?, location_verified = ?, 
+                 location_timestamp = ?, flagged_accuracy = ?, geofence_violation_count = ?, 
+                 override_reason = ?, override_approved_by = ?, override_approved_at = ?, updated_at = NOW()
              WHERE id = ? LIMIT 1";
 } else {
     $uSql = null;
@@ -159,7 +217,13 @@ if ($action === 'clock_in' || $action === 'qr_scan') {
 if ($uSql) {
     $u = mysqli_prepare($db, $uSql);
     if ($u) {
-        mysqli_stmt_bind_param($u, 'dddii', $latitude, $longitude, $accBind, $isValidated, $attendanceId);
+        $overrideApprovedAt = ($overrideApprovedBy && $overrideReason) ? date('Y-m-d H:i:s') : null;
+        $violationCount = ($isGeofenceViolation) ? 1 : 0;
+        
+        mysqli_stmt_bind_param($u, 'dddiiisisssi', 
+            $latitude, $longitude, $accBind, $isValidated, 
+            $gpsTimestamp, $isFlaggedAccuracy ? 1 : 0, $violationCount,
+            $overrideReason, $overrideApprovedBy, $overrideApprovedAt, $attendanceId);
         mysqli_stmt_execute($u);
         mysqli_stmt_close($u);
     }
@@ -180,7 +244,13 @@ echo json_encode([
         'distance_from_branch_meters' => $distanceMeters,
         'radius_meters' => $radius,
         'is_validated' => (int)$isValidated,
-        'validation_failure_reason' => $failureReason !== '' ? $failureReason : null
+        'validation_failure_reason' => $failureReason !== '' ? $failureReason : null,
+        'flagged_accuracy' => $isFlaggedAccuracy,
+        'timestamp_validation' => $timestampValidation,
+        'is_geofence_violation' => $isGeofenceViolation,
+        'override_reason' => $overrideReason,
+        'override_approved_by' => $overrideApprovedBy,
+        'device_fingerprint' => $deviceFingerprint
     ]
 ]);
 
