@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    require_once __DIR__ . '/conn/db_connection.php';
+    require_once __DIR__ . '/db_connection.php';
 
     // Get POST data
     $input = json_decode(file_get_contents('php://input'), true);
@@ -35,7 +35,7 @@ try {
     }
     
     // Call Python face service to verify
-    $face_service_url = 'http://face-recog.xandree.com/verify';
+    $face_service_url = getenv('FACE_SERVICE_URL') ?: 'http://localhost:5000/verify';
     
     $ch = curl_init($face_service_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -89,7 +89,7 @@ try {
     // Get employee details from database
     $employee_id = intval($face_result['employee_id']);
     
-    $sql = "SELECT id, firstname, lastname, email, position FROM employees WHERE id = ?";
+    $sql = "SELECT id, first_name, last_name, email, position FROM employees WHERE id = ?";
     $stmt = mysqli_prepare($db, $sql);
     
     if (!$stmt) {
@@ -115,8 +115,8 @@ try {
         'confidence' => $face_result['confidence'],
         'employee' => [
             'id' => $employee['id'],
-            'firstname' => $employee['firstname'],
-            'lastname' => $employee['lastname'],
+            'firstname' => $employee['first_name'],
+            'lastname' => $employee['last_name'],
             'email' => $employee['email'],
             'position' => $employee['position']
         ],
