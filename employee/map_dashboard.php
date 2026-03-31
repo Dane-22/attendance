@@ -112,7 +112,7 @@ try {
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/css/tailwind.css">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -369,17 +369,39 @@ try {
         const attendance = <?php echo json_encode($todayAttendance); ?>;
         const violations = <?php echo json_encode($violations); ?>;
         
-        // Initialize map
-        function initMap() {
-            map = new maplibregl.Map({
-                container: 'map',
-                style: 'https://api.maptiler.com/maps/streets-v2/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
-                center: [121.0437, 14.5574], // Philippines center
-                zoom: 11
-            });
+        // Initialize map with free CartoDB Dark Matter tiles (no API key needed)
+        map = new maplibregl.Map({
+            container: 'map',
+            style: {
+                version: 8,
+                sources: {
+                    'carto-dark': {
+                        type: 'raster',
+                        tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'],
+                        tileSize: 256,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    }
+                },
+                layers: [{
+                    id: 'carto-dark-layer',
+                    type: 'raster',
+                    source: 'carto-dark',
+                    minzoom: 0,
+                    maxzoom: 22
+                }]
+            },
+            center: [120.5, 16.5], // Center on La Union area
+            zoom: 10
+        });
             
             // Add navigation control
             map.addControl(new maplibregl.NavigationControl());
+            
+            // Handle missing images gracefully
+            map.on('styleimagemissing', function(e) {
+                // Prevent errors for missing sprite images
+                console.warn('Missing map image:', e.id);
+            });
             
             // Wait for map to load
             map.on('load', function() {
