@@ -35,7 +35,7 @@ try {
     }
     
     // Call Python face service to verify
-    $face_service_url = 'http://localhost:5000/verify';
+    $face_service_url = 'http://face-recog.xandree.com/verify';
     
     $ch = curl_init($face_service_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

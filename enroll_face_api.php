@@ -37,7 +37,7 @@ try {
     $employee_id = intval($employee_id);
     
     // Call Python face service to enroll
-    $face_service_url = 'http://localhost:5000/enroll';
+    $face_service_url = 'http://face-recog.xandree.com/enroll';
     
     $ch = curl_init($face_service_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
