@@ -35,7 +35,7 @@ try {
     }
     
     // Call Python face service to verify
-    $face_service_url = 'http://localhost:5000/verify';
+    $face_service_url = getenv('FACE_SERVICE_URL') ?: 'http://localhost:5000/verify';
     
     $ch = curl_init($face_service_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
