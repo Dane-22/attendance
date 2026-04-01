@@ -7,6 +7,7 @@ date_default_timezone_set('Asia/Manila'); // Philippine Time (UTC+8)
 
 // Check if this is a QR scan auto time-in request
 $isQRScan = isset($_GET['auto_timein']) && isset($_GET['emp_id']);
+$isBranchSelectMode = isset($_GET['select_branch']) && $_GET['select_branch'] == '1';
 
 // Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
@@ -37,10 +38,19 @@ require('function/clock_functions.php');
 
 // ===== QR SCAN AUTO TIME-IN/OUT (Direct Function Calls - No HTTP/cURL) =====
 $qrScanResult = null;
-if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
-    $qrEmployeeId = intval($_GET['emp_id']);
-    
-    if ($qrEmployeeId) {
+$qrEmployeeId = isset($_GET['emp_id']) ? intval($_GET['emp_id']) : 0;
+$qrEmployeeCode = isset($_GET['emp_code']) ? $_GET['emp_code'] : '';
+
+if (isset($_GET['auto_timein']) && $qrEmployeeId) {
+    if ($isBranchSelectMode) {
+        // Branch selection mode: show branch selector instead of auto clock-in
+        $qrScanResult = [
+            'success' => true,
+            'select_branch' => true,
+            'message' => 'Please select your branch/project'
+        ];
+    } else {
+        // Original auto clock-in mode
         // Fetch employee details and branch
         $empStmt = mysqli_prepare($db, "SELECT e.id, e.first_name, e.last_name, e.employee_code, b.branch_name 
             FROM employees e 
@@ -99,6 +109,88 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
     }
 }
 
+// ===== HANDLE QR CLOCK WITH BRANCH SELECTION (AJAX) =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'qr_clock_with_branch') {
+    header('Content-Type: application/json');
+    
+    $employeeId = intval($_POST['employee_id'] ?? 0);
+    $employeeCode = $_POST['employee_code'] ?? '';
+    $branchName = $_POST['branch_name'] ?? '';
+    $branchId = intval($_POST['branch_id'] ?? 0);
+    $latitude = floatval($_POST['latitude'] ?? 0);
+    $longitude = floatval($_POST['longitude'] ?? 0);
+    $accuracy = floatval($_POST['accuracy'] ?? 0);
+    $locationVerified = intval($_POST['location_verified'] ?? 0);
+    
+    if (!$employeeId || !$branchName) {
+        echo json_encode(['success' => false, 'message' => 'Missing required parameters']);
+        exit();
+    }
+    
+    // Verify employee
+    $empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name FROM employees WHERE id = ? AND employee_code = ? LIMIT 1");
+    mysqli_stmt_bind_param($empStmt, 'is', $employeeId, $employeeCode);
+    mysqli_stmt_execute($empStmt);
+    $empResult = mysqli_stmt_get_result($empStmt);
+    $employee = mysqli_fetch_assoc($empResult);
+    mysqli_stmt_close($empStmt);
+    
+    if (!$employee) {
+        echo json_encode(['success' => false, 'message' => 'Employee not found']);
+        exit();
+    }
+    
+    // Check if already clocked in
+    $checkSql = "SELECT id FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() AND time_in IS NOT NULL AND time_out IS NULL";
+    $checkStmt = mysqli_prepare($db, $checkSql);
+    mysqli_stmt_bind_param($checkStmt, 'i', $employeeId);
+    mysqli_stmt_execute($checkStmt);
+    mysqli_stmt_store_result($checkStmt);
+    $alreadyIn = mysqli_stmt_num_rows($checkStmt) > 0;
+    mysqli_stmt_close($checkStmt);
+    
+    $result = null;
+    if ($alreadyIn) {
+        // Clock out
+        $result = performClockOut($db, $employeeId, $employeeCode, $branchName);
+    } else {
+        // Clock in with selected branch
+        $result = performClockIn($db, $employeeId, $employeeCode, $branchName);
+    }
+    
+    // If clock-in/out succeeded and we have location data, save it
+    if ($result['success'] && $latitude && $longitude) {
+        $shiftId = $result['shift_id'] ?? null;
+        if ($shiftId) {
+            // Insert into location_logs
+            $logSql = "INSERT INTO location_logs 
+                (employee_id, attendance_id, action_type, latitude, longitude, 
+                 accuracy_meters, branch_id, is_validated, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            $logStmt = mysqli_prepare($db, $logSql);
+            $actionType = $alreadyIn ? 'clock_out' : 'qr_scan';
+            mysqli_stmt_bind_param($logStmt, 'iissdiii', 
+                $employeeId, $shiftId, $actionType, $latitude, $longitude, $accuracy, $branchId, $locationVerified);
+            mysqli_stmt_execute($logStmt);
+            mysqli_stmt_close($logStmt);
+            
+            // Update attendance record with location
+            $updateSql = "UPDATE attendance 
+                          SET clock_in_lat = ?, clock_in_lng = ?, 
+                              location_accuracy = ?, location_verified = ?
+                          WHERE id = ?";
+            $updateStmt = mysqli_prepare($db, $updateSql);
+            mysqli_stmt_bind_param($updateStmt, 'dddii',
+                $latitude, $longitude, $accuracy, $locationVerified, $shiftId);
+            mysqli_stmt_execute($updateStmt);
+            mysqli_stmt_close($updateStmt);
+        }
+    }
+    
+    echo json_encode($result);
+    exit();
+}
+
 ?>
 
 <!doctype html>
@@ -132,6 +224,170 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
       border: 2px solid #ef4444;
       color: #ef4444;
     }
+    
+    /* QR Branch Selector Modal */
+    .qr-branch-selector-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .qr-branch-selector-content {
+      background: #1a1a1a;
+      border: 2px solid #FFD700;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .qr-branch-selector-content h3 {
+      color: #FFD700;
+      margin: 0 0 8px 0;
+      font-size: 24px;
+    }
+    
+    .qr-branch-selector-content h3 i {
+      margin-right: 10px;
+    }
+    
+    .qr-branch-selector-content p {
+      color: #888;
+      margin: 0 0 20px 0;
+    }
+    
+    .qr-branch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    
+    .qr-branch-card {
+      background: #2a2a2a;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    
+    .qr-branch-card:hover {
+      border-color: #FFD700;
+      background: #333;
+    }
+    
+    .qr-branch-card.selected {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+    }
+    
+    .qr-branch-name {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 16px;
+    }
+    
+    .qr-branch-address {
+      font-size: 12px;
+      color: #888;
+      margin-top: 6px;
+    }
+    
+    /* Location Status */
+    .location-status {
+      margin: 20px 0;
+      padding: 16px;
+      border-radius: 8px;
+      background: #2a2a2a;
+      text-align: center;
+    }
+    
+    .location-checking {
+      color: #FFD700;
+    }
+    
+    .location-checking i {
+      margin-right: 8px;
+    }
+    
+    .location-valid {
+      color: #10b981;
+      font-weight: 600;
+    }
+    
+    .location-valid i {
+      font-size: 20px;
+      margin-right: 8px;
+    }
+    
+    .location-invalid {
+      color: #ef4444;
+      font-weight: 600;
+    }
+    
+    .location-invalid i {
+      font-size: 20px;
+      margin-right: 8px;
+    }
+    
+    /* Buttons */
+    .qr-branch-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+    
+    .btn-confirm {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-confirm:hover:not(:disabled) {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+    
+    .btn-confirm:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid #FFD700;
+      color: #FFD700;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondary:hover {
+      background: #FFD700;
+      color: #0b0b0b;
+    }
   </style>
 
 </head>
@@ -145,6 +401,56 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
       <div class="qr-result-banner <?php echo $qrScanResult['success'] ? 'success' : 'error'; ?>">
         <i class="fas <?php echo $qrScanResult['success'] ? 'fa-check-circle' : 'fa-exclamation-circle'; ?>"></i>
         <?php echo htmlspecialchars($qrScanResult['message']); ?>
+      </div>
+      <?php endif; ?>
+
+      <!-- QR Branch Selection Modal -->
+      <?php if ($isBranchSelectMode && $qrScanResult && $qrScanResult['select_branch']): ?>
+      <div id="qrBranchSelector" class="qr-branch-selector-modal">
+        <div class="qr-branch-selector-content">
+          <h3><i class="fas fa-building"></i> Select Your Project/Branch</h3>
+          <p>Please select which project you're working at today:</p>
+          
+          <!-- Branch Grid -->
+          <div class="qr-branch-grid" id="qrBranchGrid">
+            <?php foreach ($branches as $branch): ?>
+            <div class="qr-branch-card" 
+                 data-branch="<?php echo htmlspecialchars($branch['branch_name']); ?>"
+                 data-branch-id="<?php echo htmlspecialchars($branch['id']); ?>"
+                 data-lat="<?php echo htmlspecialchars($branch['lat'] ?? ''); ?>"
+                 data-lng="<?php echo htmlspecialchars($branch['long'] ?? ''); ?>"
+                 data-radius="<?php echo htmlspecialchars($branch['geofence_radius_meters'] ?? 200); ?>">
+              <div class="qr-branch-name"><?php echo htmlspecialchars($branch['branch_name']); ?></div>
+              <?php if ($branch['address']): ?>
+              <div class="qr-branch-address"><?php echo htmlspecialchars($branch['address']); ?></div>
+              <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+          </div>
+          
+          <!-- Location Status Display -->
+          <div id="locationStatus" class="location-status" style="display: none;">
+            <div class="location-checking">
+              <i class="fas fa-spinner fa-spin"></i> Getting your location...
+            </div>
+            <div class="location-valid" style="display: none;">
+              <i class="fas fa-check-circle"></i> Location verified! You are within the project area.
+            </div>
+            <div class="location-invalid" style="display: none;">
+              <i class="fas fa-exclamation-triangle"></i> <span id="locationErrorMsg"></span>
+            </div>
+          </div>
+          
+          <!-- Actions -->
+          <div class="qr-branch-actions">
+            <button id="confirmBranchBtn" class="btn-confirm" disabled>
+              <i class="fas fa-check"></i> Confirm & Clock In
+            </button>
+            <button id="retryLocationBtn" class="btn-secondary" style="display: none;">
+              <i class="fas fa-refresh"></i> Retry Location
+            </button>
+          </div>
+        </div>
       </div>
       <?php endif; ?>
 
@@ -458,6 +764,221 @@ if (isset($_GET['auto_timein']) && isset($_GET['emp_id'])) {
         });
       }, 1000);
     });
+  })();
+  </script>
+
+  <!-- QR Branch Selection with Location Verification -->
+  <script>
+  (function() {
+    const isBranchSelectMode = <?php echo $isBranchSelectMode ? 'true' : 'false'; ?>;
+    if (!isBranchSelectMode) return;
+    
+    const branchCards = document.querySelectorAll('.qr-branch-card');
+    const confirmBtn = document.getElementById('confirmBranchBtn');
+    const retryBtn = document.getElementById('retryLocationBtn');
+    const locationStatus = document.getElementById('locationStatus');
+    const locationChecking = locationStatus.querySelector('.location-checking');
+    const locationValid = locationStatus.querySelector('.location-valid');
+    const locationInvalid = locationStatus.querySelector('.location-invalid');
+    const locationErrorMsg = document.getElementById('locationErrorMsg');
+    
+    let selectedBranch = null;
+    let selectedBranchData = null;
+    let currentPosition = null;
+    let isLocationValid = false;
+    
+    // Branch card selection
+    branchCards.forEach(card => {
+      card.addEventListener('click', function() {
+        // Remove selected class from all
+        branchCards.forEach(c => c.classList.remove('selected'));
+        // Add to clicked
+        this.classList.add('selected');
+        
+        selectedBranch = this.dataset.branch;
+        selectedBranchData = {
+          id: this.dataset.branchId,
+          name: this.dataset.branch,
+          lat: parseFloat(this.dataset.lat) || null,
+          lng: parseFloat(this.dataset.lng) || null,
+          radius: parseInt(this.dataset.radius) || 200
+        };
+        
+        // Start location verification
+        verifyLocation();
+      });
+    });
+    
+    // Get GPS and verify location
+    function verifyLocation() {
+      locationStatus.style.display = 'block';
+      locationChecking.style.display = 'block';
+      locationValid.style.display = 'none';
+      locationInvalid.style.display = 'none';
+      confirmBtn.disabled = true;
+      retryBtn.style.display = 'none';
+      isLocationValid = false;
+      
+      if (!navigator.geolocation) {
+        showLocationError('Geolocation is not supported by your browser');
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          currentPosition = position;
+          validatePosition(position);
+        },
+        function(error) {
+          let errorMsg = 'Unable to get your location';
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg = 'Location access denied. Please enable location permissions.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg = 'Location information unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMsg = 'Location request timed out.';
+              break;
+          }
+          showLocationError(errorMsg);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    }
+    
+    // Validate position against branch geofence
+    function validatePosition(position) {
+      const empLat = position.coords.latitude;
+      const empLng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+      
+      // If branch has no coordinates, allow anyway
+      if (!selectedBranchData.lat || !selectedBranchData.lng) {
+        showLocationValid();
+        return;
+      }
+      
+      // Calculate distance using haversine formula
+      const distance = calculateDistance(
+        empLat, empLng,
+        selectedBranchData.lat, selectedBranchData.lng
+      );
+      
+      // Check if within radius
+      if (distance <= selectedBranchData.radius) {
+        showLocationValid();
+      } else {
+        showLocationError(
+          'You are not in the location yet. ' +
+          'Distance: ' + Math.round(distance) + 'm (allowed: ' + selectedBranchData.radius + 'm)'
+        );
+      }
+    }
+    
+    // Haversine formula for distance calculation
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371000; // Earth's radius in meters
+      const phi1 = lat1 * Math.PI / 180;
+      const phi2 = lat2 * Math.PI / 180;
+      const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+      const deltaLambda = (lng2 - lng1) * Math.PI / 180;
+      
+      const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+                Math.cos(phi1) * Math.cos(phi2) *
+                Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      
+      return R * c;
+    }
+    
+    function showLocationValid() {
+      locationChecking.style.display = 'none';
+      locationValid.style.display = 'block';
+      locationInvalid.style.display = 'none';
+      confirmBtn.disabled = false;
+      retryBtn.style.display = 'none';
+      isLocationValid = true;
+    }
+    
+    function showLocationError(msg) {
+      locationChecking.style.display = 'none';
+      locationValid.style.display = 'none';
+      locationInvalid.style.display = 'block';
+      locationErrorMsg.textContent = msg;
+      confirmBtn.disabled = true;
+      retryBtn.style.display = 'inline-block';
+      isLocationValid = false;
+      
+      // Alert the user
+      alert('You are not in the location yet. ' + msg);
+    }
+    
+    // Retry location button
+    retryBtn.addEventListener('click', function() {
+      if (selectedBranch) {
+        verifyLocation();
+      }
+    });
+    
+    // Confirm button - proceed with clock-in/out
+    confirmBtn.addEventListener('click', function() {
+      if (!isLocationValid || !selectedBranch) {
+        alert('Please select a branch and verify your location first.');
+        return;
+      }
+      
+      // Proceed with clock-in API call
+      const formData = new FormData();
+      formData.append('action', 'qr_clock_with_branch');
+      formData.append('employee_id', '<?php echo $qrEmployeeId; ?>');
+      formData.append('employee_code', '<?php echo htmlspecialchars($qrEmployeeCode); ?>');
+      formData.append('branch_name', selectedBranch);
+      formData.append('branch_id', selectedBranchData.id);
+      formData.append('latitude', currentPosition.coords.latitude);
+      formData.append('longitude', currentPosition.coords.longitude);
+      formData.append('accuracy', currentPosition.coords.accuracy);
+      formData.append('location_verified', 1);
+      
+      fetch('select_employee.php', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('qrBranchSelector').style.display = 'none';
+          // Show success message
+          const banner = document.createElement('div');
+          banner.className = 'qr-result-banner success';
+          banner.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'Clock in/out successful');
+          document.querySelector('.main-content').insertBefore(banner, document.querySelector('.main-content').firstChild);
+          // Auto-select the branch in the main UI
+          autoSelectBranch(selectedBranch);
+        } else {
+          alert(data.message || 'Failed to clock in/out');
+        }
+      })
+      .catch(err => {
+        alert('Error: ' + err.message);
+      });
+    });
+    
+    // Auto-select branch in main UI
+    function autoSelectBranch(branchName) {
+      const mainBranchCards = document.querySelectorAll('.branch-card');
+      mainBranchCards.forEach(function(card) {
+        if (card.dataset.branch === branchName) {
+          card.click();
+        }
+      });
+    }
   })();
   </script>
 

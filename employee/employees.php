@@ -428,7 +428,7 @@ if (!isset($_SESSION['employee_code'])) {
       try {
         // Build the URL for QR code scanning
         const baseUrl = window.location.origin + '/employee/select_employee.php';
-        const qrUrl = `${baseUrl}?auto_timein=1&emp_id=${id}&emp_code=${encodeURIComponent(code)}`;
+        const qrUrl = `${baseUrl}?auto_timein=1&select_branch=1&emp_id=${id}&emp_code=${encodeURIComponent(code)}`;
         
         // Update modal content
         document.getElementById('qrEmployeeName').textContent = name;
