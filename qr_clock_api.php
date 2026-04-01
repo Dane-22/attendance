@@ -133,13 +133,9 @@ try {
 
             // If not Pool, employee branch must match kiosk branch
             if (!$isPool && strtolower($branchName) !== strtolower($kioskBranchName)) {
-                // Return branch_mismatch info instead of error - frontend will ask for confirmation
                 jsonResponse([
-                    'success' => true,
-                    'branch_mismatch' => true,
-                    'employee_branch' => $branchName,
-                    'kiosk_branch' => $kioskBranchName,
-                    'message' => "Employee belongs to $branchName. Transfer to $kioskBranchName?"
+                    'success' => false, 
+                    'message' => "Cannot clock in/out. This employee belongs to $branchName but you are at $kioskBranchName."
                 ]);
             }
         }
