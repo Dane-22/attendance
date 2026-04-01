@@ -4,16 +4,33 @@ require_once __DIR__ . '/conn/db_connection.php';
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json');
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 // Check if requesting all branches for selection
 $getAll = isset($_GET['all']) && $_GET['all'] === '1';
 
 if ($getAll) {
     // Return all branches with full details for branch selection
-    $sql = "SELECT id, branch_name, branch_address, latitude, longitude, geofence_radius 
+    // Note: using 'lat' and 'long' column names as they exist in DB
+    $sql = "SELECT id, branch_name, branch_address, lat as latitude, `long` as longitude, 
+            COALESCE(geofence_radius_meters, 200) as geofence_radius 
             FROM branches 
             WHERE is_active = 1 
             ORDER BY branch_name ASC";
+    
     $result = mysqli_query($db, $sql);
+    
+    if (!$result) {
+        // Query failed - return error
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Database query failed: ' . mysqli_error($db),
+            'branches' => []
+        ]);
+        exit;
+    }
     
     $branches = [];
     while ($row = mysqli_fetch_assoc($result)) {
@@ -23,7 +40,7 @@ if ($getAll) {
             'branch_address' => $row['branch_address'],
             'latitude' => $row['latitude'],
             'longitude' => $row['longitude'],
-            'geofence_radius' => $row['geofence_radius'] ? intval($row['geofence_radius']) : 200
+            'geofence_radius' => intval($row['geofence_radius']) ?: 200
         ];
     }
     
@@ -35,7 +52,8 @@ if ($getAll) {
 $employeeId = isset($_GET['employee_id']) ? intval($_GET['employee_id']) : 0;
 
 if ($employeeId > 0) {
-    $sql = "SELECT b.id, b.branch_name, b.branch_address, b.latitude, b.longitude, b.geofence_radius 
+    $sql = "SELECT b.id, b.branch_name, b.branch_address, b.lat as latitude, b.`long` as longitude, 
+            COALESCE(b.geofence_radius_meters, 200) as geofence_radius 
             FROM employees e 
             LEFT JOIN branches b ON b.id = e.branch_id 
             WHERE e.id = ? AND b.is_active = 1 
@@ -54,7 +72,7 @@ if ($employeeId > 0) {
                 'branch_address' => $row['branch_address'],
                 'latitude' => $row['latitude'],
                 'longitude' => $row['longitude'],
-                'geofence_radius' => $row['geofence_radius'] ? intval($row['geofence_radius']) : 200
+                'geofence_radius' => intval($row['geofence_radius']) ?: 200
             ]
         ]);
     } else {
