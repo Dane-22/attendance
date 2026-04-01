@@ -787,17 +787,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         retryBtn.style.display = 'none';
         
         return new Promise((resolve) => {
-          // Handle confirm button
+          // Handle confirm button - use selectedBranchData instead of searching DOM
           confirmBtn.onclick = () => {
-            const selectedCard = branchGrid.querySelector('.branch-card[style*="border-color: rgb(16, 185, 129)"], .branch-card[style*="#10b981"]');
-            if (selectedCard) {
+            if (selectedBranchData && isLocationValid) {
               resolve({
-                branchId: selectedCard.dataset.branchId,
-                branchName: selectedCard.dataset.branchName,
+                branchId: selectedBranchData.branchId,
+                branchName: selectedBranchData.branchName,
                 confirmed: true
               });
             } else {
-              alert('Please select a branch first.');
+              alert('Please select a branch first and wait for location verification.');
             }
           };
           
