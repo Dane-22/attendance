@@ -213,8 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         ]);
         exit();
     }
-    // Pre-approve overtime request (Admin can pre-approve, Super Admin will do final approval)
-    if ($_POST['action'] === 'pre_approve_request') {
+    // Approve overtime request (Admin can now approve directly)
+    if ($_POST['action'] === 'approve_request') {
         try {
             $requestId = isset($_POST['request_id']) ? intval($_POST['request_id']) : 0;
             $adminName = $_SESSION['username'] ?? 'Admin';
@@ -223,9 +223,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 echo json_encode(['success' => false, 'message' => 'Invalid request ID']);
                 exit();
             }
-            
-            // Ensure status column can accept 'pre-approved' value
-            @mysqli_query($db, "ALTER TABLE overtime_requests MODIFY COLUMN status ENUM('pending','approved','rejected','pre-approved') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending'");
             
             // Get request details first for notification
             $getSql = "SELECT * FROM overtime_requests WHERE id = ? AND status = 'pending' LIMIT 1";
@@ -241,44 +238,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 exit();
             }
             
-            // Update request status to pre-approved (hyphen to match DB schema)
-            $updateSql = "UPDATE overtime_requests SET status = 'pre-approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'pending'";
-            $updateStmt = mysqli_prepare($db, $updateSql);
-            mysqli_stmt_bind_param($updateStmt, 'si', $adminName, $requestId);
+            // Find or create attendance record for today
+            $attendanceSql = "SELECT id FROM attendance WHERE employee_id = ? AND attendance_date = CURDATE() ORDER BY id DESC LIMIT 1";
+            $attendanceStmt = mysqli_prepare($db, $attendanceSql);
+            mysqli_stmt_bind_param($attendanceStmt, 'i', $requestDetails['employee_id']);
+            mysqli_stmt_execute($attendanceStmt);
+            $attendanceResult = mysqli_stmt_get_result($attendanceStmt);
+            $attendance = mysqli_fetch_assoc($attendanceResult);
+            mysqli_stmt_close($attendanceStmt);
             
-            if (mysqli_stmt_execute($updateStmt) && mysqli_stmt_affected_rows($updateStmt) > 0) {
+            $attendanceId = null;
+            
+            if ($attendance) {
+                $attendanceId = $attendance['id'];
+                // Update existing attendance record with overtime hours
+                $updateSql = "UPDATE attendance SET total_ot_hrs = ? WHERE id = ?";
+                $updateStmt = mysqli_prepare($db, $updateSql);
+                mysqli_stmt_bind_param($updateStmt, 'si', $requestDetails['requested_hours'], $attendanceId);
+                mysqli_stmt_execute($updateStmt);
                 mysqli_stmt_close($updateStmt);
-                
-                // Create notification for Super Admin
-                $superAdminNotifTitle = "Overtime Pre-Approved by Admin";
-                $superAdminNotifMessage = "Admin {$adminName} pre-approved overtime request for {$requestDetails['requested_by']} - {$requestDetails['requested_hours']} hours on {$requestDetails['request_date']}. Awaiting final approval.";
-                $superAdminNotifType = 'overtime_pre_approved';
-                
-                // Get all Super Admin and Developer users
-                $superAdminSql = "SELECT id FROM employees WHERE position IN ('Super Admin', 'Developer') AND status = 'Active'";
-                $superAdminResult = mysqli_query($db, $superAdminSql);
-                if ($superAdminResult) {
-                    while ($superAdminRow = mysqli_fetch_assoc($superAdminResult)) {
-                        $superAdminId = $superAdminRow['id'];
-                        $notifInsertSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
-                        $notifStmt = mysqli_prepare($db, $notifInsertSql);
-                        if ($notifStmt) {
-                            mysqli_stmt_bind_param($notifStmt, 'iisss', $superAdminId, $requestId, $superAdminNotifType, $superAdminNotifTitle, $superAdminNotifMessage);
-                            mysqli_stmt_execute($notifStmt);
-                            mysqli_stmt_close($notifStmt);
-                            
-                            // Send push notification
-                            sendPushNotification($db, $superAdminId, $superAdminNotifTitle, $superAdminNotifMessage, '/employee/notification.php');
-                        }
-                    }
-                }
+            } else {
+                // Create new attendance record with overtime
+                $insertSql = "INSERT INTO attendance (employee_id, attendance_date, branch_name, status, total_ot_hrs, is_overtime_running, is_time_running, created_at) 
+                              VALUES (?, CURDATE(), ?, 'Present', ?, 0, 0, NOW())";
+                $insertStmt = mysqli_prepare($db, $insertSql);
+                mysqli_stmt_bind_param($insertStmt, 'iss', $requestDetails['employee_id'], $requestDetails['branch_name'], $requestDetails['requested_hours']);
+                mysqli_stmt_execute($insertStmt);
+                $attendanceId = mysqli_insert_id($db);
+                mysqli_stmt_close($insertStmt);
+            }
+            
+            // Update request status to approved
+            $updateRequestSql = "UPDATE overtime_requests SET status = 'approved', approved_by = ?, approved_at = NOW(), attendance_id = ? WHERE id = ?";
+            $updateRequestStmt = mysqli_prepare($db, $updateRequestSql);
+            mysqli_stmt_bind_param($updateRequestStmt, 'sii', $adminName, $attendanceId, $requestId);
+            
+            if (mysqli_stmt_execute($updateRequestStmt)) {
+                mysqli_stmt_close($updateRequestStmt);
                 
                 // Create notification for the requester
                 $requesterId = isset($requestDetails['requested_by_user_id']) ? intval($requestDetails['requested_by_user_id']) : 0;
                 if ($requesterId > 0) {
-                    $notifTitle = "Overtime Pre-Approved";
-                    $notifMessage = "Your overtime request for {$requestDetails['requested_hours']} hours on {$requestDetails['request_date']} has been pre-approved by Admin {$adminName} and is now awaiting final approval from Super Admin.";
-                    $notifType = 'overtime_pre_approved';
+                    $notifTitle = "Overtime Approved";
+                    $notifMessage = "Your overtime request for {$requestDetails['requested_hours']} hours on {$requestDetails['request_date']} has been approved.";
+                    $notifType = 'overtime_approved';
                     
                     $notifSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
                     $notifStmt = mysqli_prepare($db, $notifSql);
@@ -286,14 +289,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         mysqli_stmt_bind_param($notifStmt, 'iisss', $requesterId, $requestId, $notifType, $notifTitle, $notifMessage);
                         mysqli_stmt_execute($notifStmt);
                         mysqli_stmt_close($notifStmt);
+                        
+                        // Send push notification to requester
+                        sendPushNotification($db, $requesterId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
                     }
                 }
                 
-                echo json_encode(['success' => true, 'message' => 'Overtime request pre-approved. Awaiting final approval from Super Admin.']);
-                logActivity($db, 'Overtime Pre-Approved', "Admin {$adminName} pre-approved overtime #{$requestId} for {$requestDetails['requested_hours']} hours on {$requestDetails['request_date']}");
+                echo json_encode(['success' => true, 'message' => 'Overtime request approved']);
+                logActivity($db, 'Overtime Approved', "Admin {$adminName} approved overtime #{$requestId} for {$requestDetails['requested_hours']} hours");
             } else {
-                mysqli_stmt_close($updateStmt);
-                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+                mysqli_stmt_close($updateRequestStmt);
+                echo json_encode(['success' => false, 'message' => 'Failed to approve request']);
             }
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Exception: ' . $e->getMessage()]);
@@ -301,8 +307,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit();
     }
     
-    // Pre-approve cash advance request
-    if ($_POST['action'] === 'pre_approve_cash_advance') {
+    // Approve cash advance request (Admin can now approve directly)
+    if ($_POST['action'] === 'approve_cash_advance') {
         try {
             $requestId = isset($_POST['request_id']) ? intval($_POST['request_id']) : 0;
             $adminName = $_SESSION['username'] ?? 'Admin';
@@ -311,9 +317,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 echo json_encode(['success' => false, 'message' => 'Invalid request ID']);
                 exit();
             }
-            
-            // Ensure status column can accept 'pre_approved' value - modify to ENUM if it's VARCHAR
-            @mysqli_query($db, "ALTER TABLE cash_advances MODIFY COLUMN status ENUM('Pending','Approved','Rejected','Pre-Approved') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending'");
             
             // Get request details first
             $getSql = "SELECT * FROM cash_advances WHERE id = ? AND status = 'Pending' LIMIT 1";
@@ -329,39 +332,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 exit();
             }
             
-            // Update request status to Pre-Approved (matching ENUM case)
-            $updateSql = "UPDATE cash_advances SET status = 'Pre-Approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'Pending'";
+            // Update request status to Approved
+            $updateSql = "UPDATE cash_advances SET status = 'Approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND status = 'Pending'";
             $updateStmt = mysqli_prepare($db, $updateSql);
             mysqli_stmt_bind_param($updateStmt, 'si', $adminName, $requestId);
             
             if (mysqli_stmt_execute($updateStmt) && mysqli_stmt_affected_rows($updateStmt) > 0) {
                 mysqli_stmt_close($updateStmt);
                 
-                // Create notification for Super Admin
-                $superAdminNotifTitle = "Cash Advance Pre-Approved by Admin";
-                $superAdminNotifMessage = "Admin {$adminName} pre-approved cash advance request for ₱" . number_format($requestDetails['amount'], 2) . " - Awaiting final approval.";
-                $superAdminNotifType = 'cash_advance_pre_approved';
+                // Create notification for the employee
+                $employeeId = intval($requestDetails['employee_id']);
+                $amount = $requestDetails['amount'];
+                $notifTitle = "Cash Advance Approved";
+                $notifMessage = "Your cash advance request for ₱" . number_format($amount, 2) . " has been approved.";
+                $notifType = 'cash_advance_approved';
                 
-                $superAdminSql = "SELECT id FROM employees WHERE position IN ('Super Admin', 'Developer') AND status = 'Active'";
-                $superAdminResult = mysqli_query($db, $superAdminSql);
-                if ($superAdminResult) {
-                    while ($superAdminRow = mysqli_fetch_assoc($superAdminResult)) {
-                        $superAdminId = $superAdminRow['id'];
-                        $notifInsertSql = "INSERT INTO employee_notifications (employee_id, cash_advance_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
-                        $notifStmt = mysqli_prepare($db, $notifInsertSql);
-                        if ($notifStmt) {
-                            mysqli_stmt_bind_param($notifStmt, 'iisss', $superAdminId, $requestId, $superAdminNotifType, $superAdminNotifTitle, $superAdminNotifMessage);
-                            mysqli_stmt_execute($notifStmt);
-                            mysqli_stmt_close($notifStmt);
-                            
-                            // Send push notification
-                            sendPushNotification($db, $superAdminId, $superAdminNotifTitle, $superAdminNotifMessage, '/employee/notification.php');
-                        }
-                    }
+                $notifSql = "INSERT INTO employee_notifications (employee_id, cash_advance_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $notifStmt = mysqli_prepare($db, $notifSql);
+                if ($notifStmt) {
+                    mysqli_stmt_bind_param($notifStmt, 'iisss', $employeeId, $requestId, $notifType, $notifTitle, $notifMessage);
+                    mysqli_stmt_execute($notifStmt);
+                    mysqli_stmt_close($notifStmt);
+                    
+                    // Send push notification
+                    sendPushNotification($db, $employeeId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
                 }
                 
-                echo json_encode(['success' => true, 'message' => 'Cash advance request pre-approved. Awaiting final approval from Super Admin.']);
-                logActivity($db, 'Cash Advance Pre-Approved', "Admin {$adminName} pre-approved cash advance #{$requestId}");
+                echo json_encode(['success' => true, 'message' => 'Cash advance request approved.']);
+                logActivity($db, 'Cash Advance Approved', "Admin {$adminName} approved cash advance #{$requestId}");
             } else {
                 mysqli_stmt_close($updateStmt);
                 echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
@@ -711,8 +709,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                 <div class="notification-header">
                     <h1><i class="fas fa-bell"></i> Admin Notifications</h1>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <span class="view-only-badge" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(255, 152, 0, 0.05) 100%); border-color: #FF9800; color: #FF9800;">
-                            <i class="fas fa-check-double"></i> Can Pre-Approve
+                        <span class="view-only-badge" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%); border-color: #4CAF50; color: #4CAF50;">
+                            <i class="fas fa-check"></i> Can Approve
                         </span>
                         <div class="pending-badge">
                             <span class="badge-count" id="pendingBadge"><?php echo $totalPendingCount; ?></span>
@@ -721,9 +719,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                     </div>
                 </div>
                 
-                <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; color: #ccc; font-size: 13px;">
-                    <i class="fas fa-info-circle" style="color: #FFD700; margin-right: 8px;"></i>
-                    As an Admin, you can <strong>pre-approve</strong> requests. Super Admin will then do the final approval.
+                <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; color: #ccc; font-size: 13px;">
+                    <i class="fas fa-info-circle" style="color: #4CAF50; margin-right: 8px;"></i>
+                    As an Admin, you can <strong>approve</strong> requests directly. Click "Noted" to approve requests.
                 </div>
                 
                 <div class="request-type-tabs">
@@ -744,9 +742,6 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                 <div class="notification-tabs">
                     <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">
                         Pending (<span id="count-pending">0</span>)
-                    </button>
-                    <button class="tab-btn" data-status="pre_approved" onclick="switchTab('pre_approved')">
-                        Pre-Approved (<span id="count-pre-approved">0</span>)
                     </button>
                     <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">
                         Approved (<span id="count-approved">0</span>)
@@ -931,8 +926,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                         
                         ${request.status.toLowerCase() === 'pending' ? `
                             <div class="request-actions">
-                                <button class="btn-approve" onclick="preApproveCashAdvance(${request.id})" style="background: linear-gradient(180deg, #FF9800 0%, #F57C00 100%);">
-                                    <i class="fas fa-check-double"></i> Pre-Approve
+                                <button class="btn-approve" onclick="approveCashAdvance(${request.id})" style="background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);">
+                                    <i class="fas fa-check"></i> Noted
                                 </button>
                             </div>
                         ` : ''}
@@ -946,12 +941,11 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
         
         function updateCounts(counts) {
             document.getElementById('count-pending').textContent = counts.pending || 0;
-            document.getElementById('count-pre-approved').textContent = counts.pre_approved || 0;
             document.getElementById('count-approved').textContent = counts.approved || 0;
             document.getElementById('count-rejected').textContent = counts.rejected || 0;
             document.getElementById('count-all').textContent = counts.all || 0;
-            const pendingAndPreApproved = (counts.pending || 0) + (counts.pre_approved || 0);
-            document.getElementById('pendingBadge').textContent = pendingAndPreApproved;
+            const pendingOnly = counts.pending || 0;
+            document.getElementById('pendingBadge').textContent = pendingOnly;
         }
         
         function renderRequests(requests) {
@@ -1029,8 +1023,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                         
                         ${request.status.toLowerCase() === 'pending' ? `
                             <div class="request-actions">
-                                <button class="btn-approve" onclick="preApproveRequest(${request.id})" style="background: linear-gradient(180deg, #FF9800 0%, #F57C00 100%);">
-                                    <i class="fas fa-check-double"></i> Pre-Approve
+                                <button class="btn-approve" onclick="approveRequest(${request.id})" style="background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);">
+                                    <i class="fas fa-check"></i> Noted
                                 </button>
                             </div>
                         ` : ''}
@@ -1070,14 +1064,14 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
             });
         }
         
-        async function preApproveRequest(requestId) {
-            if (!confirm('Pre-approve this overtime request?\n\nThis will mark it as "Pre-Approved" and notify Super Admin for final approval.')) {
+        async function approveRequest(requestId) {
+            if (!confirm('Approve this overtime request?\n\nThis will mark it as "Approved" and notify the employee.')) {
                 return;
             }
             
             try {
                 const formData = new FormData();
-                formData.append('action', 'pre_approve_request');
+                formData.append('action', 'approve_request');
                 formData.append('request_id', requestId);
                 
                 const response = await fetch('admin_notification.php', {
@@ -1092,22 +1086,22 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                     loadRequests(currentTab);
                     updatePendingBadge();
                 } else {
-                    showToast(data.message || 'Failed to pre-approve request', 'error');
+                    showToast(data.message || 'Failed to approve request', 'error');
                 }
             } catch (error) {
-                console.error('Error pre-approving request:', error);
-                showToast('Error pre-approving request', 'error');
+                console.error('Error approving request:', error);
+                showToast('Error approving request', 'error');
             }
         }
         
-        async function preApproveCashAdvance(requestId) {
-            if (!confirm('Pre-approve this cash advance request?\n\nThis will mark it as "Pre-Approved" and notify Super Admin for final approval.')) {
+        async function approveCashAdvance(requestId) {
+            if (!confirm('Approve this cash advance request?\n\nThis will mark it as "Approved" and notify the employee.')) {
                 return;
             }
             
             try {
                 const formData = new FormData();
-                formData.append('action', 'pre_approve_cash_advance');
+                formData.append('action', 'approve_cash_advance');
                 formData.append('request_id', requestId);
                 
                 const response = await fetch('admin_notification.php', {
@@ -1122,11 +1116,11 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                     loadRequests(currentTab);
                     updatePendingBadge();
                 } else {
-                    showToast(data.message || 'Failed to pre-approve request', 'error');
+                    showToast(data.message || 'Failed to approve request', 'error');
                 }
             } catch (error) {
-                console.error('Error pre-approving cash advance:', error);
-                showToast('Error pre-approving request', 'error');
+                console.error('Error approving cash advance:', error);
+                showToast('Error approving request', 'error');
             }
         }
         
@@ -1347,8 +1341,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                 });
                 const leaveData = await leaveResponse.json();
                 
-                const otPending = data.success ? ((data.counts?.pending || 0) + (data.counts?.pre_approved || 0)) : 0;
-                const caPending = caData.success ? ((caData.counts?.pending || 0) + (caData.counts?.pre_approved || 0)) : 0;
+                const otPending = data.success ? (data.counts?.pending || 0) : 0;
+                const caPending = caData.success ? (caData.counts?.pending || 0) : 0;
                 const leavePending = leaveData.success ? (leaveData.counts?.pending || 0) : 0;
                 
                 document.getElementById('pendingBadge').textContent = otPending + caPending + leavePending;

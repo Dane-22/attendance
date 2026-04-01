@@ -25,7 +25,7 @@ if (!$isAdmin) {
 require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 
-// Helper function to get pending count (includes pending and pre_approved)
+// Helper function to get pending count (includes pending only)
 function getPendingOvertimeCount($db) {
     if (!$db) return 0;
     // Suppress errors and check if table exists first
@@ -33,14 +33,14 @@ function getPendingOvertimeCount($db) {
     if (!$checkTable || mysqli_num_rows($checkTable) === 0) {
         return 0;
     }
-    $sql = "SELECT COUNT(*) as cnt FROM overtime_requests WHERE status IN ('pending', 'pre_approved')";
+    $sql = "SELECT COUNT(*) as cnt FROM overtime_requests WHERE status = 'pending'";
     $result = @mysqli_query($db, $sql);
     if (!$result) return 0;
     $row = mysqli_fetch_assoc($result);
     return intval($row['cnt'] ?? 0);
 }
 
-// Helper function to get pending cash advance count (includes pending and pre_approved)
+// Helper function to get pending cash advance count (includes pending only)
 function getPendingCashAdvanceCount($db) {
     if (!$db) return 0;
     // Check if table exists
@@ -57,7 +57,7 @@ function getPendingCashAdvanceCount($db) {
         @mysqli_query($db, "ALTER TABLE cash_advances ADD COLUMN approved_at DATETIME DEFAULT NULL");
         @mysqli_query($db, "ALTER TABLE cash_advances ADD COLUMN rejection_reason TEXT DEFAULT NULL");
     }
-    $sql = "SELECT COUNT(*) as cnt FROM cash_advances WHERE status IN ('pending', 'pre_approved') AND particular = 'Cash Advance'";
+    $sql = "SELECT COUNT(*) as cnt FROM cash_advances WHERE status = 'pending' AND particular = 'Cash Advance'";
     $result = @mysqli_query($db, $sql);
     if (!$result) return 0;
     $row = mysqli_fetch_assoc($result);
@@ -698,9 +698,6 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                     <button class="tab-btn active" data-status="pending" onclick="switchTab('pending')">
                         Pending (<span id="count-pending">0</span>)
                     </button>
-                    <button class="tab-btn" data-status="pre-approved" onclick="switchTab('pre-approved')">
-                        Pre-Approved (<span id="count-pre-approved">0</span>)
-                    </button>
                     <button class="tab-btn" data-status="approved" onclick="switchTab('approved')">
                         Approved (<span id="count-approved">0</span>)
                     </button>
@@ -899,7 +896,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                         ${showActions ? `
                             <div class="request-actions">
                                 <button class="btn-approve" onclick="approveCashAdvance(${request.id})">
-                                    <i class="fas fa-check"></i> ${statusLower === 'pre_approved' ? 'Final Approve' : 'Approve'}
+                                    <i class="fas fa-check"></i> Noted
                                 </button>
                                 <button class="btn-reject" onclick="showRejectionModal(${request.id}, 'cash_advance')">
                                     <i class="fas fa-times"></i> Reject
@@ -916,12 +913,11 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
         
         function updateCounts(counts) {
             document.getElementById('count-pending').textContent = counts.pending || 0;
-            document.getElementById('count-pre-approved').textContent = counts['pre-approved'] || 0;
             document.getElementById('count-approved').textContent = counts.approved || 0;
             document.getElementById('count-rejected').textContent = counts.rejected || 0;
             document.getElementById('count-all').textContent = counts.all || 0;
-            const pendingAndPreApproved = (counts.pending || 0) + (counts['pre-approved'] || 0);
-            document.getElementById('pendingBadge').textContent = pendingAndPreApproved;
+            const pendingOnly = counts.pending || 0;
+            document.getElementById('pendingBadge').textContent = pendingOnly;
         }
         
         function renderRequests(requests) {
@@ -1002,7 +998,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                         ${showActions ? `
                             <div class="request-actions">
                                 <button class="btn-approve" onclick="approveRequest(${request.id})">
-                                    <i class="fas fa-check"></i> ${statusLower === 'pre-approved' ? 'Final Approve' : 'Approve'}
+                                    <i class="fas fa-check"></i> Noted
                                 </button>
                                 <button class="btn-reject" onclick="showRejectionModal(${request.id}, 'overtime')">
                                     <i class="fas fa-times"></i> Reject
@@ -1301,8 +1297,8 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 });
                 const caData = await caResponse.json();
                 
-                const otPending = data.success ? ((data.counts?.pending || 0) + (data.counts?.['pre-approved'] || 0)) : 0;
-                const caPending = caData.success ? ((caData.counts?.pending || 0) + (caData.counts?.['pre-approved'] || 0)) : 0;
+                const otPending = data.success ? (data.counts?.pending || 0) : 0;
+                const caPending = caData.success ? (caData.counts?.pending || 0) : 0;
                 
                 document.getElementById('pendingBadge').textContent = otPending + caPending;
                 document.getElementById('type-count-overtime').textContent = otPending;
