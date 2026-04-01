@@ -95,6 +95,9 @@ try {
         throw new Exception("Database update failed: " . mysqli_stmt_error($stmt));
     }
     
+    $rows_affected = mysqli_stmt_affected_rows($stmt);
+    error_log("Enroll face: Updated $rows_affected rows for employee_id=$employee_id");
+    
     mysqli_stmt_close($stmt);
     
     echo json_encode([
