@@ -410,6 +410,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <i class="fa-solid fa-camera"></i> Scan Another
         </button>
       </div>
+      
+      <!-- Branch Selection Modal (within QR scanner) -->
+      <div id="branchSelectionArea" style="display: none; padding: 16px;">
+        <h3 style="color: #FFA500; font-weight: 700; font-size: 18px; margin-bottom: 12px; text-align: center;">
+          <i class="fa-solid fa-building"></i> Select Your Project
+        </h3>
+        <p style="color: #9ca3af; font-size: 13px; text-align: center; margin-bottom: 16px;">
+          Please select the project you're working at today
+        </p>
+        <div id="branchGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; max-height: 300px; overflow-y: auto; padding-right: 8px;">
+          <!-- Branch cards will be populated here -->
+        </div>
+        
+        <!-- Location Status -->
+        <div id="locationStatus" style="display: none; margin-top: 16px; padding: 12px; border-radius: 8px; text-align: center;">
+          <div class="location-checking" style="display: none;">
+            <i class="fa-solid fa-spinner fa-spin" style="color: #FFA500;"></i>
+            <span style="color: #e2e8f0; margin-left: 8px;">Getting your location...</span>
+          </div>
+          <div class="location-valid" style="display: none;">
+            <i class="fa-solid fa-check-circle" style="color: #10b981;"></i>
+            <span style="color: #10b981; margin-left: 8px;">Location verified</span>
+          </div>
+          <div class="location-invalid" style="display: none;">
+            <i class="fa-solid fa-times-circle" style="color: #ef4444;"></i>
+            <span id="locationErrorMsg" style="color: #ef4444; margin-left: 8px;"></span>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px;">
+          <button type="button" id="retryLocationBtn" style="display: none; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+            <i class="fa-solid fa-refresh"></i> Retry Location
+          </button>
+          <button type="button" id="confirmBranchBtn" disabled style="background: #10b981; border: none; color: #fff; padding: 10px 24px; border-radius: 8px; cursor: not-allowed; font-weight: 600; opacity: 0.5;">
+            Confirm & Clock In
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -650,6 +689,226 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
       }
 
+      // Fetch all branches
+      async function fetchBranches() {
+        try {
+          const response = await fetch(`${window.location.origin}/get_branch_api.php?all=1`);
+          const data = await response.json();
+          return data.success ? (data.branches || []) : [];
+        } catch (err) {
+          console.error('Error fetching branches:', err);
+          return [];
+        }
+      }
+
+      // Haversine formula for distance calculation
+      function calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371000; // Earth's radius in meters
+        const phi1 = lat1 * Math.PI / 180;
+        const phi2 = lat2 * Math.PI / 180;
+        const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+        const deltaLambda = (lng2 - lng1) * Math.PI / 180;
+        
+        const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        
+        return R * c;
+      }
+
+      // Show branch selection modal
+      async function showBranchSelection(empInfo) {
+        const branches = await fetchBranches();
+        if (branches.length === 0) {
+          showResult(false, 'No branches available. Please try again.');
+          return null;
+        }
+
+        const branchGrid = document.getElementById('branchGrid');
+        const branchSelectionArea = document.getElementById('branchSelectionArea');
+        const locationStatus = document.getElementById('locationStatus');
+        const confirmBtn = document.getElementById('confirmBranchBtn');
+        const retryBtn = document.getElementById('retryLocationBtn');
+        
+        // Hide QR reader and status
+        if (qrReader) qrReader.style.display = 'none';
+        if (statusEl) statusEl.style.display = 'none';
+        
+        // Clear and populate branch grid
+        branchGrid.innerHTML = '';
+        branches.forEach(branch => {
+          const card = document.createElement('div');
+          card.className = 'branch-card';
+          card.style.cssText = `
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,165,0,0.2);
+            border-radius: 10px;
+            padding: 16px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          `;
+          card.dataset.branchId = branch.id;
+          card.dataset.branchName = branch.branch_name;
+          card.dataset.lat = branch.latitude || '';
+          card.dataset.lng = branch.longitude || '';
+          card.dataset.radius = branch.geofence_radius || 200;
+          
+          card.innerHTML = `
+            <div style="font-size: 24px; margin-bottom: 8px;"><i class="fa-solid fa-building" style="color: #FFA500;"></i></div>
+            <div style="font-weight: 600; color: #e2e8f0; font-size: 14px;">${escapeHtml(branch.branch_name)}</div>
+            ${branch.branch_address ? `<div style="font-size: 11px; color: #9ca3af; margin-top: 4px; line-height: 1.3;">${escapeHtml(branch.branch_address)}</div>` : ''}
+          `;
+          
+          card.addEventListener('click', () => {
+            // Remove selected from all
+            branchGrid.querySelectorAll('.branch-card').forEach(c => {
+              c.style.borderColor = 'rgba(255,165,0,0.2)';
+              c.style.background = 'rgba(255,255,255,0.05)';
+            });
+            // Highlight selected
+            card.style.borderColor = '#10b981';
+            card.style.background = 'rgba(16,185,129,0.1)';
+            
+            // Start location verification for selected branch
+            verifyLocationForBranch(card.dataset, empInfo);
+          });
+          
+          branchGrid.appendChild(card);
+        });
+        
+        // Show branch selection area
+        branchSelectionArea.style.display = 'block';
+        locationStatus.style.display = 'none';
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.style.cursor = 'not-allowed';
+        retryBtn.style.display = 'none';
+        
+        return new Promise((resolve) => {
+          // Handle confirm button
+          confirmBtn.onclick = () => {
+            const selectedCard = branchGrid.querySelector('.branch-card[style*="border-color: rgb(16, 185, 129)"], .branch-card[style*="#10b981"]');
+            if (selectedCard) {
+              resolve({
+                branchId: selectedCard.dataset.branchId,
+                branchName: selectedCard.dataset.branchName,
+                confirmed: true
+              });
+            } else {
+              alert('Please select a branch first.');
+            }
+          };
+          
+          // Handle cancel/close
+          closeBtn.onclick = () => {
+            resolve({ confirmed: false });
+            closeModal();
+          };
+        });
+      }
+
+      // Escape HTML to prevent XSS
+      function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      let selectedBranchData = null;
+      let currentPosition = null;
+      let isLocationValid = false;
+
+      // Verify location for selected branch
+      async function verifyLocationForBranch(branchData, empInfo) {
+        const locationStatus = document.getElementById('locationStatus');
+        const locationChecking = locationStatus.querySelector('.location-checking');
+        const locationValid = locationStatus.querySelector('.location-valid');
+        const locationInvalid = locationStatus.querySelector('.location-invalid');
+        const locationErrorMsg = document.getElementById('locationErrorMsg');
+        const confirmBtn = document.getElementById('confirmBranchBtn');
+        const retryBtn = document.getElementById('retryLocationBtn');
+        
+        selectedBranchData = branchData;
+        isLocationValid = false;
+        
+        locationStatus.style.display = 'block';
+        locationChecking.style.display = 'block';
+        locationValid.style.display = 'none';
+        locationInvalid.style.display = 'none';
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.style.cursor = 'not-allowed';
+        retryBtn.style.display = 'none';
+        
+        try {
+          const position = await getCurrentPosition();
+          if (!position) {
+            showLocationError('Unable to get location. Please enable location services.');
+            return;
+          }
+          
+          currentPosition = position;
+          
+          // If branch has no coordinates, allow anyway
+          if (!branchData.lat || !branchData.lng) {
+            showLocationSuccess();
+            return;
+          }
+          
+          // Calculate distance
+          const distance = calculateDistance(
+            position.latitude, position.longitude,
+            parseFloat(branchData.lat), parseFloat(branchData.lng)
+          );
+          
+          const radius = parseInt(branchData.radius) || 200;
+          
+          if (distance <= radius) {
+            showLocationSuccess();
+          } else {
+            const errorMsg = `You are not in the location yet. Distance: ${Math.round(distance)}m (allowed: ${radius}m)`;
+            showLocationError(errorMsg);
+            alert('You are not in the location yet. ' + errorMsg);
+          }
+        } catch (error) {
+          showLocationError(error.message || 'Location validation failed');
+        }
+        
+        function showLocationSuccess() {
+          locationChecking.style.display = 'none';
+          locationValid.style.display = 'block';
+          locationInvalid.style.display = 'none';
+          confirmBtn.disabled = false;
+          confirmBtn.style.opacity = '1';
+          confirmBtn.style.cursor = 'pointer';
+          retryBtn.style.display = 'none';
+          isLocationValid = true;
+        }
+        
+        function showLocationError(msg) {
+          locationChecking.style.display = 'none';
+          locationValid.style.display = 'none';
+          locationInvalid.style.display = 'block';
+          locationErrorMsg.textContent = msg;
+          confirmBtn.disabled = true;
+          confirmBtn.style.opacity = '0.5';
+          confirmBtn.style.cursor = 'not-allowed';
+          retryBtn.style.display = 'inline-block';
+          isLocationValid = false;
+        }
+      }
+
+      // Retry location button
+      document.getElementById('retryLocationBtn').addEventListener('click', function() {
+        if (selectedBranchData) {
+          // Need to pass empInfo context - use last scanned
+          verifyLocationForBranch(selectedBranchData, {});
+        }
+      });
+
       // Get current GPS position
       function getCurrentPosition() {
         return new Promise((resolve, reject) => {
@@ -840,13 +1099,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
       }
 
-      // Call QR clock API via AJAX
-      async function processClockIn(empId, empCode) {
+      // Call QR clock API via AJAX with branch
+      async function processClockIn(empId, empCode, branchData) {
         const url = `${window.location.origin}/employee/api/qr_clock.php`;
         const formData = new FormData();
         formData.append('action', 'in');
         formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
+        if (branchData) {
+          formData.append('branch_id', branchData.branchId);
+          formData.append('branch_name', branchData.branchName);
+        }
+        if (currentPosition) {
+          formData.append('latitude', currentPosition.latitude);
+          formData.append('longitude', currentPosition.longitude);
+          formData.append('accuracy', currentPosition.accuracy);
+        }
 
         try {
           const response = await fetch(url, {
@@ -869,7 +1137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return { success: true, message: data.message };
           } else if (data.already_in) {
             // Already clocked in, trigger clock-out
-            return await processClockOut(empId, empCode);
+            return await processClockOut(empId, empCode, branchData);
           } else {
             return { success: false, message: data.message || 'Failed to record time-in' };
           }
@@ -878,13 +1146,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
       }
 
-      // Call QR clock-out API via AJAX
-      async function processClockOut(empId, empCode) {
+      // Call QR clock-out API via AJAX with branch
+      async function processClockOut(empId, empCode, branchData) {
         const url = `${window.location.origin}/employee/api/qr_clock.php`;
         const formData = new FormData();
         formData.append('action', 'out');
         formData.append('employee_id', empId);
         if (empCode) formData.append('employee_code', empCode);
+        if (branchData) {
+          formData.append('branch_id', branchData.branchId);
+          formData.append('branch_name', branchData.branchName);
+        }
+        if (currentPosition) {
+          formData.append('latitude', currentPosition.latitude);
+          formData.append('longitude', currentPosition.longitude);
+          formData.append('accuracy', currentPosition.accuracy);
+        }
 
         try {
           const response = await fetch(url, {
@@ -915,6 +1192,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         setStatus('Starting camera...');
+        
+        // Reset UI
+        const branchSelectionArea = document.getElementById('branchSelectionArea');
+        const qrResultArea = document.getElementById('qrResultArea');
+        if (branchSelectionArea) branchSelectionArea.style.display = 'none';
+        if (qrResultArea) qrResultArea.style.display = 'none';
+        if (qrReader) qrReader.style.display = 'block';
+        if (statusEl) statusEl.style.display = 'block';
 
         const config = { fps: 10, qrbox: { width: 260, height: 260 } };
 
@@ -931,40 +1216,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   return;
                 }
 
-                setStatus('Checking status...');
+                setStatus('Loading branch selection...');
                 await stopScanner();
 
                 // Check employee attendance status first
                 const statusData = await checkAttendanceStatus(empInfo.emp_id);
                 
-                // Phase 2: Get current location and validate geofence
-                const locationValidation = await validateGeofence(empInfo.emp_id);
+                // Show branch selection modal
+                const branchSelection = await showBranchSelection(empInfo);
                 
-                if (!locationValidation.success) {
-                  // Location validation failed
-                  if (locationValidation.requires_override && locationValidation.can_override) {
-                    // Show override dialog for managers
-                    const overrideResult = await showOverrideDialog(locationValidation);
-                    if (!overrideResult.confirmed) {
-                      setStatus('Location validation failed. Scan another QR code.');
-                      setTimeout(() => startScanner(), 500);
-                      return;
-                    }
-                    // Proceed with override reason
-                    locationValidation.override_reason = overrideResult.reason;
-                  } else if (locationValidation.action === 'block') {
-                    // Hard block for regular employees
-                    setStatus(locationValidation.override_reason || 'Location validation failed. You are outside the geofence.');
-                    setTimeout(() => startScanner(), 2000);
-                    return;
-                  } else {
-                    // Warning - show but allow
-                    setStatus(`Warning: ${locationValidation.override_reason || 'Location accuracy issues detected.'}`);
-                  }
+                if (!branchSelection || !branchSelection.confirmed) {
+                  // User cancelled branch selection
+                  setStatus('Branch selection cancelled. Scan another QR code.');
+                  hideBranchSelection();
+                  setTimeout(() => startScanner(), 500);
+                  return;
                 }
                 
-                // Show confirmation dialog with location info
-                const confirmed = await showConfirmation(empInfo, statusData, locationValidation);
+                // Hide branch selection
+                hideBranchSelection();
+                
+                // Show confirmation dialog with branch info
+                const confirmed = await showConfirmation(empInfo, statusData, branchSelection);
                 
                 if (!confirmed) {
                   // User cancelled - resume scanning
@@ -973,9 +1246,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   return;
                 }
 
-                // User confirmed - proceed with clock-in/out
+                // User confirmed - proceed with clock-in/out with selected branch
                 setStatus('Processing...');
-                const result = await processClockIn(empInfo.emp_id, empInfo.emp_code);
+                const result = await processClockIn(empInfo.emp_id, empInfo.emp_code, branchSelection);
                 showResult(result.success, result.message);
               },
               () => {
@@ -1006,6 +1279,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setStatus('Unable to start camera. Please try again or refresh the page.');
           }
         }
+      }
+
+      function hideBranchSelection() {
+        const branchSelectionArea = document.getElementById('branchSelectionArea');
+        const locationStatus = document.getElementById('locationStatus');
+        if (branchSelectionArea) branchSelectionArea.style.display = 'none';
+        if (locationStatus) locationStatus.style.display = 'none';
       }
 
       function openModal() {
