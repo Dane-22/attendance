@@ -51,7 +51,6 @@ try {
     }
     
     require_once $dbPath;
-    require_once __DIR__ . '/functions.php';
     
     // Verify $db connection exists
     if (!isset($db) || !$db) {
@@ -62,12 +61,7 @@ try {
     $action = $_POST['action'] ?? 'in'; // 'in' or 'out'
     $employeeId = intval($_POST['employee_id'] ?? 0);
     $employeeCode = $_POST['employee_code'] ?? '';
-
-    // Geolocation parameters (optional)
-    $latitude = isset($_POST['latitude']) ? floatval($_POST['latitude']) : null;
-    $longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
-    $accuracy = isset($_POST['accuracy']) ? floatval($_POST['accuracy']) : null;
-    $locationVerified = isset($_POST['location_verified']) ? intval($_POST['location_verified']) : 0;
+    $kioskBranchName = $_POST['kiosk_branch_name'] ?? '';
 
     // Validate employee ID
     if (!$employeeId) {
@@ -96,7 +90,6 @@ try {
 
     // Check if employee is active (status = 'Active')
     if (isset($employee['status']) && $employee['status'] !== 'Active') {
-        logApiActivity($db, $employeeId, 'QR Clock Failed', "Employee ID {$employeeId} account is not active");
         jsonResponse(['success' => false, 'message' => 'Employee account is not active']);
     }
 
@@ -117,26 +110,44 @@ try {
         }
     }
 
-    $empName = trim($employee['first_name'] . ' ' . $employee['last_name']);
+    // If kiosk_branch_name is provided, validate it
+    if (!empty($kioskBranchName)) {
+        // Check if the branch exists in the database
+        $checkBranchStmt = mysqli_prepare($db, "SELECT id, branch_name FROM branches WHERE branch_name = ? LIMIT 1");
+        if ($checkBranchStmt) {
+            mysqli_stmt_bind_param($checkBranchStmt, 's', $kioskBranchName);
+            mysqli_stmt_execute($checkBranchStmt);
+            $branchResult = mysqli_stmt_get_result($checkBranchStmt);
+            $kioskBranch = mysqli_fetch_assoc($branchResult);
+            mysqli_stmt_close($checkBranchStmt);
 
-    // Helper function to check if attendance column exists
-    function attendanceHasColumn($db, $columnName) {
-        $safe = mysqli_real_escape_string($db, $columnName);
-        $sql = "SHOW COLUMNS FROM `attendance` LIKE '{$safe}'";
-        $result = mysqli_query($db, $sql);
-        return $result && mysqli_num_rows($result) > 0;
+            if (!$kioskBranch) {
+                jsonResponse(['success' => false, 'message' => 'Invalid kiosk branch: ' . $kioskBranchName]);
+            }
+        }
+
+        // Validate employee belongs to the kiosk branch (or is Pool/unassigned)
+        if ($branchId) {
+            // Check if employee is in Pool (unassigned) - allow
+            $isPool = (strtolower($branchName) === 'pool' || empty($branchName));
+
+            // If not Pool, employee branch must match kiosk branch
+            if (!$isPool && strtolower($branchName) !== strtolower($kioskBranchName)) {
+                jsonResponse([
+                    'success' => false, 
+                    'message' => "Cannot clock in/out. This employee belongs to $branchName but you are at $kioskBranchName."
+                ]);
+            }
+        }
     }
 
-    // Check for geolocation columns
-    $hasClockInLat = attendanceHasColumn($db, 'clock_in_lat');
-    $hasClockInLng = attendanceHasColumn($db, 'clock_in_lng');
-    $hasClockOutLat = attendanceHasColumn($db, 'clock_out_lat');
-    $hasClockOutLng = attendanceHasColumn($db, 'clock_out_lng');
-    $hasLocationAccuracy = attendanceHasColumn($db, 'location_accuracy');
-    $hasLocationVerified = attendanceHasColumn($db, 'location_verified');
+    // Determine which branch name to use for attendance
+    // If kiosk_branch_name is provided, use it; otherwise use employee's assigned branch
+    $attendanceBranchName = !empty($kioskBranchName) ? $kioskBranchName : $branchName;
 
-    $shouldIncludeLocation = ($hasClockInLat && $hasClockInLng) || ($hasClockOutLat && $hasClockOutLng);
+    $empName = trim($employee['first_name'] . ' ' . $employee['last_name']);
 
+    // Process clock-in
     if ($action === 'in') {
         // Check if already clocked in today (open shift - has time_in but no time_out)
         $checkSql = "SELECT id, time_in FROM attendance 
@@ -186,10 +197,6 @@ try {
                 if (mysqli_stmt_execute($updateStmt)) {
                     $timeOut = date('h:i A');
                     mysqli_stmt_close($updateStmt);
-                    
-                    // Log activity to database
-                    logApiActivity($db, $employeeId, 'QR Clock Out', "Employee {$empName} auto clocked out at {$timeOut} via QR");
-                    
                     jsonResponse([
                         'success' => true,
                         'message' => "$empName time-out recorded at $timeOut",
@@ -198,62 +205,25 @@ try {
                     ]);
                 } else {
                     mysqli_stmt_close($updateStmt);
-                    
-                    // Log failed activity to database
-                    logApiActivity($db, $employeeId, 'QR Clock Out Failed', "Failed to auto clock out Employee ID {$employeeId} via QR");
-                    
                     jsonResponse(['success' => false, 'message' => 'Failed to record time-out']);
                 }
             }
         }
         
-        // Insert new time-in record with optional location data
-        $columns = ['employee_id', 'branch_name', 'attendance_date', 'time_in', 'status', 'is_overtime_running', 'is_time_running', 'total_ot_hrs', 'created_at'];
-        $values = ['?', '?', 'CURDATE()', 'NOW()', "'Present'", '0', '0', "'0'", 'NOW()'];
-        $insertTypes = 'is';
-        $insertParams = [$employeeId, $branchName];
-
-        // Add location columns if available and provided
-        if ($hasClockInLat && $hasClockInLng && $latitude !== null && $longitude !== null) {
-            $columns[] = 'clock_in_lat';
-            $columns[] = 'clock_in_lng';
-            $values[] = '?';
-            $values[] = '?';
-            $insertTypes .= 'dd';
-            $insertParams[] = $latitude;
-            $insertParams[] = $longitude;
-            
-            if ($hasLocationAccuracy && $accuracy !== null) {
-                $columns[] = 'location_accuracy';
-                $values[] = '?';
-                $insertTypes .= 'd';
-                $insertParams[] = $accuracy;
-            }
-            
-            if ($hasLocationVerified) {
-                $columns[] = 'location_verified';
-                $values[] = '?';
-                $insertTypes .= 'i';
-                $insertParams[] = $locationVerified;
-            }
-        }
-
-        $insertSql = "INSERT INTO attendance (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
-
+        // Insert new time-in record
+        $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, is_overtime_running, is_time_running, total_ot_hrs, created_at) 
+                       VALUES (?, ?, CURDATE(), NOW(), 'Present', 0, 0, '0', NOW())";
+        
         $insertStmt = mysqli_prepare($db, $insertSql);
         if (!$insertStmt) {
             jsonResponse(['success' => false, 'message' => 'Database error preparing insert: ' . mysqli_error($db)]);
         }
-
-        mysqli_stmt_bind_param($insertStmt, $insertTypes, ...$insertParams);
+        
+        mysqli_stmt_bind_param($insertStmt, "is", $employeeId, $attendanceBranchName);
         
         if (mysqli_stmt_execute($insertStmt)) {
             $timeIn = date('h:i A');
             mysqli_stmt_close($insertStmt);
-            
-            // Log activity to database
-            logApiActivity($db, $employeeId, 'QR Clock In', "Employee {$empName} clocked in at {$timeIn} via QR");
-            
             jsonResponse([
                 'success' => true,
                 'message' => "$empName time-in recorded at $timeIn",
@@ -261,10 +231,6 @@ try {
             ]);
         } else {
             mysqli_stmt_close($insertStmt);
-            
-            // Log failed activity to database
-            logApiActivity($db, $employeeId, 'QR Clock In Failed', "Failed to clock in Employee ID {$employeeId} via QR - Error: " . mysqli_error($db));
-            
             jsonResponse(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
         }
         
@@ -295,69 +261,24 @@ try {
         
         $attendanceId = $row['id'];
         
-        // Update with time-out (including location if available)
-        $updateFields = ["time_out = NOW()", "updated_at = NOW()"];
-        $updateTypes = '';
-        $updateParams = [];
-
-        if ($hasClockOutLat && $hasClockOutLng && $latitude !== null && $longitude !== null) {
-            $updateFields[] = "clock_out_lat = ?";
-            $updateFields[] = "clock_out_lng = ?";
-            $updateTypes .= 'dd';
-            $updateParams[] = $latitude;
-            $updateParams[] = $longitude;
-            
-            if ($hasLocationAccuracy && $accuracy !== null) {
-                $updateFields[] = "location_accuracy = ?";
-                $updateTypes .= 'd';
-                $updateParams[] = $accuracy;
-            }
-            
-            if ($hasLocationVerified) {
-                $updateFields[] = "location_verified = ?";
-                $updateTypes .= 'i';
-                $updateParams[] = $locationVerified;
-            }
-        }
-
-        // Add attendance_id to params
-        $updateTypes .= 'i';
-        $updateParams[] = $attendanceId;
-
-        $updateSql = "UPDATE attendance SET " . implode(', ', $updateFields) . " WHERE id = ?";
+        // Update with time-out
+        $updateSql = "UPDATE attendance SET time_out = NOW(), updated_at = NOW() WHERE id = ?";
         $updateStmt = mysqli_prepare($db, $updateSql);
-        mysqli_stmt_bind_param($updateStmt, $updateTypes, ...$updateParams);
         
         if (!$updateStmt) {
             jsonResponse(['success' => false, 'message' => 'Database error preparing update']);
         }
         
+        mysqli_stmt_bind_param($updateStmt, 'i', $attendanceId);
+        
         if (mysqli_stmt_execute($updateStmt)) {
             $timeOut = date('h:i A');
             mysqli_stmt_close($updateStmt);
-            
-            // Log location to location_logs for audit if location provided
-            if ($shouldIncludeLocation && $latitude !== null && $longitude !== null) {
-                logLocationData($db, $attendanceId, $latitude, $longitude, $accuracy, 'qr_scan');
-            }
-            
-            $response = [
+            jsonResponse([
                 'success' => true,
                 'message' => "$empName time-out recorded at $timeOut",
                 'time_out' => $timeOut
-            ];
-            
-            // Include location data if saved
-            if ($hasClockOutLat && $hasClockOutLng && $latitude !== null && $longitude !== null) {
-                $response['location'] = [
-                    'latitude' => $latitude,
-                    'longitude' => $longitude,
-                    'accuracy' => $accuracy,
-                    'verified' => $locationVerified
-                ];
-            }
-            
-            jsonResponse($response);
+            ]);
         } else {
             mysqli_stmt_close($updateStmt);
             jsonResponse(['success' => false, 'message' => 'Failed to record time-out: ' . mysqli_error($db)]);
