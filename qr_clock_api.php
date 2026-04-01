@@ -147,6 +147,35 @@ try {
 
     $empName = trim($employee['first_name'] . ' ' . $employee['last_name']);
 
+    // Status check: does employee have an open shift today?
+    if ($action === 'status') {
+        $statusSql = "SELECT id, time_in FROM attendance 
+                      WHERE employee_id = ? 
+                      AND attendance_date = CURDATE() 
+                      AND time_in IS NOT NULL 
+                      AND time_out IS NULL
+                      LIMIT 1";
+
+        $statusStmt = mysqli_prepare($db, $statusSql);
+        if (!$statusStmt) {
+            jsonResponse(['success' => false, 'message' => 'Database error checking attendance status']);
+        }
+
+        mysqli_stmt_bind_param($statusStmt, 'i', $employeeId);
+        mysqli_stmt_execute($statusStmt);
+        $statusResult = mysqli_stmt_get_result($statusStmt);
+        $openShift = mysqli_fetch_assoc($statusResult);
+        mysqli_stmt_close($statusStmt);
+
+        jsonResponse([
+            'success' => true,
+            'open_shift' => $openShift ? true : false,
+            'employee_name' => $empName,
+            'employee_branch' => $branchName,
+            'kiosk_branch' => !empty($kioskBranchName) ? $kioskBranchName : null,
+        ]);
+    }
+
     // Process clock-in
     if ($action === 'in') {
         // Check if already clocked in today (open shift - has time_in but no time_out)
