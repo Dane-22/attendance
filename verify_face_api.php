@@ -35,7 +35,7 @@ try {
     }
     
     // Call Python face service to verify
-    $face_service_url = getenv('FACE_SERVICE_URL') ?: 'http://localhost:5000/verify';
+    $face_service_url = 'http://face-recog.xandree.com/verify';
     
     $ch = curl_init($face_service_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -115,7 +115,7 @@ try {
         'confidence' => $face_result['confidence'],
         'employee' => [
             'id' => $employee['id'],
-            'firstname' => $employee['first_name'],
+                'firstname' => $employee['first_name'],
             'lastname' => $employee['last_name'],
             'email' => $employee['email'],
             'position' => $employee['position']
