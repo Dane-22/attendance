@@ -732,3 +732,164 @@
         font-size: 1.1rem;
     }
 }
+
+/* Consecutive Attendance Issues Section */
+.consecutive-issues-section {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.consecutive-issues-section .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.consecutive-issues-section .section-header i {
+    color: var(--danger-red);
+    font-size: 1.5rem;
+}
+
+.consecutive-issues-section .section-header h2 {
+    color: var(--danger-red);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.consecutive-issues-section .badge {
+    background: var(--danger-red) !important;
+    font-size: 0.875rem;
+    padding: 6px 12px;
+}
+
+.consecutive-issues-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.consecutive-issue-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+
+.consecutive-issue-card:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+    transform: translateY(-2px);
+}
+
+.issue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.worker-info {
+    flex: 1;
+}
+
+.worker-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--soft-white);
+    margin-bottom: 4px;
+}
+
+.worker-code {
+    font-size: 0.875rem;
+    color: var(--muted-white);
+    font-family: monospace;
+}
+
+.issue-count {
+    text-align: center;
+    background: rgba(239, 68, 68, 0.15);
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-width: 60px;
+}
+
+.count-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--danger-red);
+    line-height: 1;
+}
+
+.count-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted-white);
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.issue-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--muted-white);
+}
+
+.detail-row i {
+    color: var(--gold-2);
+    width: 16px;
+    text-align: center;
+}
+
+.dates-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.late {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.status-badge.absent {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .consecutive-issues-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .consecutive-issues-section {
+        padding: 16px;
+    }
+}

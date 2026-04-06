@@ -22,7 +22,7 @@ error_log("DEBUG select_employee.php: User Role = '$userRole'");
 
 $currentTime = date('H:i'); // Philippine time
 
-$cutoffTime = '09:00'; // 9 AM cutoff (Philippine time)
+$cutoffTime = '07:15'; // 7:15 AM cutoff - workers start at 7:00 AM, 15 min grace period
 
 
 

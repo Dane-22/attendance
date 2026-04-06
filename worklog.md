@@ -4,6 +4,81 @@
 
 ---
 
+### 2026-04-06
+
+**Task:** Fix QR scanner recording wrong branch in attendance
+
+**Status:** ✅ Completed
+
+**Problem:** Worker selected "Sto. Rosario" in QR scanner but attendance audit showed "BCDA - Admin" (employee's assigned branch)
+
+**Root Cause:** `employee/api/qr_clock.php` was ignoring `branch_id` and `branch_name` POST parameters and always using the employee's assigned branch from the database.
+
+**Files Modified:**
+- `employee/api/qr_clock.php` - Fixed to use selected branch from QR scanner
+  - Now reads `$_POST['branch_id']` and `$_POST['branch_name']` first
+  - Falls back to employee's assigned branch only if not provided
+  - Lines 33-51 updated with proper branch parameter handling
+
+**Files Created:**
+- `docs/QR_SCANNING_FLOW.md` - Updated with new login.php QR scanner flow documentation
+  - Added section on "New QR Scanner Flow (login.php) with Branch Selection"
+  - Documented the "Wrong Branch Recorded" bug and fix
+  - Added geofence troubleshooting section
+- `check_branch_location.php` - Diagnostic tool for branch geofence settings
+
+**Testing:**
+- Verified branch parameters are sent correctly from login.php QR scanner
+- API now correctly records selected branch (e.g., Sto. Rosario) instead of defaulting to employee's branch
+
+---
+
+### 2026-04-06 (Update)
+
+**Task:** Implement Consecutive Attendance Notifications for Admin and Engineer
+
+**Status:** ✅ Completed
+
+**Feature:** Automated notification system that alerts Admin and Engineer position users when workers have 3+ consecutive days of Late/Absent attendance.
+
+**Requirements:**
+- Threshold: 3 consecutive days with status `Late` or `Absent`
+- Workdays: Monday-Saturday (Sundays excluded)
+- Monitor: Only 'Worker' position employees
+- Notify: 'Admin' and 'Engineer' position users
+- Frequency: Once per streak (no spam)
+
+**Files Created:**
+- `employee/cron/consecutive_attendance_check.php` - Main scheduled script
+  - Runs daily at 9:30 AM via cron
+  - Detects consecutive attendance issues across Mon-Sat workdays
+  - Sends push notifications to Admin and Engineer users
+  - Uses `attendance_notification_log` table for deduplication
+  - Logs all activity to `activity_logs`
+- `docs/CONSECUTIVE_ATTENDANCE_NOTIFICATIONS.md` - Complete documentation
+  - Installation instructions
+  - Cron setup guide
+  - Manual testing procedures
+  - Troubleshooting guide
+  - SQL queries for verification
+
+**Database:**
+- Auto-creates `attendance_notification_log` table on first run
+- Stores notification history to prevent duplicate alerts
+- Tracks: employee_id, issue_count, issue_dates, latest_issue_date
+
+**Notification Format:**
+- Title: "Attendance Alert: Consecutive Issues"
+- Message: Worker name, employee code, consecutive days count, dates with statuses, branch
+- URL: Links to audit page filtered by employee code
+
+**Cron Setup:**
+```bash
+30 9 * * * cd /var/www/jajr-project && php employee/cron/consecutive_attendance_check.php
+```
+
+---
+
 ### 2026-04-01
 
 **Task:** Implement "Noted" direct approval workflow and fix branch selection detection
