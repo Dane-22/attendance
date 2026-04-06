@@ -175,6 +175,80 @@ try {
     $dbError = "Database error: " . $e->getMessage();
 }
 
+// 6. Consecutive Attendance Issues (Workers with 3+ consecutive Late/Absent)
+$consecutiveIssues = [];
+$workdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Get all active workers with their branch names
+$workerQuery = "SELECT 
+                    e.id, 
+                    e.first_name, 
+                    e.last_name, 
+                    e.employee_code, 
+                    b.branch_name
+               FROM employees e
+               LEFT JOIN branches b ON e.branch_id = b.id
+               WHERE e.status = 'Active' AND e.position = 'Worker'";
+$workerResult = mysqli_query($db, $workerQuery);
+
+if ($workerResult) {
+    while ($worker = mysqli_fetch_assoc($workerResult)) {
+        // Get last 14 days attendance excluding Sundays
+        $attendanceQuery = "SELECT 
+                                attendance_date, 
+                                status, 
+                                time_in
+                            FROM attendance 
+                            WHERE employee_id = {$worker['id']}
+                              AND attendance_date >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+                              AND DAYOFWEEK(attendance_date) != 1  -- Exclude Sunday
+                            ORDER BY attendance_date DESC";
+        
+        $attResult = mysqli_query($db, $attendanceQuery);
+        $attendanceRecords = [];
+        
+        if ($attResult) {
+            while ($att = mysqli_fetch_assoc($attResult)) {
+                $attendanceRecords[] = $att;
+            }
+            mysqli_free_result($attResult);
+        }
+        
+        // Check for 3+ consecutive issues
+        if (count($attendanceRecords) >= 3) {
+            $consecutiveCount = 0;
+            $issueDates = [];
+            $issueStatuses = [];
+            
+            foreach ($attendanceRecords as $record) {
+                $status = $record['status'] ?? 'Absent';
+                if (empty($record['time_in']) && in_array($status, ['Present', 'Late'])) {
+                    $status = 'Absent';
+                }
+                
+                if (in_array($status, ['Late', 'Absent'])) {
+                    $consecutiveCount++;
+                    $issueDates[] = $record['attendance_date'];
+                    $issueStatuses[] = $status;
+                } else {
+                    break; // Reset on Present
+                }
+            }
+            
+            if ($consecutiveCount >= 3) {
+                $consecutiveIssues[] = [
+                    'worker' => $worker,
+                    'consecutive_count' => $consecutiveCount,
+                    'dates' => array_slice($issueDates, 0, 5),
+                    'statuses' => array_slice($issueStatuses, 0, 5),
+                    'latest_branch' => $worker['branch_name'] ?? 'Unknown'
+                ];
+            }
+        }
+    }
+    mysqli_free_result($workerResult);
+}
+
 // Handle Cash Advance Request AJAX
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_cash_advance'])) {
     header('Content-Type: application/json');
@@ -1364,6 +1438,71 @@ function formatDateShort($date) {
                         Submit Leave Request
                     </button>
                 </form>
+            </div>
+
+            <!-- Consecutive Attendance Issues Section -->
+            <div class="consecutive-issues-section <?php echo empty($consecutiveIssues) ? 'no-issues' : ''; ?>">
+                <div class="section-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h2>Consecutive Attendance Issues</h2>
+                    <?php if (!empty($consecutiveIssues)): ?>
+                        <span class="badge bg-danger"><?php echo count($consecutiveIssues); ?> Alert<?php echo count($consecutiveIssues) > 1 ? 's' : ''; ?></span>
+                    <?php else: ?>
+                        <span class="badge bg-success">No Issues</span>
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($consecutiveIssues)): ?>
+                <div class="consecutive-issues-grid">
+                    <?php foreach ($consecutiveIssues as $issue): 
+                        $worker = $issue['worker'];
+                        $workerName = trim($worker['first_name'] . ' ' . $worker['last_name']);
+                        $workerCode = $worker['employee_code'] ?? 'N/A';
+                        $branch = $issue['latest_branch'];
+                        $count = $issue['consecutive_count'];
+                        $dates = $issue['dates'];
+                        $statuses = $issue['statuses'];
+                    ?>
+                        <div class="consecutive-issue-card">
+                            <div class="issue-header">
+                                <div class="worker-info">
+                                    <div class="worker-name"><?php echo htmlspecialchars($workerName); ?></div>
+                                    <div class="worker-code"><?php echo htmlspecialchars($workerCode); ?></div>
+                                </div>
+                                <div class="issue-count">
+                                    <span class="count-number"><?php echo $count; ?></span>
+                                    <span class="count-label">days</span>
+                                </div>
+                            </div>
+                            <div class="issue-details">
+                                <div class="detail-row">
+                                    <i class="fas fa-building"></i>
+                                    <span><?php echo htmlspecialchars($branch); ?></span>
+                                </div>
+                                <div class="detail-row">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span class="dates-list">
+                                        <?php 
+                                        $formattedDates = [];
+                                        foreach ($dates as $i => $date) {
+                                            $status = $statuses[$i] ?? 'Unknown';
+                                            $statusClass = strtolower($status);
+                                            $formattedDates[] = date('M d', strtotime($date)) . ' <span class="status-badge ' . $statusClass . '">' . $status . '</span>';
+                                        }
+                                        echo implode(', ', $formattedDates);
+                                        ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php else: ?>
+                <div class="empty-state" style="padding: 30px;">
+                    <i class="fas fa-check-circle" style="font-size: 48px; color: var(--success-green);"></i>
+                    <p>No workers with 3+ consecutive late/absent days found.</p>
+                    <small style="color: var(--muted-white);">Monitoring active workers</small>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Summary Cards -->
