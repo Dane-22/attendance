@@ -1518,19 +1518,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['backup_database'])) {
       </div>
       <?php endif; ?>
 
-      <!-- Header -->
-      <div class="settings-header">
-        <div class="header-left">
-          <button id="sidebarToggle" class="menu-toggle" aria-label="Toggle sidebar">
-          </button>
-          <div>
-            <div class="welcome">Settings & Account</div>
-            <div class="text-sm text-muted">
-                Manage your profile, security, and system preferences
-            </div>
-          </div>
-        </div>
-      </div>
+      <?php
+      $pageTitle = "Settings & Account";
+      $pageIcon = "fa-cog";
+      include __DIR__ . '/header.php';
+      ?>
 
       <!-- Settings Container -->
       <div class="settings-container">

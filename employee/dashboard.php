@@ -223,26 +223,11 @@ function formatDateShort($date) {
         <?php include 'sidebar.php'; ?>
         
         <div class="main-content">
-            <!-- Top Navbar -->
-            <div class="top-navbar">
-                <div class="navbar-brand">
-                    <i class="fas fa-chart-line" style="color: var(--gold-2); font-size: 1.75rem;"></i>
-                    <h1>Admin Dashboard</h1>
-                </div>
-                <div class="navbar-user">
-                    <div class="user-info">
-                        <div class="user-name"><?php echo htmlspecialchars($currentUserName); ?></div>
-                        <div class="user-role"><?php echo htmlspecialchars($userRole); ?></div>
-                    </div>
-                    <div class="user-avatar">
-                        <?php if ($currentUserAvatar && file_exists(__DIR__ . '/../' . $currentUserAvatar)): ?>
-                            <img src="../<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Profile">
-                        <?php else: ?>
-                            <i class="fas fa-user"></i>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
+            <?php
+            $pageTitle = "Admin Dashboard";
+            $pageIcon = "fa-chart-line";
+            include 'header.php';
+            ?>
 
             <!-- Dashboard Title -->
             <div class="dashboard-title">
@@ -325,7 +310,7 @@ function formatDateShort($date) {
                         $worker = $issue['worker'];
                         $workerName = trim($worker['first_name'] . ' ' . $worker['last_name']);
                         $workerCode = $worker['employee_code'] ?? 'N/A';
-                        $branch = $issue['latest_branch'];
+                        $branch = $issue['latest_branch'] ?? 'Unknown';
                         $count = $issue['consecutive_count'];
                         $dates = $issue['dates'];
                         $statuses = $issue['statuses'];
@@ -344,7 +329,7 @@ function formatDateShort($date) {
                             <div class="issue-details">
                                 <div class="detail-row">
                                     <i class="fas fa-building"></i>
-                                    <span><?php echo htmlspecialchars($branch); ?></span>
+                                    <span><?php echo htmlspecialchars($branch ?? 'Unknown'); ?></span>
                                 </div>
                                 <div class="detail-row">
                                     <i class="fas fa-calendar-alt"></i>

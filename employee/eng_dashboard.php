@@ -1247,26 +1247,11 @@ function formatDateShort($date) {
         <?php include 'sidebar.php'; ?>
         
         <div class="main-content">
-            <!-- Top Navbar -->
-            <div class="top-navbar">
-                <div class="navbar-brand">
-                    <i class="fas fa-hard-hat" style="color: var(--gold-2); font-size: 1.75rem;"></i>
-                    <h1>Engineer Dashboard</h1>
-                </div>
-                <div class="navbar-user">
-                    <div class="user-info">
-                        <div class="user-name"><?php echo htmlspecialchars($currentUserName); ?></div>
-                        <div class="user-role"><?php echo htmlspecialchars($userRole); ?></div>
-                    </div>
-                    <div class="user-avatar">
-                        <?php if ($currentUserAvatar && file_exists(__DIR__ . '/../' . $currentUserAvatar)): ?>
-                            <img src="../<?php echo htmlspecialchars($currentUserAvatar); ?>" alt="Profile">
-                        <?php else: ?>
-                            <i class="fas fa-user"></i>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
+            <?php
+            $pageTitle = "Engineer Dashboard";
+            $pageIcon = "fa-hard-hat";
+            include 'header.php';
+            ?>
 
             <!-- Dashboard Title -->
             <div class="dashboard-title">
