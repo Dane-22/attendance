@@ -55,7 +55,7 @@ if (isset($_GET['auto_timein']) && $qrEmployeeId) {
         $empStmt = mysqli_prepare($db, "SELECT e.id, e.first_name, e.last_name, e.employee_code, b.branch_name 
             FROM employees e 
             LEFT JOIN branches b ON b.id = e.branch_id 
-            WHERE e.id = ? LIMIT 1");
+            WHERE e.id = ? AND e.status = 'Active' LIMIT 1");
         mysqli_stmt_bind_param($empStmt, 'i', $qrEmployeeId);
         mysqli_stmt_execute($empStmt);
         $empResult = mysqli_stmt_get_result($empStmt);
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     
     // Verify employee
-    $empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name FROM employees WHERE id = ? AND employee_code = ? LIMIT 1");
+    $empStmt = mysqli_prepare($db, "SELECT id, first_name, last_name FROM employees WHERE id = ? AND employee_code = ? AND status = 'Active' LIMIT 1");
     mysqli_stmt_bind_param($empStmt, 'is', $employeeId, $employeeCode);
     mysqli_stmt_execute($empStmt);
     $empResult = mysqli_stmt_get_result($empStmt);

@@ -45,6 +45,87 @@
 
 ### 2026-04-06
 
+**Task:** Fix Clock-Out Error - Unknown Column 'total_hours'
+
+**Status:** ✅ Completed
+
+**Problem:** Production server error when clocking out via select_employee.php
+
+**Full Error:**
+```
+PHP Fatal error: Uncaught mysqli_sql_exception: Unknown column 'total_hours' in 'SET' 
+in /var/www/jajr-project/employee/function/clock_functions.php:456
+Stack trace:
+#0 /var/www/jajr-project/employee/function/clock_functions.php(456): mysqli_prepare()
+#1 /var/www/jajr-project/employee/select_employee.php(82): performClockOut()
+#2 {main}
+```
+
+**Root Cause:** The `attendance` table on production server doesn't have a `total_hours` column, but the `performClockOut()` function in `clock_functions.php` was attempting to update this non-existent column during clock-out operations.
+
+**Actions Taken:**
+1. Analyzed the error from nginx error logs showing the fatal SQL error
+2. Reviewed `employee/function/clock_functions.php` to identify the problematic UPDATE queries
+3. Removed all references to `total_hours` column from clock-out SQL statements
+4. Updated parameter binding to remove the `total_hours` variable
+
+**Files Modified:**
+- `employee/function/clock_functions.php` - Removed `total_hours` from UPDATE queries:
+
+**Code Changes:**
+```php
+// BEFORE (Lines 436-440):
+$updateSql = "UPDATE attendance 
+              SET time_out = NOW(), 
+                  is_time_running = 0, 
+                  is_overtime_running = 0,
+                  total_hours = ?
+              WHERE id = ? AND employee_id = ?";
+
+// AFTER:
+$updateSql = "UPDATE attendance 
+              SET time_out = NOW(), 
+                  is_time_running = 0, 
+                  is_overtime_running = 0
+              WHERE id = ? AND employee_id = ?";
+
+// BEFORE (Lines 442-445):
+$updateSql = "UPDATE attendance 
+              SET time_out = NOW(), 
+                  is_time_running = 0,
+                  total_hours = ?
+              WHERE id = ? AND employee_id = ?";
+
+// AFTER:
+$updateSql = "UPDATE attendance 
+              SET time_out = NOW(), 
+                  is_time_running = 0
+              WHERE id = ? AND employee_id = ?";
+
+// BEFORE (Lines 448-450):
+$updateSql = "UPDATE attendance 
+              SET time_out = NOW(),
+                  total_hours = ?
+              WHERE id = ? AND employee_id = ?";
+
+// AFTER:
+$updateSql = "UPDATE attendance 
+              SET time_out = NOW()
+              WHERE id = ? AND employee_id = ?";
+
+// BEFORE (Line 458):
+mysqli_stmt_bind_param($updateStmt, 'dii', $attendanceId, $employeeId);
+
+// AFTER:
+mysqli_stmt_bind_param($updateStmt, 'ii', $attendanceId, $employeeId);
+```
+
+**Result:** Clock-out now works without database column errors. The three clock-out code paths (with overtime running, with time running only, and basic clock-out) no longer attempt to update the non-existent `total_hours` column.
+
+---
+
+### 2026-04-06
+
 **Task:** Fix QR scanner recording wrong branch in attendance
 
 **Status:** ✅ Completed

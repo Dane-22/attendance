@@ -1063,12 +1063,167 @@
     
     /* Mobile notification dropdown adjustments */
     .notification-dropdown-card {
-        width: 320px;
-        right: -60px;
+        position: fixed !important;
+        top: 80px !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) translateY(-10px) scale(0.95) !important;
+        width: calc(100vw - 32px) !important;
+        max-width: 360px !important;
+        max-height: 70vh !important;
+    }
+    
+    .notification-dropdown-card.show {
+        transform: translateX(-50%) translateY(0) scale(1) !important;
     }
     
     .notification-dropdown-card::before {
-        right: 70px;
+        display: none !important;
+    }
+    
+    .notification-list {
+        max-height: calc(70vh - 140px) !important;
+    }
+}
+
+/* Extra small screens (mobile portrait) */
+@media (max-width: 480px) {
+    .header-notification-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.08));
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+    }
+    
+    .header-notification-btn:hover,
+    .header-notification-btn:active {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.15));
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
+    }
+    
+    .notification-badge-header {
+        font-size: 0.7rem;
+        min-width: 18px;
+        height: 18px;
+        top: -6px;
+        right: -6px;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        font-weight: 700;
+        border: 2px solid rgba(30, 30, 35, 0.95);
+    }
+    
+    .notification-dropdown-card {
+        position: fixed !important;
+        top: 70px !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) translateY(-10px) scale(0.95) !important;
+        width: calc(100vw - 24px) !important;
+        max-width: 340px !important;
+        border-radius: 20px !important;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(212, 175, 55, 0.15) !important;
+    }
+    
+    .notification-dropdown-card.show {
+        transform: translateX(-50%) translateY(0) scale(1) !important;
+    }
+    
+    .notification-dropdown-card::before {
+        display: none !important;
+    }
+    
+    .notification-card-header {
+        padding: 14px 16px;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0.03));
+        border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    }
+    
+    .notification-card-header h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--gold-1);
+    }
+    
+    .notif-tab {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    
+    .notif-tab.active {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.15));
+        box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+    }
+    
+    .mark-all-read-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
+    }
+    
+    .notification-item {
+        padding: 12px;
+        border-radius: 14px;
+        margin-bottom: 6px;
+    }
+    
+    .notification-item:active {
+        transform: scale(0.98);
+        background: rgba(212, 175, 55, 0.15);
+    }
+    
+    .notification-avatar {
+        width: 42px;
+        height: 42px;
+    }
+    
+    .avatar-placeholder {
+        font-size: 1rem;
+    }
+    
+    .notification-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--soft-white);
+    }
+    
+    .notification-message {
+        font-size: 0.8rem;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.75);
+    }
+    
+    .notification-time {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gold-2);
+    }
+    
+    .consecutive-header {
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .consecutive-item {
+        border-left-width: 4px;
+        border-radius: 12px;
+    }
+    
+    .view-all-link {
+        padding: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
     }
 }
 
@@ -1078,6 +1233,7 @@
 
 .notification-dropdown-wrapper {
     position: relative;
+    overflow: visible;
 }
 
 .notification-dropdown-card {
