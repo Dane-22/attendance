@@ -16,8 +16,8 @@
 
 if (file_exists(__DIR__ . '/conn/db_connection.php')) {
     require_once __DIR__ . '/conn/db_connection.php';
-} elseif (file_exists(__DIR__ . '/db_connection.php')) {
-    require_once __DIR__ . '/db_connection.php';
+} elseif (file_exists(__DIR__ . '/donn/db_connection.php')) {
+    require_once __DIR__ . '/conn/db_connection.php';
 } elseif (file_exists(dirname(__DIR__) . '/conn/db_connection.php')) {
     require_once dirname(__DIR__) . '/conn/db_connection.php';
 } else {
