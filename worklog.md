@@ -6,6 +6,45 @@
 
 ### 2026-04-06
 
+**Task:** Implement Unified Header Notifications with Consecutive Late/Absent Integration
+
+**Status:** ✅ Completed
+
+**Feature:** Unified header component with notification dropdown showing both regular notifications and consecutive late/absent workers
+
+**Files Created:**
+- `employee/header.php` - Unified header component with:
+  - Dynamic page title and icon based on variables
+  - Profile section linking to settings.php
+  - Notification bell with dropdown card
+  - "Mark all as read" functionality
+  - Consecutive late/absent workers section for Admin/Engineer roles
+- `employee/mark_all_notifications_read.php` - AJAX endpoint to mark all notifications as read
+- `employee/cron/consecutive_attendance_check.php` - Automated script to detect and notify on consecutive attendance issues
+
+**Files Modified:**
+- `employee/css/dashboard.css` - Added styles for:
+  - Unified header component
+  - Notification dropdown card with tabs
+  - Mark all as read button
+  - Consecutive late/absent section with yellow warning styling
+- `employee/dashboard.php` - Replaced old top-navbar with unified header include
+- `employee/eng_dashboard.php` - Replaced old top-navbar with unified header include
+- `employee/settings.php` - Replaced old header with unified header include
+
+**Features:**
+- Notification bell shows popup card with tabs for "All" and "Unread"
+- "Mark all as read" button updates all notifications and hides badge
+- Consecutive late/absent workers (3+ days) shown at top of dropdown
+- Links to audit.php when clicking consecutive attendance notifications
+- Role-based notification destinations (notification.php, admin_notification.php, my_notifications.php)
+- Real-time notification count badge on bell icon
+- Consistent header across all employee-facing pages
+
+---
+
+### 2026-04-06
+
 **Task:** Fix QR scanner recording wrong branch in attendance
 
 **Status:** ✅ Completed
