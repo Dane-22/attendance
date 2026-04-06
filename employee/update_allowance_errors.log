@@ -158,3 +158,90 @@ Stack trace:
 [01-Apr-2026 15:25:10 Asia/Manila] [report.php] Total employees with allowances: 0
 [01-Apr-2026 15:25:10 Asia/Manila] [report.php] Employee IDs with allowances: 
 [01-Apr-2026 15:25:10 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=1, view=weekly
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] Total employees with allowances: 0
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] Employee IDs with allowances: 
+[06-Apr-2026 10:27:49 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=1, view=weekly
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] Found in DB: emp_id=12, allowance=100.00
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] Total employees with allowances: 1
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] Employee IDs with allowances: 12
+[06-Apr-2026 10:27:54 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=2, view=weekly
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Found in DB: emp_id=12, allowance=0.00
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=0.00
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Total employees with allowances: 2
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] Employee IDs with allowances: 12, 13
+[06-Apr-2026 10:27:57 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=3, view=weekly
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] Total employees with allowances: 0
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] Employee IDs with allowances: 
+[06-Apr-2026 10:27:59 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=1, view=weekly
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] Total employees with allowances: 0
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] Employee IDs with allowances: 
+[06-Apr-2026 10:28:57 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=1, view=weekly
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] Total employees with allowances: 0
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] Employee IDs with allowances: 
+[06-Apr-2026 10:29:02 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=1, view=weekly
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] Total employees with allowances: 0
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] Employee IDs with allowances: 
+[06-Apr-2026 10:42:48 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63

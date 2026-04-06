@@ -1137,6 +1137,36 @@
     color: var(--soft-white);
 }
 
+.notification-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mark-all-read-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--gold-2);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.mark-all-read-btn:hover {
+    background: rgba(212, 175, 55, 0.25);
+    transform: scale(1.05);
+}
+
+.mark-all-read-btn:active {
+    transform: scale(0.95);
+}
+
 /* Tabs */
 .notification-tabs {
     display: flex;

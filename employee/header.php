@@ -231,9 +231,14 @@ function getNotificationIcon($type) {
             <div class="notification-dropdown-card" id="notificationDropdown">
                 <div class="notification-card-header">
                     <h3>Notifications</h3>
-                    <div class="notification-tabs">
-                        <button class="notif-tab active" data-tab="all">All</button>
-                        <button class="notif-tab" data-tab="unread">Unread</button>
+                    <div class="notification-header-actions">
+                        <button class="mark-all-read-btn" id="markAllRead" title="Mark all as read">
+                            <i class="fas fa-check-double"></i>
+                        </button>
+                        <div class="notification-tabs">
+                            <button class="notif-tab active" data-tab="all">All</button>
+                            <button class="notif-tab" data-tab="unread">Unread</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -341,6 +346,46 @@ function getNotificationIcon($type) {
                     });
                 });
             });
+            
+            // Mark all as read
+            const markAllBtn = document.getElementById('markAllRead');
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    fetch('mark_all_notifications_read.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: 'action=mark_all_read'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove unread class from all items
+                            const unreadItems = dropdown.querySelectorAll('.notification-item.unread');
+                            unreadItems.forEach(item => {
+                                item.classList.remove('unread');
+                                const dot = item.querySelector('.unread-dot');
+                                if (dot) dot.remove();
+                            });
+                            
+                            // Hide badge
+                            const badge = document.querySelector('.notification-badge-header');
+                            if (badge) badge.style.display = 'none';
+                            
+                            // Show feedback
+                            markAllBtn.innerHTML = '<i class="fas fa-check"></i>';
+                            setTimeout(() => {
+                                markAllBtn.innerHTML = '<i class="fas fa-check-double"></i>';
+                            }, 1500);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            }
         }
     });
 </script>
