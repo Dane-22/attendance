@@ -6,6 +6,94 @@
 
 ### 2026-04-06
 
+**Task:** Fix Notification Bell Mobile Responsiveness
+
+**Status:** ✅ Completed
+
+**Problem:** Notification dropdown container was not centered on mobile screens, extending off-screen
+
+**Actions Taken:**
+1. Modified `employee/css/dashboard.css` to use `position: fixed` and `transform: translateX(-50%)` for centering
+2. Added `!important` declarations to override conflicting styles
+3. Adjusted dropdown width to use `calc(100vw - Xpx)` for proper viewport fitting
+4. Hidden the `::before` pseudo-element (arrow) on mobile to simplify positioning
+5. Improved visual styling with gradients, shadows, and border radius for better aesthetics
+
+**Files Modified:**
+- `employee/css/dashboard.css` - Updated mobile media queries:
+  - `@media (max-width: 768px)`: Centered dropdown with fixed positioning
+  - `@media (max-width: 480px)`: Enhanced styling for bell icon, badge, and dropdown
+
+**Code Changes:**
+```css
+// Mobile dropdown centering (768px and 480px breakpoints):
+.notification-dropdown-card {
+    position: fixed !important;
+    top: 80px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-10px) scale(0.95) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 360px !important;
+}
+
+.notification-dropdown-card.show {
+    transform: translateX(-50%) translateY(0) scale(1) !important;
+}
+
+.notification-dropdown-card::before {
+    display: none !important;
+}
+```
+
+**Result:** Notification dropdown is now properly centered and fully visible on mobile screens
+
+---
+
+### 2026-04-06
+
+**Task:** Implement Inactive Employee Filter for Attendance
+
+**Status:** ✅ Completed
+
+**Feature:** Exclude inactive employees from clock-in/out functionality
+
+**Files Modified:**
+- `employee/select_employee.php` - Added `status = 'Active'` filter to:
+  - QR scan auto time-in employee lookup (line 58)
+  - QR branch selection employee verification (line 131)
+
+**Files Created:**
+- `docs/inactive_employee_filter.md` - Documentation for the feature
+
+**Code Changes:**
+```php
+// BEFORE (Line 58):
+WHERE e.id = ? LIMIT 1
+
+// AFTER:
+WHERE e.id = ? AND e.status = 'Active' LIMIT 1
+
+// BEFORE (Line 131):
+WHERE id = ? AND employee_code = ? LIMIT 1
+
+// AFTER:
+WHERE id = ? AND employee_code = ? AND status = 'Active' LIMIT 1
+```
+
+**Existing Coverage Verified:**
+- `employee/select_emp.php` - Already filters by `e.status = 'Active'` in all employee loading queries
+- `employee/function/employees_function.php` - Already includes status filter in search conditions
+
+**Result:** Inactive employees are now excluded from:
+- QR scan auto clock-in/out functionality
+- Manual attendance marking interface
+- Returns "Employee not found" error for inactive QR scan attempts
+
+---
+
+### 2026-04-06
+
 **Task:** Implement Unified Header Notifications with Consecutive Late/Absent Integration
 
 **Status:** ✅ Completed

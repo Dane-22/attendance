@@ -265,6 +265,8 @@ c:\wamp64\www\main\
 - **Deduction Management**: Various deductions
 - **Payment Tracking**: Status monitoring
 - **Report Generation**: Payroll reports
+- **Multi-Branch Payroll**: Automatic branch transfer handling with split-day calculations
+- **Auto-Transfer on Clock-In**: Workers can clock in at any branch; system automatically updates assignment and splits payroll costs proportionally
 
 ### 4. **Cash Advance Module**
 - **Request System**: Advance requests
@@ -347,6 +349,7 @@ c:\wamp64\www\main\
 - `NOTIFICATION_SYSTEM_DOCUMENTATION.md` - Notifications
 - `PAYROLL_HOW_IT_WORKS.md` - Payroll process
 - `TIME_TRACKING_FIX_REPORT.md` - Time tracking fixes
+- `payroll_and_branch_transfers.md` - Branch transfer and multi-branch payroll calculations
 
 ### Development Documentation
 - `worklog.md` - Development log
@@ -469,6 +472,6 @@ The system's modular design allows for easy expansion and customization, while i
 
 ---
 
-*Last Updated: March 31, 2026*  
+*Last Updated: April 6, 2026*  
 *Version: 1.0.0*  
 *Status: Production Ready*
