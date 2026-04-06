@@ -1366,3 +1366,45 @@
 .view-all-link:hover i {
     transform: translateX(4px);
 }
+
+/* ============================================
+   CONSECUTIVE LATE/ABSENT SECTION STYLES
+   ============================================ */
+
+.consecutive-section {
+    border-bottom: 1px solid rgba(255, 193, 7, 0.2);
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+}
+
+.consecutive-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #ffc107;
+}
+
+.consecutive-header i {
+    font-size: 0.9rem;
+}
+
+.consecutive-item {
+    background: rgba(255, 193, 7, 0.05);
+    border-left: 3px solid #ffc107;
+}
+
+.consecutive-item:hover {
+    background: rgba(255, 193, 7, 0.12);
+}
+
+.avatar-placeholder.alert {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.3), rgba(255, 193, 7, 0.15));
+    color: #ffc107;
+    border-color: rgba(255, 193, 7, 0.4);
+}

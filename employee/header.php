@@ -243,40 +243,85 @@ function getNotificationIcon($type) {
                 </div>
                 
                 <div class="notification-list">
-                    <?php if (empty($recentNotifications)): ?>
+                    <?php 
+                    $hasConsecutiveIssues = !empty($consecutiveIssues) && ($isAdmin || $isSuperAdmin || $isEngineer);
+                    $hasNotifications = !empty($recentNotifications);
+                    
+                    if (!$hasNotifications && !$hasConsecutiveIssues): ?>
                         <div class="notification-empty">
                             <i class="fas fa-bell-slash"></i>
                             <p>No notifications yet</p>
                         </div>
                     <?php else: ?>
-                        <?php foreach ($recentNotifications as $notif): 
-                            $isUnread = !$notif['is_read'];
-                            $notifIcon = getNotificationIcon($notif['notification_type'] ?? 'default');
-                            $timeAgo = timeAgo($notif['created_at']);
+                        <?php 
+                        // Show consecutive late/absent workers first (for admin roles)
+                        if ($hasConsecutiveIssues): 
                         ?>
-                            <a href="<?php echo htmlspecialchars($notifPage); ?>?read=<?php echo $notif['id']; ?>" 
-                               class="notification-item <?php echo $isUnread ? 'unread' : ''; ?>">
-                                <div class="notification-avatar">
-                                    <div class="avatar-placeholder">
-                                        <i class="fas <?php echo $notifIcon; ?>"></i>
-                                    </div>
-                                    <?php if ($isUnread): ?>
-                                        <span class="unread-dot"></span>
-                                    <?php endif; ?>
+                            <div class="consecutive-section">
+                                <div class="consecutive-header">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Consecutive Late/Absent Workers (<?php echo count($consecutiveIssues); ?>)</span>
                                 </div>
-                                <div class="notification-content">
-                                    <div class="notification-title">
-                                        <?php echo htmlspecialchars($notif['title'] ?? 'Notification'); ?>
+                                <?php foreach ($consecutiveIssues as $issue): 
+                                    $workerName = trim(($issue['worker']['first_name'] ?? '') . ' ' . ($issue['worker']['last_name'] ?? ''));
+                                    $workerCode = $issue['worker']['employee_code'] ?? 'N/A';
+                                    $count = $issue['consecutive_count'];
+                                    $branch = $issue['branch'] ?? 'Unknown';
+                                    $statusList = implode(', ', array_slice($issue['statuses'], 0, 3));
+                                ?>
+                                    <a href="attendance.php?worker=<?php echo $issue['worker']['id']; ?>" class="notification-item consecutive-item">
+                                        <div class="notification-avatar">
+                                            <div class="avatar-placeholder alert">
+                                                <i class="fas fa-user-clock"></i>
+                                            </div>
+                                            <span class="unread-dot"></span>
+                                        </div>
+                                        <div class="notification-content">
+                                            <div class="notification-title">
+                                                <?php echo htmlspecialchars($workerName); ?> (<?php echo htmlspecialchars($workerCode); ?>)
+                                            </div>
+                                            <div class="notification-message">
+                                                <?php echo $count; ?> consecutive days: <?php echo htmlspecialchars($statusList); ?>
+                                            </div>
+                                            <div class="notification-time">
+                                                <i class="fas fa-building"></i> <?php echo htmlspecialchars($branch); ?>
+                                            </div>
+                                        </div>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($hasNotifications): ?>
+                            <?php foreach ($recentNotifications as $notif): 
+                                $isUnread = !$notif['is_read'];
+                                $notifIcon = getNotificationIcon($notif['notification_type'] ?? 'default');
+                                $timeAgo = timeAgo($notif['created_at']);
+                            ?>
+                                <a href="<?php echo htmlspecialchars($notifPage); ?>?read=<?php echo $notif['id']; ?>" 
+                                   class="notification-item <?php echo $isUnread ? 'unread' : ''; ?>">
+                                    <div class="notification-avatar">
+                                        <div class="avatar-placeholder">
+                                            <i class="fas <?php echo $notifIcon; ?>"></i>
+                                        </div>
+                                        <?php if ($isUnread): ?>
+                                            <span class="unread-dot"></span>
+                                        <?php endif; ?>
                                     </div>
-                                    <div class="notification-message">
-                                        <?php echo htmlspecialchars($notif['message'] ?? ''); ?>
+                                    <div class="notification-content">
+                                        <div class="notification-title">
+                                            <?php echo htmlspecialchars($notif['title'] ?? 'Notification'); ?>
+                                        </div>
+                                        <div class="notification-message">
+                                            <?php echo htmlspecialchars($notif['message'] ?? ''); ?>
+                                        </div>
+                                        <div class="notification-time">
+                                            <?php echo $timeAgo; ?>
+                                        </div>
                                     </div>
-                                    <div class="notification-time">
-                                        <?php echo $timeAgo; ?>
-                                    </div>
-                                </div>
-                            </a>
-                        <?php endforeach; ?>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
                 
