@@ -585,3 +585,15 @@ Stack trace:
 [06-Apr-2026 10:51:13 Asia/Manila] [report.php] Total employees with allowances: 0
 [06-Apr-2026 10:51:13 Asia/Manila] [report.php] Employee IDs with allowances: 
 [06-Apr-2026 10:51:13 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] File loaded - starting execution
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] About to fetch payroll data
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] Payroll data fetched successfully
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] Attendance data fetched successfully
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] About to process attendance data
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] About to calculate payroll
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=1, view=weekly
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] Total employees with allowances: 0
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] Employee IDs with allowances: 
+[06-Apr-2026 14:53:58 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63

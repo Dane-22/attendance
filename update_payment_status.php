@@ -1,5 +1,6 @@
 <?php
-require_once __DIR__ . '/../conn/db_connection.php';
+require_once __DIR__ . '/conn/db_connection.php';
+require_once __DIR__ . '/payroll_report_helpers.php';
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
@@ -10,9 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function fail($message, $statusCode = 400) {
+function respond_json($statusCode, $payload) {
     http_response_code($statusCode);
-    echo json_encode(['success' => false, 'message' => $message]);
+    echo json_encode($payload);
     exit;
 }
 
@@ -25,29 +26,178 @@ $viewType = isset($_REQUEST['view_type']) ? trim($_REQUEST['view_type']) : 'week
 $viewType = $viewType === 'monthly' ? 'monthly' : 'weekly';
 $paymentStatus = $paymentStatus === 'Paid' ? 'Paid' : 'Not Paid';
 
-if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
-    fail('Missing or invalid payroll payment status parameters.');
+if ($employeeId <= 0) {
+    respond_json(400, [
+        'success' => false,
+        'message' => 'employee_id is required.',
+    ]);
 }
 
-$stmt = mysqli_prepare(
-    $db,
-    "UPDATE weekly_payroll_reports
-     SET payment_status = ?
-     WHERE employee_id = ? AND report_year = ? AND report_month = ? AND week_number = ? AND view_type = ?"
-);
-
-if (!$stmt) {
-    fail('Failed to prepare payment status update.', 500);
+if ($year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
+    respond_json(400, [
+        'success' => false,
+        'message' => 'Invalid payroll period parameters.',
+    ]);
 }
 
-mysqli_stmt_bind_param($stmt, 'siiiis', $paymentStatus, $employeeId, $year, $month, $week, $viewType);
-mysqli_stmt_execute($stmt);
-$affectedRows = mysqli_stmt_affected_rows($stmt);
-mysqli_stmt_close($stmt);
-mysqli_close($db);
+mysqli_begin_transaction($db);
 
-echo json_encode([
-    'success' => $affectedRows >= 0,
-    'message' => $affectedRows > 0 ? 'Payment status updated.' : 'No payroll row matched the requested period.',
-]);
+try {
+    $computedRow = payroll_find_report_row($db, $year, $month, $viewType, $week, $employeeId, null);
+    if (!$computedRow) {
+        throw new Exception('No worker payroll data found for the selected employee and period.');
+    }
+
+    $resolvedBranchId = isset($computedRow['branch_id']) && $computedRow['branch_id'] !== null
+        ? (int)$computedRow['branch_id']
+        : null;
+    $branchIdParam = $resolvedBranchId !== null ? $resolvedBranchId : 0;
+    $reportId = is_numeric($computedRow['id']) ? (int)$computedRow['id'] : 0;
+    $computedRow['payment_status'] = $paymentStatus;
+
+    if ($reportId > 0) {
+        $updateStmt = mysqli_prepare(
+            $db,
+            "UPDATE weekly_payroll_reports
+             SET branch_id = NULLIF(?, 0),
+                 days_worked = ?,
+                 total_hours = ?,
+                 daily_rate = ?,
+                 basic_pay = ?,
+                 ot_hours = ?,
+                 ot_rate = ?,
+                 ot_amount = ?,
+                 performance_allowance = ?,
+                 gross_pay = ?,
+                 gross_plus_allowance = ?,
+                 ca_deduction = ?,
+                 sss_deduction = ?,
+                 philhealth_deduction = ?,
+                 pagibig_deduction = ?,
+                 sss_loan = ?,
+                 total_deductions = ?,
+                 take_home_pay = ?,
+                 payment_status = ?
+             WHERE id = ?"
+        );
+
+        if (!$updateStmt) {
+            throw new Exception('Failed to prepare payment status update: ' . mysqli_error($db));
+        }
+
+        mysqli_stmt_bind_param(
+            $updateStmt,
+            'idddddddddddddddddsi',
+            $branchIdParam,
+            $computedRow['days_worked'],
+            $computedRow['total_hours'],
+            $computedRow['daily_rate'],
+            $computedRow['basic_pay'],
+            $computedRow['ot_hours'],
+            $computedRow['ot_rate'],
+            $computedRow['ot_amount'],
+            $computedRow['performance_allowance'],
+            $computedRow['gross_pay'],
+            $computedRow['gross_plus_allowance'],
+            $computedRow['ca_deduction'],
+            $computedRow['sss_deduction'],
+            $computedRow['philhealth_deduction'],
+            $computedRow['pagibig_deduction'],
+            $computedRow['sss_loan'],
+            $computedRow['total_deductions'],
+            $computedRow['take_home_pay'],
+            $computedRow['payment_status'],
+            $reportId
+        );
+        mysqli_stmt_execute($updateStmt);
+        mysqli_stmt_close($updateStmt);
+    } else {
+        $insertStmt = mysqli_prepare(
+            $db,
+            "INSERT INTO weekly_payroll_reports (
+                employee_id,
+                report_year,
+                report_month,
+                week_number,
+                view_type,
+                branch_id,
+                days_worked,
+                total_hours,
+                daily_rate,
+                basic_pay,
+                ot_hours,
+                ot_rate,
+                ot_amount,
+                performance_allowance,
+                gross_pay,
+                gross_plus_allowance,
+                ca_deduction,
+                sss_deduction,
+                philhealth_deduction,
+                pagibig_deduction,
+                sss_loan,
+                total_deductions,
+                take_home_pay,
+                status,
+                payment_status
+             ) VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
+
+        if (!$insertStmt) {
+            throw new Exception('Failed to prepare payment status insert: ' . mysqli_error($db));
+        }
+
+        mysqli_stmt_bind_param(
+            $insertStmt,
+            'iiiisiddddddddddddddddss',
+            $employeeId,
+            $year,
+            $month,
+            $week,
+            $viewType,
+            $branchIdParam,
+            $computedRow['days_worked'],
+            $computedRow['total_hours'],
+            $computedRow['daily_rate'],
+            $computedRow['basic_pay'],
+            $computedRow['ot_hours'],
+            $computedRow['ot_rate'],
+            $computedRow['ot_amount'],
+            $computedRow['performance_allowance'],
+            $computedRow['gross_pay'],
+            $computedRow['gross_plus_allowance'],
+            $computedRow['ca_deduction'],
+            $computedRow['sss_deduction'],
+            $computedRow['philhealth_deduction'],
+            $computedRow['pagibig_deduction'],
+            $computedRow['sss_loan'],
+            $computedRow['total_deductions'],
+            $computedRow['take_home_pay'],
+            $computedRow['status'],
+            $computedRow['payment_status']
+        );
+        mysqli_stmt_execute($insertStmt);
+        $reportId = mysqli_insert_id($db);
+        mysqli_stmt_close($insertStmt);
+    }
+
+    mysqli_commit($db);
+    mysqli_close($db);
+
+    respond_json(200, [
+        'success' => true,
+        'message' => 'Payment status updated.',
+        'updated_employee_id' => $employeeId,
+        'report_id' => $reportId,
+        'report_row' => $computedRow,
+    ]);
+} catch (Exception $error) {
+    mysqli_rollback($db);
+    mysqli_close($db);
+    respond_json(500, [
+        'success' => false,
+        'message' => 'Failed to update payment status.',
+        'error' => $error->getMessage(),
+    ]);
+}
 ?>
