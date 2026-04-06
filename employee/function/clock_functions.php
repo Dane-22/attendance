@@ -436,20 +436,17 @@ function performClockOut($db, $employeeId, $employeeCode, $branchName = null) {
             $updateSql = "UPDATE attendance 
                           SET time_out = NOW(), 
                               is_time_running = 0, 
-                              is_overtime_running = 0,
-                              total_hours = ?
+                              is_overtime_running = 0
                           WHERE id = ? AND employee_id = ?";
         } else {
             $updateSql = "UPDATE attendance 
                           SET time_out = NOW(), 
-                              is_time_running = 0,
-                              total_hours = ?
+                              is_time_running = 0
                           WHERE id = ? AND employee_id = ?";
         }
     } else {
         $updateSql = "UPDATE attendance 
-                      SET time_out = NOW(),
-                          total_hours = ?
+                      SET time_out = NOW()
                       WHERE id = ? AND employee_id = ?";
     }
     
@@ -458,7 +455,7 @@ function performClockOut($db, $employeeId, $employeeCode, $branchName = null) {
         return ['success' => false, 'message' => 'Database error (prepare update)'];
     }
     
-    mysqli_stmt_bind_param($updateStmt, 'dii', $hoursWorked, $attendanceId, $employeeId);
+    mysqli_stmt_bind_param($updateStmt, 'ii', $attendanceId, $employeeId);
     
     if (mysqli_stmt_execute($updateStmt)) {
         $timeOut = null;
