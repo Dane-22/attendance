@@ -1,111 +1,53 @@
 <?php
-// update_payment_status.php - Update employee payment status for weekly report
-session_start();
 require_once __DIR__ . '/../conn/db_connection.php';
-require_once __DIR__ . '/../functions.php';
 
-// Check if user is logged in and is admin/super admin
-if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Get POST data
-$employee_id = $_POST['employee_id'] ?? null;
-$payment_status = $_POST['payment_status'] ?? null;
-$year = $_POST['year'] ?? null;
-$month = $_POST['month'] ?? null;
-$week = $_POST['week'] ?? null;
-$view_type = $_POST['view_type'] ?? 'weekly';
-
-// Validate inputs
-if (!$employee_id || !$payment_status || !$year || !$month) {
-    echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
+function fail($message, $statusCode = 400) {
+    http_response_code($statusCode);
+    echo json_encode(['success' => false, 'message' => $message]);
     exit;
 }
 
-// Validate payment status
-if (!in_array($payment_status, ['Paid', 'Not Paid'])) {
-    echo json_encode(['success' => false, 'error' => 'Invalid payment status']);
-    exit;
+$employeeId = isset($_REQUEST['employee_id']) ? (int)$_REQUEST['employee_id'] : 0;
+$paymentStatus = isset($_REQUEST['payment_status']) ? trim($_REQUEST['payment_status']) : 'Not Paid';
+$year = isset($_REQUEST['year']) ? (int)$_REQUEST['year'] : 0;
+$month = isset($_REQUEST['month']) ? (int)$_REQUEST['month'] : 0;
+$week = isset($_REQUEST['week']) ? (int)$_REQUEST['week'] : 1;
+$viewType = isset($_REQUEST['view_type']) ? trim($_REQUEST['view_type']) : 'weekly';
+$viewType = $viewType === 'monthly' ? 'monthly' : 'weekly';
+$paymentStatus = $paymentStatus === 'Paid' ? 'Paid' : 'Not Paid';
+
+if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
+    fail('Missing or invalid payroll payment status parameters.');
 }
 
-// Check if table exists
-$table_check = mysqli_query($db, "SHOW TABLES LIKE 'weekly_payroll_reports'");
-if (mysqli_num_rows($table_check) == 0) {
-    echo json_encode(['success' => false, 'error' => 'Table does not exist']);
-    exit;
+$stmt = mysqli_prepare(
+    $db,
+    "UPDATE weekly_payroll_reports
+     SET payment_status = ?
+     WHERE employee_id = ? AND report_year = ? AND report_month = ? AND week_number = ? AND view_type = ?"
+);
+
+if (!$stmt) {
+    fail('Failed to prepare payment status update.', 500);
 }
 
-// Check if payment_status column exists, if not add it
-$column_check = mysqli_query($db, "SHOW COLUMNS FROM weekly_payroll_reports LIKE 'payment_status'");
-if (mysqli_num_rows($column_check) == 0) {
-    // Add the column
-    mysqli_query($db, "ALTER TABLE weekly_payroll_reports ADD COLUMN payment_status enum('Paid','Not Paid') DEFAULT 'Not Paid' AFTER status");
-}
-
-// Update the payment status - insert if not exists, update if exists
-$week_num = ($view_type === 'monthly') ? 0 : $week;
-
-// First, check if record exists
-$check_query = "SELECT id FROM weekly_payroll_reports 
-                WHERE employee_id = ? 
-                AND report_year = ? 
-                AND report_month = ? 
-                AND week_number = ? 
-                AND view_type = ?";
-
-$check_stmt = mysqli_prepare($db, $check_query);
-mysqli_stmt_bind_param($check_stmt, 'iiiis', $employee_id, $year, $month, $week_num, $view_type);
-mysqli_stmt_execute($check_stmt);
-$check_result = mysqli_stmt_get_result($check_stmt);
-$record_exists = mysqli_num_rows($check_result) > 0;
-mysqli_stmt_close($check_stmt);
-
-if ($record_exists) {
-    // Update existing record
-    $query = "UPDATE weekly_payroll_reports 
-              SET payment_status = ? 
-              WHERE employee_id = ? 
-              AND report_year = ? 
-              AND report_month = ? 
-              AND week_number = ? 
-              AND view_type = ?";
-    
-    $stmt = mysqli_prepare($db, $query);
-    mysqli_stmt_bind_param($stmt, 'siiiis', $payment_status, $employee_id, $year, $month, $week_num, $view_type);
-} else {
-    // Insert new record with just the payment status and required fields
-    $query = "INSERT INTO weekly_payroll_reports (
-        employee_id, report_year, report_month, week_number, view_type,
-        days_worked, total_hours, daily_rate, basic_pay,
-        ot_hours, ot_rate, ot_amount,
-        performance_allowance, gross_pay, gross_plus_allowance,
-        ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions,
-        take_home_pay, status, payment_status, created_by
-    ) VALUES (
-        ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ?, ?, ?
-    )";
-    
-    $stmt = mysqli_prepare($db, $query);
-    $created_by = $_SESSION['user_id'] ?? 0;
-    $status = 'Draft';
-    mysqli_stmt_bind_param($stmt, 'iiiisssi', $employee_id, $year, $month, $week_num, $view_type, $status, $payment_status, $created_by);
-}
-
-if (mysqli_stmt_execute($stmt)) {
-    // Log the payment status update
-    $user_name = $_SESSION['first_name'] ?? 'Unknown';
-    $emp_info = mysqli_query($db, "SELECT CONCAT(last_name, ', ', first_name) as emp_name FROM employees WHERE id = $employee_id");
-    $emp_row = mysqli_fetch_assoc($emp_info);
-    $emp_name = $emp_row ? $emp_row['emp_name'] : 'Employee #' . $employee_id;
-    $period = ($view_type === 'monthly') ? "$year-$month" : "$year-$month Week $week_num";
-    logActivity($db, 'Payment Status Updated', "User $user_name set $emp_name to '$payment_status' for $period");
-    
-    echo json_encode(['success' => true]);
-} else {
-    echo json_encode(['success' => false, 'error' => 'Database error: ' . mysqli_error($db)]);
-}
-
+mysqli_stmt_bind_param($stmt, 'siiiis', $paymentStatus, $employeeId, $year, $month, $week, $viewType);
+mysqli_stmt_execute($stmt);
+$affectedRows = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
-exit;
+mysqli_close($db);
+
+echo json_encode([
+    'success' => $affectedRows >= 0,
+    'message' => $affectedRows > 0 ? 'Payment status updated.' : 'No payroll row matched the requested period.',
+]);
+?>
