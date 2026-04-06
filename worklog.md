@@ -4,6 +4,45 @@
 
 ---
 
+### 2026-04-01
+
+**Task:** Implement "Noted" direct approval workflow and fix branch selection detection
+
+**Status:** ✅ Completed
+
+**Files Created:**
+- `docs/APPROVAL_WORKFLOW.md` - Complete documentation for overtime and cash advance approval system
+  - Covers request types, status workflow, AJAX API endpoints, database schema
+  - UI components, notification system, activity logging
+- `docs/PRE_APPROVAL_WORKFLOW.md` - Documentation for pre-approval multi-level workflow
+  - Status flow diagrams, use cases, code examples
+  - Database implementation, notification flow
+
+**Files Modified:**
+- `login.php` - Fixed branch selection detection for QR scanner
+  - Changed confirm button to use `selectedBranchData` variable instead of DOM style searching
+  - Resolves "Please select a branch first" error after location verification
+- `employee/notification.php` - Removed Pre-Approved tab, changed button to "Noted"
+  - Updated pending count functions to exclude pre_approved status
+  - Changed button labels from "Approve"/"Final Approve" to "Noted"
+  - Removed Pre-Approved filter tab
+- `employee/admin_notification.php` - Converted pre-approval to direct approval
+  - Changed badge from "Can Pre-Approve" to "Can Approve" (green)
+  - Removed Pre-Approved tab from filter options
+  - Button label changed from "Pre-Approve" to "Noted"
+  - PHP action `pre_approve_request` → `approve_request` (direct approval)
+  - PHP action `pre_approve_cash_advance` → `approve_cash_advance` (direct approval)
+  - Attendance record now created/updated on approval
+  - Employee receives immediate approval notification
+
+**Features:**
+- Admin clicking "Noted" immediately marks request as approved (no secondary approval)
+- Single-step approval workflow for both overtime and cash advance
+- Branch selection in QR scanner now works reliably after location verification
+- Documentation for approval system architecture
+
+---
+
 ### 2026-03-31
 
 **Task:** Create QA Automation Test Suite for Geolocation Phase 2
@@ -35,6 +74,30 @@
 - Run tests: `php test/test_geofence_logic.php`
 - Web mock: Include geo_mock.js in login.php, use GeoMock.enable()
 - Database verification: Run check_logs.sql in PHPMyAdmin
+
+---
+
+### 2026-03-31 (Update)
+
+**Task:** Create comprehensive geolocator technical documentation
+
+**Files Created:**
+- `docs/HOW_GEOLOCATOR_WORKS.md` - Complete technical documentation
+  - Haversine formula explanation with code
+  - Validation flow: Browser GPS → Server validation → Response
+  - Enforcement modes: Hard vs Soft based on employee role
+  - Anti-spoofing mechanisms (timestamp validation, device fingerprinting)
+  - Manager override workflow with audit trail
+  - API endpoint documentation with request/response examples
+  - QA test suite usage guide
+  - Troubleshooting common issues
+  - Configuration guides for radius, thresholds, and roles
+
+**Features:**
+- Complete technical reference for geofencing system
+- Security considerations and best practices
+- Database schema documentation
+- Map dashboard visualization explained
 
 ---
 

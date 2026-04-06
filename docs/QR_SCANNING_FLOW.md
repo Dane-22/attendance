@@ -450,4 +450,274 @@ curl -X POST https://jajr.xandree.com/qr_clock_api.php \
 
 4. **Geolocation**: The main `qr_clock_api.php` supports geolocation tracking with latitude, longitude, and accuracy
 
-5. **Activity Logging**: All clock in/out actions are logged to the activity logs table via `logApiActivity()` and `logActivity()` functions
+---
+
+## New QR Scanner Flow (login.php) with Branch Selection
+
+**File:** `login.php` (lines 566-1325)
+
+This is a standalone QR scanner on the login page that does NOT require user authentication. It allows workers to clock in/out by scanning their QR code and selecting their working branch.
+
+### Flow
+
+```
+┌─────────────────┐
+│ Click QR Icon   │
+│ on Login Page   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ 1. Camera starts        │
+│ 2. Scan employee QR     │
+│    (contains emp_id)    │
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ 3. Show branch selection│
+│    modal with all       │
+│    active branches      │
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ 4. Worker selects       │
+│    working branch       │
+│    (e.g., Sto. Rosario) │
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ 5. GPS location check   │
+│    (geofence validation)│
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ 6. Worker confirms      │
+│    time-in or time-out  │
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ 7. POST to qr_clock.php │
+│    with branch_id and   │
+│    branch_name          │
+└─────────────────────────┘
+```
+
+### Key Code Sections
+
+**Branch Data Structure** (line 740-756):
+```javascript
+branches.forEach(branch => {
+  const card = document.createElement('div');
+  card.dataset.branchId = branch.id;              // ← ID sent to API
+  card.dataset.branchName = branch.branch_name;   // ← Name sent to API
+  card.dataset.lat = branch.latitude;
+  card.dataset.lng = branch.longitude;
+  card.dataset.radius = branch.geofence_radius || 200;
+  
+  // When clicked, verifyLocationForBranch(card.dataset, empInfo)
+});
+```
+
+**Location Verification** (lines 823-908):
+```javascript
+async function verifyLocationForBranch(branchData, empInfo) {
+  const position = await getCurrentPosition();
+  
+  // Calculate distance using Haversine formula
+  const distance = calculateDistance(
+    position.latitude, position.longitude,
+    parseFloat(branchData.lat), parseFloat(branchData.lng)
+  );
+  
+  const radius = parseInt(branchData.radius) || 200;
+  
+  if (distance <= radius) {
+    showLocationSuccess();  // Enable confirm button
+  } else {
+    showLocationError(`You are not in the location yet. Distance: ${Math.round(distance)}m`);
+  }
+}
+```
+
+**API Call** (lines 1101-1146):
+```javascript
+async function processClockIn(empId, empCode, branchData) {
+  const url = `${window.location.origin}/employee/api/qr_clock.php`;
+  const formData = new FormData();
+  formData.append('action', 'in');
+  formData.append('employee_id', empId);
+  formData.append('employee_code', empCode);
+  formData.append('branch_id', branchData.branchId);      // ← Selected branch ID
+  formData.append('branch_name', branchData.branchName);  // ← Selected branch name
+  formData.append('latitude', currentPosition.latitude);
+  formData.append('longitude', currentPosition.longitude);
+  formData.append('accuracy', currentPosition.accuracy);
+  
+  const response = await fetch(url, { method: 'POST', body: formData });
+  const data = await response.json();
+  return data;
+}
+```
+
+---
+
+## Known Issue: Wrong Branch Recorded in Attendance
+
+**Symptom:** Worker selects "Sto. Rosario" in the QR scanner, but attendance audit shows "BCDA - Admin"
+
+### Root Causes
+
+#### 1. API Not Using branch_name Parameter
+
+**File:** `employee/api/qr_clock.php`
+
+The API may be ignoring the `branch_name` POST parameter and using the employee's assigned branch instead.
+
+**Check this code:**
+```php
+$branchName = $_POST['branch_name'] ?? null;
+if (empty($branchName)) {
+    // Fallback to employee's assigned branch
+    $branchName = $employee['branch_name'];
+}
+```
+
+#### 2. Database Schema Mismatch
+
+**Check:** Does the `attendance` table have both `branch_id` AND `branch_name` columns?
+
+```sql
+DESCRIBE attendance;
+```
+
+If only `branch_name` exists (no `branch_id` FK), the API might be using employee's default branch.
+
+#### 3. Employee Assigned Branch Override
+
+**Check:** In `qr_clock.php`, look for code that fetches employee's branch:
+```php
+// WRONG: Using employee's assigned branch instead of selected branch
+$branchStmt = mysqli_prepare($db, "SELECT branch_name FROM employees WHERE id = ?");
+// Should use: $_POST['branch_name']
+```
+
+### Debug Steps
+
+#### 1. Check Browser Network Request
+
+1. Open Chrome DevTools (F12) → Network tab
+2. Scan QR code, select branch, click Confirm
+3. Find the `qr_clock.php` POST request
+4. Check **Request Headers** → **Form Data**:
+```
+action: in
+employee_id: 123
+branch_id: 10
+branch_name: Sto. Rosario
+latitude: 16.6147
+longitude: 120.3639
+```
+
+#### 2. Check API Response
+
+Look at the **Response** tab for `qr_clock.php`:
+```json
+{
+  "success": true,
+  "message": "Time-in recorded",
+  "branch_name": "Sto. Rosario"  // ← Should match selected branch
+}
+```
+
+#### 3. Verify Database Record
+
+```sql
+SELECT a.id, a.employee_id, e.first_name, e.last_name, 
+       a.branch_name, a.time_in, a.created_at
+FROM attendance a
+JOIN employees e ON e.id = a.employee_id
+WHERE a.attendance_date = CURDATE()
+ORDER BY a.time_in DESC
+LIMIT 10;
+```
+
+### Solution
+
+Ensure `employee/api/qr_clock.php` uses the `branch_name` from POST:
+
+```php
+<?php
+// employee/api/qr_clock.php
+
+// ... get employee_id, employee_code ...
+
+// GET BRANCH FROM POST (worker selected this)
+$branchName = trim($_POST['branch_name'] ?? '');
+$branchId = intval($_POST['branch_id'] ?? 0);
+
+// Fallback only if not provided
+if (empty($branchName)) {
+    $branchName = $employee['branch_name'] ?? 'Main Branch';
+}
+
+// ... insert attendance with $branchName ...
+$sql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status) 
+        VALUES (?, ?, CURDATE(), NOW(), 'Present')";
+$stmt = mysqli_prepare($db, $sql);
+mysqli_stmt_bind_param($stmt, "is", $employeeId, $branchName);
+```
+
+### Quick Test
+
+1. Go to `login.php`
+2. Open DevTools → Console
+3. Run this to simulate the API call:
+```javascript
+const formData = new FormData();
+formData.append('action', 'in');
+formData.append('employee_id', '123');
+formData.append('branch_id', '10');
+formData.append('branch_name', 'Sto. Rosario');
+
+fetch('/employee/api/qr_clock.php', {
+  method: 'POST',
+  body: formData
+}).then(r => r.json()).then(console.log);
+```
+4. Check if response shows `branch_name: "Sto. Rosario"`
+5. Check database if correct branch was saved
+
+---
+
+## Geofence Troubleshooting
+
+### "You are not in the location yet" Error
+
+**Debug console output** (added to `login.php`):
+```javascript
+console.log('QR Location Debug:');
+console.log('Your GPS:', position.latitude, position.longitude);
+console.log('Branch GPS:', parseFloat(branchData.lat), parseFloat(branchData.lng));
+console.log('Distance:', Math.round(distance), 'meters');
+console.log('Radius allowed:', radius, 'meters');
+```
+
+**Fix options:**
+1. **Increase geofence radius**:
+```sql
+UPDATE branches SET geofence_radius_meters = 500 WHERE id = 10;
+```
+
+2. **Update branch coordinates** via `employee/branch_location_manager.php`
+
+3. **Check branch has coordinates**:
+```sql
+SELECT branch_name, lat, `long`, geofence_radius_meters 
+FROM branches WHERE branch_name = 'Sto. Rosario';
+```
+

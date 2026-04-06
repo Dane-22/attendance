@@ -30,18 +30,24 @@ try {
         exit();
     }
 
-    // Use employee's assigned branch or default
-    $branchId = $employee['branch_id'] ?? null;
-    $branchName = 'Main Office';
-    if ($branchId) {
-        $bStmt = mysqli_prepare($db, "SELECT branch_name FROM branches WHERE id = ? LIMIT 1");
-        mysqli_stmt_bind_param($bStmt, 'i', $branchId);
-        mysqli_stmt_execute($bStmt);
-        $bResult = mysqli_stmt_get_result($bStmt);
-        if ($bRow = mysqli_fetch_assoc($bResult)) {
-            $branchName = $bRow['branch_name'];
+    // Get branch from POST (worker selected this in QR scanner)
+    $branchId = intval($_POST['branch_id'] ?? 0);
+    $branchName = trim($_POST['branch_name'] ?? '');
+    
+    // Fallback to employee's assigned branch if not provided
+    if (empty($branchName) || $branchId === 0) {
+        $branchId = $employee['branch_id'] ?? null;
+        $branchName = 'Main Office';
+        if ($branchId) {
+            $bStmt = mysqli_prepare($db, "SELECT branch_name FROM branches WHERE id = ? LIMIT 1");
+            mysqli_stmt_bind_param($bStmt, 'i', $branchId);
+            mysqli_stmt_execute($bStmt);
+            $bResult = mysqli_stmt_get_result($bStmt);
+            if ($bRow = mysqli_fetch_assoc($bResult)) {
+                $branchName = $bRow['branch_name'];
+            }
+            mysqli_stmt_close($bStmt);
         }
-        mysqli_stmt_close($bStmt);
     }
 
     $empName = $employee['first_name'] . ' ' . $employee['last_name'];

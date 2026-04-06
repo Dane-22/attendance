@@ -248,12 +248,21 @@ CREATE TABLE branch_reset_log (
 - File attachment system
 
 ### 7. **Notifications**
-- Overtime request workflow
-- Employee notification system
+- Overtime request workflow with direct approval ("Noted" button)
+- Cash advance request approval system
+- Leave request approval workflow
+- Employee notification system with push notifications
 - Unread message badges
 - Real-time alerts
 
-### 8. **Analytics & Reporting**
+### 8. **QR Code Attendance**
+- QR code scanning for time-in/time-out
+- Branch selection with location verification
+- Geofence validation per branch
+- GPS location capture and validation
+- Override system for managers
+
+### 9. **Analytics & Reporting**
 - Dashboard with summary cards
 - Employee attendance reports
 - Weekly performance reports
@@ -523,6 +532,13 @@ c:\wamp64\www\main\
 │
 ├── dbschema/                    # Database schemas
 │
+├── docs/                        # Documentation files
+│   ├── APPROVAL_WORKFLOW.md    # Overtime/cash advance approval system
+│   ├── LOGIN_DOCUMENTATION.md  # Login system documentation
+│   ├── PRE_APPROVAL_WORKFLOW.md # Pre-approval workflow docs
+│   ├── QR_SCANNING_FLOW.md     # QR code scanning documentation
+│   └── SELECT_EMPLOYEE_DOCUMENTATION.md # Site attendance docs
+│
 └── backups/                     # System backups
 ```
 
@@ -779,4 +795,4 @@ employee_id=123&branch_name=Main&debug=1
 
 ---
 
-*Documentation generated on February 14, 2026*
+*Documentation generated on April 1, 2026*

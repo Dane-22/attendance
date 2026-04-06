@@ -865,6 +865,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           
           const radius = parseInt(branchData.radius) || 200;
           
+          console.log('QR Location Debug:');
+          console.log('Your GPS:', position.latitude, position.longitude);
+          console.log('Branch GPS:', parseFloat(branchData.lat), parseFloat(branchData.lng));
+          console.log('Distance:', Math.round(distance), 'meters');
+          console.log('Radius allowed:', radius, 'meters');
+          console.log('Is valid:', distance <= radius);
+          
           if (distance <= radius) {
             showLocationSuccess();
           } else {
