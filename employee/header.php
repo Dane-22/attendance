@@ -269,7 +269,7 @@ function getNotificationIcon($type) {
                                     $branch = $issue['branch'] ?? 'Unknown';
                                     $statusList = implode(', ', array_slice($issue['statuses'], 0, 3));
                                 ?>
-                                    <a href="attendance.php?worker=<?php echo $issue['worker']['id']; ?>" class="notification-item consecutive-item">
+                                    <a href="audit.php?worker=<?php echo $issue['worker']['id']; ?>" class="notification-item consecutive-item">
                                         <div class="notification-avatar">
                                             <div class="avatar-placeholder alert">
                                                 <i class="fas fa-user-clock"></i>
