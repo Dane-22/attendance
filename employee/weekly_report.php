@@ -101,18 +101,22 @@ include __DIR__ . '/function/report.php';
                     <input type="hidden" name="view" id="viewInput" value="<?php echo $view_type; ?>">
                     
                     <?php if ($view_type === 'range'): ?>
-                    <!-- Date Range Inputs -->
+                    <!-- Date Range Inputs with Search Button -->
                     <div class="flex-1 min-w-[200px]">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
                         <input type="date" name="start_date" class="input-field" 
-                               value="<?php echo $_GET['start_date'] ?? date('Y-m-d', strtotime('-7 days')); ?>"
-                               onchange="document.getElementById('filterForm').submit();">
+                               value="<?php echo $_GET['start_date'] ?? date('Y-m-d', strtotime('-7 days')); ?>">
                     </div>
                     <div class="flex-1 min-w-[200px]">
                         <label class="block text-sm font-medium text-gray-300 mb-2">End Date</label>
                         <input type="date" name="end_date" class="input-field" 
-                               value="<?php echo $_GET['end_date'] ?? date('Y-m-d'); ?>"
-                               onchange="document.getElementById('filterForm').submit();">
+                               value="<?php echo $_GET['end_date'] ?? date('Y-m-d'); ?>">
+                    </div>
+                    <div class="flex-initial">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">&nbsp;</label>
+                        <button type="submit" class="btn-secondary h-[38px]">
+                            <i class="fas fa-search mr-2"></i>Filter
+                        </button>
                     </div>
                     <?php else: ?>
                     <!-- Month/Week Selectors for Weekly/Monthly views -->
