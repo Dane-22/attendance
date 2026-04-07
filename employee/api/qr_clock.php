@@ -137,55 +137,12 @@ try {
         
         if (mysqli_stmt_execute($updateStmt)) {
             $timeOut = date('h:i A');
-            $timeOut24 = date('H:i:s');
             
-            // Overtime detection for Workers and Drivers
-            $overtimeData = null;
-            $position = strtolower($employee['position'] ?? '');
-            
-            if (in_array($position, ['worker', 'driver'])) {
-                $overtimePromptTime = '16:15:00'; // 4:15 PM
-                $overtimeStartTime = '16:00:00';  // 4:00 PM
-                
-                // Check if clock-out is 4:15 PM or later
-                if (strtotime($timeOut24) >= strtotime($overtimePromptTime)) {
-                    // Calculate overtime hours from 4:00 PM
-                    $regularEnd = strtotime($overtimeStartTime);
-                    $clockOut = strtotime($timeOut24);
-                    $overtimeSeconds = $clockOut - $regularEnd;
-                    $overtimeHours = round($overtimeSeconds / 3600, 2);
-                    
-                    // Check if worker clocked in before 4:00 PM (full shift)
-                    $timeInCheck = strtotime($row['time_in'] ?? '00:00:00');
-                    $shiftStart = strtotime('07:00:00'); // Assume 7 AM start
-                    
-                    if ($timeInCheck <= $shiftStart || $timeInCheck < strtotime($overtimeStartTime)) {
-                        $overtimeData = [
-                            'show_overtime_prompt' => true,
-                            'overtime_hours' => $overtimeHours,
-                            'overtime_start' => '4:00 PM',
-                            'overtime_end' => $timeOut,
-                            'overtime_start_24' => $overtimeStartTime,
-                            'overtime_end_24' => $timeOut24,
-                            'attendance_id' => $attendanceId
-                        ];
-                    }
-                }
-            }
-            
-            $response = [
+            echo json_encode([
                 'success' => true,
                 'message' => "$empName time-out recorded at $timeOut",
-                'time_out' => $timeOut,
-                'time_out_24' => $timeOut24,
-                'attendance_id' => $attendanceId
-            ];
-            
-            if ($overtimeData) {
-                $response = array_merge($response, $overtimeData);
-            }
-            
-            echo json_encode($response);
+                'time_out' => $timeOut
+            ]);
             logActivity($db, 'QR Clock Out', "{$empName} (QR) clocked out at {$timeOut}");
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to record time-out']);

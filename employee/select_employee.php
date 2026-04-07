@@ -389,184 +389,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       color: #0b0b0b;
     }
     
-    /* Overtime Detection Modal */
-    .overtime-modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-    
-    .overtime-modal-content {
-      background: #1a1a1a;
-      border: 2px solid #FFD700;
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 450px;
-      width: 90%;
-      text-align: center;
-    }
-    
-    .overtime-modal-content h3 {
-      color: #FFD700;
-      margin: 0 0 16px 0;
-      font-size: 22px;
-    }
-    
-    .overtime-hours-display {
-      background: rgba(255, 215, 0, 0.1);
-      border: 1px solid rgba(255, 215, 0, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin: 20px 0;
-    }
-    
-    .overtime-hours-display .hours {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: #FFD700;
-    }
-    
-    .overtime-hours-display .period {
-      color: #888;
-      font-size: 14px;
-      margin-top: 8px;
-    }
-    
-    .overtime-reason-textarea {
-      width: 100%;
-      min-height: 100px;
-      background: #2a2a2a;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 12px;
-      color: #fff;
-      font-size: 14px;
-      resize: vertical;
-      margin: 16px 0;
-    }
-    
-    .overtime-reason-textarea:focus {
-      outline: none;
-      border-color: #FFD700;
-    }
-    
-    .overtime-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-top: 24px;
-    }
-    
-    .btn-overtime-yes {
-      background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%);
-      color: #0b0b0b;
-      border: none;
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .btn-overtime-yes:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-    }
-    
-    .btn-overtime-no {
-      background: transparent;
-      border: 2px solid #6B7280;
-      color: #6B7280;
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .btn-overtime-no:hover {
-      border-color: #888;
-      color: #888;
-    }
-    
-    .btn-submit-overtime {
-      background: #10b981;
-      color: white;
-      border: none;
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .btn-submit-overtime:hover:not(:disabled) {
-      background: #059669;
-    }
-    
-    .btn-submit-overtime:disabled {
-      background: #444;
-      color: #888;
-      cursor: not-allowed;
-    }
-    
     /* Mobile Responsive Styles */
     @media (max-width: 640px) {
-      .overtime-modal-content {
+      .qr-branch-selector-content {
         padding: 24px 20px;
         max-width: 95%;
         width: 95%;
         margin: 0 10px;
       }
       
-      .overtime-modal-content h3 {
+      .qr-branch-selector-content h3 {
         font-size: 18px;
-      }
-      
-      .overtime-hours-display .hours {
-        font-size: 2rem;
-      }
-      
-      .overtime-actions {
-        flex-direction: column;
-        gap: 10px;
-      }
-      
-      .btn-overtime-yes,
-      .btn-overtime-no,
-      .btn-submit-overtime {
-        padding: 12px 20px;
-        font-size: 14px;
-        width: 100%;
-      }
-      
-      .overtime-reason-textarea {
-        min-height: 80px;
-        font-size: 16px; /* Prevents zoom on iOS */
       }
     }
     
     @media (max-width: 380px) {
-      .overtime-modal-content {
+      .qr-branch-selector-content {
         padding: 20px 16px;
-      }
-      
-      .overtime-hours-display .hours {
-        font-size: 1.75rem;
-      }
-      
-      .overtime-hours-display .period {
-        font-size: 12px;
       }
     }
   </style>
@@ -1250,98 +1089,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       });
     }
   })();
-  </script>
-
-  <!-- Overtime Detection Handling -->
-  <script>
-  // Store overtime data globally
-  let currentOvertimeData = null;
-
-  // Show overtime modal with data
-  function showOvertimeModal(data) {
-    currentOvertimeData = data;
-    
-    // Update display
-    document.getElementById('overtimeHours').textContent = data.overtime_hours + ' hrs';
-    document.getElementById('overtimePeriod').textContent = 
-      data.overtime_start + ' - ' + data.overtime_end;
-    
-    // Reset form
-    document.getElementById('overtimeInitialActions').style.display = 'flex';
-    document.getElementById('overtimeReasonForm').style.display = 'none';
-    document.getElementById('overtimeReason').value = '';
-    
-    // Show modal
-    document.getElementById('overtimeModal').style.display = 'flex';
-  }
-
-  // Show reason form after clicking YES
-  function showOvertimeReasonForm() {
-    document.getElementById('overtimeInitialActions').style.display = 'none';
-    document.getElementById('overtimeReasonForm').style.display = 'block';
-  }
-
-  // Close overtime modal
-  function closeOvertimeModal() {
-    document.getElementById('overtimeModal').style.display = 'none';
-    currentOvertimeData = null;
-  }
-
-  // Submit overtime request
-  function submitOvertimeRequest() {
-    const reason = document.getElementById('overtimeReason').value.trim();
-    
-    if (reason.length < 10) {
-      alert('Please provide a more detailed reason (minimum 10 characters).');
-      return;
-    }
-    
-    if (!currentOvertimeData) {
-      alert('Error: Overtime data not found.');
-      return;
-    }
-    
-    const submitBtn = document.getElementById('submitOvertimeBtn');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-    
-    // Submit to overtime_request.php
-    const formData = new FormData();
-    formData.append('employee_id', '<?php echo $_SESSION['employee_id'] ?? 0; ?>');
-    formData.append('employee_code', '<?php echo $_SESSION['employee_code'] ?? ''; ?>');
-    formData.append('branch_name', '<?php echo $_SESSION['branch_name'] ?? 'Main Office'; ?>');
-    formData.append('requested_hours', currentOvertimeData.overtime_hours);
-    formData.append('overtime_reason', reason);
-    formData.append('source', 'qr_clockout');
-    
-    fetch('../overtime_request.php', {
-      method: 'POST',
-      body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        alert('Overtime request submitted successfully! Your supervisor will review it.');
-        closeOvertimeModal();
-      } else {
-        alert(data.message || 'Failed to submit overtime request.');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Overtime Request';
-      }
-    })
-    .catch(err => {
-      alert('Error submitting request: ' + err.message);
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Overtime Request';
-    });
-  }
-
-  // Check for overtime on clock-out response
-  function checkOvertimeOnClockOut(response) {
-    if (response.show_overtime_prompt && response.overtime_hours > 0) {
-      showOvertimeModal(response);
-    }
-  }
   </script>
 
 </body>
