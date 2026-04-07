@@ -545,7 +545,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 <a href="?date=<?= date('Y-m-d') ?>" class="btn-nav <?= $filter === 'day' ? 'bg-orange-500 text-black' : '' ?>">
                     <i class="fas fa-calendar-day mr-2"></i>Today
                 </a>
-                <?php if (in_array(strtolower($_SESSION['position'] ?? ''), ['super admin', 'Developer', 'Admin'])): ?>
+                <?php if (in_array(strtolower($_SESSION['position'] ?? ''), ['super admin', 'Developer', 'admin'])): ?>
                 <a href="audit_report_selector.php" class="btn-nav bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 border-yellow-500">
                     <i class="fas fa-file-pdf mr-2"></i>Generate Report
                 </a>
