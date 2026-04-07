@@ -23,6 +23,8 @@ $selected_branch = $_GET['branch'] ?? 'all'; // 'all' or specific branch
 $start_date = $_GET['start_date'] ?? null;
 $end_date = $_GET['end_date'] ?? null;
 
+error_log("[report.php] Received dates - start_date: $start_date, end_date: $end_date, view_type: $view_type");
+
 // Validate week (1-5)
 if ($selected_week < 1 || $selected_week > 5) {
     $selected_week = 1;
@@ -144,7 +146,8 @@ if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
 
 mysqli_stmt_execute($stmt);
 $payroll_result = mysqli_stmt_get_result($stmt);
-error_log("[report.php] Payroll data fetched successfully");
+$payroll_row_count = mysqli_num_rows($payroll_result);
+error_log("[report.php] Payroll query executed. Date range: $start_date to $end_date. Rows fetched: $payroll_row_count");
 
 // Fetch attendance data as fallback/supplement (for dates not in daily_payroll_reports)
 $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name, a.time_in, a.time_out, a.total_ot_hrs,
@@ -170,7 +173,8 @@ if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
 
 mysqli_stmt_execute($stmt2);
 $attendance_result = mysqli_stmt_get_result($stmt2);
-error_log("[report.php] Attendance data fetched successfully");
+$attendance_row_count = mysqli_num_rows($attendance_result);
+error_log("[report.php] Attendance query executed. Date range: $start_date to $end_date. Rows fetched: $attendance_row_count");
 
 // Government deduction constants (monthly)
 $MONTHLY_PHILHEALTH = 250.00;
