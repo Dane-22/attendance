@@ -43,9 +43,7 @@ if (!is_numeric($employeeId)) {
 }
 
 // Get employee details
-$employeeSql = "SELECT id, first_name, last_name, employee_code, position, 
-                (SELECT branch_name FROM employees e2 WHERE e2.id = e.id AND e2.branch_id IS NOT NULL LIMIT 1) as branch_name
-              FROM employees e WHERE id = ?";
+$employeeSql = "SELECT id, first_name, last_name, employee_code, position FROM employees WHERE id = ?";
 $employeeStmt = mysqli_prepare($db, $employeeSql);
 mysqli_stmt_bind_param($employeeStmt, 'i', $employeeId);
 mysqli_stmt_execute($employeeStmt);
@@ -60,7 +58,7 @@ if (!$employee) {
 $employeeName = $employee['first_name'] . ' ' . $employee['last_name'];
 $employeeCode = $employee['employee_code'];
 $employeePosition = $employee['position'];
-$employeeBranch = $employee['branch_name'] ?? 'N/A';
+$employeeBranch = 'N/A';
 
 // Date range label
 $dateRangeLabel = date('M d', strtotime($startDate)) . ' - ' . date('M d, Y', strtotime($endDate));
