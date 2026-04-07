@@ -4,6 +4,45 @@ require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 session_start();
 
+// Rate Limiting Configuration
+$RATE_LIMIT_MAX_REQUESTS = 60; // Max requests per minute
+$RATE_LIMIT_WINDOW = 60; // Window in seconds
+
+// Initialize rate limiting in session
+if (!isset($_SESSION['weekly_report_rate_limit'])) {
+    $_SESSION['weekly_report_rate_limit'] = [
+        'requests' => [],
+        'blocked_until' => null
+    ];
+}
+
+$now = time();
+
+// Check if user is currently blocked
+if ($_SESSION['weekly_report_rate_limit']['blocked_until'] && $now < $_SESSION['weekly_report_rate_limit']['blocked_until']) {
+    $retryAfter = $_SESSION['weekly_report_rate_limit']['blocked_until'] - $now;
+    http_response_code(429);
+    die(json_encode(['error' => 'Too many requests. Please try again in ' . $retryAfter . ' seconds.']));
+}
+
+// Clean old requests outside the window
+$_SESSION['weekly_report_rate_limit']['requests'] = array_filter(
+    $_SESSION['weekly_report_rate_limit']['requests'],
+    function($timestamp) use ($now, $RATE_LIMIT_WINDOW) {
+        return ($now - $timestamp) < $RATE_LIMIT_WINDOW;
+    }
+);
+
+// Check if limit exceeded
+if (count($_SESSION['weekly_report_rate_limit']['requests']) >= $RATE_LIMIT_MAX_REQUESTS) {
+    $_SESSION['weekly_report_rate_limit']['blocked_until'] = $now + $RATE_LIMIT_WINDOW;
+    http_response_code(429);
+    die(json_encode(['error' => 'Rate limit exceeded. Please try again in ' . $RATE_LIMIT_WINDOW . ' seconds.']));
+}
+
+// Record this request
+$_SESSION['weekly_report_rate_limit']['requests'][] = $now;
+
 // Check if user is logged in and is admin/super admin/developer
 if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 'Super Admin', 'Developer'])) {
     header('Location: ../login.php');
