@@ -871,77 +871,153 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
           <li><strong>Search:</strong> You can search for specific employees within the selected project by name or ID.</li>
           <li><strong>Filters:</strong> Use the status pills (Available, Present, etc.) to quickly organize your view.</li>
           <li><strong>Undo:</strong> If you make a mistake, look for the "Undo" button in the right side of the employee search.</li>
+        </ul>
+      </div>
 
-        <!-- Employee List -->
-        <div id="employeeContainer">
-          <div class="no-employees">
-            <i class="fas fa-users" style="font-size: 36px; color: #444; margin-bottom: 10px;"></i>
-            <div>Please select a deployment project to view all available employees</div>
-          </div>
-        </div>
+      <script>
+        window.attendanceConfig = {
+          cutoffTime: <?php echo json_encode($cutoffTime); ?>,
+          currentTime: <?php echo json_encode($currentTime); ?>
+        };
+        window.branchesFromPHP = <?php echo json_encode($branches); ?>;
+      </script>
 
-        <!-- Pagination Bottom -->
-        <div id="paginationBottom" class="pagination-container" style="display: none;">
-          <div class="pagination-info">
-            Page <strong id="currentPage">1</strong> of <strong id="totalPages">1</strong>
-          </div>
-          <div class="pagination-controls">
-            <div class="page-size-selector">
-              <span class="page-size-label">Show:</span>
-              <select id="pageSizeSelectBottom" class="page-size-select" onchange="changePageSize(this.value)">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-            <div id="paginationButtonsBottom" class="pagination-buttons">
-              <!-- Pagination buttons will be generated here -->
-            </div>
-            <div class="page-jump">
-              <input type="number" id="pageJumpInput" class="page-jump-input" min="1" value="1" placeholder="Page">
-              <button class="page-jump-btn" onclick="jumpToPage()">Go</button>
-            </div>
-          </div>
-        </div>
-      cutoffTime: <?php echo json_encode($cutoffTime); ?>,
-      currentTime: <?php echo json_encode($currentTime); ?>
-    };
-    window.branchesFromPHP = <?php echo json_encode($branches); ?>;
+      <?php
+      $qrEmployeeId = isset($_GET['emp_id']) ? intval($_GET['emp_id']) : 0;
+      $autoTimein = isset($_GET['auto_timein']) ? 1 : 0;
+      $qrEmployeeBranch = '';
+      
+      if ($qrEmployeeId && $autoTimein) {
+          $branchStmt = mysqli_prepare($db, "SELECT b.branch_name 
+              FROM employees e 
+              LEFT JOIN branches b ON b.id = e.branch_id 
+              WHERE e.id = ? LIMIT 1");
+          if ($branchStmt) {
+              mysqli_stmt_bind_param($branchStmt, 'i', $qrEmployeeId);
+              mysqli_stmt_execute($branchStmt);
+              $branchResult = mysqli_stmt_get_result($branchStmt);
+              if ($branchRow = mysqli_fetch_assoc($branchResult)) {
+                  $qrEmployeeBranch = $branchRow['branch_name'];
+              }
+              mysqli_stmt_close($branchStmt);
+          }
+      }
+      ?>
+      <script>
+        window.qrScanData = {
+          enabled: <?php echo $autoTimein ? 'true' : 'false'; ?>,
+          employeeBranch: <?php echo json_encode($qrEmployeeBranch); ?>
+        };
+      </script>
+      <script src="../assets/js/sidebar-toggle.js"></script>
+      <script src="js/attendance.js?v=4"></script>
 
-    // QR Scan Data - for auto-selecting branch after time-in
-    <?php
-    $qrEmployeeId = isset($_GET['emp_id']) ? intval($_GET['emp_id']) : 0;
-    $autoTimein = isset($_GET['auto_timein']) ? 1 : 0;
-    $qrEmployeeBranch = '';
-    
-    if ($qrEmployeeId && $autoTimein) {
-        $branchStmt = mysqli_prepare($db, "SELECT b.branch_name 
-            FROM employees e 
-            LEFT JOIN branches b ON b.id = e.branch_id 
-            WHERE e.id = ? LIMIT 1");
-        if ($branchStmt) {
-            mysqli_stmt_bind_param($branchStmt, 'i', $qrEmployeeId);
-            mysqli_stmt_execute($branchStmt);
-            $branchResult = mysqli_stmt_get_result($branchStmt);
-            if ($branchRow = mysqli_fetch_assoc($branchResult)) {
-                $qrEmployeeBranch = $branchRow['branch_name'];
+      <!-- QR Scan Auto-Select Branch -->
+      <script>
+      (function() {
+        if (!window.qrScanData || !window.qrScanData.enabled || !window.qrScanData.employeeBranch) return;
+
+        const empBranch = window.qrScanData.employeeBranch;
+        console.log('QR Scan: Auto-selecting branch', empBranch);
+
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            const branchCards = document.querySelectorAll('.branch-card');
+            branchCards.forEach(function(card) {
+              if (card.dataset.branch === empBranch) {
+                console.log('QR Scan: Selecting branch', empBranch);
+                card.click();
+              }
+            });
+          }, 1000);
+        });
+      })();
+      </script>
+
+      <!-- QR Branch Selection with Location Verification -->
+      <script>
+      (function() {
+        const isBranchSelectMode = <?php echo $isBranchSelectMode ? 'true' : 'false'; ?>;
+        if (!isBranchSelectMode) return;
+        
+        const branchCards = document.querySelectorAll('.qr-branch-card');
+        const confirmBtn = document.getElementById('confirmBranchBtn');
+        const retryBtn = document.getElementById('retryLocationBtn');
+        const locationStatus = document.getElementById('locationStatus');
+        const locationChecking = locationStatus.querySelector('.location-checking');
+        const locationValid = locationStatus.querySelector('.location-valid');
+        const locationInvalid = locationStatus.querySelector('.location-invalid');
+        const locationErrorMsg = document.getElementById('locationErrorMsg');
+        
+        let selectedBranch = null;
+        let selectedBranchData = null;
+        let currentPosition = null;
+        let isLocationValid = false;
+        
+        // Branch card selection
+        branchCards.forEach(card => {
+          card.addEventListener('click', function() {
+            // Remove selected class from all
+            branchCards.forEach(c => c.classList.remove('selected'));
+            // Add to clicked
+            this.classList.add('selected');
+            
+            selectedBranch = this.dataset.branch;
+            selectedBranchData = {
+              id: this.dataset.branchId,
+              name: this.dataset.branch,
+              lat: parseFloat(this.dataset.lat) || null,
+              lng: parseFloat(this.dataset.lng) || null,
+              radius: parseInt(this.dataset.radius) || 200
+            };
+            
+            // Start location verification
+            verifyLocation();
+          });
+        });
+        
+        // Get GPS and verify location
+        function verifyLocation() {
+          locationStatus.style.display = 'block';
+          locationChecking.style.display = 'block';
+          locationValid.style.display = 'none';
+          locationInvalid.style.display = 'none';
+          confirmBtn.disabled = true;
+          retryBtn.style.display = 'none';
+          isLocationValid = false;
+          
+          if (!navigator.geolocation) {
+            showLocationError('Geolocation is not supported by your browser');
+            return;
+          }
+          
+          navigator.geolocation.getCurrentPosition(
+            function(position) {
+              currentPosition = position;
+              validatePosition(position);
+            },
+            function(error) {
+              let errorMsg = 'Unable to get your location';
+              switch(error.code) {
+                case error.PERMISSION_DENIED:
+                  errorMsg = 'Location access denied. Please enable location permissions.';
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  errorMsg = 'Location information unavailable.';
+                  break;
+                case error.TIMEOUT:
+                  errorMsg = 'Location request timed out.';
+                  break;
+              }
+              showLocationError(errorMsg);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 60000
             }
-            mysqli_stmt_close($branchStmt);
+          );
         }
-    }
-    ?>
-    window.qrScanData = {
-      enabled: <?php echo $autoTimein ? 'true' : 'false'; ?>,
-      employeeBranch: <?php echo json_encode($qrEmployeeBranch); ?>
-    };
-  </script>
-  <script src="../assets/js/sidebar-toggle.js"></script>
-  <script src="js/attendance.js?v=4"></script>
-
-  <!-- QR Scan Auto-Select Branch -->
-  <script>
-  (function() {
     if (!window.qrScanData || !window.qrScanData.enabled || !window.qrScanData.employeeBranch) return;
 
     const empBranch = window.qrScanData.employeeBranch;
