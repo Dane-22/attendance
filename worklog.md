@@ -360,6 +360,55 @@ mysqli_stmt_bind_param($updateStmt, 'ii', $attendanceId, $employeeId);
 
 ### 2026-04-07
 
+**Task:** Implement Custom Date Range in Payroll Report
+
+**Status:** ✅ Completed
+
+**Problem:** The payroll report only supported fixed Weekly (1-7 days per week) and Monthly (full calendar month) views. Users needed flexibility to generate payroll reports for any arbitrary date range (e.g., Jan 15-25, or across month boundaries like Jan 28 - Feb 5).
+
+**Actions Taken:**
+1. Added new 'range' view type to `employee/function/report.php` alongside existing 'weekly' and 'monthly' views
+2. Implemented handling for `start_date` and `end_date` GET parameters
+3. Added date validation with fallback to current week if dates are invalid
+4. Updated date range label to display "Custom Range: Jan 01, 2026 - Jan 15, 2026" format
+5. Added "Date Range" toggle button to the view switcher in `employee/weekly_report.php`
+6. Created conditional date picker inputs (Start Date, End Date) that appear only in range view
+7. Updated header title logic to show "Custom Date Range Payroll Report"
+8. Updated all branch filter links and pagination links to preserve date range parameters
+9. Modified `employee/js/report.js` `changeView()` function to handle 'range' view type with default 7-day range
+
+**Files Modified:**
+- `employee/function/report.php` - Added 'range' view type handling:
+  - Lines 19: Updated view_type comment to include 'range'
+  - Lines 22-24: Added start_date and end_date parameter handling
+  - Lines 55-67: Added custom date range logic with validation and fallback
+- `employee/weekly_report.php` - Added UI for date range selection:
+  - Lines 43-49: Dynamic header title for range view
+  - Lines 54-60: Dynamic subtitle showing date range label
+  - Lines 83-86: New "Date Range" toggle button
+  - Lines 103-116: Conditional date picker inputs for range view
+  - Lines 163, 168: Branch filter links preserve date range params
+  - Lines 180, 197, 207, 215, 222: Pagination links preserve date range params
+- `employee/js/report.js` - Updated view switching logic:
+  - Lines 73-98: Enhanced `changeView()` to handle 'range' view with default dates
+
+**Features:**
+- Users can now select any custom date range for payroll reporting
+- Default range is last 7 days when switching to Date Range view
+- Branch filters and pagination preserve the selected date range
+- Invalid date combinations fall back to safe defaults
+- Date range label clearly shows the selected period
+
+**Usage:**
+1. Click "Date Range" toggle button
+2. Select Start Date and End Date using the date pickers
+3. Report automatically updates when dates change
+4. Use branch filters as normal - date range is preserved
+
+---
+
+### 2026-04-07
+
 **Task:** Investigate MapLibre/CartoDB Costs and "Need to Pay" QR Scan Error
 
 **Status:** ✅ Investigation Complete
@@ -497,5 +546,50 @@ The "need to pay" message is NOT from map/geolocation services. The QR scanning 
 4. **Alternative:** Contact Hostinger to whitelist domain from flagged IP
 
 **Result:** Investigation confirmed this is NOT a code or server issue. The application is fully functional. The issue is external ISP-level IP blocking outside our control.
+
+---
+
+### 2026-04-07
+
+**Task:** Implement Individual Employee Report in Attendance Audit
+
+**Status:** ✅ Completed
+
+**Problem:** The attendance audit page only showed bulk attendance records. Administrators needed a way to generate detailed individual reports for specific employees showing their attendance history, summary statistics, and daily breakdown over a custom date range.
+
+**Actions Taken:**
+1. Created `individual_report_selector.php` - A dedicated page for selecting an employee and date range
+2. Added predefined date range quick selectors (Today, This Week, Last Week, This Month, Last Month)
+3. Implemented employee search functionality within the dropdown
+4. Created date preview showing selected period and duration
+5. Integrated with `export_individual_excel.php` for Excel report generation
+6. Added "Individual Report" button to `audit.php` page linking to the selector
+7. Added Individual Report option to the existing Export Excel form in audit.php
+
+**Files Created:**
+- `employee/individual_report_selector.php` - Employee and date range selector page:
+  - Employee dropdown with search/filter functionality
+  - Quick date range preset buttons (Today, This Week, Last Week, This Month, Last Month)
+  - Custom date range inputs with validation
+  - Date preview showing period and duration
+  - Links to `export_individual_excel.php` for report generation
+
+**Files Modified:**
+- `employee/audit.php` - Added Individual Report integration:
+  - Line 559-562: New "Individual Report" button linking to `individual_report_selector.php`
+  - Lines 607-612: Individual Report option in Export Excel form
+
+**Features:**
+- Quick date range selection with preset buttons
+- Employee search/filter in dropdown
+- Real-time date preview with duration calculation
+- Seamless integration with existing Excel export functionality
+- Responsive design with sidebar navigation
+
+**Usage:**
+1. Click "Individual Report" button on audit page
+2. Search and select an employee from the dropdown
+3. Choose a date range (quick select or custom dates)
+4. Click "Generate Excel Report" to download the individual report
 
 ---

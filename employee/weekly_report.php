@@ -40,10 +40,25 @@ include __DIR__ . '/function/report.php';
                 <div class="header-left">
                     <div>
                         <div class="welcome">
-                            <?php echo ($view_type === 'weekly') ? 'Weekly' : 'Monthly'; ?> Payroll Report
+                            <?php 
+                            if ($view_type === 'range') {
+                                echo 'Custom Date Range';
+                            } else {
+                                echo ($view_type === 'weekly') ? 'Weekly' : 'Monthly';
+                            }
+                            ?> Payroll Report
                         </div>
                         <div class="text-sm text-gray">
-                            Admin Panel | <?php echo ($view_type === 'weekly') ? "Week $selected_week Report" : "Monthly Report"; ?>
+                            Admin Panel | 
+                            <?php 
+                            if ($view_type === 'weekly') {
+                                echo "Week $selected_week Report";
+                            } elseif ($view_type === 'range') {
+                                echo $date_range_label;
+                            } else {
+                                echo "Monthly Report";
+                            }
+                            ?>
                             <?php if ($selected_branch !== 'all'): ?>
                             | Branch: <?php echo htmlspecialchars($selected_branch); ?>
                             <?php endif; ?>
@@ -65,6 +80,10 @@ include __DIR__ . '/function/report.php';
                      onclick="changeView('monthly')">
                     <i class="fas fa-calendar-alt mr-2"></i> Monthly View
                 </div>
+                <div class="view-option <?php echo ($view_type === 'range') ? 'active' : ''; ?>" 
+                     onclick="changeView('range')">
+                    <i class="fas fa-calendar mr-2"></i> Date Range
+                </div>
             </div>
 
             <!-- Main Report Card -->
@@ -81,6 +100,22 @@ include __DIR__ . '/function/report.php';
                 <form method="GET" class="mb-6 flex flex-wrap gap-4 items-end filters" id="filterForm">
                     <input type="hidden" name="view" id="viewInput" value="<?php echo $view_type; ?>">
                     
+                    <?php if ($view_type === 'range'): ?>
+                    <!-- Date Range Inputs -->
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                        <input type="date" name="start_date" class="input-field" 
+                               value="<?php echo $_GET['start_date'] ?? date('Y-m-d', strtotime('-7 days')); ?>"
+                               onchange="document.getElementById('filterForm').submit();">
+                    </div>
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                        <input type="date" name="end_date" class="input-field" 
+                               value="<?php echo $_GET['end_date'] ?? date('Y-m-d'); ?>"
+                               onchange="document.getElementById('filterForm').submit();">
+                    </div>
+                    <?php else: ?>
+                    <!-- Month/Week Selectors for Weekly/Monthly views -->
                     <div class="flex-1 min-w-[200px]">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Select Month</label>
                         <select name="month" class="input-field" onchange="document.getElementById('filterForm').submit();">
@@ -104,7 +139,8 @@ include __DIR__ . '/function/report.php';
                         </select>
                     </div>
                     <?php endif; ?>
-
+                    <?php endif; ?>
+                    
                     <div class="flex-1 min-w-[220px]">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Search</label>
                         <input type="text" id="employeeSearch" class="input-field" placeholder="Search employee...">
@@ -124,12 +160,12 @@ include __DIR__ . '/function/report.php';
                         <?php endif; ?>
                     </div>
                     <div class="flex flex-wrap gap-2 mb-3">
-                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=all&branch_page=1" 
+                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=all&branch_page=1<?php echo ($view_type === 'range' && isset($_GET['start_date'])) ? '&start_date=' . urlencode($_GET['start_date']) . '&end_date=' . urlencode($_GET['end_date']) : ''; ?>" 
                            class="branch-badge all <?php echo ($selected_branch === 'all') ? 'active' : ''; ?>">
                             <i class="fas fa-layer-group mr-1"></i>All Branches
                         </a>
                         <?php foreach ($paginated_branches as $branch): ?>
-                            <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($branch['id']); ?>&branch_page=<?php echo $branch_page; ?>" 
+                            <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($branch['id']); ?>&branch_page=<?php echo $branch_page; ?><?php echo ($view_type === 'range' && isset($_GET['start_date'])) ? '&start_date=' . urlencode($_GET['start_date']) . '&end_date=' . urlencode($_GET['end_date']) : ''; ?>" 
                                class="branch-badge <?php echo ($selected_branch === (string)$branch['id']) ? 'active' : ''; ?>">
                                 <i class="fas fa-building mr-1"></i><?php echo htmlspecialchars($branch['name']); ?>
                             </a>
@@ -141,7 +177,7 @@ include __DIR__ . '/function/report.php';
                     <div class="flex justify-center items-center gap-2 mt-3">
                         <!-- Previous Page -->
                         <?php if ($branch_page > 1): ?>
-                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($selected_branch); ?>&branch_page=<?php echo $branch_page - 1; ?>" 
+                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($selected_branch); ?>&branch_page=<?php echo $branch_page - 1; ?><?php echo ($view_type === 'range' && isset($_GET['start_date'])) ? '&start_date=' . urlencode($_GET['start_date']) . '&end_date=' . urlencode($_GET['end_date']) : ''; ?>" 
                            class="px-3 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">
                             <i class="fas fa-chevron-left mr-1"></i>Prev
                         </a>
@@ -158,7 +194,7 @@ include __DIR__ . '/function/report.php';
                             $end_page = min($total_branch_pages, $branch_page + 2);
                             
                             if ($start_page > 1) {
-                                echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=1" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">1</a>';
+                                echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=1' . (($view_type === 'range' && isset($_GET['start_date'])) ? '&start_date=' . urlencode($_GET['start_date']) . '&end_date=' . urlencode($_GET['end_date']) : '') . '" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">1</a>';
                                 if ($start_page > 2) {
                                     echo '<span class="px-2 py-1 text-xs text-gray-500">...</span>';
                                 }
@@ -168,7 +204,7 @@ include __DIR__ . '/function/report.php';
                                 if ($i == $branch_page) {
                                     echo '<span class="px-2 py-1 text-xs font-medium text-black bg-yellow-500 border border-yellow-500 rounded">' . $i . '</span>';
                                 } else {
-                                    echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=' . $i . '" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">' . $i . '</a>';
+                                    echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=' . $i . (($view_type === 'range' && isset($_GET['start_date'])) ? '&start_date=' . urlencode($_GET['start_date']) . '&end_date=' . urlencode($_GET['end_date']) : '') . '" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">' . $i . '</a>';
                                 }
                             }
                             
@@ -176,14 +212,14 @@ include __DIR__ . '/function/report.php';
                                 if ($end_page < $total_branch_pages - 1) {
                                     echo '<span class="px-2 py-1 text-xs text-gray-500">...</span>';
                                 }
-                                echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=' . $total_branch_pages . '" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">' . $total_branch_pages . '</a>';
+                                echo '<a href="?view=' . $view_type . '&month=' . $selected_month . '&week=' . $selected_week . '&branch=' . urlencode($selected_branch) . '&branch_page=' . $total_branch_pages . (($view_type === 'range' && isset($_GET['start_date'])) ? '&start_date=' . urlencode($_GET['start_date']) . '&end_date=' . urlencode($_GET['end_date']) : '') . '" class="px-2 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">' . $total_branch_pages . '</a>';
                             }
                             ?>
                         </div>
                         
                         <!-- Next Page -->
                         <?php if ($branch_page < $total_branch_pages): ?>
-                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($selected_branch); ?>&branch_page=<?php echo $branch_page + 1; ?>" 
+                        <a href="?view=<?php echo $view_type; ?>&month=<?php echo $selected_month; ?>&week=<?php echo $selected_week; ?>&branch=<?php echo urlencode($selected_branch); ?>&branch_page=<?php echo $branch_page + 1; ?><?php echo ($view_type === 'range' && isset($_GET['start_date'])) ? '&start_date=' . urlencode($_GET['start_date']) . '&end_date=' . urlencode($_GET['end_date']) : ''; ?>" 
                            class="px-3 py-1 text-xs font-medium text-gray-300 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors">
                             Next<i class="fas fa-chevron-right ml-1"></i>
                         </a>

@@ -70,7 +70,7 @@ function printReport() {
     window.print();
 }
 
-// Change view type (weekly/monthly)
+// Change view type (weekly/monthly/range)
 function changeView(viewType) {
     const url = new URL(window.location.href);
     url.searchParams.set('view', viewType);
@@ -78,6 +78,21 @@ function changeView(viewType) {
     // Reset week to 1 when switching to monthly view
     if (viewType === 'monthly') {
         url.searchParams.delete('week');
+        url.searchParams.delete('start_date');
+        url.searchParams.delete('end_date');
+    } else if (viewType === 'range') {
+        // Clear month/week params when switching to range view
+        url.searchParams.delete('week');
+        // Set default date range (last 7 days) if not already set
+        if (!url.searchParams.has('start_date')) {
+            const today = new Date();
+            const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            url.searchParams.set('start_date', lastWeek.toISOString().split('T')[0]);
+            url.searchParams.set('end_date', today.toISOString().split('T')[0]);
+        }
+    } else if (viewType === 'weekly') {
+        url.searchParams.delete('start_date');
+        url.searchParams.delete('end_date');
     }
     
     window.location.href = url.toString();

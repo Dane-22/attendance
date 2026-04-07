@@ -16,8 +16,12 @@ if ($current_week > 5) $current_week = 5;
 // Handle filters
 $selected_month = $_GET['month'] ?? $current_month;
 $selected_week = intval($_GET['week'] ?? $current_week);
-$view_type = $_GET['view'] ?? 'weekly'; // 'weekly' or 'monthly'
+$view_type = $_GET['view'] ?? 'weekly'; // 'weekly', 'monthly', or 'range'
 $selected_branch = $_GET['branch'] ?? 'all'; // 'all' or specific branch
+
+// Handle custom date range parameters
+$start_date = $_GET['start_date'] ?? null;
+$end_date = $_GET['end_date'] ?? null;
 
 // Validate week (1-5)
 if ($selected_week < 1 || $selected_week > 5) {
@@ -48,6 +52,19 @@ if ($view_type === 'weekly') {
     $start_date = sprintf('%04d-%02d-%02d', $year, $month, $week_start_day);
     $end_date = sprintf('%04d-%02d-%02d', $year, $month, $week_end_day);
     $date_range_label = "Week $selected_week: " . date('M d', strtotime($start_date)) . " - " . date('M d, Y', strtotime($end_date));
+} elseif ($view_type === 'range' && $start_date && $end_date) {
+    // Custom date range view logic
+    // Validate and sanitize dates
+    $start_ts = strtotime($start_date);
+    $end_ts = strtotime($end_date);
+    
+    if ($start_ts === false || $end_ts === false || $end_ts < $start_ts) {
+        // Invalid dates, fallback to current week
+        $start_date = date('Y-m-d', strtotime('monday this week'));
+        $end_date = date('Y-m-d', strtotime('sunday this week'));
+    }
+    
+    $date_range_label = "Custom Range: " . date('M d, Y', strtotime($start_date)) . " - " . date('M d, Y', strtotime($end_date));
 } else {
     // Monthly view logic - whole month
     $start_date = sprintf('%04d-%02d-01', $year, $month);
