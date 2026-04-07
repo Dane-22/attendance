@@ -593,3 +593,92 @@ The "need to pay" message is NOT from map/geolocation services. The QR scanning 
 4. Click "Generate Excel Report" to download the individual report
 
 ---
+
+### 2026-04-07
+
+**Task:** Add Rate Limiter to Payroll Report and Update Date Range Filter UI
+
+**Status:** ✅ Completed
+
+**Problem:**
+1. The payroll report date range inputs auto-submitted on every date change, causing excessive server requests
+2. No protection against rapid page refreshes or automated requests that could overload the server
+
+**Actions Taken:**
+1. **Updated `employee/weekly_report.php` - Added Rate Limiting:**
+   - Implemented session-based rate limiting following the pattern from `audit.php`
+   - Set limit: 60 requests per 60-second window
+   - Added automatic cleanup of expired request timestamps
+   - Returns HTTP 429 with retry message when limit exceeded
+   - 60-second block when limit is hit
+
+2. **Updated `employee/weekly_report.php` - Added Filter Button:**
+   - Removed `onchange="document.getElementById('filterForm').submit()"` from date inputs
+   - Added a "Filter" button with search icon for Date Range view
+   - Users must now manually click Filter to apply date range changes
+   - Reduced unnecessary server requests from accidental date changes
+
+3. **Updated `employee/function/report.php` - Added Debug Logging:**
+   - Added logging to track date range parameters received
+   - Added row count logging for payroll and attendance queries
+   - Helps diagnose data fetching issues for custom date ranges
+
+**Files Modified:**
+- `employee/weekly_report.php` - Rate limiting and Filter button:
+  - Lines 7-44: Rate limiting implementation
+  - Lines 115-120: Filter button replacing auto-submit
+- `employee/function/report.php` - Debug logging:
+  - Line 26: Log received date parameters
+  - Lines 149-150: Log payroll query results
+  - Lines 176-177: Log attendance query results
+
+**Rate Limiter Behavior:**
+- Allows up to 60 page loads/requests per minute per user session
+- Blocks user for 60 seconds if limit exceeded
+- Counter resets after 60 seconds from first request
+- Prevents server overload from rapid clicking or automated scraping
+
+**Filter Button Behavior:**
+- Date Range view now shows Start Date, End Date, and Filter button
+- Users select dates first, then click Filter to apply
+- Prevents accidental submissions while typing dates
+- Branch filters and pagination preserve date range after filtering
+
+---
+
+### 2026-04-07
+
+**Task:** Implement Late Status Detection for Workers in Attendance Audit
+
+**Status:** ✅ Completed
+
+**Problem:** The attendance audit only showed generic status (Present, Completed, Absent). Administrators needed to identify workers who arrived late (after 7:00 AM official start time) for attendance monitoring and payroll adjustments.
+
+**Actions Taken:**
+1. Added late detection logic in `employee/audit.php` attendance table display
+2. Set threshold at 7:15 AM - workers time in at or after 7:15 are marked as "Late"
+3. Added CSS styling for late status badge (orange background)
+4. Applied late status to both "Present" and "Completed" attendance states
+
+**Files Modified:**
+- `employee/audit.php` - Late status implementation:
+  - Lines 477-480: Added `.status-late` CSS class with orange styling
+  - Lines 826-855: Added late detection logic:
+    - Check if position is 'worker'
+    - Compare time_in against 7:15 AM threshold
+    - Override status to "Late" if worker is late
+
+**Late Detection Logic:**
+- Only applies to employees with position = 'worker'
+- Threshold: 7:15 AM (official start time is 7:00 AM)
+- Workers who time in at exactly 7:15:00 or later get "Late" status
+- Shows "Late" instead of "Present" or "Completed"
+- Other positions (Admin, Super Admin, etc.) are not affected
+
+**Usage:**
+1. Navigate to Attendance Audit page
+2. Select a date with attendance records
+3. Workers who timed in at 7:15 or later will display orange "Late" status badge
+4. This helps identify tardiness patterns for HR/payroll review
+
+---

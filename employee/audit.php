@@ -474,6 +474,10 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             background: rgba(244, 67, 54, 0.2);
             color: #F44336;
         }
+        .status-late {
+            background: rgba(255, 152, 0, 0.2);
+            color: #FF9800;
+        }
         .btn-nav {
             background: rgba(255, 165, 0, 0.2);
             border: 1px solid rgba(255, 165, 0, 0.3);
@@ -820,12 +824,31 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                         $hoursWorked = $record['minutes_worked'] ? round($record['minutes_worked'] / 60, 2) : 0;
                                         
                                         // Determine status
+                                        $isLate = false;
+                                        if ($record['time_in'] && strtolower($record['position']) === 'worker') {
+                                            $timeIn = strtotime($record['time_in']);
+                                            $lateThreshold = strtotime(date('Y-m-d', $timeIn) . ' 07:15:00');
+                                            if ($timeIn >= $lateThreshold) {
+                                                $isLate = true;
+                                            }
+                                        }
+                                        
                                         if ($record['time_in'] && $record['time_out']) {
-                                            $statusClass = 'status-completed';
-                                            $statusText = 'Completed';
+                                            if ($isLate) {
+                                                $statusClass = 'status-late';
+                                                $statusText = 'Late';
+                                            } else {
+                                                $statusClass = 'status-completed';
+                                                $statusText = 'Completed';
+                                            }
                                         } elseif ($record['time_in']) {
-                                            $statusClass = 'status-present';
-                                            $statusText = 'Present';
+                                            if ($isLate) {
+                                                $statusClass = 'status-late';
+                                                $statusText = 'Late';
+                                            } else {
+                                                $statusClass = 'status-present';
+                                                $statusText = 'Present';
+                                            }
                                         } else {
                                             $statusClass = 'status-absent';
                                             $statusText = $record['status'] ?? 'Absent';
