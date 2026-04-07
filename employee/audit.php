@@ -1,5 +1,7 @@
 <?php
 // employee/audit.php - Attendance Audit with Calendar View, Pagination, Rate Limiting, and Search
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 require_once __DIR__ . '/../conn/db_connection.php';
 require_once __DIR__ . '/../functions.php';
 session_start();
@@ -553,6 +555,11 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 <button onclick="toggleExportForm()" class="btn-nav bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 border-green-500">
                     <i class="fas fa-file-excel mr-2"></i>Export Excel
                 </button>
+                
+                <!-- Individual Report - Links to separate selector page -->
+                <a href="individual_report_selector.php" class="btn-nav bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 border-blue-500">
+                    <i class="fas fa-user mr-2"></i>Individual Report
+                </a>
             </div>
             
             <!-- Export Excel with Date Range, Branch & Employee Selection -->
@@ -574,7 +581,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                             <option value="">All Branches</option>
                             <?php
                             // Fetch all branches
-                            $branchesQuery = "SELECT branch_name FROM branches WHERE is_active = 1 ORDER BY branch_name";
+                            $branchesQuery = "SELECT branch_name FROM branches ORDER BY branch_name";
                             $branchesResult = mysqli_query($db, $branchesQuery);
                             while ($branch = mysqli_fetch_assoc($branchesResult)):
                             ?>
@@ -588,7 +595,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                             <option value="">All Employees</option>
                             <?php
                             // Fetch all active employees
-                            $employeesQuery = "SELECT id, first_name, last_name, employee_code FROM employees WHERE is_active = 1 ORDER BY last_name, first_name";
+                            $employeesQuery = "SELECT id, first_name, last_name, employee_code FROM employees ORDER BY last_name, first_name";
                             $employeesResult = mysqli_query($db, $employeesQuery);
                             while ($emp = mysqli_fetch_assoc($employeesResult)):
                             ?>
