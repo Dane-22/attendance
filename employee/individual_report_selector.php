@@ -260,10 +260,14 @@ $employeesResult = mysqli_query($db, $employeesQuery);
                             <label class="block text-sm font-medium text-gray-300 mb-2">
                                 <i class="fas fa-user-circle mr-2 text-blue-400"></i>Select Employee *
                             </label>
+                            <div class="mb-2">
+                                <input type="text" id="employeeSearch" placeholder="Search employee name..." 
+                                       class="w-full px-3 py-2 bg-black/30 border border-blue-500/30 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+                            </div>
                             <select name="employee_id" id="employee_id" class="employee-select" required>
                                 <option value="">-- Choose an Employee --</option>
                                 <?php while ($emp = mysqli_fetch_assoc($employeesResult)): ?>
-                                <option value="<?= $emp['id'] ?>">
+                                <option value="<?= $emp['id'] ?>" data-name="<?= htmlspecialchars($emp['last_name'] . ', ' . $emp['first_name']) ?>">
                                     <?= htmlspecialchars($emp['last_name'] . ', ' . $emp['first_name']) ?>
                                 </option>
                                 <?php endwhile; ?>
@@ -368,6 +372,28 @@ $employeesResult = mysqli_query($db, $employeesQuery);
         document.getElementById('end_date').addEventListener('change', function() {
             document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
             updatePreview();
+        });
+
+        // Employee search filter
+        document.getElementById('employeeSearch').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const select = document.getElementById('employee_id');
+            const options = select.querySelectorAll('option:not([value=""])');
+            
+            options.forEach(option => {
+                const name = option.getAttribute('data-name').toLowerCase();
+                if (name.includes(searchTerm)) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Reset to placeholder if currently selected option is hidden
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption && selectedOption.style.display === 'none') {
+                select.value = '';
+            }
         });
 
         // Initialize preview
