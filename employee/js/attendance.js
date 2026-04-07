@@ -1153,6 +1153,11 @@ function debugUndo() {
             updateGlobalUndoUI();
           }
           reloadEmployees();
+          
+          // Check for overtime if clock-out was successful
+          if (typeof checkOvertimeOnClockOut === 'function') {
+            checkOvertimeOnClockOut(data);
+          }
           return;
         }
         throw new Error(data.message || 'Failed to Time Out');

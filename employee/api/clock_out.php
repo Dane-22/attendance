@@ -133,6 +133,7 @@ if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
     $timeOut = null;
     $shiftHours = null;
     $totalHoursToday = null;
+    $timeIn = null;
 
     $timeStmt = mysqli_prepare($db, "SELECT time_in, time_out FROM attendance WHERE id = ? AND employee_id = ? LIMIT 1");
     if ($timeStmt) {
@@ -141,8 +142,44 @@ if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
         $timeRes = mysqli_stmt_get_result($timeStmt);
         if ($timeRes && ($timeRow = mysqli_fetch_assoc($timeRes))) {
             $timeOut = $timeRow['time_out'] ?? null;
+            $timeIn = $timeRow['time_in'] ?? null;
         }
         mysqli_stmt_close($timeStmt);
+    }
+
+    // Overtime detection for Workers and Drivers
+    $overtimeData = null;
+    $userPosition = strtolower($_SESSION['position'] ?? '');
+    
+    if (in_array($userPosition, ['worker', 'driver']) && $timeOut) {
+        $overtimePromptTime = '16:15:00'; // 4:15 PM
+        $overtimeStartTime = '16:00:00';  // 4:00 PM
+        $timeOut24 = date('H:i:s', strtotime($timeOut));
+        
+        // Check if clock-out is 4:15 PM or later
+        if (strtotime($timeOut24) >= strtotime($overtimePromptTime)) {
+            // Calculate overtime hours from 4:00 PM
+            $regularEnd = strtotime($overtimeStartTime);
+            $clockOut = strtotime($timeOut24);
+            $overtimeSeconds = $clockOut - $regularEnd;
+            $overtimeHours = round($overtimeSeconds / 3600, 2);
+            
+            // Check if worker clocked in before 4:00 PM (full shift)
+            $timeInCheck = strtotime($timeIn ?? '00:00:00');
+            $shiftStart = strtotime('07:00:00'); // Assume 7 AM start
+            
+            if ($timeInCheck <= $shiftStart || $timeInCheck < strtotime($overtimeStartTime)) {
+                $overtimeData = [
+                    'show_overtime_prompt' => true,
+                    'overtime_hours' => $overtimeHours,
+                    'overtime_start' => '4:00 PM',
+                    'overtime_end' => date('g:i A', strtotime($timeOut)),
+                    'overtime_start_24' => $overtimeStartTime,
+                    'overtime_end_24' => $timeOut24,
+                    'shift_id' => $shiftId
+                ];
+            }
+        }
     }
 
     $hoursStmt = mysqli_prepare($db, "SELECT (TIME_TO_SEC(TIMEDIFF(time_out, time_in)) / 3600) AS shift_hours FROM attendance WHERE id = ? AND employee_id = ? AND time_in IS NOT NULL AND time_out IS NOT NULL LIMIT 1");
@@ -167,13 +204,20 @@ if (mysqli_stmt_execute($stmt) && mysqli_stmt_affected_rows($stmt) > 0) {
         mysqli_stmt_close($totalStmt);
     }
 
-    echo json_encode([
+    $response = [
         'success' => true, 
         'message' => 'Clocked out successfully', 
         'time_out' => $timeOut,
         'shift_hours' => $shiftHours,
-        'total_hours_today' => $totalHoursToday
-    ]);
+        'total_hours_today' => $totalHoursToday,
+        'shift_id' => $shiftId
+    ];
+    
+    if ($overtimeData) {
+        $response = array_merge($response, $overtimeData);
+    }
+    
+    echo json_encode($response);
     logActivity($db, 'Clocked Out', "Employee #{$employeeId} clocked out, worked {$shiftHours} hours");
 } else {
     echo json_encode(['success' => false, 'message' => 'Unable to clock out or already clocked out']);

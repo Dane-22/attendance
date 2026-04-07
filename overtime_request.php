@@ -15,8 +15,9 @@ header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
 
 try {
-    // Include database connection
+    // Include database connection and functions
     require_once __DIR__ . '/conn/db_connection.php';
+    require_once __DIR__ . '/functions.php';
 
     // Get input data (support both form-data and JSON)
     $input = [];
@@ -52,12 +53,13 @@ try {
     $requested_hours = floatval($input['requested_hours']);
     $overtime_reason = mysqli_real_escape_string($db, trim($input['overtime_reason']));
 
-    // Validate hours (max 4 hours)
-    if ($requested_hours <= 0 || $requested_hours > 4) {
+    // Validate hours (max 8 hours for QR, 4 for manual)
+    $max_hours = (isset($input['source']) && $input['source'] === 'qr_clockout') ? 8 : 4;
+    if ($requested_hours <= 0 || $requested_hours > $max_hours) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
-            'message' => 'Requested hours must be between 0.5 and 4 hours'
+            'message' => 'Requested hours must be between 0.5 and ' . $max_hours . ' hours'
         ]);
         exit;
     }
@@ -66,6 +68,11 @@ try {
     $requested_by = isset($input['requested_by']) ? trim($input['requested_by']) : 'System';
     $requested_by_user_id = isset($input['requested_by_user_id']) ? intval($input['requested_by_user_id']) : null;
     $request_date = date('Y-m-d');
+    
+    // If QR clock-out source, update requested_by
+    if (isset($input['source']) && $input['source'] === 'qr_clockout') {
+        $requested_by = 'QR Clock-out';
+    }
 
     // Check for duplicate request for this date
     $check_sql = "SELECT id FROM overtime_requests WHERE employee_id = ? AND request_date = ? AND status != 'rejected'";
@@ -101,6 +108,13 @@ try {
 
     if (mysqli_stmt_execute($stmt)) {
         $request_id = mysqli_insert_id($db);
+        
+        // Log the overtime request creation
+        $log_message = "Overtime request #{$request_id} created for employee #{$employee_id}: {$requested_hours} hours";
+        if (isset($input['source']) && $input['source'] === 'qr_clockout') {
+            $log_message .= " (via QR clock-out)";
+        }
+        logActivity($db, 'Overtime Request Created', $log_message);
         
         // Create notification for the employee
         $notif_title = "Overtime Request Submitted";
