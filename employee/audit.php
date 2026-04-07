@@ -551,22 +551,22 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 </button>
             </div>
             
-            <!-- Export Form (Hidden by default) -->
+            <!-- Export Excel with Date Range, Branch & Employee Selection -->
             <div id="exportForm" class="hidden mt-4 p-4 bg-white/5 rounded-lg border border-green-500/30">
-                <form action="export_attendance_excel.php" method="GET" class="flex flex-wrap gap-3 items-end">
+                <form id="exportFormElement" class="flex flex-wrap gap-3 items-end">
                     <div class="min-w-[150px]">
                         <label class="text-sm text-gray-400 block mb-1">Start Date</label>
-                        <input type="date" name="start_date" value="<?php echo date('Y-m-d', strtotime('-7 days')); ?>" 
+                        <input type="date" name="start_date" id="exportStartDate" value="<?php echo date('Y-m-d', strtotime('-7 days')); ?>" 
                                class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500" required>
                     </div>
                     <div class="min-w-[150px]">
                         <label class="text-sm text-gray-400 block mb-1">End Date</label>
-                        <input type="date" name="end_date" value="<?php echo date('Y-m-d'); ?>" 
+                        <input type="date" name="end_date" id="exportEndDate" value="<?php echo date('Y-m-d'); ?>" 
                                class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500" required>
                     </div>
                     <div class="min-w-[200px]">
                         <label class="text-sm text-gray-400 block mb-1">Branch</label>
-                        <select name="branch" class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500">
+                        <select name="branch" id="exportBranch" class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500">
                             <option value="">All Branches</option>
                             <?php
                             // Fetch all branches
@@ -578,12 +578,31 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    <button type="submit" class="btn-nav bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 border-green-500 h-[38px]">
-                        <i class="fas fa-download mr-2"></i>Download
-                    </button>
-                    <button type="button" onclick="toggleExportForm()" class="btn-nav bg-gray-600 hover:bg-gray-500 border-gray-500 h-[38px]">
-                        <i class="fas fa-times mr-2"></i>Cancel
-                    </button>
+                    <div class="min-w-[220px]">
+                        <label class="text-sm text-gray-400 block mb-1">Employee</label>
+                        <select name="employee_id" id="exportEmployee" class="w-full px-3 py-2 bg-black/30 border border-green-500/30 rounded text-white focus:outline-none focus:border-green-500">
+                            <option value="">All Employees</option>
+                            <?php
+                            // Fetch all active employees
+                            $employeesQuery = "SELECT id, first_name, last_name, employee_code FROM employees WHERE is_active = 1 ORDER BY last_name, first_name";
+                            $employeesResult = mysqli_query($db, $employeesQuery);
+                            while ($emp = mysqli_fetch_assoc($employeesResult)):
+                            ?>
+                            <option value="<?php echo $emp['id']; ?>"><?php echo htmlspecialchars($emp['last_name'] . ', ' . $emp['first_name'] . ' (' . $emp['employee_code'] . ')'); ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="button" onclick="exportAttendance('all')" class="btn-nav bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 border-green-500 h-[38px]">
+                            <i class="fas fa-file-excel mr-2"></i>Export All
+                        </button>
+                        <button type="button" onclick="exportAttendance('individual')" class="btn-nav bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 border-blue-500 h-[38px]">
+                            <i class="fas fa-user mr-2"></i>Individual Report
+                        </button>
+                        <button type="button" onclick="toggleExportForm()" class="btn-nav bg-gray-600 hover:bg-gray-500 border-gray-500 h-[38px]">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </button>
+                    </div>
                 </form>
             </div>
             
@@ -591,6 +610,36 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             function toggleExportForm() {
                 const form = document.getElementById('exportForm');
                 form.classList.toggle('hidden');
+            }
+            
+            function exportAttendance(type) {
+                const startDate = document.getElementById('exportStartDate').value;
+                const endDate = document.getElementById('exportEndDate').value;
+                const branch = document.getElementById('exportBranch').value;
+                const employeeId = document.getElementById('exportEmployee').value;
+                
+                if (!startDate || !endDate) {
+                    alert('Please select both start and end dates.');
+                    return;
+                }
+                
+                let url;
+                if (type === 'individual' && employeeId) {
+                    url = 'export_employee_individual.php?start_date=' + encodeURIComponent(startDate) + 
+                          '&end_date=' + encodeURIComponent(endDate) + 
+                          '&employee_id=' + encodeURIComponent(employeeId);
+                } else if (type === 'individual' && !employeeId) {
+                    alert('Please select an employee for individual report.');
+                    return;
+                } else {
+                    url = 'export_attendance_excel.php?start_date=' + encodeURIComponent(startDate) + 
+                          '&end_date=' + encodeURIComponent(endDate);
+                    if (branch) {
+                        url += '&branch=' + encodeURIComponent(branch);
+                    }
+                }
+                
+                window.location.href = url;
             }
             </script>
         </div>
