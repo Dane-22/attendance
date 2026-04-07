@@ -22,10 +22,10 @@ if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 
     exit;
 }
 
-// Get parameters
-$startDate = $_GET['start_date'] ?? null;
-$endDate = $_GET['end_date'] ?? null;
-$employeeId = $_GET['employee_id'] ?? null;
+// Get parameters (support both GET and POST)
+$startDate = $_GET['start_date'] ?? $_POST['start_date'] ?? null;
+$endDate = $_GET['end_date'] ?? $_POST['end_date'] ?? null;
+$employeeId = $_GET['employee_id'] ?? $_POST['employee_id'] ?? null;
 
 // Validate required parameters
 if (!$startDate || !$endDate || !$employeeId) {
