@@ -264,7 +264,7 @@ $employeesResult = mysqli_query($db, $employeesQuery);
                                 <option value="">-- Choose an Employee --</option>
                                 <?php while ($emp = mysqli_fetch_assoc($employeesResult)): ?>
                                 <option value="<?= $emp['id'] ?>">
-                                    <?= htmlspecialchars($emp['last_name'] . ', ' . $emp['first_name'] . ' (' . $emp['employee_code'] . ') - ' . $emp['position']) ?>
+                                    <?= htmlspecialchars($emp['last_name'] . ', ' . $emp['first_name']) ?>
                                 </option>
                                 <?php endwhile; ?>
                             </select>
