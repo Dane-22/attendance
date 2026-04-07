@@ -98,6 +98,24 @@ $employeesResult = mysqli_query($db, $employeesQuery);
             padding: 12px 16px;
             width: 100%;
             font-size: 16px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        .employee-select option {
+            background: #1a1a1a;
+            color: white;
+            padding: 8px;
+        }
+        .employee-select option:hover,
+        .employee-select option:focus,
+        .employee-select option:active {
+            background: #2a2a2a;
         }
         .date-input:focus, .employee-select:focus {
             outline: none;
@@ -167,10 +185,6 @@ $employeesResult = mysqli_query($db, $employeesQuery);
             border-radius: 8px;
             padding: 16px;
             margin-top: 16px;
-        }
-        .employee-option {
-            background: #1a1a1a;
-            color: white;
         }
     </style>
 </head>
