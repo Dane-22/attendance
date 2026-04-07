@@ -15,7 +15,7 @@ const GeoLocator = {
     
     // Configuration based on user decisions
     config: {
-        defaultRadius: 200, // meters
+        defaultRadius: 1000, // meters
         maxAge: 60000, // 1 minute cache
         timeout: 10000, // 10 second timeout
         enableHighAccuracy: true,

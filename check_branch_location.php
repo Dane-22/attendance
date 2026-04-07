@@ -31,7 +31,7 @@ echo "<tr>
 while ($row = mysqli_fetch_assoc($result)) {
     $lat = $row['lat'];
     $lng = $row['long'];
-    $radius = $row['geofence_radius_meters'] ?: 200;
+    $radius = $row['geofence_radius_meters'] ?: 1000;
     
     // Check if coordinates are valid
     $hasValidCoords = ($lat && $lng && $lat != 0 && $lng != 0);

@@ -75,7 +75,7 @@ try {
     );
 
     // Use default radius if not set
-    $radius = $branch['geofence_radius_meters'] ?? 200;
+    $radius = $branch['geofence_radius_meters'] ?? 1000;
     $is_valid = $distance <= $radius;
 
     // Determine enforcement type based on employee role (if employee_id provided)

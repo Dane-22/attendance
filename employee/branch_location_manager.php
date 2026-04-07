@@ -111,7 +111,7 @@ $missing_coords = array_filter($branches, function($b) {
                              data-branch-id="<?php echo $branch['id']; ?>"
                              data-lat="<?php echo $branch['lat']; ?>"
                              data-lng="<?php echo $branch['lng']; ?>"
-                             data-radius="<?php echo $branch['geofence_radius_meters'] ?? 200; ?>"
+                             data-radius="<?php echo $branch['geofence_radius_meters'] ?? 1000; ?>"
                              onclick="selectBranch(<?php echo $branch['id']; ?>)">
                             <div class="flex items-start justify-between">
                                 <div>
@@ -126,7 +126,7 @@ $missing_coords = array_filter($branches, function($b) {
                             <div class="mt-2 text-xs text-gray-500">
                                 <span class="font-mono"><?php echo number_format((float)$branch['lat'], 6); ?>, <?php echo number_format((float)$branch['lng'], 6); ?></span>
                                 <br>
-                                <span>Radius: <?php echo $branch['geofence_radius_meters'] ?? 200; ?>m</span>
+                                <span>Radius: <?php echo $branch['geofence_radius_meters'] ?? 1000; ?>m</span>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -182,13 +182,13 @@ $missing_coords = array_filter($branches, function($b) {
                         <!-- Radius Control -->
                         <div class="radius-control">
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Geofence Radius: <span id="radiusValue">200</span> meters
+                                Geofence Radius: <span id="radiusValue">1000</span> meters
                             </label>
                             <div class="radius-slider">
-                                <input type="range" id="radius" name="radius" min="50" max="500" value="200" step="10"
+                                <input type="range" id="radius" name="radius" min="50" max="2000" value="1000" step="10"
                                        oninput="updateRadiusDisplay(this.value)">
                                 <span class="text-xs text-gray-500">50m</span>
-                                <span class="text-xs text-gray-500 ml-auto">500m</span>
+                                <span class="text-xs text-gray-500 ml-auto">2000m</span>
                             </div>
                             <p class="text-xs text-gray-500 mt-1">
                                 Employees must be within this radius to clock in without warning
@@ -226,7 +226,7 @@ $missing_coords = array_filter($branches, function($b) {
                     <ol class="text-sm text-blue-800 space-y-1 list-decimal list-inside">
                         <li>Click on a branch from the list on the left</li>
                         <li>Drag the marker on the map to the exact location</li>
-                        <li>Adjust the geofence radius slider (default: 200m)</li>
+                        <li>Adjust the geofence radius slider (default: 1000m)</li>
                         <li>Click "Save Location" to store the coordinates</li>
                     </ol>
                 </div>
@@ -306,7 +306,7 @@ MAIN OFFICE,16.6000000,120.3000000,300"></textarea>
             const branchCard = document.querySelector(`[data-branch-id="${branchId}"]`);
             const lat = parseFloat(branchCard.dataset.lat);
             const lng = parseFloat(branchCard.dataset.lng);
-            const radius = parseInt(branchCard.dataset.radius) || 200;
+            const radius = parseInt(branchCard.dataset.radius) || 1000;
             const branchName = branchCard.querySelector('h3').textContent;
             
             // Show editor
@@ -482,7 +482,7 @@ MAIN OFFICE,16.6000000,120.3000000,300"></textarea>
                     formData.append('branch_id', branchId);
                     formData.append('latitude', lat);
                     formData.append('longitude', lng);
-                    formData.append('radius', radius || 200);
+                    formData.append('radius', radius || 1000);
                     
                     try {
                         const response = await fetch('api/update_branch_location.php', {

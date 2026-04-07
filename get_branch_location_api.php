@@ -47,7 +47,7 @@ $branch = [
     'branch_address' => $row['branch_address'],
     'latitude' => $row['lat'],
     'longitude' => $row['long'],
-    'geofence_radius_meters' => (int)($row['geofence_radius_meters'] ?? 200),
+    'geofence_radius_meters' => (int)($row['geofence_radius_meters'] ?? 1000),
     'location_verified' => (int)($row['location_verified'] ?? 0),
 ];
 

@@ -218,14 +218,14 @@ if (!$branch) {
 
 $branchLat = isset($branch['lat']) ? (float)$branch['lat'] : 0.0;
 $branchLng = isset($branch['long']) ? (float)$branch['long'] : 0.0;
-$radius = (int)($branch['geofence_radius_meters'] ?? 200);
+$radius = (int)($branch['geofence_radius_meters'] ?? 1000);
 
 if (!$branchLat || !$branchLng) {
     echo json_encode([
         'success' => true,
         'is_valid' => false,
         'distance_meters' => null,
-        'radius_meters' => $radius,
+        'radius_meters' => 1000,
         'remaining_meters' => 0,
         'outside_by_meters' => null,
         'enforcement' => 'soft',

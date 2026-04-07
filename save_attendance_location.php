@@ -87,7 +87,7 @@ if (!in_array($action, $allowedActions, true)) {
 
 $branchLat = null;
 $branchLng = null;
-$radius = 200;
+$radius = 1000;
 
 $bStmt = mysqli_prepare($db, "SELECT lat, `long`, geofence_radius_meters FROM branches WHERE id = ? LIMIT 1");
 if (!$bStmt) {
@@ -110,7 +110,7 @@ if (!empty($bRow['lat']) && !empty($bRow['long'])) {
     $branchLat = (float)$bRow['lat'];
     $branchLng = (float)$bRow['long'];
 }
-$radius = (int)($bRow['geofence_radius_meters'] ?? 200);
+$radius = (int)($bRow['geofence_radius_meters'] ?? 1000);
 
 $distanceMeters = null;
 if ($branchLat !== null && $branchLng !== null) {
