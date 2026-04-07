@@ -861,7 +861,9 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                             </td>
                                             <?php endif; ?>
                                             <td>
-                                                <div class="font-medium text-white">
+                                                <div class="font-medium text-white cursor-pointer hover:text-orange-400 transition-colors"
+                                                     onclick="openEmployeeCalendar(<?php echo $record['employee_id']; ?>, '<?php echo htmlspecialchars($record['first_name'] . ' ' . $record['last_name'], ENT_QUOTES); ?>')"
+                                                     title="Click to view attendance calendar">
                                                     <?php echo htmlspecialchars($record['first_name'] . ' ' . $record['last_name']); ?>
                                                 </div>
                                                 <div class="text-xs text-gray-400">
@@ -1319,5 +1321,646 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         })();
     </script>
     <?php endif; ?>
+
+    <!-- Individual Employee Calendar Modal -->
+    <div id="individualCalendarModal" class="individual-calendar-modal" style="display: none;">
+        <div class="individual-calendar-container">
+            <!-- Modal Header -->
+            <div class="individual-calendar-header">
+                <div class="header-left">
+                    <h2 id="individualCalendarTitle">Employee Calendar</h2>
+                    <span id="individualCalendarPosition" class="position-badge"></span>
+                </div>
+                <div class="header-center">
+                    <button class="nav-btn" onclick="navigateIndividualCalendar(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="individualCalendarMonth" class="month-display"></span>
+                    <button class="nav-btn" onclick="navigateIndividualCalendar(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="header-right">
+                    <button class="close-btn" onclick="closeIndividualCalendar()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="individualCalendarLoading" class="calendar-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading attendance data...</span>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="individualCalendarContent" class="individual-calendar-content" style="display: none;">
+                <!-- Weekday Headers -->
+                <div class="calendar-weekdays">
+                    <div class="weekday">Sun</div>
+                    <div class="weekday">Mon</div>
+                    <div class="weekday">Tue</div>
+                    <div class="weekday">Wed</div>
+                    <div class="weekday">Thu</div>
+                    <div class="weekday">Fri</div>
+                    <div class="weekday">Sat</div>
+                </div>
+
+                <!-- Calendar Days Grid -->
+                <div id="individualCalendarGrid" class="individual-calendar-grid">
+                    <!-- Days will be rendered here by JavaScript -->
+                </div>
+
+                <!-- Legend -->
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color day-present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color day-late"></div>
+                        <span>Late</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color day-absent"></div>
+                        <span>Absent</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Calendar Styles -->
+    <style>
+        /* Modal Overlay */
+        .individual-calendar-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Modal Container */
+        .individual-calendar-container {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Modal Header */
+        .individual-calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 165, 0, 0.2);
+            background: rgba(255, 165, 0, 0.05);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-left h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .position-badge {
+            background: rgba(255, 165, 0, 0.2);
+            color: #FFA500;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .month-display {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #FFA500;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .nav-btn {
+            background: rgba(255, 165, 0, 0.15);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            color: #FFA500;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 165, 0, 0.3);
+            transform: scale(1.05);
+        }
+
+        .close-btn {
+            background: rgba(244, 67, 54, 0.15);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #F44336;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* Loading State */
+        .calendar-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #9CA3AF;
+            gap: 16px;
+        }
+
+        .calendar-loading i {
+            font-size: 2rem;
+            color: #FFA500;
+        }
+
+        /* Calendar Content */
+        .individual-calendar-content {
+            padding: 20px 24px;
+            overflow-y: auto;
+            max-height: calc(90vh - 100px);
+        }
+
+        /* Weekday Headers */
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .weekday {
+            text-align: center;
+            padding: 12px 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #FFA500;
+            text-transform: uppercase;
+            background: rgba(255, 165, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        /* Calendar Grid */
+        .individual-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        /* Day Cell */
+        .calendar-day-cell {
+            aspect-ratio: 1;
+            min-height: 80px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .day-number {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .day-other-month .day-number {
+            color: #6B7280;
+        }
+
+        .day-times {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            flex: 1;
+        }
+
+        .day-time-in {
+            color: #4CAF50;
+        }
+
+        .day-time-out {
+            color: #9CAF50;
+        }
+
+        .day-status {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-top: auto;
+        }
+
+        /* Status Styles */
+        .day-present {
+            background: rgba(76, 175, 80, 0.15);
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .day-present .day-status {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+
+        .day-late {
+            background: rgba(255, 152, 0, 0.15);
+            border-color: rgba(255, 152, 0, 0.3);
+        }
+
+        .day-late .day-status {
+            background: rgba(255, 152, 0, 0.3);
+            color: #FF9800;
+        }
+
+        .day-absent {
+            background: rgba(244, 67, 54, 0.15);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+        .day-absent .day-status {
+            background: rgba(244, 67, 54, 0.3);
+            color: #F44336;
+        }
+
+        .day-today {
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+
+        .day-other-month {
+            opacity: 0.5;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Legend */
+        .calendar-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: #9CA3AF;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .individual-calendar-modal {
+                padding: 0;
+            }
+
+            .individual-calendar-container {
+                max-width: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+
+            .individual-calendar-header {
+                padding: 16px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .header-left h2 {
+                font-size: 1rem;
+            }
+
+            .month-display {
+                font-size: 0.9rem;
+                min-width: 120px;
+            }
+
+            .individual-calendar-content {
+                padding: 12px;
+            }
+
+            .calendar-weekdays .weekday {
+                padding: 8px 2px;
+                font-size: 0.65rem;
+            }
+
+            .calendar-day-cell {
+                min-height: 60px;
+                padding: 4px;
+            }
+
+            .day-number {
+                font-size: 0.75rem;
+            }
+
+            .day-times {
+                font-size: 0.6rem;
+            }
+
+            .day-status {
+                font-size: 0.55rem;
+            }
+
+            .calendar-legend {
+                gap: 12px;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .individual-calendar-grid,
+            .calendar-weekdays {
+                gap: 4px;
+            }
+
+            .calendar-day-cell {
+                min-height: 50px;
+            }
+
+            .day-times {
+                display: none;
+            }
+
+            .day-status {
+                font-size: 0.5rem;
+                padding: 1px 2px;
+            }
+        }
+    </style>
+
+    <!-- Individual Calendar JavaScript -->
+    <script>
+        // Individual Calendar State
+        let currentEmployeeId = null;
+        let currentEmployeeName = null;
+        let currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+
+        /**
+         * Open the individual employee calendar modal
+         */
+        function openEmployeeCalendar(employeeId, employeeName) {
+            currentEmployeeId = employeeId;
+            currentEmployeeName = employeeName;
+            currentMonth = new Date().toISOString().slice(0, 7);
+
+            // Update title
+            document.getElementById('individualCalendarTitle').textContent = employeeName;
+
+            // Show modal
+            const modal = document.getElementById('individualCalendarModal');
+            modal.style.display = 'flex';
+
+            // Show loading, hide content
+            document.getElementById('individualCalendarLoading').style.display = 'flex';
+            document.getElementById('individualCalendarContent').style.display = 'none';
+
+            // Load data
+            loadIndividualCalendarData();
+        }
+
+        /**
+         * Close the individual calendar modal
+         */
+        function closeIndividualCalendar() {
+            const modal = document.getElementById('individualCalendarModal');
+            modal.style.display = 'none';
+            currentEmployeeId = null;
+            currentEmployeeName = null;
+        }
+
+        /**
+         * Navigate to previous or next month
+         */
+        function navigateIndividualCalendar(direction) {
+            const [year, month] = currentMonth.split('-').map(Number);
+            let newYear = year;
+            let newMonth = month + direction;
+
+            if (newMonth > 12) {
+                newMonth = 1;
+                newYear++;
+            } else if (newMonth < 1) {
+                newMonth = 12;
+                newYear--;
+            }
+
+            currentMonth = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+            loadIndividualCalendarData();
+        }
+
+        /**
+         * Load calendar data from API
+         */
+        async function loadIndividualCalendarData() {
+            if (!currentEmployeeId) return;
+
+            // Show loading
+            document.getElementById('individualCalendarLoading').style.display = 'flex';
+            document.getElementById('individualCalendarContent').style.display = 'none';
+
+            try {
+                const response = await fetch(`api/get_employee_attendance_detailed.php?employee_id=${currentEmployeeId}&month=${currentMonth}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderIndividualCalendar(data);
+                } else {
+                    console.error('Failed to load calendar data:', data.message);
+                    alert('Failed to load attendance data: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error loading calendar data:', error);
+                alert('Error loading attendance data. Please try again.');
+            } finally {
+                document.getElementById('individualCalendarLoading').style.display = 'none';
+                document.getElementById('individualCalendarContent').style.display = 'block';
+            }
+        }
+
+        /**
+         * Render the calendar with attendance data
+         */
+        function renderIndividualCalendar(data) {
+            const [year, month] = currentMonth.split('-').map(Number);
+
+            // Update month display
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('individualCalendarMonth').textContent = `${monthNames[month - 1]} ${year}`;
+
+            // Update position badge
+            document.getElementById('individualCalendarPosition').textContent = data.position || 'Employee';
+
+            // Build attendance map
+            const attendanceMap = {};
+            data.days.forEach(day => {
+                attendanceMap[day.date] = day;
+            });
+
+            // Generate calendar grid
+            const grid = document.getElementById('individualCalendarGrid');
+            grid.innerHTML = '';
+
+            const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const today = new Date().toISOString().slice(0, 10);
+
+            // Previous month days
+            const prevMonth = month === 1 ? 12 : month - 1;
+            const prevYear = month === 1 ? year - 1 : year;
+            const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
+
+            for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+                const dayNum = daysInPrevMonth - i;
+                const dayEl = createDayElement(dayNum, null, true);
+                grid.appendChild(dayEl);
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayData = attendanceMap[dateStr];
+                const isToday = dateStr === today;
+                const dayEl = createDayElement(day, dayData, false, isToday);
+                grid.appendChild(dayEl);
+            }
+
+            // Next month days to fill grid
+            const totalCells = firstDayOfMonth + daysInMonth;
+            const remainingCells = (7 - (totalCells % 7)) % 7;
+
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayEl = createDayElement(day, null, true);
+                grid.appendChild(dayEl);
+            }
+        }
+
+        /**
+         * Create a day element for the calendar
+         */
+        function createDayElement(dayNum, dayData, isOtherMonth, isToday = false) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day-cell';
+
+            if (isOtherMonth) {
+                dayEl.classList.add('day-other-month');
+            }
+
+            if (dayData) {
+                const status = dayData.status || 'Absent';
+                dayEl.classList.add(`day-${status.toLowerCase()}`);
+
+                if (isToday) {
+                    dayEl.classList.add('day-today');
+                }
+
+                let timesHtml = '';
+                if (dayData.time_in) {
+                    timesHtml += `<span class="day-time-in">${dayData.time_in}</span>`;
+                }
+                if (dayData.time_out) {
+                    timesHtml += `<span class="day-time-out">${dayData.time_out}</span>`;
+                }
+
+                dayEl.innerHTML = `
+                    <span class="day-number">${dayNum}</span>
+                    <div class="day-times">${timesHtml}</div>
+                    <span class="day-status">${status}</span>
+                `;
+            } else {
+                if (isToday) {
+                    dayEl.classList.add('day-today');
+                }
+
+                dayEl.innerHTML = `
+                    <span class="day-number">${dayNum}</span>
+                    <div class="day-times"></div>
+                `;
+            }
+
+            return dayEl;
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeIndividualCalendar();
+            }
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('individualCalendarModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeIndividualCalendar();
+            }
+        });
+    </script>
 </body>
 </html>

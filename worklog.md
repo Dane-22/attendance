@@ -682,3 +682,97 @@ The "need to pay" message is NOT from map/geolocation services. The QR scanning 
 4. This helps identify tardiness patterns for HR/payroll review
 
 ---
+
+### 2026-04-07
+
+**Task:** Implement QR Scan Overtime Detection Feature
+
+**Status:** ✅ Completed | Later Reverted
+
+**Problem:** Workers and Drivers who clocked out after 4:15 PM needed a way to report overtime hours automatically. The system needed to detect when workers exceeded regular hours and prompt them to confirm if the extra time was overtime.
+
+**Requirements:**
+- Trigger overtime prompt when clock-out is 4:15 PM or later
+- Calculate overtime hours from 4:00 PM to actual clock-out time
+- Only apply to 'Worker' and 'Driver' positions
+- Prompt worker to confirm if time was overtime
+- If yes, submit overtime request automatically with reason
+- Integrate with existing notification and logging systems
+
+**Actions Taken:**
+1. Created overtime detection modal in `select_employee.php` with:
+   - Hours display showing calculated overtime
+   - YES/NO buttons for confirmation
+   - Reason textarea (minimum 10 characters)
+   - Mobile responsive styling with media queries
+2. Modified `api/qr_clock.php` to detect overtime:
+   - Check if position is Worker/Driver
+   - Compare clock-out time against 4:15 PM threshold
+   - Calculate hours from 4:00 PM to clock-out time
+   - Return overtime data in JSON response
+3. Modified `api/clock_out.php` with same overtime detection logic
+4. Updated `overtime_request.php` to accept QR-generated requests:
+   - Allow up to 8 hours for QR requests (vs 4 for manual)
+   - Set `requested_by = 'QR Clock-out'` for tracking
+   - Added logging for QR overtime requests
+5. Added `checkOvertimeOnClockOut()` function call in `attendance.js`
+6. Fixed HTML/PHP structure issue in `select_employee.php` where PHP leaked into JavaScript
+7. Added mobile responsive CSS with breakpoints at 640px and 380px
+
+**Files Modified:**
+- `employee/select_employee.php` - Overtime modal HTML, CSS, JavaScript handlers
+- `employee/api/qr_clock.php` - Overtime detection logic for QR clock-out
+- `employee/api/clock_out.php` - Overtime detection for regular clock-out
+- `overtime_request.php` - QR-specific validation and logging
+- `employee/js/attendance.js` - Overtime check integration in performClockOut()
+
+**Feature Behavior:**
+- Clock-out at 4:16 PM → Shows modal: "Overtime Detected: 0.27 hrs (4:00 PM - 4:16 PM)"
+- Worker clicks "Yes, It Was Overtime" → Shows reason form
+- Worker enters reason (min 10 chars) → Submits overtime request
+- Request appears in admin notifications with "QR Clock-out" as requester
+- Activity logged to logs.php
+
+**Revert Decision:** Feature was later reverted per user request. See below entry for revert details.
+
+---
+
+### 2026-04-07
+
+**Task:** Revert QR Scan Overtime Detection Feature
+
+**Status:** ✅ Completed
+
+**Problem:** User requested to undo/remove the QR scan overtime feature that was implemented earlier in the day.
+
+**Actions Taken:**
+1. Reverted `select_employee.php`:
+   - Removed overtime modal HTML
+   - Removed overtime CSS styles (180+ lines)
+   - Removed overtime JavaScript handlers (100+ lines)
+2. Reverted `api/qr_clock.php`:
+   - Removed overtime detection logic (35 lines)
+   - Simplified JSON response to remove overtime fields
+3. Reverted `api/clock_out.php`:
+   - Removed overtime detection logic (33 lines)
+   - Removed overtime data from response
+4. Reverted `overtime_request.php`:
+   - Changed max hours back to 4 (removed QR 8-hour exception)
+   - Removed QR source tracking (`requested_by = 'QR Clock-out'`)
+   - Removed QR-specific logging
+5. Reverted `employee/js/attendance.js`:
+   - Removed `checkOvertimeOnClockOut()` call from performClockOut()
+
+**Files Modified:**
+- `employee/select_employee.php` - Removed overtime modal, CSS, and JavaScript
+- `employee/api/qr_clock.php` - Removed overtime detection
+- `employee/api/clock_out.php` - Removed overtime detection
+- `overtime_request.php` - Reverted to original 4-hour max validation
+- `employee/js/attendance.js` - Removed overtime check integration
+
+**Files Created:**
+- `UNDO_QR_OVERTIME.md` - Complete guide on how to undo the feature with all code snippets
+
+**Result:** QR overtime feature fully reverted. Clock-out now works normally without prompting for overtime. Manual overtime requests via the kebab menu still work as before.
+
+---

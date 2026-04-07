@@ -990,3 +990,16 @@ Stack trace:
 [07-Apr-2026 13:34:22 Asia/Manila] [report.php] Total employees with allowances: 0
 [07-Apr-2026 13:34:22 Asia/Manila] [report.php] Employee IDs with allowances: 
 [07-Apr-2026 13:34:22 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] File loaded - starting execution
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: monthly
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] About to fetch payroll data
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] Payroll query executed. Date range: 2026-03-01 to 2026-03-31. Rows fetched: 0
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] Attendance query executed. Date range: 2026-03-01 to 2026-03-31. Rows fetched: 1
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] About to process attendance data
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] About to calculate payroll
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] Loading allowances for year=2026, month=03, week=0, view=monthly
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] Total employees with allowances: 0
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] Employee IDs with allowances: 
+[07-Apr-2026 16:04:38 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 63
