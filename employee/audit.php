@@ -49,6 +49,10 @@ if (empty($_SESSION['logged_in']) || !in_array($_SESSION['position'], ['Admin', 
     exit;
 }
 
+// Define admin role variables for later use
+$isAdmin = in_array($_SESSION['position'], ['Admin', 'Super Admin', 'Developer']);
+$isSuperAdmin = in_array($_SESSION['position'], ['Super Admin', 'Developer']);
+
 // Pagination Configuration
 $RECORDS_PER_PAGE = 25;
 $currentPage = max(1, intval($_GET['page'] ?? 1));
