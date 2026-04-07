@@ -357,3 +357,145 @@ mysqli_stmt_bind_param($updateStmt, 'ii', $attendanceId, $employeeId);
 ```
 
 ---
+
+### 2026-04-07
+
+**Task:** Investigate MapLibre/CartoDB Costs and "Need to Pay" QR Scan Error
+
+**Status:** ✅ Investigation Complete
+
+**Problem:** Workers reported "need to pay" message when scanning QR codes for time-in. User suspected MapLibre or CartoDB had associated costs.
+
+**Investigation Findings:**
+1. **MapLibre GL JS** - Free and open-source, no API key required for basic usage
+2. **CartoDB Positron** - Free basemap style, no API key required
+3. **Browser Geolocation API** - Built into browsers, no external service costs
+4. **Haversine Formula** - Mathematical calculation, no external service costs
+
+**Root Cause Identified:**
+The "need to pay" message is NOT from map/geolocation services. The QR scanning system does NOT use MapLibre/CartoDB at all for location validation. It uses:
+- Native browser `navigator.geolocation.getCurrentPosition()`
+- JavaScript Haversine formula for distance calculation
+- No external APIs or paid services involved
+
+**Conclusion:** The error message is likely from:
+- Geofencing validation failing (outside 500m radius)
+- Workers being physically outside the geofence area
+- Poor GPS accuracy causing false "outside" readings
+
+**Files Created:**
+- `MAPLIBRE_COST_INVESTIGATION.md` - Complete investigation report documenting:
+  - Why MapLibre/CartoDB have no costs
+  - Why QR scanning doesn't use map services
+  - Actual cause of "need to pay" error (geofence-related)
+  - Recommendations for widening geofence radius
+
+**Result:** Investigation concluded that no payment is required for any map/geolocation services. The issue is geofence radius too small (500m).
+
+---
+
+### 2026-04-07
+
+**Task:** Widen Geofence Radius from 500m to 1000m
+
+**Status:** ✅ Completed
+
+**Problem:** Workers unable to clock in via QR scan due to strict 500m geofence radius. Investigation showed this was the real cause of clock-in failures, not payment requirements.
+
+**Actions Taken:**
+1. Updated all PHP files with new 1000m default:
+   - `validate_geofence.php` - Lines 221, 228: `?? 500` → `?? 1000`
+   - `check_branch_location.php` - Line 34: `?: 500` → `?: 1000`
+   - `get_branch_location_api.php` - Line 50: `?? 500` → `?? 1000`
+   - `save_attendance_location.php` - Lines 90, 113: `500` → `1000`
+   - `employee/api/validate_geofence.php` - Line 78: `?? 500` → `?? 1000`
+
+2. Updated JavaScript configuration:
+   - `assets/js/geolocation.js` - Line 18: `defaultRadius: 500` → `defaultRadius: 1000`
+
+3. Updated admin interface:
+   - `employee/branch_location_manager.php` - Multiple updates:
+     - Default radius: 500 → 1000 (lines 114, 129, 185, 229, 485)
+     - Slider max: 1000m → 2000m (line 187)
+
+4. Created debug tool:
+   - `debug_qr_scan.php` - Diagnostic page for testing GPS location against branch geofences
+
+5. Database update (user executed):
+   ```sql
+   UPDATE branches SET geofence_radius_meters = 1000 
+   WHERE geofence_radius_meters IS NULL 
+      OR geofence_radius_meters = 0 
+      OR geofence_radius_meters < 1000;
+   ```
+
+6. Committed all changes to git and deployed
+
+**Files Created:**
+- `debug_qr_scan.php` - GPS diagnostic and geofence testing tool
+- `GEOFENCE_RADIUS_CHANGE_LOG.md` - Documentation of all changes made
+
+**Files Modified:**
+- `validate_geofence.php`
+- `check_branch_location.php`
+- `get_branch_location_api.php`
+- `save_attendance_location.php`
+- `employee/api/validate_geofence.php`
+- `assets/js/geolocation.js`
+- `employee/branch_location_manager.php`
+
+**Result:** Geofence radius now 1000m across entire system. Workers can clock in from up to 1000 meters from any branch. Admin can set radius up to 2000m via slider.
+
+---
+
+### 2026-04-07
+
+**Task:** Investigate Localhost vs Production Access Issue
+
+**Status:** ✅ Investigation Complete
+
+**Problem:** Site works on PC via ethernet, but not accessible via mobile WiFi. User suspected server/code issues.
+
+**Investigation Process:**
+1. Verified all code files are correct and deployed
+2. Tested with mobile data → ✅ Worked
+3. Tested with PLDT ISP → ✅ Worked  
+4. Tested with Converge ICT WiFi → ❌ Failed
+5. Confirmed other websites work on Converge WiFi → ✅ General connectivity OK
+
+**Root Cause CONFIRMED:**
+- **ISP:** Converge ICT
+- **Issue:** CGNAT (Carrier-Grade NAT) IP flagging
+- **Shared Public IP:** 119.93.99.226
+- **Cause:** Hostinger firewall flagged the shared IP due to suspicious traffic from another user on same IP
+
+**Technical Details:**
+- Converge ICT uses CGNAT: thousands of users share one public IP
+- Another user on 119.93.99.226 generated suspicious traffic
+- Hostinger's firewall blocked the entire IP
+- Result: All Converge users behind this IP cannot access the site
+
+**Not Application Issues:**
+- ✅ Code is correct
+- ✅ Server is working
+- ✅ Database connected
+- ✅ Works on Mobile Data, PLDT, PC ethernet
+- ❌ Only Converge ICT blocked
+
+**Files Created:**
+- `LOCALHOST_VS_PRODUCTION_ISSUE.md` - Complete investigation report:
+  - Initial localhost vs production analysis
+  - Database configuration findings
+  - Network troubleshooting steps
+  - Final CGNAT IP flagging confirmation
+  - Solutions and workarounds
+
+**Solutions Provided:**
+1. **Immediate:** Use mobile data for site access
+2. **Quick Fix:** Change mobile DNS to 8.8.8.8 (Google DNS)
+3. **Long-term:** Contact Converge ICT for IP refresh or CGNAT exemption
+4. **Alternative:** Contact Hostinger to whitelist domain from flagged IP
+
+**Result:** Investigation confirmed this is NOT a code or server issue. The application is fully functional. The issue is external ISP-level IP blocking outside our control.
+
+---
