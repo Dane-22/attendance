@@ -490,3 +490,92 @@ The "need to pay" message is NOT from map/geolocation services. The QR scanning 
 - Theme matches existing dark/gold audit.php styling
 
 ---
+
+### 2026-04-08
+
+**Task:** Fix update_loan.php SQL Parameter Mismatch Bug
+
+**Status:** ✅ Completed
+
+**Problem:** update_loan.php was throwing 500 Internal Server Error when saving SSS loan. Error log showed "ArgumentCountError: The number of variables must match the number of parameters in the prepared statement."
+
+**Root Cause:** INSERT statement had 9 `?` placeholders but `bind_param` was trying to bind 10 values. The `take_home_pay` column was hardcoded to `0` instead of using a placeholder.
+
+**Fix Applied:**
+- Line 124: Added missing `?` placeholder for `take_home_pay` column
+- Changed: `VALUES (..., ?, ?, 0, 'Not Paid', NOW())` → `VALUES (..., ?, ?, ?, 'Not Paid', NOW())`
+
+**Files Modified:**
+- `employee/update_loan.php` - Fixed INSERT statement placeholder count
+
+---
+
+### 2026-04-08
+
+**Task:** Fix employees_function.php Syntax Error
+
+**Status:** ✅ Completed
+
+**Problem:** Parse error: syntax error, unexpected token "}" in employees_function.php on line 65
+
+**Root Cause:** Duplicate `$msg` assignment on line 64 was missing a semicolon, causing PHP parser error.
+
+**Fix Applied:**
+- Removed duplicate line: `$msg = 'Error Only Super Admin can modify employee records'` (missing semicolon)
+
+**Files Modified:**
+- `employee/function/employees_function.php` - Removed malformed duplicate line
+
+---
+
+### 2026-04-08
+
+**Task:** Change "Absent" to "No Record" for Future Days in Attendance Calendar
+
+**Status:** ✅ Completed
+
+**Problem:** Individual employee calendar showed "Absent" (red) for future/upcoming days that haven't occurred yet. This was misleading as employees aren't actually absent, there's just no attendance record yet.
+
+**Actions Taken:**
+1. Modified `employee/api/get_employee_attendance_detailed.php`:
+   - Changed default status from `'Absent'` to `'No Record'` for days without attendance data
+
+2. Modified `employee/audit.php`:
+   - Updated JavaScript to handle "No Record" status with space-to-hyphen conversion
+   - Added CSS styling for `.day-no-record` class (gray/neutral appearance)
+   - Added "No Record" to calendar legend
+   - Added cache-control meta tags to prevent browser caching issues
+
+**Files Modified:**
+- `employee/api/get_employee_attendance_detailed.php` - Changed default status to 'No Record'
+- `employee/audit.php` - Added No Record handling, CSS, and legend
+
+---
+
+### 2026-04-08
+
+**Task:** Make SSS Loan Apply to All Weeks (Monthly Loan Behavior)
+
+**Status:** ✅ Completed
+
+**Problem:** When setting SSS loan in Week 2, switching to Week 1 showed no loan value. Users expected the loan to persist across all weeks in the month.
+
+**Root Cause:** SSS loan was stored per-week in `weekly_payroll_reports` table. Each week had its own independent loan value.
+
+**Solution Implemented:**
+Modified `update_loan.php` to apply the SSS loan to ALL weeks in the month when set in any week:
+
+1. After updating existing record (lines 95-107):
+   - Added second UPDATE query to set same loan value for all weeks of that employee/month
+
+2. After inserting new record (lines 155-167):
+   - Added UPDATE query to propagate loan to all other weeks in the month
+
+**Files Modified:**
+- `employee/update_loan.php` - Added monthly loan propagation logic:
+  - Lines 95-107: Update all weeks after single record update
+  - Lines 155-167: Update all weeks after new record insert
+
+**Result:** SSS loan now behaves as a monthly value. Setting it in any week automatically applies it to all weeks (1-4/5) for that employee and month.
+
+---

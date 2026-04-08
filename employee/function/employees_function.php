@@ -89,8 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $msg = 'Error: Employee code already exists.';
                     } else {
                         $hash = md5($password ?: 'password');
-                        $ins = mysqli_prepare($db, "INSERT INTO employees (employee_code, first_name, middle_name, last_name, email, position, password_hash, status, has_deduction, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?, NOW())");
-                        mysqli_stmt_bind_param($ins, 'sssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $hash, $has_deduction);
+                        // Only include has_deduction in INSERT if column exists
+                        if ($hasDeductionColumn) {
+                            $ins = mysqli_prepare($db, "INSERT INTO employees (employee_code, first_name, middle_name, last_name, email, position, password_hash, status, has_deduction, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?, NOW())");
+                            mysqli_stmt_bind_param($ins, 'sssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $hash, $has_deduction);
+                        } else {
+                            $ins = mysqli_prepare($db, "INSERT INTO employees (employee_code, first_name, middle_name, last_name, email, position, password_hash, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', NOW())");
+                            mysqli_stmt_bind_param($ins, 'sssssss', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $hash);
+                        }
                         if (mysqli_stmt_execute($ins)) {
                             $msg = 'Employee added successfully.';
                         } else {
@@ -139,8 +145,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (mysqli_stmt_num_rows($check) > 0) {
                         $msg = 'Error: Employee code already exists for another employee.';
                     } else {
-                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ?, daily_rate = ?, has_deduction = ? WHERE id = ?");
-                        mysqli_stmt_bind_param($up, 'ssssssssii', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $daily_rate, $has_deduction, $id);
+                        // Only include has_deduction in UPDATE if column exists
+                        if ($hasDeductionColumn) {
+                            $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ?, daily_rate = ?, has_deduction = ? WHERE id = ?");
+                            mysqli_stmt_bind_param($up, 'ssssssssii', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $daily_rate, $has_deduction, $id);
+                        } else {
+                            $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ?, daily_rate = ? WHERE id = ?");
+                            mysqli_stmt_bind_param($up, 'ssssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $daily_rate, $id);
+                        }
                         if (mysqli_stmt_execute($up)) {
                             $msg = 'Employee updated.';
                             
@@ -340,6 +352,13 @@ $searchTerm = mysqli_real_escape_string($db, $search);
 
 $fromClause = "FROM employees e LEFT JOIN branches b ON b.id = e.branch_id";
 
+// Check if has_deduction column exists
+function columnExists($db, $table, $column) {
+    $result = mysqli_query($db, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+    return $result && mysqli_num_rows($result) > 0;
+}
+$hasDeductionColumn = columnExists($db, 'employees', 'has_deduction');
+
 // Build search condition
 $searchCondition = "WHERE e.status = 'Active'";
 if (!empty($search)) {
@@ -361,7 +380,9 @@ $totalEmployees = $countRow['total'];
 $totalPages = ceil($totalEmployees / $perPage);
 
 // Get employees with pagination and search
-$query = "SELECT e.*, b.branch_name AS branch_name, COALESCE(e.has_deduction, 1) as has_deduction $fromClause $searchCondition ORDER BY e.last_name, e.first_name LIMIT $perPage OFFSET $offset";
+// Only include has_deduction if column exists
+$deductionSelect = $hasDeductionColumn ? ", COALESCE(e.has_deduction, 1) as has_deduction" : ", 1 as has_deduction";
+$query = "SELECT e.*, b.branch_name AS branch_name$deductionSelect $fromClause $searchCondition ORDER BY e.last_name, e.first_name LIMIT $perPage OFFSET $offset";
 $emps = mysqli_query($db, $query);
 
 // Helper function to build URLs with all parameters

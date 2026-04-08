@@ -11,6 +11,20 @@ if (!isset($_SESSION['employee_code'])) {
     exit();
 }
 
+// Ensure all role variables are defined (for sidebar.php compatibility)
+$userRole = $_SESSION['position'] ?? 'Employee';
+$isAdmin = in_array($userRole, ['Admin', 'Super Admin']);
+$isSuperAdmin = ($userRole === 'Super Admin');
+$isDeveloper = ($userRole === 'Developer');
+
+// Ensure database-dependent variables from employees_function.php are defined
+if (!isset($msg)) $msg = '';
+if (!isset($totalEmployees)) $totalEmployees = 0;
+if (!isset($page)) $page = 1;
+if (!isset($perPage)) $perPage = 10;
+if (!isset($totalPages)) $totalPages = 1;
+if (!isset($currentView)) $currentView = 'list';
+if (!isset($search)) $search = '';
 
 ?>
 <!doctype html>
@@ -99,6 +113,19 @@ if (!isset($_SESSION['employee_code'])) {
         ?>
         
         <div class="employees-<?php echo $viewToUse; ?>-view">
+          <?php 
+          // Safety check: Ensure $emps is a valid result set
+          if (!$emps || !is_object($emps)): 
+          ?>
+            <div class="employee-row" style="text-align: center; padding: 40px;">
+              <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #FFA500; margin-bottom: 16px;"></i>
+              <p style="color: #fff; font-size: 18px;">Unable to load employees</p>
+              <p style="color: rgba(255,255,255,0.6); font-size: 14px;">Please try refreshing the page or contact support.</p>
+              <?php if (isset($db) && mysqli_error($db)): ?>
+                <p style="color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 10px;">Error: <?php echo htmlspecialchars(mysqli_error($db)); ?></p>
+              <?php endif; ?>
+            </div>
+          <?php else: ?>
           <?php mysqli_data_seek($emps, 0); while ($e = mysqli_fetch_assoc($emps)): ?>
             
             <?php if ($viewToUse === 'grid'): ?>
@@ -206,6 +233,7 @@ if (!isset($_SESSION['employee_code'])) {
             <?php endif; ?>
             
           <?php endwhile; ?>
+          <?php endif; ?>
         </div>
       </section>
 

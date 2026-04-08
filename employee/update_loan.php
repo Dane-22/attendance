@@ -92,6 +92,20 @@ try {
         mysqli_stmt_execute($updateStmt);
         mysqli_stmt_close($updateStmt);
 
+        // Update ALL weeks in the month with the same SSS loan (monthly loan behavior)
+        $updateAllStmt = mysqli_prepare(
+            $db,
+            "UPDATE weekly_payroll_reports
+             SET sss_loan = ?
+             WHERE employee_id = ? AND report_year = ? AND report_month = ? AND view_type = ?"
+        );
+        if ($updateAllStmt) {
+            mysqli_stmt_bind_param($updateAllStmt, 'diiis', $sssLoan, $employeeId, $year, $month, $viewType);
+            mysqli_stmt_execute($updateAllStmt);
+            mysqli_stmt_close($updateAllStmt);
+            error_log("[update_loan.php] Applied loan=$sssLoan to ALL weeks for emp=$employeeId, $year-$month");
+        }
+
         error_log("[update_loan.php] Updated existing record id=$reportId with loan=$sssLoan");
     } else {
         // INSERT new record - weekly payroll record doesn't exist yet
@@ -137,6 +151,20 @@ try {
         mysqli_stmt_execute($insertStmt);
         $newId = mysqli_insert_id($db);
         mysqli_stmt_close($insertStmt);
+
+        // Apply the same loan to ALL other weeks in the month (monthly loan behavior)
+        $updateAllStmt = mysqli_prepare(
+            $db,
+            "UPDATE weekly_payroll_reports
+             SET sss_loan = ?
+             WHERE employee_id = ? AND report_year = ? AND report_month = ? AND view_type = ?"
+        );
+        if ($updateAllStmt) {
+            mysqli_stmt_bind_param($updateAllStmt, 'diiis', $sssLoan, $employeeId, $year, $month, $viewType);
+            mysqli_stmt_execute($updateAllStmt);
+            mysqli_stmt_close($updateAllStmt);
+            error_log("[update_loan.php] Applied loan=$sssLoan to ALL weeks for emp=$employeeId, $year-$month");
+        }
 
         error_log("[update_loan.php] Created new record id=$newId with loan=$sssLoan");
     }
