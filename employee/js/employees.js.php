@@ -50,6 +50,12 @@
             document.getElementById('editStatus').value = employee.status;
             document.getElementById('editDailyRate').value = employee.daily_rate || '';
             
+            // Set has_deduction toggle
+            const deductionToggle = document.getElementById('editHasDeduction');
+            if (deductionToggle) {
+              deductionToggle.checked = employee.has_deduction == 1;
+            }
+            
             // Update profile image preview
             const profileImagePreview = document.getElementById('profileImagePreview');
             

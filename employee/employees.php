@@ -174,6 +174,21 @@ if (!isset($_SESSION['employee_code'])) {
                 <div class="employee-row-status">
                   <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
                 </div>
+                <div class="employee-row-deduction">
+                  <?php if ($isSuperAdmin): ?>
+                    <span class="deduction-badge <?php echo ($e['has_deduction'] ?? 1) ? 'with-deduction' : 'no-deduction'; ?>" 
+                          onclick="toggleDeductionStatus(event, <?php echo $e['id']; ?>, <?php echo ($e['has_deduction'] ?? 1) ? 0 : 1; ?>)"
+                          title="Click to toggle deduction status">
+                      <i class="fas <?php echo ($e['has_deduction'] ?? 1) ? 'fa-file-invoice-dollar' : 'fa-ban'; ?>"></i>
+                      <?php echo ($e['has_deduction'] ?? 1) ? 'With Deductions' : 'No Deductions'; ?>
+                    </span>
+                  <?php else: ?>
+                    <span class="deduction-badge <?php echo ($e['has_deduction'] ?? 1) ? 'with-deduction' : 'no-deduction'; ?>">
+                      <i class="fas <?php echo ($e['has_deduction'] ?? 1) ? 'fa-file-invoice-dollar' : 'fa-ban'; ?>"></i>
+                      <?php echo ($e['has_deduction'] ?? 1) ? 'With Deductions' : 'No Deductions'; ?>
+                    </span>
+                  <?php endif; ?>
+                </div>
                 <div class="employee-row-actions">
                   <button class="row-action-btn row-action-qr" onclick="generateQRCode(event, <?php echo $e['id']; ?>, '<?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?>', '<?php echo htmlspecialchars($e['employee_code']); ?>', '<?php echo htmlspecialchars($e['email']); ?>', '<?php echo htmlspecialchars($e['position']); ?>')" title="Generate QR Code">
                     <i class="fa-solid fa-qrcode"></i>
@@ -295,6 +310,16 @@ if (!isset($_SESSION['employee_code'])) {
               <label class="form-label">Daily Rate (₱)</label>
               <input type="number" name="daily_rate" id="editDailyRate" class="form-input" step="0.01" min="0" placeholder="600.00">
             </div>
+            <div class="form-group">
+              <label class="form-label">Government Deductions</label>
+              <label class="toggle-switch">
+                <input type="checkbox" name="has_deduction" id="editHasDeduction" value="1" checked>
+                <span class="toggle-slider">
+                  <span class="toggle-on">With SSS/PhilHealth/PagIBIG</span>
+                  <span class="toggle-off">No Deductions</span>
+                </span>
+              </label>
+            </div>
             <div class="form-group" style="grid-column: 1 / -1;">
               <div class="text-muted" style="font-size: 0.85rem; color: rgba(255,255,255,0.5); padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
                 <i class="fas fa-info-circle"></i> Use "Reset Password" button below to set password to default (jajrconstruction)
@@ -371,6 +396,12 @@ if (!isset($_SESSION['employee_code'])) {
         </div>
         <div class="add-form-row">
           <input name="password" type="password" placeholder="Password (optional)" class="add-form-input">
+        </div>
+        <div class="add-form-row" style="display: flex; align-items: center; gap: 10px;">
+          <input type="checkbox" name="has_deduction" id="addHasDeduction" value="1" checked style="width: 18px; height: 18px; cursor: pointer;">
+          <label for="addHasDeduction" style="cursor: pointer; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
+            Subject to Government Deductions (SSS/PhilHealth/PagIBIG)
+          </label>
         </div>
         <div class="add-modal-actions">
           <button type="button" class="btn-cancel-modal" id="closeAdd">Cancel</button>
@@ -579,6 +610,38 @@ if (!isset($_SESSION['employee_code'])) {
         }
       });
     })();
+  </script>
+  <script>
+    // Toggle deduction status via AJAX
+    function toggleDeductionStatus(event, employeeId, newStatus) {
+      event.stopPropagation();
+      
+      const statusText = newStatus === 1 ? 'WITH deductions' : 'NO deductions';
+      if (!confirm(`Change employee deduction status to: ${statusText}?`)) {
+        return;
+      }
+      
+      fetch('api/toggle_deduction.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `employee_id=${employeeId}&has_deduction=${newStatus}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Reload page to show updated status
+          window.location.reload();
+        } else {
+          alert('Error: ' + (data.message || 'Failed to update deduction status'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating deduction status. Please try again.');
+      });
+    }
   </script>
 </body>
 </html>

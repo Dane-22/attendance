@@ -74,7 +74,7 @@ $end_date = sprintf('%04d-%02d-%02d', $year, $month, $end_day);
 $log_message("Week date range: $start_date to $end_date");
 
 // Load all active employees
-$emp_query = "SELECT e.id, e.daily_rate, e.position, e.branch AS emp_branch, b.branch_name, e.fname, e.lname 
+$emp_query = "SELECT e.id, e.daily_rate, e.position, e.branch AS emp_branch, b.branch_name, e.fname, e.lname, e.has_deduction 
               FROM employees e 
               LEFT JOIN branches b ON e.branch = b.id 
               WHERE e.status = 'Active'
@@ -88,6 +88,9 @@ if (!$emp_result) {
 
 $employees = [];
 while ($row = mysqli_fetch_assoc($emp_result)) {
+    // Check if employee has deduction flag (default to 1 if not set)
+    $hasDeduction = isset($row['has_deduction']) ? intval($row['has_deduction']) : 1;
+    
     $employees[$row['id']] = [
         'employee' => $row,
         'daily_rate' => floatval($row['daily_rate']),
@@ -95,10 +98,10 @@ while ($row = mysqli_fetch_assoc($emp_result)) {
         'total_hours' => 0,
         'total_ot_hrs' => 0,
         'gross_pay' => 0,
-        'sss_deduction' => ($row['position'] !== 'Security Guard') ? 800 : 0,
-        'philhealth_deduction' => ($row['position'] !== 'Security Guard') ? 300 : 0,
-        'pagibig_deduction' => ($row['position'] !== 'Security Guard') ? 200 : 0,
-        'total_deductions' => ($row['position'] !== 'Security Guard') ? 1300 : 0,
+        'sss_deduction' => ($hasDeduction && $row['position'] !== 'Security Guard') ? 800 : 0,
+        'philhealth_deduction' => ($hasDeduction && $row['position'] !== 'Security Guard') ? 300 : 0,
+        'pagibig_deduction' => ($hasDeduction && $row['position'] !== 'Security Guard') ? 200 : 0,
+        'total_deductions' => ($hasDeduction && $row['position'] !== 'Security Guard') ? 1300 : 0,
         'net_pay' => 0,
         '_daily' => [],
         '_branches' => []
@@ -255,7 +258,24 @@ foreach ($employees as $emp_id => $payroll) {
         $gross_pay = $daily_rate * $days_worked;
         $allowance = 0;
         $ca_deduction = 0;
+        
+        // Fetch existing SSS loan from database (preserve manually entered values)
         $sss_loan = 0;
+        $loanStmt = mysqli_prepare($db, 
+            "SELECT sss_loan FROM weekly_payroll_reports 
+             WHERE employee_id = ? AND report_year = ? AND report_month = ? AND week_number = ? AND view_type = ? AND branch_id = ?
+             LIMIT 1"
+        );
+        if ($loanStmt) {
+            mysqli_stmt_bind_param($loanStmt, 'iiiisi', $emp_id, $year, $month, $week_number, $view_type, $branch_id);
+            mysqli_stmt_execute($loanStmt);
+            $loanResult = mysqli_stmt_get_result($loanStmt);
+            if ($loanRow = mysqli_fetch_assoc($loanResult)) {
+                $sss_loan = floatval($loanRow['sss_loan'] ?? 0);
+            }
+            mysqli_stmt_close($loanStmt);
+        }
+        
         $gross_plus_allowance = $gross_pay + $allowance + $ot_amount;
         
         // Deductions - apply only to primary branch
@@ -277,7 +297,11 @@ foreach ($employees as $emp_id => $payroll) {
             $sss_deduction = $payroll['sss_deduction'];
             $philhealth_deduction = $payroll['philhealth_deduction'];
             $pagibig_deduction = $payroll['pagibig_deduction'];
-            $total_deductions = $payroll['total_deductions'];
+            // Include existing SSS loan in total deductions
+            $total_deductions = $payroll['total_deductions'] + $sss_loan;
+        } else {
+            // For non-primary branches, still include any existing loan
+            $total_deductions = $sss_loan;
         }
         
         $take_home_pay = $gross_plus_allowance - $total_deductions;
@@ -308,7 +332,6 @@ foreach ($employees as $emp_id => $payroll) {
             sss_deduction = VALUES(sss_deduction),
             philhealth_deduction = VALUES(philhealth_deduction),
             pagibig_deduction = VALUES(pagibig_deduction),
-            sss_loan = VALUES(sss_loan),
             total_deductions = VALUES(total_deductions),
             take_home_pay = VALUES(take_home_pay),
             updated_at = CURRENT_TIMESTAMP";

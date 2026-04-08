@@ -330,6 +330,120 @@ $total_pages = ceil($total_records / $per_page);
         }
 
         /* ============================================
+           EXPANDABLE DETAILS STYLES
+           ============================================ */
+        .details-cell {
+            position: relative;
+        }
+
+        .details-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .expand-btn {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            color: var(--orange);
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .expand-btn:hover {
+            background: rgba(255, 165, 0, 0.3);
+            transform: scale(1.05);
+        }
+
+        .expand-btn i {
+            transition: transform 0.3s ease;
+        }
+
+        .expand-btn.active i {
+            transform: rotate(90deg);
+        }
+
+        .details-truncated {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .log-details-row {
+            display: none;
+        }
+
+        .log-details-row.show {
+            display: table-row;
+        }
+
+        .log-details-content {
+            background: rgba(255, 165, 0, 0.05);
+            border-left: 3px solid var(--orange);
+            padding: 16px;
+            margin: 0;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', monospace;
+            font-size: 13px;
+            color: #e5e5e5;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .log-details-row.show .log-details-content {
+            max-height: 500px;
+            padding: 16px;
+        }
+
+        .details-label {
+            color: var(--orange);
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* Mobile adjustments for expandable details */
+        @media (max-width: 767px) {
+            .log-details-row.show {
+                display: block;
+            }
+
+            .log-details-row td {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+            }
+
+            .log-details-content {
+                border-radius: 0 0 12px 12px;
+                margin-top: 8px;
+                border-left: none;
+                border-top: 3px solid var(--orange);
+            }
+
+            .details-content {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+
+            .details-truncated {
+                white-space: normal;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+        }
+
+        /* ============================================
            MOBILE GRID VIEW - Activity Log Cards
            ============================================ */
         @media (max-width: 767px) {
@@ -663,9 +777,16 @@ $total_pages = ceil($total_records / $per_page);
                                     <?php echo htmlspecialchars($log['action']); ?>
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-300 max-w-xs">
-                                <div class="truncate" title="<?php echo htmlspecialchars($log['details']); ?>">
-                                    <?php echo htmlspecialchars($log['details']); ?>
+                            <td class="px-4 py-3 text-sm text-gray-300 max-w-xs details-cell">
+                                <div class="details-content">
+                                    <div class="details-truncated" id="details-text-<?php echo $log['id']; ?>">
+                                        <?php echo htmlspecialchars($log['details']); ?>
+                                    </div>
+                                    <?php if (strlen($log['details']) > 50): ?>
+                                    <button type="button" class="expand-btn" onclick="toggleDetails(<?php echo $log['id']; ?>)" id="expand-btn-<?php echo $log['id']; ?>">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-400 font-mono">
@@ -677,6 +798,16 @@ $total_pages = ceil($total_records / $per_page);
                                 </div>
                             </td>
                         </tr>
+                        <?php if (strlen($log['details']) > 50): ?>
+                        <tr class="log-details-row" id="details-row-<?php echo $log['id']; ?>">
+                            <td colspan="5" class="px-0 py-0">
+                                <div class="log-details-content">
+                                    <span class="details-label"><i class="fas fa-info-circle mr-2"></i>Full Details:</span>
+                                    <?php echo nl2br(htmlspecialchars($log['details'])); ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
                         <?php endwhile; ?>
                         
                         <?php if ($row_count === 0): ?>
@@ -750,13 +881,35 @@ $total_pages = ceil($total_records / $per_page);
     </div>
 
     <script>
+        // Toggle details expansion
+        function toggleDetails(logId) {
+            const detailsRow = document.getElementById('details-row-' + logId);
+            const expandBtn = document.getElementById('expand-btn-' + logId);
+
+            if (detailsRow.classList.contains('show')) {
+                detailsRow.classList.remove('show');
+                expandBtn.classList.remove('active');
+            } else {
+                // Close any other open details first
+                document.querySelectorAll('.log-details-row.show').forEach(row => {
+                    row.classList.remove('show');
+                });
+                document.querySelectorAll('.expand-btn.active').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                detailsRow.classList.add('show');
+                expandBtn.classList.add('active');
+            }
+        }
+
         // Add hover effect to table rows
         document.querySelectorAll('.log-row').forEach(row => {
             row.addEventListener('mouseenter', function() {
                 this.style.transform = 'translateX(4px)';
                 this.style.transition = 'transform 0.2s ease';
             });
-            
+
             row.addEventListener('mouseleave', function() {
                 this.style.transform = 'translateX(0)';
             });

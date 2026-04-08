@@ -50,6 +50,7 @@ if ($row = mysqli_fetch_assoc($result)) {
             'status' => $row['status'],
             'daily_rate' => $row['daily_rate'] ?? 600.00,
             'profile_image' => $row['profile_image'] ?? '',
+            'has_deduction' => $row['has_deduction'] ?? 1,
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at']
         ]

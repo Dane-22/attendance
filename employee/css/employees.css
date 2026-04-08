@@ -1032,4 +1032,125 @@
             max-height: 100vh;
         }
     }
-  
+
+    /* ===== TOGGLE SWITCH FOR DEDUCTIONS ===== */
+    .toggle-switch {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: relative;
+        width: 100%;
+        min-height: 36px;
+        background: #2a2a2a;
+        border: 2px solid #444;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        padding: 4px 12px;
+        font-size: 13px;
+    }
+
+    .toggle-slider:before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        background: #666;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background: rgba(76, 175, 80, 0.2);
+        border-color: #4CAF50;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        left: calc(100% - 24px);
+        background: #4CAF50;
+    }
+
+    .toggle-on, .toggle-off {
+        position: absolute;
+        left: 32px;
+        transition: opacity 0.3s ease;
+    }
+
+    .toggle-on {
+        opacity: 0;
+        color: #4CAF50;
+    }
+
+    .toggle-off {
+        opacity: 1;
+        color: #999;
+    }
+
+    .toggle-switch input:checked + .toggle-slider .toggle-on {
+        opacity: 1;
+    }
+
+    .toggle-switch input:checked + .toggle-slider .toggle-off {
+        opacity: 0;
+    }
+
+    /* ===== DEDUCTION BADGE IN EMPLOYEE LIST ===== */
+    .employee-row-deduction {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .deduction-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: default;
+        transition: all 0.2s ease;
+    }
+
+    .deduction-badge.with-deduction {
+        background: rgba(76, 175, 80, 0.15);
+        color: #4CAF50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    .deduction-badge.no-deduction {
+        background: rgba(244, 67, 54, 0.15);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+    }
+
+    .deduction-badge[onclick]:hover {
+        transform: scale(1.05);
+        cursor: pointer;
+    }
+
+    .deduction-badge.with-deduction[onclick]:hover {
+        background: rgba(76, 175, 80, 0.25);
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    }
+
+    .deduction-badge.no-deduction[onclick]:hover {
+        background: rgba(244, 67, 54, 0.25);
+        box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
+    }

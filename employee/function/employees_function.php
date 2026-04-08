@@ -61,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if user is Super Admin for employee modifications
     if (!$isSuperAdmin) {
         $msg = 'Error: Only Super Admin can modify employee records.';
+        $msg = 'Error Only Super Admin can modify employee records'
     } else {
         // Apply rate limiting for POST requests
         if (!checkRateLimit()) {
@@ -76,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $email = trim($_POST['email'] ?? '');
                 $position = trim($_POST['position'] ?? '');
                 $password = $_POST['password'] ?? '';
+                $has_deduction = isset($_POST['has_deduction']) ? 1 : 0;
                 
                 if ($employee_code && $first_name && $last_name) {
                     // Check if employee code already exists
@@ -88,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $msg = 'Error: Employee code already exists.';
                     } else {
                         $hash = md5($password ?: 'password');
-                        $ins = mysqli_prepare($db, "INSERT INTO employees (employee_code, first_name, middle_name, last_name, email, position, password_hash, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', NOW())");
-                        mysqli_stmt_bind_param($ins, 'sssssss', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $hash);
+                        $ins = mysqli_prepare($db, "INSERT INTO employees (employee_code, first_name, middle_name, last_name, email, position, password_hash, status, has_deduction, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?, NOW())");
+                        mysqli_stmt_bind_param($ins, 'sssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $hash, $has_deduction);
                         if (mysqli_stmt_execute($ins)) {
                             $msg = 'Employee added successfully.';
                         } else {
@@ -108,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Soft delete: Set status to 'Inactive' instead of deleting
                     $del = mysqli_prepare($db, "UPDATE employees SET status = 'Inactive', updated_at = NOW() WHERE id = ?");
                     mysqli_stmt_bind_param($del, 'i', $id);
-                    if (mysqli_stmt_execute($del)) {
+                        if (mysqli_stmt_execute($del)) {
                         $msg = 'Employee deactivated successfully.';
                     } else {
                         $msg = 'Error deactivating employee: ' . mysqli_error($db);
@@ -126,6 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $position = trim($_POST['position'] ?? '');
                 $status = trim($_POST['status'] ?? 'Active');
                 $daily_rate = floatval($_POST['daily_rate'] ?? 600.00);
+                $has_deduction = isset($_POST['has_deduction']) ? 1 : 0;
                 
                 if ($id > 0) {
                     // Check if the new employee code conflicts with another employee
@@ -137,8 +140,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (mysqli_stmt_num_rows($check) > 0) {
                         $msg = 'Error: Employee code already exists for another employee.';
                     } else {
-                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ?, daily_rate = ? WHERE id = ?");
-                        mysqli_stmt_bind_param($up, 'ssssssssi', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $daily_rate, $id);
+                        $up = mysqli_prepare($db, "UPDATE employees SET employee_code = ?, first_name = ?, middle_name = ?, last_name = ?, email = ?, position = ?, status = ?, daily_rate = ?, has_deduction = ? WHERE id = ?");
+                        mysqli_stmt_bind_param($up, 'ssssssssii', $employee_code, $first_name, $middle_name, $last_name, $email, $position, $status, $daily_rate, $has_deduction, $id);
                         if (mysqli_stmt_execute($up)) {
                             $msg = 'Employee updated.';
                             
@@ -359,7 +362,7 @@ $totalEmployees = $countRow['total'];
 $totalPages = ceil($totalEmployees / $perPage);
 
 // Get employees with pagination and search
-$query = "SELECT e.*, b.branch_name AS branch_name $fromClause $searchCondition ORDER BY e.last_name, e.first_name LIMIT $perPage OFFSET $offset";
+$query = "SELECT e.*, b.branch_name AS branch_name, COALESCE(e.has_deduction, 1) as has_deduction $fromClause $searchCondition ORDER BY e.last_name, e.first_name LIMIT $perPage OFFSET $offset";
 $emps = mysqli_query($db, $query);
 
 // Helper function to build URLs with all parameters

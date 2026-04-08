@@ -224,19 +224,39 @@ $employee_payroll = [];
 $column_check = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'performance_allowance'");
 $has_allowance_column = mysqli_num_rows($column_check) > 0;
 
+// Check if has_deduction column exists
+$deduction_column_check = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'has_deduction'");
+$has_deduction_column = mysqli_num_rows($deduction_column_check) > 0;
+
 if ($has_allowance_column) {
-    $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, b.branch_name
-                            FROM employees e
-                            LEFT JOIN branches b ON e.branch_id = b.id
-                            WHERE e.status = 'Active'
-                            AND LOWER(e.position) = 'worker'";
+    if ($has_deduction_column) {
+        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, e.has_deduction, b.branch_name
+                                FROM employees e
+                                LEFT JOIN branches b ON e.branch_id = b.id
+                                WHERE e.status = 'Active'
+                                AND LOWER(e.position) = 'worker'";
+    } else {
+        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, b.branch_name
+                                FROM employees e
+                                LEFT JOIN branches b ON e.branch_id = b.id
+                                WHERE e.status = 'Active'
+                                AND LOWER(e.position) = 'worker'";
+    }
 } else {
     // Fallback query without performance_allowance column
-    $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name
-                            FROM employees e
-                            LEFT JOIN branches b ON e.branch_id = b.id
-                            WHERE e.status = 'Active'
-                            AND LOWER(e.position) = 'worker'";
+    if ($has_deduction_column) {
+        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, e.has_deduction, b.branch_name
+                                FROM employees e
+                                LEFT JOIN branches b ON e.branch_id = b.id
+                                WHERE e.status = 'Active'
+                                AND LOWER(e.position) = 'worker'";
+    } else {
+        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name
+                                FROM employees e
+                                LEFT JOIN branches b ON e.branch_id = b.id
+                                WHERE e.status = 'Active'
+                                AND LOWER(e.position) = 'worker'";
+    }
 }
 
 // Add branch filter if not 'all'
@@ -269,6 +289,7 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
         'total_deductions' => 0,
         'net_pay' => 0,
         'performance_allowance' => floatval($emp['performance_allowance'] ?? 0),
+        'sss_loan' => 0,
         '_daily' => [],
         '_branches' => [],  // Track per-branch totals: [branch_name => ['days'=>x, 'hours'=>y, 'ot_hours'=>z]]
         '_has_payroll_record' => []  // Track dates covered by daily_payroll_reports
@@ -295,6 +316,9 @@ while ($row = mysqli_fetch_assoc($payroll_result)) {
         
         // Accumulate performance allowance from daily records (take the max or latest)
         $employee_payroll[$emp_id]['performance_allowance'] = floatval($row['performance_allowance'] ?? 0);
+        
+        // Accumulate SSS loan from daily records (take the max/latest - same as allowance)
+        $employee_payroll[$emp_id]['sss_loan'] = floatval($row['sss_loan'] ?? 0);
         
         // Track per-branch totals
         if (!isset($employee_payroll[$emp_id]['_branches'][$branch_name])) {
@@ -439,8 +463,8 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
     $gross_pay = $daily_rate * $days_worked;
     $payroll['gross_pay'] = $gross_pay;
     
-    // Apply deductions only if employee has attendance records
-    if ($days_worked > 0) {
+    // Apply deductions only if employee has attendance records AND has_deduction flag is set
+    if ($days_worked > 0 && !empty($payroll['employee']['has_deduction'])) {
         $payroll['sss_deduction'] = $sss_deduction;
         $payroll['philhealth_deduction'] = $philhealth_deduction;
         $payroll['pagibig_deduction'] = $pagibig_deduction;
@@ -569,7 +593,7 @@ function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $m
 $week_num_for_db = ($view_type === 'monthly') ? 0 : $selected_week;
 ini_set('error_log', __DIR__ . '/../update_allowance_errors.log');
 error_log("[report.php] Loading allowances for year=$year, month=$month, week=$week_num_for_db, view=$view_type");
-$payment_status_query = "SELECT employee_id, payment_status, performance_allowance FROM weekly_payroll_reports AS wpr1 
+$payment_status_query = "SELECT employee_id, payment_status, performance_allowance, sss_loan FROM weekly_payroll_reports AS wpr1 
                          WHERE report_year = ? AND report_month = ? AND week_number = ? AND view_type = ?
                          AND id = (SELECT MAX(id) FROM weekly_payroll_reports AS wpr2 
                                    WHERE wpr2.employee_id = wpr1.employee_id 
@@ -584,10 +608,12 @@ $payment_result = mysqli_stmt_get_result($payment_stmt);
 
 $payment_statuses = [];
 $weekly_allowances = [];
+$weekly_loans = [];
 while ($row = mysqli_fetch_assoc($payment_result)) {
     $payment_statuses[$row['employee_id']] = $row['payment_status'];
     $weekly_allowances[$row['employee_id']] = floatval($row['performance_allowance'] ?? 0);
-    error_log("[report.php] Found in DB: emp_id=" . $row['employee_id'] . ", allowance=" . $row['performance_allowance']);
+    $weekly_loans[$row['employee_id']] = floatval($row['sss_loan'] ?? 0);
+    error_log("[report.php] Found in DB: emp_id=" . $row['employee_id'] . ", allowance=" . $row['performance_allowance'] . ", loan=" . $row['sss_loan']);
 }
 mysqli_stmt_close($payment_stmt);
 
@@ -605,6 +631,11 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
     // Override with weekly-specific value if exists
     if (isset($weekly_allowances[$emp_id])) {
         $payroll['performance_allowance'] = $weekly_allowances[$emp_id];
+    }
+    
+    // Override sss_loan with weekly-specific value if exists
+    if (isset($weekly_loans[$emp_id])) {
+        $payroll['sss_loan'] = $weekly_loans[$emp_id];
     }
 }
 unset($payroll);
