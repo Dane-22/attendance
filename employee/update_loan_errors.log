@@ -1,0 +1,117 @@
+[08-Apr-2026 11:15:50 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:15:50 Asia/Manila] Employee ID: 12
+[08-Apr-2026 11:15:50 Asia/Manila] SSS Loan: 500.00
+[08-Apr-2026 11:15:50 Asia/Manila] Year: 2026
+[08-Apr-2026 11:15:50 Asia/Manila] Month: 4
+[08-Apr-2026 11:15:50 Asia/Manila] Week: 2
+[08-Apr-2026 11:15:50 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:15:50 Asia/Manila] [update_loan.php] Query: emp=12, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:15:50 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:15:57 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:15:57 Asia/Manila] Employee ID: 12
+[08-Apr-2026 11:15:57 Asia/Manila] SSS Loan: .00
+[08-Apr-2026 11:15:57 Asia/Manila] Year: 2026
+[08-Apr-2026 11:15:57 Asia/Manila] Month: 4
+[08-Apr-2026 11:15:57 Asia/Manila] Week: 2
+[08-Apr-2026 11:15:57 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:15:57 Asia/Manila] [update_loan.php] Query: emp=12, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:15:57 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:16:08 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:16:08 Asia/Manila] Employee ID: 12
+[08-Apr-2026 11:16:08 Asia/Manila] SSS Loan: 500.00
+[08-Apr-2026 11:16:08 Asia/Manila] Year: 2026
+[08-Apr-2026 11:16:08 Asia/Manila] Month: 4
+[08-Apr-2026 11:16:08 Asia/Manila] Week: 2
+[08-Apr-2026 11:16:08 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:16:08 Asia/Manila] [update_loan.php] Query: emp=12, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:16:08 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:18:35 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:18:35 Asia/Manila] Employee ID: 13
+[08-Apr-2026 11:18:35 Asia/Manila] SSS Loan: 500.00
+[08-Apr-2026 11:18:35 Asia/Manila] Year: 2026
+[08-Apr-2026 11:18:35 Asia/Manila] Month: 4
+[08-Apr-2026 11:18:35 Asia/Manila] Week: 2
+[08-Apr-2026 11:18:35 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:18:35 Asia/Manila] [update_loan.php] Query: emp=13, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:18:35 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:18:35 Asia/Manila] PHP Fatal error:  Uncaught ArgumentCountError: The number of variables must match the number of parameters in the prepared statement in C:\wamp64\www\main\employee\update_loan.php:128
+Stack trace:
+#0 C:\wamp64\www\main\employee\update_loan.php(128): mysqli_stmt_bind_param(Object(mysqli_stmt), 'iiiiisiddd', 13, 2026, 4, 2, 'weekly', 20, 600.0, 500.0, 500.0, 500.0)
+#1 {main}
+  thrown in C:\wamp64\www\main\employee\update_loan.php on line 128
+[08-Apr-2026 11:18:45 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:18:45 Asia/Manila] Employee ID: 14
+[08-Apr-2026 11:18:45 Asia/Manila] SSS Loan: 500.00
+[08-Apr-2026 11:18:45 Asia/Manila] Year: 2026
+[08-Apr-2026 11:18:45 Asia/Manila] Month: 4
+[08-Apr-2026 11:18:45 Asia/Manila] Week: 2
+[08-Apr-2026 11:18:45 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:18:45 Asia/Manila] [update_loan.php] Query: emp=14, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:18:45 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:18:45 Asia/Manila] PHP Fatal error:  Uncaught ArgumentCountError: The number of variables must match the number of parameters in the prepared statement in C:\wamp64\www\main\employee\update_loan.php:128
+Stack trace:
+#0 C:\wamp64\www\main\employee\update_loan.php(128): mysqli_stmt_bind_param(Object(mysqli_stmt), 'iiiiisiddd', 14, 2026, 4, 2, 'weekly', 10, 550.0, 500.0, 500.0, 500.0)
+#1 {main}
+  thrown in C:\wamp64\www\main\employee\update_loan.php on line 128
+[08-Apr-2026 11:19:55 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:19:55 Asia/Manila] Employee ID: 121
+[08-Apr-2026 11:19:55 Asia/Manila] SSS Loan: 500.00
+[08-Apr-2026 11:19:55 Asia/Manila] Year: 2026
+[08-Apr-2026 11:19:55 Asia/Manila] Month: 4
+[08-Apr-2026 11:19:55 Asia/Manila] Week: 2
+[08-Apr-2026 11:19:55 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:19:55 Asia/Manila] [update_loan.php] Query: emp=121, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:19:55 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:19:55 Asia/Manila] PHP Fatal error:  Uncaught ArgumentCountError: The number of variables must match the number of parameters in the prepared statement in C:\wamp64\www\main\employee\update_loan.php:128
+Stack trace:
+#0 C:\wamp64\www\main\employee\update_loan.php(128): mysqli_stmt_bind_param(Object(mysqli_stmt), 'iiiiisiddd', 121, 2026, 4, 2, 'weekly', 22, 600.0, 500.0, 500.0, 500.0)
+#1 {main}
+  thrown in C:\wamp64\www\main\employee\update_loan.php on line 128
+[08-Apr-2026 11:27:12 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:27:12 Asia/Manila] Employee ID: 13
+[08-Apr-2026 11:27:12 Asia/Manila] SSS Loan: 500.00
+[08-Apr-2026 11:27:12 Asia/Manila] Year: 2026
+[08-Apr-2026 11:27:12 Asia/Manila] Month: 4
+[08-Apr-2026 11:27:12 Asia/Manila] Week: 2
+[08-Apr-2026 11:27:12 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:27:12 Asia/Manila] [update_loan.php] Query: emp=13, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:27:12 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:27:12 Asia/Manila] PHP Fatal error:  Uncaught ArgumentCountError: The number of variables must match the number of parameters in the prepared statement in C:\wamp64\www\main\employee\update_loan.php:133
+Stack trace:
+#0 C:\wamp64\www\main\employee\update_loan.php(133): mysqli_stmt_bind_param(Object(mysqli_stmt), 'iiiiisiddd', 13, 2026, 4, 2, 'weekly', 20, 600.0, 500.0, 500.0, 500.0)
+#1 {main}
+  thrown in C:\wamp64\www\main\employee\update_loan.php on line 133
+[08-Apr-2026 11:29:14 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:29:14 Asia/Manila] Employee ID: 12
+[08-Apr-2026 11:29:14 Asia/Manila] SSS Loan: 300.00
+[08-Apr-2026 11:29:14 Asia/Manila] Year: 2026
+[08-Apr-2026 11:29:14 Asia/Manila] Month: 4
+[08-Apr-2026 11:29:14 Asia/Manila] Week: 2
+[08-Apr-2026 11:29:14 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:29:14 Asia/Manila] [update_loan.php] Query: emp=12, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:29:14 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:29:14 Asia/Manila] PHP Fatal error:  Uncaught ArgumentCountError: The number of variables must match the number of parameters in the prepared statement in C:\wamp64\www\main\employee\update_loan.php:133
+Stack trace:
+#0 C:\wamp64\www\main\employee\update_loan.php(133): mysqli_stmt_bind_param(Object(mysqli_stmt), 'iiiisidddd', 12, 2026, 4, 2, 'weekly', 10, 550.0, 300.0, 300.0, 300.0)
+#1 {main}
+  thrown in C:\wamp64\www\main\employee\update_loan.php on line 133
+[08-Apr-2026 11:31:34 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:31:34 Asia/Manila] Employee ID: 12
+[08-Apr-2026 11:31:34 Asia/Manila] SSS Loan: 5.00
+[08-Apr-2026 11:31:34 Asia/Manila] Year: 2026
+[08-Apr-2026 11:31:34 Asia/Manila] Month: 4
+[08-Apr-2026 11:31:34 Asia/Manila] Week: 2
+[08-Apr-2026 11:31:34 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:31:34 Asia/Manila] [update_loan.php] Query: emp=12, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:31:34 Asia/Manila] [update_loan.php] Record found: NO
+[08-Apr-2026 11:31:34 Asia/Manila] [update_loan.php] Created new record id=15959 with loan=5
+[08-Apr-2026 11:31:42 Asia/Manila] [update_loan.php] ========== Request received ==========
+[08-Apr-2026 11:31:42 Asia/Manila] Employee ID: 12
+[08-Apr-2026 11:31:42 Asia/Manila] SSS Loan: 500.00
+[08-Apr-2026 11:31:42 Asia/Manila] Year: 2026
+[08-Apr-2026 11:31:42 Asia/Manila] Month: 4
+[08-Apr-2026 11:31:42 Asia/Manila] Week: 2
+[08-Apr-2026 11:31:42 Asia/Manila] View Type: weekly
+[08-Apr-2026 11:31:42 Asia/Manila] [update_loan.php] Query: emp=12, year=2026, month=4, week=2, view=weekly
+[08-Apr-2026 11:31:42 Asia/Manila] [update_loan.php] Record found: YES (id=15959)
+[08-Apr-2026 11:31:42 Asia/Manila] [update_loan.php] Updated existing record id=15959 with loan=500

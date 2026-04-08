@@ -622,12 +622,13 @@ error_log("[report.php] Employee IDs with allowances: " . implode(', ', array_ke
 
 // Merge payment status and performance allowance into employee payroll data
 error_log("[report.php] About to merge allowances into employee data. Employee count: " . count($employee_payroll));
+error_log("[report.php] Weekly loans loaded: " . print_r($weekly_loans, true));
 foreach ($employee_payroll as $emp_id => &$payroll) {
     $payroll['payment_status'] = $payment_statuses[$emp_id] ?? 'Not Paid';
     // Load employee's default performance allowance
     $default_allowance = floatval($payroll['employee']['performance_allowance'] ?? 0);
     $payroll['performance_allowance'] = $default_allowance;
-    
+
     // Override with weekly-specific value if exists
     if (isset($weekly_allowances[$emp_id])) {
         $payroll['performance_allowance'] = $weekly_allowances[$emp_id];
@@ -636,6 +637,9 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
     // Override sss_loan with weekly-specific value if exists
     if (isset($weekly_loans[$emp_id])) {
         $payroll['sss_loan'] = $weekly_loans[$emp_id];
+        error_log("[report.php] Merged loan for emp_id=$emp_id: " . $weekly_loans[$emp_id]);
+    } else {
+        error_log("[report.php] No weekly loan found for emp_id=$emp_id, using daily value: " . ($payroll['sss_loan'] ?? 0));
     }
 }
 unset($payroll);

@@ -801,13 +801,20 @@ include __DIR__ . '/function/report.php';
                 showToast('Error saving allowance. Please check your connection.', 'error');
             });
         }
-        
+
+        // Update Calculations Function
+        function updateCalculations(empId) {
+            // This function updates the displayed calculations when inputs change
+            // Implementation can be expanded based on needs
+            console.log('Calculations updated for employee', empId);
+        }
+
         // Save SSS Loan Function
         function saveLoan(empId, loanValue) {
             const input = document.getElementById('loan_' + empId);
             const row = input.closest('tr');
             const empName = row.querySelector('td:first-child .font-medium').textContent.trim();
-            
+
             const formData = new FormData();
             formData.append('employee_id', empId);
             formData.append('sss_loan', loanValue);
@@ -815,18 +822,25 @@ include __DIR__ . '/function/report.php';
             formData.append('month', <?php echo $month; ?>);
             formData.append('week', <?php echo $selected_week; ?>);
             formData.append('view_type', '<?php echo $view_type; ?>');
-            
+
             fetch('update_loan.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(`SSS Loan saved for ${empName}`, 'success');
-                } else {
-                    console.error('Failed to save loan:', data.error);
-                    showToast('Failed to save loan. Please try again.', 'error');
+            .then(response => response.text())
+            .then(text => {
+                console.log('Raw response:', text);
+                try {
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        showToast(`SSS Loan saved for ${empName}`, 'success');
+                    } else {
+                        console.error('Failed to save loan:', data.error);
+                        showToast('Failed to save loan: ' + (data.error || 'Unknown error'), 'error');
+                    }
+                } catch (e) {
+                    console.error('Invalid JSON response:', text);
+                    showToast('Server error - check console for details', 'error');
                 }
             })
             .catch(error => {
@@ -834,20 +848,6 @@ include __DIR__ . '/function/report.php';
                 showToast('Error saving loan. Please check your connection.', 'error');
             });
         }
-        
-        // Auto-export when triggered from Admin Quick Actions
-        document.addEventListener('DOMContentLoaded', function () {
-            var autoExport = '<?php echo isset($_GET['auto_export']) ? $_GET['auto_export'] : ""; ?>';
-            if (autoExport === '1' && typeof exportToExcel === 'function') {
-                // Try to pass the existing Export button if present, otherwise just submit the main form
-                var btn = document.querySelector('button[onclick*="exportToExcel"]');
-                try {
-                    exportToExcel(btn || null);
-                } catch (e) {
-                    console.error('Auto export failed:', e);
-                }
-            }
-        });
     </script>
 </body>
 </html>

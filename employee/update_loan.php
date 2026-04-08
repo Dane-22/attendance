@@ -1,4 +1,10 @@
 <?php
+// Suppress all error output to ensure clean JSON response
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/update_loan_errors.log');
+
 require_once __DIR__ . '/../conn/db_connection.php';
 
 header("Access-Control-Allow-Origin: *");
@@ -15,6 +21,15 @@ function fail($message, $statusCode = 400) {
     echo json_encode(['success' => false, 'message' => $message]);
     exit;
 }
+
+// Debug logging
+error_log("[update_loan.php] ========== Request received ==========");
+error_log("Employee ID: " . ($_REQUEST['employee_id'] ?? 'NOT SET'));
+error_log("SSS Loan: " . ($_REQUEST['sss_loan'] ?? 'NOT SET'));
+error_log("Year: " . ($_REQUEST['year'] ?? 'NOT SET'));
+error_log("Month: " . ($_REQUEST['month'] ?? 'NOT SET'));
+error_log("Week: " . ($_REQUEST['week'] ?? 'NOT SET'));
+error_log("View Type: " . ($_REQUEST['view_type'] ?? 'NOT SET'));
 
 $employeeId = isset($_REQUEST['employee_id']) ? (int)$_REQUEST['employee_id'] : 0;
 $sssLoan = isset($_REQUEST['sss_loan']) ? (float)$_REQUEST['sss_loan'] : 0;
@@ -47,7 +62,11 @@ try {
     $existingRow = mysqli_fetch_assoc($existing);
     mysqli_stmt_close($selectStmt);
 
+    error_log("[update_loan.php] Query: emp=$employeeId, year=$year, month=$month, week=$week, view=$viewType");
+    error_log("[update_loan.php] Record found: " . ($existingRow ? 'YES (id=' . $existingRow['id'] . ')' : 'NO'));
+
     if ($existingRow) {
+        // UPDATE existing record
         $grossPay = (float)$existingRow['gross_pay'];
         $otAmount = (float)$existingRow['ot_amount'];
         $caDeduction = (float)$existingRow['ca_deduction'];
@@ -55,7 +74,7 @@ try {
         $philhealthDeduction = (float)$existingRow['philhealth_deduction'];
         $pagibigDeduction = (float)$existingRow['pagibig_deduction'];
         $performanceAllowance = (float)$existingRow['performance_allowance'];
-        
+
         $totalDeductions = $sssDeduction + $philhealthDeduction + $pagibigDeduction + $caDeduction + $sssLoan;
         $takeHomePay = $grossPay + $performanceAllowance + $otAmount - $totalDeductions;
 
@@ -72,6 +91,54 @@ try {
         mysqli_stmt_bind_param($updateStmt, 'dddi', $sssLoan, $totalDeductions, $takeHomePay, $reportId);
         mysqli_stmt_execute($updateStmt);
         mysqli_stmt_close($updateStmt);
+
+        error_log("[update_loan.php] Updated existing record id=$reportId with loan=$sssLoan");
+    } else {
+        // INSERT new record - weekly payroll record doesn't exist yet
+        // Get employee info to create minimal record
+        $empStmt = mysqli_prepare(
+            $db,
+            "SELECT id, daily_rate, branch_id FROM employees WHERE id = ? LIMIT 1"
+        );
+        if (!$empStmt) {
+            throw new Exception(mysqli_error($db));
+        }
+        mysqli_stmt_bind_param($empStmt, 'i', $employeeId);
+        mysqli_stmt_execute($empStmt);
+        $empResult = mysqli_stmt_get_result($empStmt);
+        $empRow = mysqli_fetch_assoc($empResult);
+        mysqli_stmt_close($empStmt);
+
+        if (!$empRow) {
+            throw new Exception("Employee not found");
+        }
+
+        // Insert minimal record with just the loan
+        $insertStmt = mysqli_prepare(
+            $db,
+            "INSERT INTO weekly_payroll_reports
+             (employee_id, report_year, report_month, week_number, view_type, branch_id,
+              days_worked, total_hours, daily_rate, gross_pay, gross_plus_allowance,
+              sss_deduction, philhealth_deduction, pagibig_deduction, ca_deduction,
+              sss_loan, total_deductions, take_home_pay, payment_status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 0, 0, 0, 0, 0, 0, ?, ?, ?, 'Not Paid', NOW())"
+        );
+        if (!$insertStmt) {
+            throw new Exception(mysqli_error($db));
+        }
+
+        $dailyRate = (float)$empRow['daily_rate'];
+        $branchId = (int)$empRow['branch_id'];
+
+        mysqli_stmt_bind_param($insertStmt, 'iiiisidddd',
+            $employeeId, $year, $month, $week, $viewType, $branchId,
+            $dailyRate, $sssLoan, $sssLoan, $sssLoan
+        );
+        mysqli_stmt_execute($insertStmt);
+        $newId = mysqli_insert_id($db);
+        mysqli_stmt_close($insertStmt);
+
+        error_log("[update_loan.php] Created new record id=$newId with loan=$sssLoan");
     }
 
     mysqli_commit($db);

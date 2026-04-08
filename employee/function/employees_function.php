@@ -61,7 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if user is Super Admin for employee modifications
     if (!$isSuperAdmin) {
         $msg = 'Error: Only Super Admin can modify employee records.';
-        $msg = 'Error Only Super Admin can modify employee records'
     } else {
         // Apply rate limiting for POST requests
         if (!checkRateLimit()) {
