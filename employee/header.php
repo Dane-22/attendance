@@ -218,6 +218,12 @@ function getNotificationIcon($type) {
         </h1>
     </div>
     <div class="header-right">
+        <?php
+        // Hide notifications on settings page
+        $currentPage = basename($_SERVER['PHP_SELF']);
+        $hideNotifications = ($currentPage === 'settings.php');
+        ?>
+        <?php if (!$hideNotifications): ?>
         <!-- Notification Bell with Dropdown -->
         <div class="notification-dropdown-wrapper">
             <button class="header-notification-btn" id="notificationBell" title="Notifications">
@@ -332,8 +338,10 @@ function getNotificationIcon($type) {
                 </div>
             </div>
         </div>
+        <?php endif; ?>
         
-        <!-- Profile Section (Clickable) -->
+        <?php if ($currentPage !== 'settings.php'): ?>
+        <!-- Profile Section (Clickable) - Hidden on settings page -->
         <a href="settings.php" class="header-profile-link" title="Go to Settings">
             <div class="header-user-info">
                 <span class="header-user-name"><?php echo htmlspecialchars($currentUserName); ?></span>
@@ -347,6 +355,7 @@ function getNotificationIcon($type) {
                 <?php endif; ?>
             </div>
         </a>
+        <?php endif; ?>
     </div>
 </header>
 
