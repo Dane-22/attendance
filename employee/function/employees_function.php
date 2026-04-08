@@ -106,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mysqli_stmt_close($check);
                 } else {
                     $msg = 'Please provide employee code and name.';
+                    
                 }
             }
 
