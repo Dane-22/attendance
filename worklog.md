@@ -641,3 +641,49 @@ Modified `update_loan.php` to apply the SSS loan to ALL weeks in the month when 
 **Result:** SSS loan now behaves as a monthly value. Setting it in any week automatically applies it to all weeks (1-4/5) for that employee and month.
 
 ---
+
+### 2026-04-08
+
+**Task:** Fix Weekly Report Date Calculation
+
+**Status:** ✅ Completed
+
+**Problem:** Weekly date calculation was incorrect. Week 1 was showing April 1-6 instead of April 1-4, and weeks were not properly excluding Sundays.
+
+**Actions Taken:**
+1. Modified `employee/function/report.php` to generate work days excluding Sundays
+2. Implemented proper week boundary detection that breaks weeks on Saturday→Monday transitions
+3. Fixed logic that was blocking Saturday-to-Monday break detection in Week 1
+4. Week calculation now properly groups work days into 5-day work weeks (Mon-Fri)
+
+**Files Modified:**
+- `employee/function/report.php` - Lines 50-121: Complete rewrite of weekly date calculation logic
+  - Generates work days array excluding Sundays
+  - Calculates week boundaries with max 5 days per week
+  - Breaks weeks on Saturday→Monday transition
+  - Week 1: April 1-4 (Tue-Fri), Week 2: April 6-10 (Mon-Fri), etc.
+
+**Result:** Weekly date ranges now correctly match payroll week definitions. Week 1 starts on the 1st of the month and subsequent weeks are Mon-Fri blocks excluding Sundays.
+
+---
+
+### 2026-04-08
+
+**Task:** Clean Up Settings Page Header
+
+**Status:** ✅ Completed
+
+**Problem:** Settings page showed notification bell and user profile info ("User: Super Admin") in the header, which was redundant with the profile information displayed in the settings form.
+
+**Actions Taken:**
+1. Modified `employee/header.php` to conditionally hide notification section on settings.php
+2. Added condition to hide profile section (user name and role display) on settings.php
+3. Used `$currentPage` check to identify settings page
+
+**Files Modified:**
+- `employee/header.php` - Lines 221-224, 226, 341, 343-358: Added conditional blocks to hide notification bell and profile section when on settings.php
+
+**Result:** Settings page now has a cleaner header showing only the page title. Notification bell and user profile info are hidden on settings.php but remain visible on all other pages.
+
+---
+

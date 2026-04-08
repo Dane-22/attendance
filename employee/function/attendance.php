@@ -820,7 +820,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 // Total workers in branch
 
-                $totalStmt = mysqli_prepare($db, "SELECT COUNT(*) as cnt FROM employees WHERE status = 'Active' AND position IN ('Worker', 'Admin') AND branch_id = ?");
+                $totalStmt = mysqli_prepare($db, "SELECT COUNT(*) as cnt FROM employees WHERE status = 'Active' AND position IN ('Worker', 'Admin', 'Engineer') AND branch_id = ?");
 
                 mysqli_stmt_bind_param($totalStmt, 'i', $selectedBranchId);
 
@@ -868,7 +868,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                                   ) a ON e.id = a.employee_id
 
-                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin') AND e.branch_id = ?";
+                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer') AND e.branch_id = ?";
 
                     $presentStmt = mysqli_prepare($db, $presentSql);
 
@@ -900,7 +900,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                                   ) a ON e.id = a.employee_id
 
-                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                     AND a.status = 'Present'
 
@@ -950,7 +950,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                               ) a ON e.id = a.employee_id
 
-                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                 AND e.branch_id = ?
 
@@ -984,7 +984,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                         ) t ON a1.id = t.max_id
                                         WHERE a1.branch_name = ?
                                     ) a ON e.id = a.employee_id
-                                    WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin') AND e.branch_id = ?
+                                    WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer') AND e.branch_id = ?
                                     ORDER BY e.last_name, e.first_name";
                 $presentNamesStmt = mysqli_prepare($db, $presentNamesSql);
                 mysqli_stmt_bind_param($presentNamesStmt, 'si', $branch, $selectedBranchId);
@@ -1010,7 +1010,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                            GROUP BY employee_id
                                        ) t ON a1.id = t.max_id
                                    ) a ON e.id = a.employee_id
-                                   WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                                   WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
                                      AND e.branch_id = ?
                                      AND a.status = 'Absent'
                                    ORDER BY e.last_name, e.first_name";
@@ -1047,7 +1047,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                               FROM employees e
 
-                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                 AND CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) LIKE ?";
 
@@ -1087,7 +1087,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                                   ) a ON e.id = a.employee_id
 
-                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                     AND e.branch_id = ?";
 
@@ -1119,7 +1119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                                   ) a ON e.id = a.employee_id
 
-                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                                  WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                     AND a.status = 'Present'
 
@@ -1157,7 +1157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                               ) a ON e.id = a.employee_id
 
-                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                 AND e.branch_id = ?
 
@@ -1205,7 +1205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                               ) a ON e.id = a.employee_id
 
-                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                 AND e.branch_id = ?
 
@@ -1219,7 +1219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                               FROM employees e
 
-                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                 AND e.branch_id = ?";
 
@@ -1337,7 +1337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                           ) a ON e.id = a.employee_id
 
-                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                             AND CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name) LIKE ?
 
@@ -1417,7 +1417,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                               LEFT JOIN branches ob ON ob.id = e.branch_id
 
-                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                 AND e.branch_id = ?
 
@@ -1489,7 +1489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                               LEFT JOIN branches ob ON ob.id = e.branch_id
 
-                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                              WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                                 AND a.status = 'Present'
 
@@ -1567,7 +1567,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                           LEFT JOIN branches ob ON ob.id = e.branch_id
 
-                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                             AND e.branch_id = ?
 
@@ -1655,7 +1655,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                           ) a ON e.id = a.employee_id
 
-                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                             AND e.branch_id = ?
 
@@ -1729,7 +1729,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                           ) a ON e.id = a.employee_id
 
-                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin')
+                          WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
 
                             AND e.branch_id = ?
 
