@@ -2,6 +2,50 @@
 
 ## Work Log for Attendance System
 
+### 2026-04-08
+
+**Task:** Fix 413 Request Entity Too Large Error + Add Client-Side Image Compression
+
+**Status:** ✅ Partially Completed
+
+**Problem:** 
+1. Employees page showing 413 error when navigating to page 2 (nginx 1.24.0 blocking POST requests)
+2. Profile image uploads limited to 5MB without compression
+
+**Actions Taken:**
+
+**1. Fixed SQL Syntax Error in employees_function.php:**
+- Removed incomplete SQL fragment `b.bra` that was breaking the search query
+- Fixed at line 372 in the `$searchCondition` variable
+
+**2. Added Cache Headers to Prevent POST Issues:**
+- Added `Cache-Control: no-cache, no-store, must-revalidate` headers to employees.php
+- Added `Pragma: no-cache` and `Expires: 0` headers
+- Prevents service worker/caching issues that may cause POST requests with stale data
+
+**3. Implemented Client-Side Image Compression:**
+- Increased upload limit from 5MB to 10MB
+- Added JavaScript compression before upload:
+  - Images >500KB are auto-compressed
+  - Max width: 1200px, JPEG quality: 80%
+  - Results in ~400-600KB final size regardless of original
+- Added compression status indicator ("Compressing..." spinner)
+- Updated UI text: "Max file size: 10MB • Auto-compressed to ~500KB"
+- Fallback to original file if compression fails
+
+**Files Modified:**
+- `employee/employees.php` - Added cache headers and image compression JS
+- `employee/function/employees_function.php` - Fixed SQL syntax, updated 5MB→10MB limits
+
+**Files Affected:**
+- Line 5-8: Added cache-control headers in employees.php
+- Lines 374, 591-673: Added `handleImageUpload()` and `compressImage()` functions
+- Line 181, 220, 278, 328: Updated 5MB references to 10MB
+- Line 372: Removed incomplete SQL `b.bra` fragment
+
+**Note:** The 413 error on pagination requires nginx `client_max_body_size` increase by hosting provider. The code changes help with image uploads but the server config issue remains.
+
+---
 
 ### 2026-04-07
 

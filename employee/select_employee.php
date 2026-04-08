@@ -622,7 +622,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
           <div id="timeLogsBody" class="time-logs-body">Loading...</div>
         </div>
       </div>
-      
+
+      <!-- Profile Image Modal -->
+      <div id="profileImageModal" class="modal-backdrop" onclick="closeProfileModal()" style="display: none;">
+        <div class="modal-panel" style="width: auto; max-width: 90vw; max-height: 90vh; padding: 0; overflow: hidden;" onclick="event.stopPropagation()">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #1a1a1a; border-bottom: 1px solid #333;">
+            <h3 id="profileModalName" style="margin: 0; color: #FFD700; font-size: 18px;">Employee Name</h3>
+            <button onclick="closeProfileModal()" style="background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 0;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div style="padding: 20px; display: flex; justify-content: center; align-items: center; background: #0b0b0b;">
+            <img id="profileModalImage" src="" alt="Profile" style="max-width: 100%; max-height: 70vh; border-radius: 8px; object-fit: contain;">
+          </div>
+        </div>
+      </div>
+
       <div class="potanginamo">
       <!-- Filter Options -->
       <div class="filter-options-container">
