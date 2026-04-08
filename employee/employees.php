@@ -371,13 +371,13 @@ if (!isset($search)) $search = '';
             </div>
             <div class="file-upload-area">
               <div class="file-input-wrapper">
-                <input type="file" id="profileImageInput" name="profile_image" accept="image/*" onchange="previewProfileImage(this)">
+                <input type="file" id="profileImageInput" name="profile_image" accept="image/*" onchange="handleImageUpload(this)">
                 <label for="profileImageInput" class="file-input-label">
                   <i class="fas fa-cloud-upload-alt"></i> Choose New Profile Image
                 </label>
               </div>
               <div class="file-info">
-                Max file size: 5MB • Formats: JPG, PNG, GIF, WebP
+                Max file size: 10MB • Auto-compressed to ~500KB • Formats: JPG, PNG, GIF, WebP
               </div>
             </div>
           </div>
@@ -587,6 +587,89 @@ if (!isset($search)) $search = '';
         body.classList.add('light-mode');
       }
     })();
+  </script>
+  <script>
+    // Image compression before upload - prevents 413 errors
+    async function handleImageUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      // Show compression status
+      const label = input.nextElementSibling;
+      const originalText = label.innerHTML;
+      label.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compressing...';
+
+      try {
+        // Compress image if larger than 500KB
+        if (file.size > 500 * 1024) {
+          const compressed = await compressImage(file, 1200, 0.8);
+          // Create new File object with compressed data
+          const newFile = new File([compressed.blob], file.name, { type: 'image/jpeg' });
+          
+          // Replace the file in the input
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(newFile);
+          input.files = dataTransfer.files;
+          
+          console.log(`Compressed: ${(file.size/1024).toFixed(1)}KB → ${(newFile.size/1024).toFixed(1)}KB`);
+        }
+        
+        // Preview the image
+        previewProfileImage(input);
+      } catch (err) {
+        console.error('Compression failed:', err);
+        // Fall back to original file
+        previewProfileImage(input);
+      } finally {
+        label.innerHTML = originalText;
+      }
+    }
+
+    function compressImage(file, maxWidth, quality) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          
+          // Calculate new dimensions
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          // Create canvas
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to blob
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve({ blob, width, height });
+            } else {
+              reject(new Error('Canvas toBlob failed'));
+            }
+          }, 'image/jpeg', quality);
+        };
+        
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Image load failed'));
+        };
+        
+        img.src = url;
+      });
+    }
   </script>
   <script src="js/employees.js.php"></script>
   <script>

@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 } else {
                                     // Upload successful, process the file
                                     $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                                    $max_size = 5 * 1024 * 1024; // 5MB
+                                    $max_size = 10 * 1024 * 1024; // 10MB
                                     
                                     if (in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
                                         // Generate unique filename
@@ -217,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             $msg .= ' Failed to save profile image. [Debug: tmp=' . $file['tmp_name'] . ', dest=' . $upload_path . ', exists=' . (file_exists($file['tmp_name']) ? 'yes' : 'no') . ', dir_writable=' . (is_writable($upload_dir) ? 'yes' : 'no') . ']';
                                         }
                                     } else {
-                                        $msg .= ' Invalid profile image file. Only JPG, PNG, GIF, and WebP files up to 5MB are allowed.';
+                                        $msg .= ' Invalid profile image file. Only JPG, PNG, GIF, and WebP files up to 10MB are allowed.';
                                     }
                                 }
                             }
@@ -275,7 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Include the upload logic here or call the upload script
                     $file = $_FILES['profile_image'];
                     $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                    $max_size = 5 * 1024 * 1024; // 5MB
+                    $max_size = 10 * 1024 * 1024; // 10MB - client compressed
                     
                     if ($file['error'] === UPLOAD_ERR_OK && in_array($file['type'], $allowed_types) && $file['size'] <= $max_size) {
                         // Generate unique filename
@@ -325,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $msg = 'Failed to save file.';
                         }
                     } else {
-                        $msg = 'Invalid file. Only JPG, PNG, GIF, and WebP files up to 5MB are allowed.';
+                        $msg = 'Invalid file. Only JPG, PNG, GIF, and WebP files up to 10MB are allowed.';
                     }
                 } else {
                     $msg = 'Invalid request.';
