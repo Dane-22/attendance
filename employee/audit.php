@@ -335,12 +335,15 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Attendance Audit - Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="css/light-theme.css">
-    <script src="js/theme.js"></script>
+    <script src="js/theme.js?v=2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -1385,6 +1388,10 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                         <div class="legend-color day-absent"></div>
                         <span>Absent</span>
                     </div>
+                    <div class="legend-item">
+                        <div class="legend-color day-no-record"></div>
+                        <span>No Record</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1638,6 +1645,16 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         .day-absent .day-status {
             background: rgba(244, 67, 54, 0.3);
             color: #F44336;
+        }
+
+        .day-no-record {
+            background: rgba(128, 128, 128, 0.1);
+            border-color: rgba(128, 128, 128, 0.2);
+        }
+
+        .day-no-record .day-status {
+            background: rgba(128, 128, 128, 0.2);
+            color: #888888;
         }
 
         .day-today {
@@ -1914,8 +1931,8 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             }
 
             if (dayData) {
-                const status = dayData.status || 'Absent';
-                dayEl.classList.add(`day-${status.toLowerCase()}`);
+                const status = dayData.status || 'No Record';
+                dayEl.classList.add(`day-${status.toLowerCase().replace(/\s+/g, '-')}`);
 
                 if (isToday) {
                     dayEl.classList.add('day-today');
