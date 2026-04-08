@@ -146,7 +146,7 @@ for ($day = 1; $day <= $daysInMonth; $day++) {
             'date' => $dateStr,
             'time_in' => null,
             'time_out' => null,
-            'status' => 'Absent',
+            'status' => 'No Record',
             'hours' => 0
         ];
     }
