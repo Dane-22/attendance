@@ -4,6 +4,24 @@
 
 ### 2026-04-08
 
+**Task:** Add Clickable Profile Image Modal in select_employee.php
+
+**Status:** ✅ Completed
+
+**Problem:** Profile images in the employee selection page were static and couldn't be viewed in full size.
+
+**Actions Taken:**
+- Added `profileImageModal` HTML structure to `select_employee.php` (lines 626-639)
+- Modal displays employee name in header and full-size centered image
+- Click outside image or X button closes the modal
+- Uses existing `showProfileModal()` and `closeProfileModal()` functions from `attendance.js`
+- Modal styling: max 90vw width, max 90vh height, dark theme consistent with app
+
+**Files Modified:**
+- `employee/select_employee.php` - Added profile image modal HTML
+
+---
+
 **Task:** Fix 413 Request Entity Too Large Error + Add Client-Side Image Compression
 
 **Status:** ✅ Partially Completed

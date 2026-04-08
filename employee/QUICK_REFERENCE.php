@@ -226,7 +226,7 @@
                 <div class="code-block">
 &lt;?php include __DIR__ . '/monitoring_dashboard_component.php'; ?&gt;
                 </div>
-                <button onclick="copyToClipboard('<?php include __DIR__ . \\'\\'/monitoring_dashboard_component.php\\'; ?>')" class="button button-secondary">
+                <button onclick="copyToClipboard('&lt;?php include __DIR__ . \'/monitoring_dashboard_component.php\'; ?&gt;')" class="button button-secondary">
                     <i class="fas fa-copy"></i> Copy
                 </button>
             </div>

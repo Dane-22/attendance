@@ -48,9 +48,74 @@ if ($selected_week == 5 && !$has_week_5) {
 
 // Calculate date ranges based on view type
 if ($view_type === 'weekly') {
-    // Weekly view logic
-    $week_start_day = 1 + (($selected_week - 1) * 7);
-    $week_end_day = min($week_start_day + 6, $days_in_month);
+    // Weekly view logic - Work days only (exclude Sundays)
+    // Generate all work days in the month (exclude Sundays)
+    $work_days = [];
+    for ($day = 1; $day <= $days_in_month; $day++) {
+        $date_str = sprintf('%04d-%02d-%02d', $year, $month, $day);
+        $day_of_week = date('w', strtotime($date_str)); // 0 = Sunday, 1 = Monday, etc.
+        if ($day_of_week != 0) { // Exclude Sundays
+            $work_days[] = $day;
+        }
+    }
+    
+    // Determine number of weeks based on work days
+    // Week 1: From 1st work day to first Sunday (or up to 5 days)
+    // Subsequent weeks: Monday to Friday (5 days)
+    $total_work_days = count($work_days);
+    
+    // Calculate week boundaries
+    $week_boundaries = [];
+    $current_week = 1;
+    $day_index = 0;
+    
+    while ($day_index < $total_work_days) {
+        $week_start_day = $work_days[$day_index];
+        
+        // For Week 1, go until we hit a Sunday or max 5 days
+        // For other weeks, take up to 5 days
+        $days_in_this_week = 0;
+        $week_end_index = $day_index;
+        
+        while ($week_end_index < $total_work_days && $days_in_this_week < 5) {
+            // Check if next day would cross a Sunday
+            if ($days_in_this_week > 0) {
+                $current_date = sprintf('%04d-%02d-%02d', $year, $month, $work_days[$week_end_index]);
+                $prev_date = sprintf('%04d-%02d-%02d', $year, $month, $work_days[$week_end_index - 1]);
+                $current_dow = date('w', strtotime($current_date));
+                $prev_dow = date('w', strtotime($prev_date));
+                
+                // If we went from Saturday (6) to Monday (1), that's a new week
+                if ($prev_dow == 6 && $current_dow == 1) {
+                    break;
+                }
+            }
+            $days_in_this_week++;
+            $week_end_index++;
+        }
+        
+        $week_end_day = $work_days[$week_end_index - 1];
+        $week_boundaries[$current_week] = ['start' => $week_start_day, 'end' => $week_end_day];
+        
+        $day_index = $week_end_index;
+        $current_week++;
+    }
+    
+    // Update has_week_5 based on actual calculated weeks
+    $has_week_5 = count($week_boundaries) >= 5;
+    
+    // Get the selected week boundaries
+    if (isset($week_boundaries[$selected_week])) {
+        $week_start_day = $week_boundaries[$selected_week]['start'];
+        $week_end_day = $week_boundaries[$selected_week]['end'];
+    } else {
+        // Fallback to last available week if selected week doesn't exist
+        $last_week = count($week_boundaries);
+        $week_start_day = $week_boundaries[$last_week]['start'] ?? 1;
+        $week_end_day = $week_boundaries[$last_week]['end'] ?? min(5, $days_in_month);
+        $selected_week = $last_week;
+    }
+    
     $start_date = sprintf('%04d-%02d-%02d', $year, $month, $week_start_day);
     $end_date = sprintf('%04d-%02d-%02d', $year, $month, $week_end_day);
     $date_range_label = "Week $selected_week: " . date('M d', strtotime($start_date)) . " - " . date('M d, Y', strtotime($end_date));

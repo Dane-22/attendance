@@ -346,6 +346,7 @@ if ($db_connected && $db && ($tables_check['employees'] ?? false) && ($tables_ch
                 </div>
             <?php endforeach; ?>
         </div>
+        <?php endif; ?>
         
         <!-- ===== COLUMNS CHECK ===== -->
         <?php if (isset($columns_check)): ?>
