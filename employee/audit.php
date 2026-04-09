@@ -233,7 +233,17 @@ if ($filter === 'week') {
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
     WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
-    ORDER BY a.attendance_date DESC, a.time_in DESC
+    ORDER BY 
+        CASE 
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
+                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 1
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL 
+                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 2
+            WHEN a.time_in IS NOT NULL 
+                 AND (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 3
+            ELSE 4
+        END,
+        a.attendance_date DESC, a.time_in DESC
     LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
@@ -258,7 +268,17 @@ if ($filter === 'week') {
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
     WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
-    ORDER BY a.attendance_date DESC, a.time_in DESC
+    ORDER BY 
+        CASE 
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
+                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 1
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL 
+                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 2
+            WHEN a.time_in IS NOT NULL 
+                 AND (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 3
+            ELSE 4
+        END,
+        a.attendance_date DESC, a.time_in DESC
     LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
@@ -283,7 +303,17 @@ if ($filter === 'week') {
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
     WHERE a.attendance_date = ?" . $searchCondition . "
-    ORDER BY a.time_in DESC
+    ORDER BY 
+        CASE 
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
+                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 1
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL 
+                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 2
+            WHEN a.time_in IS NOT NULL 
+                 AND (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 3
+            ELSE 4
+        END,
+        a.time_in DESC
     LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
