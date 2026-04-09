@@ -298,6 +298,7 @@ function formatDateShort($date) {
             </div>
 
             <!-- Analytics Summary Cards -->
+            <?php echo "<!-- DEBUG: Analytics sections starting -->"; ?>
             <div class="analytics-summary-grid">
                 <div class="analytics-summary-card">
                     <div id="analytics-attendance-rate" class="metric-value info">--</div>

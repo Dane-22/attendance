@@ -30,6 +30,51 @@
 
 ---
 
+### 2026-04-09
+
+**Task:** Implement Branch Attendance Calendar Modal
+
+**Status:** ✅ Completed
+
+**Problem:** Need a way to view all employee attendance records for a specific branch in a calendar view, accessible by clicking the branch name in the audit table.
+
+**Actions Taken:**
+1. Created new API endpoint `employee/api/get_branch_attendance_detailed.php`
+   - Fetches attendance data filtered by branch name and month
+   - Calculates employee status (Present, Completed, Late, Absent) per day
+   - Provides daily summary counts and employee list with times
+   - Implements PHP session-based rate limiting (60 requests/minute)
+
+2. Enhanced `employee/audit.php`:
+   - Made branch names in the attendance table clickable with `openBranchCalendar()`
+   - Added branch calendar modal HTML structure with header, loading state, calendar grid, and legend
+   - Added comprehensive CSS styling for modal, calendar grid, day cells, and employee items
+   - Implemented JavaScript functions:
+     - `openBranchCalendar()` - opens modal and initializes state
+     - `closeBranchCalendar()` - closes modal and clears state
+     - `navigateBranchCalendar()` - month navigation (prev/next)
+     - `loadBranchCalendarData()` - fetches data from API with error handling
+     - `renderBranchCalendar()` - renders calendar grid with attendance data
+     - `toggleDayEmployees()` - expands/collapses employee list per day
+     - `createBranchDayElement()` - creates day cells with employee list and status colors
+
+3. Features:
+   - Shows all attendance statuses (Present, Completed, Late, Absent)
+   - Displays up to 10 employees per day with "+X more" button to expand
+   - Color-coded status badges (Green=Present, Blue=Completed, Orange=Late, Red=Absent)
+   - Month navigation with previous/next buttons
+   - Rate limiting: 60 requests per minute to prevent abuse
+   - Responsive design for mobile/tablet
+   - Escape key and backdrop click close the modal
+
+**Files Created:**
+- `employee/api/get_branch_attendance_detailed.php` - API endpoint with rate limiting
+
+**Files Modified:**
+- `employee/audit.php` - Added branch modal HTML, CSS, and JavaScript (lines 909-915, 1434-1510, 1898-2181, 2380-2635)
+
+---
+
 ### 2026-04-08
 
 **Task:** Add Clickable Profile Image Modal in select_employee.php

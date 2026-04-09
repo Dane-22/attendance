@@ -1240,7 +1240,98 @@ function formatDateShort($date) {
             margin-bottom: 16px;
             opacity: 0.5;
         }
+        
+        /* Quick Actions Row */
+        .quick-actions-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .quick-action-card {
+            background: linear-gradient(145deg, rgba(30,30,30,0.9), rgba(20,20,20,0.95));
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .quick-action-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 215, 0, 0.3);
+            box-shadow: 0 12px 40px rgba(255, 215, 0, 0.1);
+        }
+
+        .quick-action-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 16px;
+        }
+
+        .quick-action-icon.ca {
+            background: rgba(255, 215, 0, 0.15);
+            color: #FFD700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .quick-action-icon.ot {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .quick-action-icon.leave {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .quick-action-card h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 8px;
+        }
+
+        .quick-action-card p {
+            font-size: 0.85rem;
+            color: var(--muted-white);
+            margin: 0;
+        }
+
+        .quick-action-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--danger-red);
+            color: white;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .quick-actions-row {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
+    
+    <!-- Analytics Dashboard Styles -->
+    <link rel="stylesheet" href="css/dashboard-analytics.css">
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app-shell">
@@ -1309,120 +1400,40 @@ function formatDateShort($date) {
                 </div>
             </div>
 
-            <!-- Cash Advance Request Section -->
-            <div class="cash-advance-section">
-                <div class="cash-advance-header">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <h3>Request Cash Advance</h3>
+            <!-- Quick Actions Row -->
+            <div class="quick-actions-row">
+                <div class="quick-action-card" data-bs-toggle="modal" data-bs-target="#cashAdvanceModal">
+                    <div class="quick-action-icon ca">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h4>Request Cash Advance</h4>
+                    <p>Submit cash advance request</p>
                     <?php if ($pendingRequests > 0): ?>
-                        <span class="notification-badge" style="margin-left: auto;"><?php echo $pendingRequests; ?> Pending</span>
+                        <span class="quick-action-badge"><?php echo $pendingRequests; ?> Pending</span>
                     <?php endif; ?>
                 </div>
                 
-                <div id="caAlert" class="ca-alert"></div>
-                
-                <form class="ca-form" id="cashAdvanceForm">
-                    <div class="ca-field">
-                        <label for="caAmount">Amount (₱)</label>
-                        <input type="number" id="caAmount" name="amount" min="1" step="0.01" placeholder="Enter amount" required>
+                <div class="quick-action-card" data-bs-toggle="modal" data-bs-target="#overtimeModal">
+                    <div class="quick-action-icon ot">
+                        <i class="fas fa-clock"></i>
                     </div>
-                    <div class="ca-field">
-                        <label for="caReason">Reason / Purpose</label>
-                        <textarea id="caReason" name="reason" placeholder="Explain why you need this cash advance..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn-submit-ca">
-                        <i class="fas fa-paper-plane"></i>
-                        Submit Request to Admin
-                    </button>
-                </form>
-            </div>
-
-            <!-- Overtime Request Section -->
-            <div class="overtime-request-section">
-                <div class="overtime-request-header">
-                    <i class="fas fa-clock"></i>
-                    <h3>Request Overtime</h3>
+                    <h4>Request Overtime</h4>
+                    <p>Submit overtime hours</p>
                     <?php if ($pendingOvertimeRequests > 0): ?>
-                        <span class="notification-badge" style="margin-left: auto;"><?php echo $pendingOvertimeRequests; ?> Pending</span>
+                        <span class="quick-action-badge"><?php echo $pendingOvertimeRequests; ?> Pending</span>
                     <?php endif; ?>
                 </div>
                 
-                <div id="otAlert" class="ot-alert"></div>
-                
-                <form class="ot-form" id="overtimeForm">
-                    <div class="ot-field">
-                        <label for="otBranch">Branch / Site</label>
-                        <select id="otBranch" name="branch_name" required>
-                            <option value="">Select a branch...</option>
-                            <?php foreach ($branchesList as $branch): ?>
-                                <option value="<?php echo htmlspecialchars($branch['branch_name']); ?>">
-                                    <?php echo htmlspecialchars($branch['branch_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                <div class="quick-action-card" data-bs-toggle="modal" data-bs-target="#leaveModal">
+                    <div class="quick-action-icon leave">
+                        <i class="fas fa-umbrella-beach"></i>
                     </div>
-                    <div class="ot-row">
-                        <div class="ot-field">
-                            <label for="otDate">Date</label>
-                            <input type="date" id="otDate" name="request_date" required>
-                        </div>
-                        <div class="ot-field">
-                            <label for="otHours">Hours</label>
-                            <input type="number" id="otHours" name="requested_hours" min="0.5" max="24" step="0.5" placeholder="e.g. 2.5" required>
-                        </div>
-                    </div>
-                    <div class="ot-field">
-                        <label for="otReason">Reason / Justification</label>
-                        <textarea id="otReason" name="overtime_reason" placeholder="Explain why overtime is needed..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn-submit-ot">
-                        <i class="fas fa-paper-plane"></i>
-                        Submit Overtime Request
-                    </button>
-                </form>
-            </div>
-
-            <!-- Leave Request Section -->
-            <div class="leave-request-section">
-                <div class="leave-request-header">
-                    <i class="fas fa-umbrella-beach"></i>
-                    <h3>Request Leave</h3>
+                    <h4>Request Leave</h4>
+                    <p>Submit leave application</p>
                     <?php if ($pendingLeaveRequests > 0): ?>
-                        <span class="notification-badge" style="margin-left: auto;"><?php echo $pendingLeaveRequests; ?> Pending</span>
+                        <span class="quick-action-badge"><?php echo $pendingLeaveRequests; ?> Pending</span>
                     <?php endif; ?>
                 </div>
-                
-                <div id="leaveAlert" class="leave-alert"></div>
-                
-                <form class="leave-form" id="leaveForm">
-                    <div class="leave-row">
-                        <div class="leave-field">
-                            <label for="leaveDate">Leave Date</label>
-                            <input type="date" id="leaveDate" name="leave_date" required>
-                        </div>
-                        <div class="leave-field">
-                            <label for="leaveType">Leave Type</label>
-                            <select id="leaveType" name="leave_type" required>
-                                <option value="Personal">Personal</option>
-                                <option value="Sick">Sick</option>
-                                <option value="Vacation">Vacation</option>
-                                <option value="Emergency">Emergency</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="leave-field">
-                        <label for="daysRequested">Days Requested</label>
-                        <input type="number" id="daysRequested" name="days_requested" min="0.5" max="30" step="0.5" value="1" placeholder="e.g. 1 or 1.5" required>
-                    </div>
-                    <div class="leave-field">
-                        <label for="leaveReason">Reason / Justification</label>
-                        <textarea id="leaveReason" name="leave_reason" placeholder="Explain why you need leave..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn-submit-leave">
-                        <i class="fas fa-paper-plane"></i>
-                        Submit Leave Request
-                    </button>
-                </form>
             </div>
 
             <!-- Consecutive Attendance Issues Section -->
@@ -1490,56 +1501,157 @@ function formatDateShort($date) {
                 <?php endif; ?>
             </div>
 
-            <!-- Summary Cards -->
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <div class="summary-icon branches">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="summary-number"><?php echo number_format($totalSites); ?></div>
-                    <div class="summary-label">Active Sites</div>
-                    <div class="summary-change">
-                        <i class="fas fa-map-marker-alt"></i>
-                        Operational locations
-                    </div>
-                </div>
-
-                <div class="summary-card">
-                    <div class="summary-icon employees">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="summary-number">-</div>
-                    <div class="summary-label">Site Personnel</div>
-                    <div class="summary-change">
-                        <i class="fas fa-hard-hat"></i>
-                        Field workers
+            <?php if ($userRole === 'Admin'): ?>
+            <!-- Analytics Dashboard - Admin Only -->
+            
+            <!-- Analytics Summary Cards -->
+            <div class="analytics-summary-grid">
+                <div class="analytics-summary-card">
+                    <div id="analytics-attendance-rate" class="metric-value info">--</div>
+                    <div class="metric-label">Today's Attendance Rate</div>
+                    <div class="metric-change up">
+                        <i class="fas fa-chart-line"></i> Live metrics
                     </div>
                 </div>
-
-                <div class="summary-card">
-                    <div class="summary-icon transfers">
-                        <i class="fas fa-exchange-alt"></i>
-                    </div>
-                    <div class="summary-number"><?php echo count($recentTransfers); ?></div>
-                    <div class="summary-label">Recent Transfers</div>
-                    <div class="summary-change">
-                        <i class="fas fa-calendar-day"></i>
-                        Staff movements
+                <div class="analytics-summary-card">
+                    <div id="analytics-pending-ot" class="metric-value warning">--</div>
+                    <div class="metric-label">Pending Overtime Requests</div>
+                    <div class="metric-change">
+                        <i class="fas fa-clock"></i> This month
                     </div>
                 </div>
-
-                <div class="summary-card">
-                    <div class="summary-icon payroll">
-                        <i class="fas fa-clipboard-check"></i>
+                <div class="analytics-summary-card">
+                    <div id="analytics-pending-ca" class="metric-value gold">--</div>
+                    <div class="metric-label">Pending Cash Advances</div>
+                    <div class="metric-change">
+                        <i class="fas fa-money-bill-wave"></i> Last 30 days
                     </div>
-                    <div class="summary-number">-</div>
-                    <div class="summary-label">Site Attendance</div>
-                    <div class="summary-change">
-                        <i class="fas fa-check-circle"></i>
-                        Daily tracking
+                </div>
+                <div class="analytics-summary-card">
+                    <div id="analytics-active-workers" class="metric-value success">--</div>
+                    <div class="metric-label">Active Workers Today</div>
+                    <div class="metric-change up">
+                        <i class="fas fa-user-check"></i> Currently clocked in
                     </div>
                 </div>
             </div>
+
+            <!-- Attendance Analytics Section -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <i class="fas fa-chart-pie"></i>
+                    <h2>Attendance Analytics</h2>
+                </div>
+                
+                <!-- Mini Stats Row -->
+                <div class="mini-stats-row">
+                    <div class="mini-stat">
+                        <div class="mini-stat-icon present">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="mini-stat-content">
+                            <div id="mini-stat-present" class="mini-stat-value">--</div>
+                            <div class="mini-stat-label">Present Today</div>
+                        </div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-icon late">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="mini-stat-content">
+                            <div id="mini-stat-late" class="mini-stat-value">--</div>
+                            <div class="mini-stat-label">Late Arrivals</div>
+                        </div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-icon absent">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="mini-stat-content">
+                            <div id="mini-stat-absent" class="mini-stat-value">--</div>
+                            <div class="mini-stat-label">Absent</div>
+                        </div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-icon ot">
+                            <i class="fas fa-business-time"></i>
+                        </div>
+                        <div class="mini-stat-content">
+                            <div id="mini-stat-ot" class="mini-stat-value">--</div>
+                            <div class="mini-stat-label">OT Hours (This Month)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="analytics-grid three-column">
+                    <div class="chart-container">
+                        <h4><i class="fas fa-chart-pie"></i> Today's Attendance</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="todayAttendanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h4><i class="fas fa-chart-line"></i> 7-Day Trend</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="attendanceTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h4><i class="fas fa-building"></i> Branch Attendance</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="branchAttendanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overtime Analytics Section -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <i class="fas fa-business-time"></i>
+                    <h2>Overtime Analytics</h2>
+                </div>
+                
+                <div class="analytics-grid two-column">
+                    <div class="chart-container">
+                        <h4><i class="fas fa-chart-bar"></i> Monthly Overtime Trend</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="overtimeTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h4><i class="fas fa-trophy"></i> Top Overtime Employees</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="topOvertimeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Distribution Section -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <i class="fas fa-users-cog"></i>
+                    <h2>Employee Distribution</h2>
+                </div>
+                
+                <div class="analytics-grid two-column">
+                    <div class="chart-container">
+                        <h4><i class="fas fa-user-tie"></i> By Position</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="positionDistributionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h4><i class="fas fa-map-marker-alt"></i> By Branch</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="branchDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Data Monitoring Section -->
             <div class="monitoring-section">
@@ -1662,6 +1774,131 @@ function formatDateShort($date) {
                         <i class="fas fa-check me-2"></i>
                         Confirm & Time In
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cash Advance Modal -->
+    <div class="modal fade" id="cashAdvanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: linear-gradient(145deg, rgba(30,30,30,0.98), rgba(20,20,20,0.95)); border: 1px solid rgba(255, 215, 0, 0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(255, 215, 0, 0.15);">
+                    <h5 class="modal-title" style="color: var(--gold-1); display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-money-bill-wave"></i> Request Cash Advance
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="caAlertModal" class="ca-alert"></div>
+                    <form class="ca-form" id="cashAdvanceFormModal">
+                        <div class="ca-field">
+                            <label for="caAmountModal">Amount (₱)</label>
+                            <input type="number" id="caAmountModal" name="amount" min="1" step="0.01" placeholder="Enter amount" required>
+                        </div>
+                        <div class="ca-field">
+                            <label for="caReasonModal">Reason / Purpose</label>
+                            <textarea id="caReasonModal" name="reason" placeholder="Explain why you need this cash advance..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn-submit-ca">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Request to Admin
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overtime Modal -->
+    <div class="modal fade" id="overtimeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: linear-gradient(145deg, rgba(30,30,30,0.98), rgba(20,20,20,0.95)); border: 1px solid rgba(59, 130, 246, 0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(59, 130, 246, 0.15);">
+                    <h5 class="modal-title" style="color: #3b82f6; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-clock"></i> Request Overtime
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="otAlertModal" class="ot-alert"></div>
+                    <form class="ot-form" id="overtimeFormModal">
+                        <div class="ot-field">
+                            <label for="otBranchModal">Branch / Site</label>
+                            <select id="otBranchModal" name="branch_name" required>
+                                <option value="">Select a branch...</option>
+                                <?php foreach ($branchesList as $branch): ?>
+                                    <option value="<?php echo htmlspecialchars($branch['branch_name']); ?>">
+                                        <?php echo htmlspecialchars($branch['branch_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="ot-row">
+                            <div class="ot-field">
+                                <label for="otDateModal">Date</label>
+                                <input type="date" id="otDateModal" name="request_date" required>
+                            </div>
+                            <div class="ot-field">
+                                <label for="otHoursModal">Hours</label>
+                                <input type="number" id="otHoursModal" name="requested_hours" min="0.5" max="24" step="0.5" placeholder="e.g. 2.5" required>
+                            </div>
+                        </div>
+                        <div class="ot-field">
+                            <label for="otReasonModal">Reason / Justification</label>
+                            <textarea id="otReasonModal" name="overtime_reason" placeholder="Explain why overtime is needed..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn-submit-ot">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Overtime Request
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Modal -->
+    <div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: linear-gradient(145deg, rgba(30,30,30,0.98), rgba(20,20,20,0.95)); border: 1px solid rgba(76, 175, 80, 0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(76, 175, 80, 0.15);">
+                    <h5 class="modal-title" style="color: #4caf50; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-umbrella-beach"></i> Request Leave
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="leaveAlertModal" class="leave-alert"></div>
+                    <form class="leave-form" id="leaveFormModal">
+                        <div class="leave-row">
+                            <div class="leave-field">
+                                <label for="leaveDateModal">Leave Date</label>
+                                <input type="date" id="leaveDateModal" name="leave_date" required>
+                            </div>
+                            <div class="leave-field">
+                                <label for="leaveTypeModal">Leave Type</label>
+                                <select id="leaveTypeModal" name="leave_type" required>
+                                    <option value="Personal">Personal</option>
+                                    <option value="Sick">Sick</option>
+                                    <option value="Vacation">Vacation</option>
+                                    <option value="Emergency">Emergency</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="leave-field">
+                            <label for="daysRequestedModal">Days Requested</label>
+                            <input type="number" id="daysRequestedModal" name="days_requested" min="0.5" max="30" step="0.5" value="1" placeholder="e.g. 1 or 1.5" required>
+                        </div>
+                        <div class="leave-field">
+                            <label for="leaveReasonModal">Reason / Justification</label>
+                            <textarea id="leaveReasonModal" name="leave_reason" placeholder="Explain why you need leave..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn-submit-leave">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit Leave Request
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1926,11 +2163,11 @@ function formatDateShort($date) {
         });
         
         // Cash Advance Form submission
-        document.getElementById('cashAdvanceForm').addEventListener('submit', function(e) {
+        document.getElementById('cashAdvanceFormModal').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const form = this;
-            const alertDiv = document.getElementById('caAlert');
+            const alertDiv = document.getElementById('caAlertModal');
             const submitBtn = form.querySelector('.btn-submit-ca');
             
             const formData = new FormData(form);
@@ -1974,11 +2211,11 @@ function formatDateShort($date) {
         });
         
         // Overtime Request Form submission
-        document.getElementById('overtimeForm').addEventListener('submit', function(e) {
+        document.getElementById('overtimeFormModal').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const form = this;
-            const alertDiv = document.getElementById('otAlert');
+            const alertDiv = document.getElementById('otAlertModal');
             const submitBtn = form.querySelector('.btn-submit-ot');
             
             const formData = new FormData(form);
@@ -2022,11 +2259,11 @@ function formatDateShort($date) {
         });
         
         // Leave Request Form submission
-        document.getElementById('leaveForm').addEventListener('submit', function(e) {
+        document.getElementById('leaveFormModal').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const form = this;
-            const alertDiv = document.getElementById('leaveAlert');
+            const alertDiv = document.getElementById('leaveAlertModal');
             const submitBtn = form.querySelector('.btn-submit-leave');
             
             const formData = new FormData(form);
