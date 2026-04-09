@@ -4,6 +4,47 @@
 
 ### 2026-04-09
 
+**Task:** Fix Branch Calendar Showing Future Dates with Records
+
+**Status:** ✅ Completed
+
+**Problem:** The branch calendar modal was showing attendance records for future/upcoming days (e.g., April 19-30 when today is April 9). This was misleading as those days haven't occurred yet.
+
+**Root Cause:** The `get_branch_attendance_detailed.php` API was querying all attendance records for the entire month without filtering out future dates. If records existed in the database for future dates, they would be displayed.
+
+**Fix Applied:**
+- Added logic to cap the query end date at today (`date('Y-m-d')`)
+- If the month's end date is in the future, it's limited to today's date
+- This ensures the API only returns records up to the current date
+
+**Files Modified:**
+- `employee/api/get_branch_attendance_detailed.php` - Added `$today` check to cap end date (lines 93-97)
+
+---
+
+### 2026-04-09
+
+**Task:** Fix Branch Calendar Month Navigation Bug in Audit Page
+
+**Status:** ✅ Completed
+
+**Problem:** When clicking the left arrow in the branch calendar modal to navigate to previous months, clicking once from April went to February (skipping March). This was caused by timezone conversion issues with `Date.toISOString()`.
+
+**Root Cause:** The `navigateBranchCalendar()` function used `date.toISOString().slice(0, 7)` which converts the date to UTC. Depending on the timezone offset (e.g., UTC+8), this could shift the date backward across month boundaries (e.g., April 1st midnight in UTC+8 becomes March 31st in UTC).
+
+**Fix Applied:**
+- Replaced Date-based calculation with explicit year/month arithmetic
+- When direction is -1 (previous month): decrement month, if month < 1 wrap to 12 and decrement year
+- When direction is +1 (next month): increment month, if month > 12 wrap to 1 and increment year
+- Format result as `YYYY-MM` using string template without Date conversion
+
+**Files Modified:**
+- `employee/audit.php` - Fixed `navigateBranchCalendar()` function (lines 2451-2467)
+
+---
+
+### 2026-04-09
+
 **Task:** Refactor Engineer Dashboard - Modal-Based Request Forms
 
 **Status:** ✅ Completed

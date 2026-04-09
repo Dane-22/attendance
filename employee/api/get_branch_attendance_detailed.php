@@ -90,6 +90,14 @@ if ($year < 2000 || $year > 2100 || $month < 1 || $month > 12) {
 $startDate = sprintf('%04d-%02d-01', $year, $month);
 $endDate = sprintf('%04d-%02d-%02d', $year, $month, date('t', strtotime($startDate)));
 
+// Don't show future dates - cap end date at today
+$today = date('Y-m-d');
+error_log("Branch Calendar API - Today: $today, Original endDate: $endDate");
+if ($endDate > $today) {
+    $endDate = $today;
+    error_log("Branch Calendar API - Capped endDate to: $endDate");
+}
+
 // Get attendance data for the branch
 $sql = "SELECT 
     a.attendance_date,
@@ -174,13 +182,18 @@ while ($row = mysqli_fetch_assoc($result)) {
 mysqli_stmt_close($stmt);
 mysqli_close($db);
 
+// Debug: Log what dates were returned
+$returnedDates = array_keys($attendanceByDate);
+error_log("Branch Calendar API - Returned dates: " . implode(', ', $returnedDates));
+error_log("Branch Calendar API - Days in month: $daysInMonth, Today: $today");
+
 // Build full month data
 $daysInMonth = (int)date('t', strtotime($startDate));
 $days = [];
 
 for ($day = 1; $day <= $daysInMonth; $day++) {
     $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $day);
-    $employees = $attendanceByDate[$date] ?? [];
+    $employees = $attendanceByDate[$dateStr] ?? [];
     
     // Calculate summary counts
     $summary = [
