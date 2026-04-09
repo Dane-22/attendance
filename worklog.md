@@ -2,6 +2,34 @@
 
 ## Work Log for Attendance System
 
+### 2026-04-09
+
+**Task:** Add Status-Based Sorting to Attendance Audit Table
+
+**Status:** ✅ Completed
+
+**Problem:** The attendance audit table was sorted only by date/time, making it difficult to quickly identify employees by their attendance status (Present, Completed, Late, Absent).
+
+**Actions Taken:**
+1. Modified `employee/audit.php` to add custom ORDER BY clause to all three SQL queries (day, week, month filters)
+2. Implemented CASE-based sorting with priority: Present (1) → Completed (2) → Late (3) → Absent (4)
+3. Sorting logic matches the existing PHP status display logic:
+   - **Present (1):** `time_in` exists, no `time_out`, not late
+   - **Completed (2):** Both `time_in` and `time_out` exist, not late
+   - **Late (3):** `time_in` exists, worker position, time >= 07:15:00
+   - **Absent (4):** No `time_in` record
+4. Secondary sort by date/time within each status group
+
+**Files Modified:**
+- `employee/audit.php` - Updated ORDER BY clauses in three SQL queries:
+  - Lines 236-246: Week filter query
+  - Lines 271-281: Month filter query
+  - Lines 306-316: Day filter query
+
+**Result:** Attendance records now display in status order: Present employees first, then Completed shifts, then Late arrivals, then Absent employees. Within each group, records are sorted by most recent first.
+
+---
+
 ### 2026-04-08
 
 **Task:** Add Clickable Profile Image Modal in select_employee.php

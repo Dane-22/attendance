@@ -1637,6 +1637,18 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             color: #9CAF50;
         }
 
+        .day-branch {
+            font-size: 0.6rem;
+            color: #FFA500;
+            text-align: center;
+            font-weight: 500;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
         .day-status {
             font-size: 0.65rem;
             font-weight: 600;
@@ -1976,9 +1988,12 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     timesHtml += `<span class="day-time-out">${dayData.time_out}</span>`;
                 }
 
+                const branchHtml = dayData.branch ? `<span class="day-branch">${dayData.branch}</span>` : '';
+
                 dayEl.innerHTML = `
                     <span class="day-number">${dayNum}</span>
                     <div class="day-times">${timesHtml}</div>
+                    ${branchHtml}
                     <span class="day-status">${status}</span>
                 `;
             } else {

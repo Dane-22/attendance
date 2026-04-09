@@ -80,6 +80,7 @@ $sql = "SELECT
     a.time_in,
     a.time_out,
     a.status,
+    a.branch_name,
     TIMESTAMPDIFF(MINUTE, a.time_in, a.time_out) / 60 as hours
 FROM attendance a
 WHERE a.employee_id = ?
@@ -125,6 +126,7 @@ while ($row = mysqli_fetch_assoc($result)) {
         'time_in' => $timeIn,
         'time_out' => $timeOut,
         'status' => $status,
+        'branch' => $row['branch_name'] ?? 'N/A',
         'hours' => $row['hours'] ? round((float)$row['hours'], 2) : 0
     ];
 }
@@ -147,6 +149,7 @@ for ($day = 1; $day <= $daysInMonth; $day++) {
             'time_in' => null,
             'time_out' => null,
             'status' => 'No Record',
+            'branch' => null,
             'hours' => 0
         ];
     }
