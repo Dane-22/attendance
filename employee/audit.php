@@ -2450,8 +2450,18 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
          */
         function navigateBranchCalendar(direction) {
             const [year, month] = currentBranchMonth.split('-').map(Number);
-            const date = new Date(year, month - 1 + direction, 1);
-            currentBranchMonth = date.toISOString().slice(0, 7);
+            let newYear = year;
+            let newMonth = month + direction;
+
+            if (newMonth > 12) {
+                newYear++;
+                newMonth = 1;
+            } else if (newMonth < 1) {
+                newYear--;
+                newMonth = 12;
+            }
+
+            currentBranchMonth = `${newYear}-${String(newMonth).padStart(2, '0')}`;
             expandedDays.clear();
             loadBranchCalendarData();
         }

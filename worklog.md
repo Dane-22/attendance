@@ -4,6 +4,52 @@
 
 ### 2026-04-09
 
+**Task:** Refactor Engineer Dashboard - Modal-Based Request Forms
+
+**Status:** ✅ Completed
+
+**Problem:** The `eng_dashboard.php` had cluttered inline request forms (Cash Advance, Overtime, Leave) and redundant summary cards taking up space. Needed a cleaner, more focused dashboard layout.
+
+**Actions Taken:**
+1. Removed summary cards section (Active Sites, Site Personnel, Recent Transfers, Site Attendance)
+2. Removed inline request forms (Cash Advance, Overtime, Leave) from main dashboard
+3. Added quick action cards row with 3 clickable cards:
+   - Request Cash Advance (gold theme)
+   - Request Overtime (blue theme)
+   - Request Leave (green theme)
+   - Shows pending count badges where applicable
+4. Added 3 Bootstrap modals with dark theme styling:
+   - Cash Advance Modal
+   - Overtime Modal
+   - Leave Modal
+5. Moved existing forms into modals preserving all functionality:
+   - All form validation preserved
+   - AJAX submission handlers updated for modal form IDs
+   - Alert notifications work inside modals
+6. Added CSS for quick action cards:
+   - Responsive grid (3-col desktop, 1-col mobile)
+   - Hover effects with gold accent glow
+   - Icon containers with themed colors
+
+**Files Modified:**
+- `employee/eng_dashboard.php` - Complete dashboard refactor:
+  - Removed summary cards section
+  - Added quick action cards HTML
+  - Added 3 Bootstrap modals with forms
+  - Added quick action card CSS styling
+  - Updated JavaScript form handlers for modal IDs
+
+**Dashboard Flow Now:**
+1. Engineer clocks in/out
+2. Quick action cards row (click to open request modals)
+3. Analytics sections (Admin only)
+4. Consecutive attendance issues
+5. Data monitoring section
+
+---
+
+### 2026-04-09
+
 **Task:** Add Status-Based Sorting to Attendance Audit Table
 
 **Status:** ✅ Completed
