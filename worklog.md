@@ -4,6 +4,66 @@
 
 ### 2026-04-09
 
+**Task:** Audit Page - Auto-Absent Feature for Employees Without Time-In Records
+
+**Status:** ✅ Completed
+
+**Problem:** The audit page (`audit.php`) only showed employees who had existing attendance records. Employees who didn't show up and had no attendance record were invisible in the audit view, creating an incomplete picture of daily attendance.
+
+**Solution:** Modified the audit page to automatically display employees without attendance records as "Absent (Auto)" when:
+- The selected date is a past date (Monday-Saturday)
+- The selected date is today AND the current time is 8:30 AM or later
+- Sundays are excluded from auto-absent
+
+**Key Changes:**
+
+**1. Auto-Absent Logic:**
+- Added 8:30 AM cutoff time configuration
+- Logic for different date scenarios:
+  - Past dates (Mon-Sat): Always apply auto-absent
+  - Today before 8:30 AM: Show only existing records
+  - Today after 8:30 AM: Apply auto-absent
+  - Sundays: Auto-absent disabled
+  - Future dates: Don't apply
+
+**2. Database Query Changes:**
+- Changed all queries to use `employees` as base table with LEFT JOIN to `attendance`
+- Modified count queries to count active employees, not just attendance records
+- Updated summary statistics to include auto-absent employees in absent count
+- Added `branches` table join for proper branch name resolution
+- Detail queries now select from `employees` to show all active employees
+
+**3. Status Detection:**
+- Updated `getAttendanceStatus()` to accept auto-absent parameters
+- Added On Leave detection via `leave_transactions` table check
+- Returns `is_auto` flag for UI styling of auto-absent records
+- Priority: On Leave > Present/Completed/Late > Auto Absent
+
+**4. Filter Updates:**
+- Modified `buildStatusFilterCondition()` to include no-record employees when absent filter is selected
+- Absent filter now shows both explicitly marked absent AND auto-absent employees
+
+**5. UI Improvements:**
+- Added "On Leave" status badge styling (purple)
+- Added auto-absent row highlighting with tooltip
+- Added info banner when auto-absent mode is active
+- Added Sunday notification banner when viewing Sundays
+- Fixed branch search to use COALESCE for NULL attendance records
+
+**Files Modified:**
+- `employee/audit.php`:
+  - Added auto-absent configuration and date logic (lines 78-115)
+  - Modified `getAttendanceStatus()` with On Leave and auto-absent detection
+  - Updated `buildStatusFilterCondition()` for absent filter
+  - Rewrote count, summary, and detail queries to use employees as base table
+  - Added CSS styling for On Leave status and auto-absent rows
+  - Added info banners for auto-absent mode and Sundays
+  - **Fixed:** Changed `MAX(id)` to `ORDER BY time_in ASC LIMIT 1` to show earliest (morning) attendance record instead of latest
+
+---
+
+### 2026-04-09
+
 **Task:** Update Notification Pages - 4-Column Grid, Reject Buttons, See More Toggle
 
 **Status:** ✅ Completed

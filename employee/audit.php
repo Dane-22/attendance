@@ -265,8 +265,9 @@ if ($filter === 'week') {
                  LEFT JOIN attendance a ON e.id = a.employee_id 
                      AND a.attendance_date BETWEEN ? AND ?
                      AND a.id = (
-                         SELECT MAX(id) FROM attendance 
+                         SELECT id FROM attendance 
                          WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?
+                         ORDER BY time_in ASC LIMIT 1
                      )
                  LEFT JOIN branches b ON e.branch_id = b.id" . 
                  $baseCountWhere . $searchCondition . $statusFilterCondition;
@@ -287,8 +288,9 @@ if ($filter === 'week') {
                  LEFT JOIN attendance a ON e.id = a.employee_id 
                      AND a.attendance_date BETWEEN ? AND ?
                      AND a.id = (
-                         SELECT MAX(id) FROM attendance 
+                         SELECT id FROM attendance 
                          WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?
+                         ORDER BY time_in ASC LIMIT 1
                      )
                  LEFT JOIN branches b ON e.branch_id = b.id" . 
                  $baseCountWhere . $searchCondition . $statusFilterCondition;
@@ -309,7 +311,7 @@ if ($filter === 'week') {
                  FROM employees e 
                  LEFT JOIN attendance a ON e.id = a.employee_id 
                      AND a.attendance_date = ?
-                     AND a.id = (SELECT MAX(id) FROM attendance WHERE employee_id = e.id AND attendance_date = ?)
+                     AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date = ? ORDER BY time_in ASC LIMIT 1)
                  LEFT JOIN branches b ON e.branch_id = b.id" . 
                  $baseCountWhere . $searchCondition . $statusFilterCondition;
     $countStmt = mysqli_prepare($db, $countSql);
@@ -351,7 +353,7 @@ if ($filter === 'week') {
         FROM employees e
         LEFT JOIN attendance a ON e.id = a.employee_id 
             AND a.attendance_date BETWEEN ? AND ?
-            AND a.id = (SELECT MAX(id) FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?)
+            AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
         LEFT JOIN branches b ON e.branch_id = b.id
         " . $summaryBaseWhere;
     $summaryStmt = mysqli_prepare($db, $summarySql);
@@ -365,7 +367,7 @@ if ($filter === 'week') {
         FROM employees e
         LEFT JOIN attendance a ON e.id = a.employee_id 
             AND a.attendance_date BETWEEN ? AND ?
-            AND a.id = (SELECT MAX(id) FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?)
+            AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
         LEFT JOIN branches b ON e.branch_id = b.id
         " . $summaryBaseWhere;
     $summaryStmt = mysqli_prepare($db, $summarySql);
@@ -378,7 +380,7 @@ if ($filter === 'week') {
         FROM employees e
         LEFT JOIN attendance a ON e.id = a.employee_id 
             AND a.attendance_date = ?
-            AND a.id = (SELECT MAX(id) FROM attendance WHERE employee_id = e.id AND attendance_date = ?)
+            AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date = ? ORDER BY time_in ASC LIMIT 1)
         LEFT JOIN branches b ON e.branch_id = b.id
         " . $summaryBaseWhere;
     $summaryStmt = mysqli_prepare($db, $summarySql);
@@ -418,7 +420,7 @@ if ($filter === 'week') {
     FROM employees e
     LEFT JOIN attendance a ON e.id = a.employee_id 
         AND a.attendance_date BETWEEN ? AND ?
-        AND a.id = (SELECT MAX(id) FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?)
+        AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
     LEFT JOIN branches b ON e.branch_id = b.id
     " . $detailBaseWhere . $searchCondition . $statusFilterCondition . "
     ORDER BY 
@@ -456,7 +458,7 @@ if ($filter === 'week') {
     FROM employees e
     LEFT JOIN attendance a ON e.id = a.employee_id 
         AND a.attendance_date BETWEEN ? AND ?
-        AND a.id = (SELECT MAX(id) FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?)
+        AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
     LEFT JOIN branches b ON e.branch_id = b.id
     " . $detailBaseWhere . $searchCondition . $statusFilterCondition . "
     ORDER BY 
@@ -494,7 +496,7 @@ if ($filter === 'week') {
     FROM employees e
     LEFT JOIN attendance a ON e.id = a.employee_id 
         AND a.attendance_date = ?
-        AND a.id = (SELECT MAX(id) FROM attendance WHERE employee_id = e.id AND attendance_date = ?)
+        AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date = ? ORDER BY time_in ASC LIMIT 1)
     LEFT JOIN branches b ON e.branch_id = b.id
     " . $detailBaseWhere . $searchCondition . $statusFilterCondition . "
     ORDER BY 
