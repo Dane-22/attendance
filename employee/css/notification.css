@@ -89,14 +89,76 @@
     color: #0b0b0b;
 }
 
-/* Requests Grid - Desktop: 1 per row */
-.requests-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
+/* Page container full width */
+.page-container {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
-/* Request Card - Compact for 5-per-row layout */
+/* Notification container full width */
+.notification-container {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure main-content doesn't have excessive padding */
+.main-content {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 1rem !important;
+}
+
+/* Requests Grid - Desktop: 4 per row */
+.requests-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+    justify-content: stretch;
+    align-content: stretch;
+}
+
+/* See more button styles */
+.see-more-btn {
+    color: #FFD700;
+    font-size: 11px;
+    cursor: pointer;
+    margin-top: 4px;
+    display: inline-block;
+    font-weight: 600;
+}
+
+.see-more-btn:hover {
+    text-decoration: underline;
+}
+
+.reason-text {
+    display: inline;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.info-row.reason .value {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.8);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Request Card - Compact for 4-per-row layout */
 .request-card {
     background: rgba(20, 20, 20, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -105,6 +167,9 @@
     transition: all 0.3s ease;
     position: relative;
     font-size: 13px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .request-card:hover {
@@ -526,6 +591,18 @@
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+    .requests-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .requests-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .notification-header {
         flex-direction: column;
@@ -548,6 +625,11 @@
     
     .requests-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .empty-state {
+        grid-column: 1 / -1;
     }
     
     .request-card {

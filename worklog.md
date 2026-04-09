@@ -4,21 +4,85 @@
 
 ### 2026-04-09
 
+**Task:** Update Notification Pages - 4-Column Grid, Reject Buttons, See More Toggle
+
+**Status:** ✅ Completed
+
+**Problem:** The notification pages (`admin_notification.php` and `notification.php`) needed UI improvements:
+1. Single column layout was inefficient for viewing many requests
+2. No reject functionality for overtime and cash advance requests
+3. Long reason text overflowed the card boundaries
+
+**Actions Taken:**
+
+**1. 4-Column Grid Layout:**
+- Changed `requests-grid` from `grid-template-columns: 1fr` to `repeat(4, minmax(0, 1fr))`
+- Added responsive breakpoints: 4 cols (desktop), 3 cols (1200px), 2 cols (992px), 1 col (768px)
+- Added inline grid styles to JavaScript render functions for immediate effect
+- Added CSS cache-busting with `?v=<?php echo time(); ?>` to force CSS reload
+
+**2. Reject Functionality:**
+- Added `reject_request` POST handler for overtime rejection (already existed in notification.php)
+- Added `reject_cash_advance` POST handler for cash advance rejection
+- Added `showRejectModal()` and `confirmReject()` JavaScript functions
+- Added reject buttons next to "Noted" buttons on pending requests
+- Modal-based rejection with optional reason input
+- Sends notifications to employees when rejected
+- Logs rejection activity
+
+**3. "See More" Toggle:**
+- Added `truncateText(text, maxLength)` helper function
+- Added `generateReasonHtml(reason, requestId)` to create truncated text with toggle
+- Added `toggleSeeMore(btn)` to handle expand/collapse
+- Truncates reason text to 60 characters with ellipsis
+- Added CSS for `.see-more-btn` (gold color, hover underline)
+- Fixed text wrapping with `word-wrap: break-word`, `word-break: break-word`, `overflow-wrap: break-word`
+
+**4. Card Layout Improvements:**
+- Added `width: 100%`, `min-width: 0`, `box-sizing: border-box` to cards
+- Constrained `.info-row.reason .value` to prevent overflow
+- Added `page-container` and `.main-content` full-width styles
+
+**Files Modified:**
+- `employee/admin_notification.php`:
+  - Added reject handlers for overtime and cash advance
+  - Updated render functions with inline grid styles
+  - Added `generateReasonHtml()`, `toggleSeeMore()` helper functions
+  - Added `showRejectModal()`, `closeRejectModal()`, `confirmReject()` functions
+  - Added CSS cache-busting
+- `employee/notification.php`:
+  - Added `generateReasonHtml()`, `toggleSeeMore()` helper functions
+  - Updated render functions with inline grid styles and see more toggle
+  - Removed duplicate JavaScript functions
+  - Added CSS cache-busting
+- `employee/css/notification.css`:
+  - Updated `.requests-grid` to 4 columns with responsive breakpoints
+  - Added `.see-more-btn` styles
+  - Added `.reason-text` text wrapping styles
+  - Added full-width container styles
+
+---
+
+### 2026-04-09
+
 **Task:** Fix Branch Calendar Showing Future Dates with Records
 
 **Status:** ✅ Completed
 
-**Problem:** The branch calendar modal was showing attendance records for future/upcoming days (e.g., April 19-30 when today is April 9). This was misleading as those days haven't occurred yet.
+**Problem:** The branch calendar modal was showing attendance records for ALL days in the month, including future/upcoming days (e.g., April 10-30 showing the same employee data as April 9 when today is April 9).
 
-**Root Cause:** The `get_branch_attendance_detailed.php` API was querying all attendance records for the entire month without filtering out future dates. If records existed in the database for future dates, they would be displayed.
+**Root Cause:** Two issues:
+1. The API was querying all attendance records for the entire month without capping at today's date
+2. **Critical bug:** Line 196 used `$date` instead of `$dateStr` - this caused every day in the calendar to display the same employee data (from whatever date `$date` happened to hold from the last loop iteration)
 
-**Fix Applied:**
-- Added logic to cap the query end date at today (`date('Y-m-d')`)
-- If the month's end date is in the future, it's limited to today's date
-- This ensures the API only returns records up to the current date
+**Fixes Applied:**
+1. Added logic to cap the query end date at today (`date('Y-m-d')`) - if the month's end date is in the future, it's limited to today's date (lines 93-97)
+2. Fixed variable typo: changed `$attendanceByDate[$date]` to `$attendanceByDate[$dateStr]` on line 196 - this ensures each day correctly looks up its own attendance data by the properly formatted date string
 
 **Files Modified:**
-- `employee/api/get_branch_attendance_detailed.php` - Added `$today` check to cap end date (lines 93-97)
+- `employee/api/get_branch_attendance_detailed.php`:
+  - Added `$today` check to cap end date (lines 93-97)
+  - Fixed variable typo `$date` → `$dateStr` (line 196)
 
 ---
 

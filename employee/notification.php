@@ -582,9 +582,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
     <title>Notifications — JAJR Attendance</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="css/notification.css">
-    <link rel="stylesheet" href="css/light-theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="css/notification.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="css/light-theme.css?v=<?php echo time(); ?>">
     <style>
         .request-type-tabs {
             display: flex;
@@ -831,7 +831,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 return;
             }
             
-            let html = '<div class="requests-grid">';
+            let html = '<div class="requests-grid" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%;">';
             
             requests.forEach(request => {
                 const statusClass = request.status;
@@ -873,7 +873,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                             </div>
                             <div class="info-row reason">
                                 <span class="label">Reason:</span>
-                                <span class="value">${escapeHtml(request.reason)}</span>
+                                <span class="value">${generateReasonHtml(request.reason, 'ca-' + request.id)}</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">Request Date:</span>
@@ -933,7 +933,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 return;
             }
             
-            let html = '<div class="requests-grid">';
+            let html = '<div class="requests-grid" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%;">';
             
             requests.forEach(request => {
                 const statusClass = request.status;
@@ -975,7 +975,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                             </div>
                             <div class="info-row reason">
                                 <span class="label">Reason:</span>
-                                <span class="value">${escapeHtml(request.overtime_reason)}</span>
+                                <span class="value">${generateReasonHtml(request.overtime_reason, 'ot-' + request.id)}</span>
                             </div>
                             ${request.rejection_reason ? `
                                 <div class="info-row rejection">
@@ -1021,6 +1021,42 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+        
+        // Truncate text and add see more toggle
+        function truncateText(text, maxLength = 60) {
+            if (!text || text.length <= maxLength) return { text: text || '', needsToggle: false };
+            return { text: text.substring(0, maxLength), needsToggle: true, fullText: text };
+        }
+        
+        // Generate reason HTML with see more toggle
+        function generateReasonHtml(reason, requestId) {
+            const { text, needsToggle, fullText } = truncateText(reason, 60);
+            if (!needsToggle) {
+                return `<span class="reason-text">${escapeHtml(reason)}</span>`;
+            }
+            const shortText = text + '...';
+            return `
+                <span class="reason-text" id="reason-${requestId}" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(shortText)}">${escapeHtml(shortText)}</span>
+                <span class="see-more-btn" data-id="${requestId}" onclick="toggleSeeMore(this)">See more</span>
+            `;
+        }
+        
+        // Toggle see more/less
+        function toggleSeeMore(btn) {
+            const id = btn.dataset.id;
+            const reasonEl = document.getElementById(`reason-${id}`);
+            const isExpanded = btn.textContent === 'See less';
+            
+            if (isExpanded) {
+                // Collapse: show short version
+                reasonEl.textContent = reasonEl.dataset.short;
+                btn.textContent = 'See more';
+            } else {
+                // Expand: show full version
+                reasonEl.textContent = reasonEl.dataset.full;
+                btn.textContent = 'See less';
+            }
         }
         
         function formatDate(dateStr) {
@@ -1197,80 +1233,6 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 }
             } catch (error) {
                 console.error('Error rejecting request:', error);
-                showToast('Error rejecting request', 'error');
-            }
-        }
-        
-        
-        function closeRejectionModal() {
-            document.getElementById('rejectionModal').style.display = 'none';
-            rejectionRequestId = null;
-            rejectionRequestType = null;
-        }
-        
-        async function confirmRejection() {
-            if (!rejectionRequestId) return;
-            
-            const reason = document.getElementById('rejectionReason').value.trim();
-            
-            if (rejectionRequestType === 'cash_advance') {
-                await rejectCashAdvance(rejectionRequestId, reason);
-            } else {
-                await rejectOvertime(rejectionRequestId, reason);
-            }
-            closeRejectionModal();
-        }
-        
-        async function rejectOvertime(requestId, reason) {
-            try {
-                const formData = new FormData();
-                formData.append('action', 'reject_request');
-                formData.append('request_id', requestId);
-                formData.append('rejection_reason', reason);
-                
-                const response = await fetch('notification.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    loadRequests(currentTab);
-                    updatePendingBadge();
-                } else {
-                    showToast(data.message || 'Failed to reject request', 'error');
-                }
-            } catch (error) {
-                console.error('Error rejecting request:', error);
-                showToast('Error rejecting request', 'error');
-            }
-        }
-        
-        async function rejectCashAdvance(requestId, reason) {
-            try {
-                const formData = new FormData();
-                formData.append('action', 'reject_cash_advance');
-                formData.append('request_id', requestId);
-                formData.append('rejection_reason', reason);
-                
-                const response = await fetch('notification.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    loadRequests(currentTab);
-                    updatePendingBadge();
-                } else {
-                    showToast(data.message || 'Failed to reject request', 'error');
-                }
-            } catch (error) {
-                console.error('Error rejecting cash advance:', error);
                 showToast('Error rejecting request', 'error');
             }
         }

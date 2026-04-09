@@ -584,6 +584,137 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         exit();
     }
+    
+    // Reject overtime request
+    if ($_POST['action'] === 'reject_request') {
+        try {
+            $requestId = isset($_POST['request_id']) ? intval($_POST['request_id']) : 0;
+            $rejectionReason = isset($_POST['rejection_reason']) ? trim($_POST['rejection_reason']) : '';
+            $adminName = $_SESSION['username'] ?? 'Admin';
+            
+            if ($requestId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid request ID']);
+                exit();
+            }
+            
+            // Get request details first for notification
+            $getSql = "SELECT * FROM overtime_requests WHERE id = ? AND status = 'pending' LIMIT 1";
+            $getStmt = mysqli_prepare($db, $getSql);
+            mysqli_stmt_bind_param($getStmt, 'i', $requestId);
+            mysqli_stmt_execute($getStmt);
+            $getResult = mysqli_stmt_get_result($getStmt);
+            $requestDetails = mysqli_fetch_assoc($getResult);
+            mysqli_stmt_close($getStmt);
+            
+            if (!$requestDetails) {
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+                exit();
+            }
+            
+            // Update request status
+            $updateSql = "UPDATE overtime_requests SET status = 'rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND status = 'pending'";
+            $updateStmt = mysqli_prepare($db, $updateSql);
+            mysqli_stmt_bind_param($updateStmt, 'ssi', $adminName, $rejectionReason, $requestId);
+            
+            if (mysqli_stmt_execute($updateStmt) && mysqli_stmt_affected_rows($updateStmt) > 0) {
+                mysqli_stmt_close($updateStmt);
+                
+                // Create notification for the employee
+                $requesterId = isset($requestDetails['requested_by_user_id']) ? intval($requestDetails['requested_by_user_id']) : 0;
+                if ($requesterId > 0) {
+                    $reasonText = $rejectionReason ? " Reason: {$rejectionReason}" : "";
+                    $notifTitle = "Overtime Request Rejected";
+                    $notifMessage = "Your overtime request for {$requestDetails['requested_hours']} hours on {$requestDetails['request_date']} was rejected." . $reasonText;
+                    $notifType = 'overtime_rejected';
+                    
+                    $notifSql = "INSERT INTO employee_notifications (employee_id, overtime_request_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                    $notifStmt = mysqli_prepare($db, $notifSql);
+                    if ($notifStmt) {
+                        mysqli_stmt_bind_param($notifStmt, 'iisss', $requesterId, $requestId, $notifType, $notifTitle, $notifMessage);
+                        mysqli_stmt_execute($notifStmt);
+                        mysqli_stmt_close($notifStmt);
+                        
+                        // Send push notification
+                        sendPushNotification($db, $requesterId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
+                    }
+                }
+                
+                echo json_encode(['success' => true, 'message' => 'Overtime request rejected']);
+                logActivity($db, 'Overtime Rejected', "Admin {$adminName} rejected overtime #{$requestId}. Reason: {$rejectionReason}");
+            } else {
+                mysqli_stmt_close($updateStmt);
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Exception: ' . $e->getMessage()]);
+        }
+        exit();
+    }
+    
+    // Reject cash advance request
+    if ($_POST['action'] === 'reject_cash_advance') {
+        try {
+            $requestId = isset($_POST['request_id']) ? intval($_POST['request_id']) : 0;
+            $rejectionReason = isset($_POST['rejection_reason']) ? trim($_POST['rejection_reason']) : '';
+            $adminName = $_SESSION['username'] ?? 'Admin';
+            
+            if ($requestId <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Invalid request ID']);
+                exit();
+            }
+            
+            // Get request details first for notification
+            $getSql = "SELECT * FROM cash_advances WHERE id = ? AND status = 'Pending' LIMIT 1";
+            $getStmt = mysqli_prepare($db, $getSql);
+            mysqli_stmt_bind_param($getStmt, 'i', $requestId);
+            mysqli_stmt_execute($getStmt);
+            $getResult = mysqli_stmt_get_result($getStmt);
+            $requestDetails = mysqli_fetch_assoc($getResult);
+            mysqli_stmt_close($getStmt);
+            
+            if (!$requestDetails) {
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+                exit();
+            }
+            
+            // Update request status
+            $updateSql = "UPDATE cash_advances SET status = 'Rejected', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND status = 'Pending'";
+            $updateStmt = mysqli_prepare($db, $updateSql);
+            mysqli_stmt_bind_param($updateStmt, 'ssi', $adminName, $rejectionReason, $requestId);
+            
+            if (mysqli_stmt_execute($updateStmt) && mysqli_stmt_affected_rows($updateStmt) > 0) {
+                mysqli_stmt_close($updateStmt);
+                
+                // Create notification for the employee
+                $employeeId = intval($requestDetails['employee_id']);
+                $amount = $requestDetails['amount'];
+                $reasonText = $rejectionReason ? " Reason: {$rejectionReason}" : "";
+                $notifTitle = "Cash Advance Rejected";
+                $notifMessage = "Your cash advance request for ₱" . number_format($amount, 2) . " was rejected." . $reasonText;
+                $notifType = 'cash_advance_rejected';
+                
+                $notifSql = "INSERT INTO employee_notifications (employee_id, cash_advance_id, notification_type, title, message, is_read, created_at) VALUES (?, ?, ?, ?, ?, 0, NOW())";
+                $notifStmt = mysqli_prepare($db, $notifSql);
+                if ($notifStmt) {
+                    mysqli_stmt_bind_param($notifStmt, 'iisss', $employeeId, $requestId, $notifType, $notifTitle, $notifMessage);
+                    mysqli_stmt_execute($notifStmt);
+                    mysqli_stmt_close($notifStmt);
+                    
+                    // Send push notification
+                    sendPushNotification($db, $employeeId, $notifTitle, $notifMessage, '/employee/my_notifications.php');
+                }
+                
+                echo json_encode(['success' => true, 'message' => 'Cash advance request rejected']);
+                logActivity($db, 'Cash Advance Rejected', "Admin {$adminName} rejected cash advance #{$requestId}. Reason: {$rejectionReason}");
+            } else {
+                mysqli_stmt_close($updateStmt);
+                echo json_encode(['success' => false, 'message' => 'Request not found or already processed']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Exception: ' . $e->getMessage()]);
+        }
+        exit();
+    }
 }
 
 // Get initial pending count
@@ -600,9 +731,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
     <title>Admin Notifications — JAJR Attendance</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="css/notification.css">
-    <link rel="stylesheet" href="css/light-theme.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="css/notification.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="css/light-theme.css?v=<?php echo time(); ?>">
     <style>
         .request-type-tabs {
             display: flex;
@@ -754,7 +885,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                     </button>
                 </div>
                 
-                <div class="notification-container" id="requestsContainer">
+                <div class="notification-container" id="requestsContainer" style="width: 100%;">
                     <div class="loading-state">
                         <i class="fas fa-spinner fa-spin"></i>
                         <p>Loading requests...</p>
@@ -864,7 +995,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                 return;
             }
             
-            let html = '<div class="requests-grid">';
+            let html = '<div class="requests-grid" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%;">';
             
             requests.forEach(request => {
                 const statusClass = request.status;
@@ -904,7 +1035,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                             </div>
                             <div class="info-row reason">
                                 <span class="label">Reason:</span>
-                                <span class="value">${escapeHtml(request.reason)}</span>
+                                <span class="value">${generateReasonHtml(request.reason, 'ca-' + request.id)}</span>
                             </div>
                             <div class="info-row">
                                 <span class="label">Request Date:</span>
@@ -929,6 +1060,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                                 <button class="btn-approve" onclick="approveCashAdvance(${request.id})" style="background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);">
                                     <i class="fas fa-check"></i> Noted
                                 </button>
+                                <button class="btn-reject" onclick="showRejectModal(${request.id}, 'cash_advance')">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
                             </div>
                         ` : ''}
                     </div>
@@ -937,6 +1071,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
             
             html += '</div>';
             container.innerHTML = html;
+            
+            // Initialize see more toggles
+            initSeeMoreToggles();
         }
         
         function updateCounts(counts) {
@@ -961,7 +1098,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                 return;
             }
             
-            let html = '<div class="requests-grid">';
+            let html = '<div class="requests-grid" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%;">';
             
             requests.forEach(request => {
                 const statusClass = request.status;
@@ -1001,7 +1138,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                             </div>
                             <div class="info-row reason">
                                 <span class="label">Reason:</span>
-                                <span class="value">${escapeHtml(request.overtime_reason)}</span>
+                                <span class="value">${generateReasonHtml(request.overtime_reason, 'ot-' + request.id)}</span>
                             </div>
                             ${request.rejection_reason ? `
                                 <div class="info-row rejection">
@@ -1026,6 +1163,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                                 <button class="btn-approve" onclick="approveRequest(${request.id})" style="background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);">
                                     <i class="fas fa-check"></i> Noted
                                 </button>
+                                <button class="btn-reject" onclick="showRejectModal(${request.id}, 'overtime')">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
                             </div>
                         ` : ''}
                     </div>
@@ -1034,6 +1174,50 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
             
             html += '</div>';
             container.innerHTML = html;
+            
+            // Initialize see more toggles
+            initSeeMoreToggles();
+        }
+        
+        // Truncate text and add see more toggle
+        function truncateText(text, maxLength = 60) {
+            if (!text || text.length <= maxLength) return { text: text || '', needsToggle: false };
+            return { text: text.substring(0, maxLength), needsToggle: true, fullText: text };
+        }
+        
+        // Generate reason HTML with see more toggle
+        function generateReasonHtml(reason, requestId) {
+            const { text, needsToggle, fullText } = truncateText(reason, 60);
+            if (!needsToggle) {
+                return `<span class="reason-text">${escapeHtml(reason)}</span>`;
+            }
+            const shortText = text + '...';
+            return `
+                <span class="reason-text" id="reason-${requestId}" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(shortText)}">${escapeHtml(shortText)}</span>
+                <span class="see-more-btn" data-id="${requestId}" onclick="toggleSeeMore(this)">See more</span>
+            `;
+        }
+        
+        // Toggle see more/less
+        function toggleSeeMore(btn) {
+            const id = btn.dataset.id;
+            const reasonEl = document.getElementById(`reason-${id}`);
+            const isExpanded = btn.textContent === 'See less';
+            
+            if (isExpanded) {
+                // Collapse: show short version
+                reasonEl.textContent = reasonEl.dataset.short;
+                btn.textContent = 'See more';
+            } else {
+                // Expand: show full version
+                reasonEl.textContent = reasonEl.dataset.full;
+                btn.textContent = 'See less';
+            }
+        }
+        
+        // Initialize see more toggles (for dynamically added content)
+        function initSeeMoreToggles() {
+            // Auto-initialized via inline onclick handlers
         }
         
         function escapeHtml(text) {
@@ -1124,6 +1308,136 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
             }
         }
         
+        // Show reject modal for overtime and cash advance
+        function showRejectModal(requestId, type) {
+            // Remove existing modal if any
+            const existingModal = document.getElementById('rejectModal');
+            if (existingModal) existingModal.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'rejectModal';
+            modal.className = 'modal-backdrop';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 2147483647;
+            `;
+            
+            const typeLabel = type === 'overtime' ? 'Overtime' : 'Cash Advance';
+            
+            modal.innerHTML = `
+                <div class="modal-panel" style="
+                    background: #222;
+                    padding: 24px 32px;
+                    border-radius: 16px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                    min-width: 400px;
+                    max-width: 500px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                ">
+                    <h3 style="color: #FFD700; font-size: 18px; margin: 0 0 12px 0;">
+                        <i class="fas fa-times-circle"></i> Reject ${typeLabel} Request
+                    </h3>
+                    <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 16px 0; font-size: 14px;">
+                        Please provide a reason for rejection (optional):
+                    </p>
+                    <textarea id="rejectReason" style="
+                        width: 100%;
+                        padding: 12px;
+                        margin-bottom: 20px;
+                        border-radius: 8px;
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        background: rgba(255, 255, 255, 0.05);
+                        color: #fff;
+                        font-size: 14px;
+                        min-height: 100px;
+                        resize: vertical;
+                        font-family: inherit;
+                        box-sizing: border-box;
+                    " placeholder="Enter rejection reason..."></textarea>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button onclick="closeRejectModal()" style="
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            font-size: 14px;
+                            background: rgba(255, 255, 255, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                            color: rgba(255, 255, 255, 0.8);
+                        ">Cancel</button>
+                        <button onclick="confirmReject(${requestId}, '${type}')" style="
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            font-size: 14px;
+                            background: linear-gradient(135deg, #f44336, #d32f2f);
+                            border: none;
+                            color: white;
+                        "><i class="fas fa-times"></i> Reject</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeRejectModal();
+            });
+            
+            // Focus textarea
+            setTimeout(() => document.getElementById('rejectReason').focus(), 100);
+        }
+        
+        function closeRejectModal() {
+            const modal = document.getElementById('rejectModal');
+            if (modal) modal.remove();
+        }
+        
+        async function confirmReject(requestId, type) {
+            const reason = document.getElementById('rejectReason').value.trim();
+            
+            try {
+                const formData = new FormData();
+                formData.append('request_id', requestId);
+                formData.append('rejection_reason', reason);
+                
+                if (type === 'overtime') {
+                    formData.append('action', 'reject_request');
+                } else if (type === 'cash_advance') {
+                    formData.append('action', 'reject_cash_advance');
+                }
+                
+                const response = await fetch('admin_notification.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeRejectModal();
+                    loadRequests(currentTab);
+                    updatePendingBadge();
+                } else {
+                    showToast(data.message || 'Failed to reject request', 'error');
+                }
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+                showToast('Error rejecting request', 'error');
+            }
+        }
+        
         // Render Leave Requests
         function renderLeaveRequests(requests) {
             const container = document.getElementById('requestsContainer');
@@ -1138,7 +1452,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                 return;
             }
             
-            let html = '<div class="requests-grid">';
+            let html = '<div class="requests-grid" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%;">';
             
             requests.forEach(request => {
                 const statusClass = request.status;
@@ -1181,7 +1495,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
                             </div>
                             <div class="info-row reason">
                                 <span class="label">Reason:</span>
-                                <span class="value">${escapeHtml(request.reason)}</span>
+                                <span class="value">${generateReasonHtml(request.reason, 'leave-' + request.id)}</span>
                             </div>
                             ${request.rejection_reason ? `
                                 <div class="info-row rejection">
@@ -1217,6 +1531,9 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
             
             html += '</div>';
             container.innerHTML = html;
+            
+            // Initialize see more toggles
+            initSeeMoreToggles();
         }
         
         async function approveLeave(requestId) {

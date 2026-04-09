@@ -72,6 +72,9 @@ $currentYear = (int)($_GET['year'] ?? date('Y'));
 // Get filter parameter
 $filter = $_GET['filter'] ?? 'day'; // day, week, or month
 
+// Get status filter parameter
+$statusFilter = $_GET['status'] ?? 'all'; // all, present, late, completed, absent
+
 // Determine date range based on filter
 if ($filter === 'week') {
     // Get current week (Monday to Sunday)
@@ -120,10 +123,60 @@ if (!empty($searchQuery)) {
     }
 }
 
+// Helper function to determine attendance status
+function getAttendanceStatus($record) {
+    $isLate = false;
+    if ($record['time_in'] && strtolower($record['position']) === 'worker') {
+        $timeIn = strtotime($record['time_in']);
+        $lateThreshold = strtotime(date('Y-m-d', $timeIn) . ' 07:15:00');
+        if ($timeIn >= $lateThreshold) {
+            $isLate = true;
+        }
+    }
+    
+    if ($record['time_in'] && $record['time_out']) {
+        if ($isLate) {
+            return ['class' => 'status-late', 'text' => 'Late', 'key' => 'late'];
+        } else {
+            return ['class' => 'status-completed', 'text' => 'Completed', 'key' => 'completed'];
+        }
+    } elseif ($record['time_in']) {
+        if ($isLate) {
+            return ['class' => 'status-late', 'text' => 'Late', 'key' => 'late'];
+        } else {
+            return ['class' => 'status-present', 'text' => 'Present', 'key' => 'present'];
+        }
+    } else {
+        return ['class' => 'status-absent', 'text' => $record['status'] ?? 'Absent', 'key' => 'absent'];
+    }
+}
+
+// Build status filter condition for SQL
+function buildStatusFilterCondition($statusFilter) {
+    if ($statusFilter === 'all') {
+        return '';
+    }
+    
+    switch ($statusFilter) {
+        case 'present':
+            return " AND a.time_in IS NOT NULL AND a.time_out IS NULL AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')";
+        case 'late':
+            return " AND a.time_in IS NOT NULL AND LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00'";
+        case 'completed':
+            return " AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')";
+        case 'absent':
+            return " AND a.time_in IS NULL AND a.status = 'Absent'";
+        default:
+            return '';
+    }
+}
+
+$statusFilterCondition = buildStatusFilterCondition($statusFilter);
+
 // Get total count for pagination
 $totalRecords = 0;
 if ($filter === 'week') {
-    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition;
+    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . $statusFilterCondition;
     $countStmt = mysqli_prepare($db, $countSql);
     if ($countStmt) {
         $params = array_merge([$weekStart, $weekEnd], $searchParams);
@@ -136,7 +189,7 @@ if ($filter === 'week') {
         mysqli_stmt_close($countStmt);
     }
 } elseif ($filter === 'month') {
-    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition;
+    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . $statusFilterCondition;
     $countStmt = mysqli_prepare($db, $countSql);
     if ($countStmt) {
         $params = array_merge([$monthStart, $monthEnd], $searchParams);
@@ -149,7 +202,7 @@ if ($filter === 'week') {
         mysqli_stmt_close($countStmt);
     }
 } else {
-    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date = ?" . $searchCondition;
+    $countSql = "SELECT COUNT(*) as total FROM attendance a LEFT JOIN employees e ON a.employee_id = e.id WHERE a.attendance_date = ?" . $searchCondition . $statusFilterCondition;
     $countStmt = mysqli_prepare($db, $countSql);
     if ($countStmt) {
         $params = array_merge([$selectedDate], $searchParams);
@@ -232,7 +285,7 @@ if ($filter === 'week') {
         e.position
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
+    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . $statusFilterCondition . "
     ORDER BY 
         CASE 
             WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
@@ -267,7 +320,7 @@ if ($filter === 'week') {
         e.position
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . "
+    WHERE a.attendance_date BETWEEN ? AND ?" . $searchCondition . $statusFilterCondition . "
     ORDER BY 
         CASE 
             WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
@@ -302,7 +355,7 @@ if ($filter === 'week') {
         e.position
     FROM attendance a
     LEFT JOIN employees e ON a.employee_id = e.id
-    WHERE a.attendance_date = ?" . $searchCondition . "
+    WHERE a.attendance_date = ?" . $searchCondition . $statusFilterCondition . "
     ORDER BY 
         CASE 
             WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
@@ -523,6 +576,49 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         .btn-nav:hover {
             background: var(--orange);
             color: var(--black);
+        }
+        .btn-filter {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn-filter:hover {
+            background: rgba(255, 165, 0, 0.2);
+            border-color: rgba(255, 165, 0, 0.5);
+        }
+        .btn-filter.active-all {
+            background: #6B7280;
+            border-color: #6B7280;
+            color: #ffffff;
+        }
+        .btn-filter.active-present {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            color: #ffffff;
+        }
+        .btn-filter.active-late {
+            background: #FF9800;
+            border-color: #FF9800;
+            color: #ffffff;
+        }
+        .btn-filter.active-completed {
+            background: #2196F3;
+            border-color: #2196F3;
+            color: #ffffff;
+        }
+        .btn-filter.active-absent {
+            background: #F44336;
+            border-color: #F44336;
+            color: #ffffff;
         }
     </style>
 </head>
@@ -833,6 +929,33 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     </div>
                 </div>
 
+                <!-- Status Filter Buttons -->
+                <div class="audit-card mb-4">
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <span class="text-sm text-gray-400 mr-2">Filter by Status:</span>
+                        <a href="?date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                           class="btn-filter <?php echo $statusFilter === 'all' ? 'active-all' : ''; ?>">
+                            <i class="fas fa-list mr-1"></i>All
+                        </a>
+                        <a href="?date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?>&status=present<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                           class="btn-filter <?php echo $statusFilter === 'present' ? 'active-present' : ''; ?>">
+                            <i class="fas fa-check mr-1"></i>Present
+                        </a>
+                        <a href="?date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?>&status=late<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                           class="btn-filter <?php echo $statusFilter === 'late' ? 'active-late' : ''; ?>">
+                            <i class="fas fa-clock mr-1"></i>Late
+                        </a>
+                        <a href="?date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?>&status=completed<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                           class="btn-filter <?php echo $statusFilter === 'completed' ? 'active-completed' : ''; ?>">
+                            <i class="fas fa-check-double mr-1"></i>Completed
+                        </a>
+                        <a href="?date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?>&status=absent<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                           class="btn-filter <?php echo $statusFilter === 'absent' ? 'active-absent' : ''; ?>">
+                            <i class="fas fa-times mr-1"></i>Absent
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Attendance Table -->
                 <div class="audit-card">
                     <?php if (count($attendanceData) > 0): ?>
@@ -856,36 +979,10 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                     <?php foreach ($attendanceData as $record): 
                                         $hoursWorked = $record['minutes_worked'] ? round($record['minutes_worked'] / 60, 2) : 0;
                                         
-                                        // Determine status
-                                        $isLate = false;
-                                        if ($record['time_in'] && strtolower($record['position']) === 'worker') {
-                                            $timeIn = strtotime($record['time_in']);
-                                            $lateThreshold = strtotime(date('Y-m-d', $timeIn) . ' 07:15:00');
-                                            if ($timeIn >= $lateThreshold) {
-                                                $isLate = true;
-                                            }
-                                        }
-                                        
-                                        if ($record['time_in'] && $record['time_out']) {
-                                            if ($isLate) {
-                                                $statusClass = 'status-late';
-                                                $statusText = 'Late';
-                                            } else {
-                                                $statusClass = 'status-completed';
-                                                $statusText = 'Completed';
-                                            }
-                                        } elseif ($record['time_in']) {
-                                            if ($isLate) {
-                                                $statusClass = 'status-late';
-                                                $statusText = 'Late';
-                                            } else {
-                                                $statusClass = 'status-present';
-                                                $statusText = 'Present';
-                                            }
-                                        } else {
-                                            $statusClass = 'status-absent';
-                                            $statusText = $record['status'] ?? 'Absent';
-                                        }
+                                        // Determine status using helper function
+                                        $statusInfo = getAttendanceStatus($record);
+                                        $statusClass = $statusInfo['class'];
+                                        $statusText = $statusInfo['text'];
                                     ?>
                                         <tr>
                                             <?php if ($filter !== 'day'): ?>
@@ -948,7 +1045,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                             <div class="flex items-center gap-2">
                                 <!-- Previous Page -->
                                 <?php if ($currentPage > 1): ?>
-                                    <a href="?page=<?php echo $currentPage - 1; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                    <a href="?page=<?php echo $currentPage - 1; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?><?php echo $statusFilter !== 'all' ? '&status=' . urlencode($statusFilter) : ''; ?>" 
                                        class="btn-nav px-3 py-2">
                                         <i class="fas fa-chevron-left mr-1"></i> Prev
                                     </a>
@@ -964,7 +1061,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                 $endPage = min($totalPages, $currentPage + 2);
                                 
                                 if ($startPage > 1): ?>
-                                    <a href="?page=1&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                    <a href="?page=1&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?><?php echo $statusFilter !== 'all' ? '&status=' . urlencode($statusFilter) : ''; ?>" 
                                        class="btn-nav px-3 py-2 min-w-[40px] text-center">1</a>
                                     <?php if ($startPage > 2): ?>
                                         <span class="text-gray-500 px-2">...</span>
@@ -975,7 +1072,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                     <?php if ($i == $currentPage): ?>
                                         <span class="px-3 py-2 bg-orange-500 text-black rounded min-w-[40px] text-center font-bold"><?php echo $i; ?></span>
                                     <?php else: ?>
-                                        <a href="?page=<?php echo $i; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                        <a href="?page=<?php echo $i; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?><?php echo $statusFilter !== 'all' ? '&status=' . urlencode($statusFilter) : ''; ?>" 
                                            class="btn-nav px-3 py-2 min-w-[40px] text-center"><?php echo $i; ?></a>
                                     <?php endif; ?>
                                 <?php endfor; ?>
@@ -984,13 +1081,13 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                     <?php if ($endPage < $totalPages - 1): ?>
                                         <span class="text-gray-500 px-2">...</span>
                                     <?php endif; ?>
-                                    <a href="?page=<?php echo $totalPages; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                    <a href="?page=<?php echo $totalPages; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?><?php echo $statusFilter !== 'all' ? '&status=' . urlencode($statusFilter) : ''; ?>" 
                                        class="btn-nav px-3 py-2 min-w-[40px] text-center"><?php echo $totalPages; ?></a>
                                 <?php endif; ?>
                                 
                                 <!-- Next Page -->
                                 <?php if ($currentPage < $totalPages): ?>
-                                    <a href="?page=<?php echo $currentPage + 1; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                                    <a href="?page=<?php echo $currentPage + 1; ?>&date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?><?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?><?php echo $statusFilter !== 'all' ? '&status=' . urlencode($statusFilter) : ''; ?>" 
                                        class="btn-nav px-3 py-2">
                                         Next <i class="fas fa-chevron-right ml-1"></i>
                                     </a>
