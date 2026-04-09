@@ -59,6 +59,9 @@
   - Added CSS styling for On Leave status and auto-absent rows
   - Added info banners for auto-absent mode and Sundays
   - **Fixed:** Changed `MAX(id)` to `ORDER BY time_in ASC LIMIT 1` to show earliest (morning) attendance record instead of latest
+- `employee/api/get_employee_attendance_detailed.php`:
+  - **Fixed:** Modified query to select earliest time_in record per day using subquery with `MIN(time_in)`
+  - This ensures the employee calendar modal shows the morning time-in (e.g., 06:33 AM) instead of afternoon re-entry (e.g., 04:04 PM)
 
 ---
 

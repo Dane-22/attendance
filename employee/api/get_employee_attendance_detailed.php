@@ -74,7 +74,7 @@ $employeeName = trim($employee['first_name'] . ' ' . $employee['last_name']);
 $position = $employee['position'];
 $isWorker = strtolower($position) === 'worker';
 
-// Get attendance data
+// Get attendance data - select earliest time_in record per day
 $sql = "SELECT 
     a.attendance_date,
     a.time_in,
@@ -83,6 +83,14 @@ $sql = "SELECT
     a.branch_name,
     TIMESTAMPDIFF(MINUTE, a.time_in, a.time_out) / 60 as hours
 FROM attendance a
+INNER JOIN (
+    SELECT attendance_date, MIN(time_in) as min_time_in
+    FROM attendance
+    WHERE employee_id = ?
+      AND attendance_date BETWEEN ? AND ?
+      AND time_in IS NOT NULL
+    GROUP BY attendance_date
+) earliest ON a.attendance_date = earliest.attendance_date AND a.time_in = earliest.min_time_in
 WHERE a.employee_id = ?
   AND a.attendance_date BETWEEN ? AND ?
 ORDER BY a.attendance_date ASC";
@@ -92,7 +100,7 @@ if (!$stmt) {
     respond(500, ['success' => false, 'message' => 'Failed to prepare attendance query.']);
 }
 
-mysqli_stmt_bind_param($stmt, 'iss', $employeeId, $startDate, $endDate);
+mysqli_stmt_bind_param($stmt, 'isssss', $employeeId, $startDate, $endDate, $employeeId, $startDate, $endDate);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
