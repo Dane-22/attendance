@@ -907,7 +907,11 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                                 <?php echo htmlspecialchars($record['employee_code']); ?>
                                             </td>
                                             <td class="text-gray-300">
-                                                <?php echo htmlspecialchars($record['branch_name'] ?? 'N/A'); ?>
+                                                <span class="cursor-pointer hover:text-orange-400 transition-colors"
+                                                      onclick="openBranchCalendar('<?php echo htmlspecialchars($record['branch_name'] ?? 'N/A', ENT_QUOTES); ?>')"
+                                                      title="Click to view branch attendance calendar">
+                                                    <?php echo htmlspecialchars($record['branch_name'] ?? 'N/A'); ?>
+                                                </span>
                                             </td>
                                             <td class="text-gray-300">
                                                 <?php echo $record['time_in'] ? date('h:i A', strtotime($record['time_in'])) : '-'; ?>
@@ -1427,6 +1431,84 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         </div>
     </div>
 
+    <!-- Branch Calendar Modal -->
+    <div id="branchCalendarModal" class="branch-calendar-modal" style="display: none;">
+        <div class="branch-calendar-container">
+            <!-- Modal Header -->
+            <div class="branch-calendar-header">
+                <div class="header-left">
+                    <h2 id="branchCalendarTitle">Branch Calendar</h2>
+                    <span id="branchCalendarSubtitle" class="branch-badge">All Employees</span>
+                </div>
+                <div class="header-center">
+                    <button class="nav-btn" onclick="navigateBranchCalendar(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="branchCalendarMonth" class="month-display"></span>
+                    <button class="nav-btn" onclick="navigateBranchCalendar(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="header-right">
+                    <button class="close-btn" onclick="closeBranchCalendar()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="branchCalendarLoading" class="calendar-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading branch attendance data...</span>
+            </div>
+
+            <!-- Rate Limit Error -->
+            <div id="branchCalendarError" class="calendar-error" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="branchCalendarErrorMessage">Rate limit exceeded. Please try again later.</span>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="branchCalendarContent" class="branch-calendar-content" style="display: none;">
+                <!-- Weekday Headers -->
+                <div class="calendar-weekdays">
+                    <div class="weekday">Sun</div>
+                    <div class="weekday">Mon</div>
+                    <div class="weekday">Tue</div>
+                    <div class="weekday">Wed</div>
+                    <div class="weekday">Thu</div>
+                    <div class="weekday">Fri</div>
+                    <div class="weekday">Sat</div>
+                </div>
+
+                <!-- Calendar Days Grid -->
+                <div id="branchCalendarGrid" class="branch-calendar-grid">
+                    <!-- Days will be rendered here by JavaScript -->
+                </div>
+
+                <!-- Legend -->
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color day-present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color day-completed"></div>
+                        <span>Completed</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color day-late"></div>
+                        <span>Late</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color day-absent"></div>
+                        <span>Absent</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Individual Calendar Styles -->
     <style>
         /* Modal Overlay */
@@ -1812,6 +1894,291 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 padding: 1px 2px;
             }
         }
+
+        /* ==================== BRANCH CALENDAR STYLES ==================== */
+
+        /* Branch Modal Overlay */
+        .branch-calendar-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Branch Modal Container */
+        .branch-calendar-container {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Branch Header */
+        .branch-calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 165, 0, 0.2);
+            background: rgba(255, 165, 0, 0.05);
+        }
+
+        .branch-calendar-header .header-left h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .branch-badge {
+            background: rgba(255, 165, 0, 0.2);
+            color: #FFA500;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Error State */
+        .calendar-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #F44336;
+            gap: 16px;
+        }
+
+        .calendar-error i {
+            font-size: 2rem;
+        }
+
+        /* Branch Calendar Content */
+        .branch-calendar-content {
+            padding: 20px 24px;
+            overflow-y: auto;
+            max-height: calc(90vh - 100px);
+        }
+
+        /* Branch Calendar Grid */
+        .branch-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        /* Branch Day Cell - Taller to fit multiple employees */
+        .branch-calendar-day-cell {
+            min-height: 140px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+        }
+
+        .branch-calendar-day-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .branch-day-number {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .branch-day-other-month .branch-day-number {
+            color: #6B7280;
+        }
+
+        /* Employee List Container */
+        .branch-employee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Individual Employee Item */
+        .branch-employee-item {
+            font-size: 0.65rem;
+            padding: 2px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .branch-employee-item .emp-name {
+            font-weight: 500;
+        }
+
+        .branch-employee-item .emp-time {
+            font-size: 0.55rem;
+            opacity: 0.8;
+        }
+
+        /* Status Colors for Employees */
+        .branch-employee-item.status-present {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .branch-employee-item.status-completed {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196F3;
+        }
+
+        .branch-employee-item.status-late {
+            background: rgba(255, 152, 0, 0.2);
+            color: #FF9800;
+        }
+
+        .branch-employee-item.status-absent {
+            background: rgba(244, 67, 54, 0.2);
+            color: #F44336;
+        }
+
+        /* See More Button */
+        .see-more-btn {
+            font-size: 0.6rem;
+            padding: 2px 4px;
+            background: rgba(255, 165, 0, 0.2);
+            color: #FFA500;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 2px;
+            transition: all 0.2s ease;
+        }
+
+        .see-more-btn:hover {
+            background: rgba(255, 165, 0, 0.3);
+        }
+
+        /* Expanded Employee List */
+        .branch-employee-list.expanded {
+            max-height: none;
+            overflow: visible;
+        }
+
+        /* Day Summary */
+        .branch-day-summary {
+            font-size: 0.55rem;
+            color: #9CA3AF;
+            text-align: center;
+            margin-top: auto;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Completed Status Styles */
+        .day-completed {
+            background: rgba(33, 150, 243, 0.15);
+            border-color: rgba(33, 150, 243, 0.3);
+        }
+
+        /* Branch Day Today */
+        .branch-day-today {
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+
+        .branch-day-other-month {
+            opacity: 0.5;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Mobile Responsive for Branch Calendar */
+        @media (max-width: 768px) {
+            .branch-calendar-modal {
+                padding: 0;
+            }
+
+            .branch-calendar-container {
+                max-width: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+
+            .branch-calendar-header {
+                padding: 16px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .branch-calendar-header .header-left h2 {
+                font-size: 1rem;
+            }
+
+            .branch-calendar-content {
+                padding: 12px;
+            }
+
+            .branch-calendar-day-cell {
+                min-height: 100px;
+                padding: 4px;
+            }
+
+            .branch-day-number {
+                font-size: 0.7rem;
+            }
+
+            .branch-employee-item {
+                font-size: 0.55rem;
+            }
+
+            .branch-employee-item .emp-time {
+                display: none;
+            }
+
+            .see-more-btn {
+                font-size: 0.5rem;
+            }
+
+            .branch-day-summary {
+                font-size: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .branch-calendar-grid,
+            .calendar-weekdays {
+                gap: 4px;
+            }
+
+            .branch-calendar-day-cell {
+                min-height: 80px;
+            }
+
+            .branch-employee-item {
+                padding: 1px 2px;
+            }
+        }
     </style>
 
     <!-- Individual Calendar JavaScript -->
@@ -2014,6 +2381,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeIndividualCalendar();
+                closeBranchCalendar();
             }
         });
 
@@ -2023,6 +2391,248 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 closeIndividualCalendar();
             }
         });
+
+        // Close branch modal on backdrop click
+        document.getElementById('branchCalendarModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeBranchCalendar();
+            }
+        });
+
+        // ==================== BRANCH CALENDAR JAVASCRIPT ====================
+
+        // Branch Calendar State
+        let currentBranchName = null;
+        let currentBranchMonth = new Date().toISOString().slice(0, 7);
+        let expandedDays = new Set(); // Track which days are expanded
+
+        /**
+         * Open the branch calendar modal
+         */
+        function openBranchCalendar(branchName) {
+            if (!branchName || branchName === 'N/A') {
+                alert('No branch data available');
+                return;
+            }
+
+            currentBranchName = branchName;
+            currentBranchMonth = new Date().toISOString().slice(0, 7);
+            expandedDays.clear();
+
+            // Update title
+            document.getElementById('branchCalendarTitle').textContent = branchName;
+
+            // Show modal
+            const modal = document.getElementById('branchCalendarModal');
+            modal.style.display = 'flex';
+
+            // Show loading, hide content and error
+            document.getElementById('branchCalendarLoading').style.display = 'flex';
+            document.getElementById('branchCalendarContent').style.display = 'none';
+            document.getElementById('branchCalendarError').style.display = 'none';
+
+            // Load data
+            loadBranchCalendarData();
+        }
+
+        /**
+         * Close the branch calendar modal
+         */
+        function closeBranchCalendar() {
+            const modal = document.getElementById('branchCalendarModal');
+            modal.style.display = 'none';
+            currentBranchName = null;
+            expandedDays.clear();
+        }
+
+        /**
+         * Navigate to previous or next month
+         */
+        function navigateBranchCalendar(direction) {
+            const [year, month] = currentBranchMonth.split('-').map(Number);
+            const date = new Date(year, month - 1 + direction, 1);
+            currentBranchMonth = date.toISOString().slice(0, 7);
+            expandedDays.clear();
+            loadBranchCalendarData();
+        }
+
+        /**
+         * Load branch calendar data from API
+         */
+        async function loadBranchCalendarData() {
+            if (!currentBranchName) return;
+
+            // Update month display
+            const [year, month] = currentBranchMonth.split('-').map(Number);
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('branchCalendarMonth').textContent =
+                `${monthNames[month - 1]} ${year}`;
+
+            try {
+                const response = await fetch(
+                    `api/get_branch_attendance_detailed.php?branch_name=${encodeURIComponent(currentBranchName)}&month=${currentBranchMonth}`
+                );
+
+                const data = await response.json();
+
+                if (response.status === 429) {
+                    // Rate limited
+                    document.getElementById('branchCalendarLoading').style.display = 'none';
+                    document.getElementById('branchCalendarError').style.display = 'flex';
+                    document.getElementById('branchCalendarErrorMessage').textContent =
+                        data.message || 'Rate limit exceeded. Please try again later.';
+                    return;
+                }
+
+                if (data.success) {
+                    document.getElementById('branchCalendarLoading').style.display = 'none';
+                    document.getElementById('branchCalendarError').style.display = 'none';
+                    document.getElementById('branchCalendarContent').style.display = 'block';
+                    renderBranchCalendar(data);
+                } else {
+                    throw new Error(data.message || 'Failed to load data');
+                }
+            } catch (error) {
+                console.error('Failed to load branch calendar data:', error);
+                document.getElementById('branchCalendarLoading').style.display = 'none';
+                document.getElementById('branchCalendarError').style.display = 'flex';
+                document.getElementById('branchCalendarErrorMessage').textContent =
+                    'Failed to load attendance data. Please try again.';
+            }
+        }
+
+        /**
+         * Render the branch calendar with attendance data
+         */
+        function renderBranchCalendar(data) {
+            const [year, month] = currentBranchMonth.split('-').map(Number);
+            const grid = document.getElementById('branchCalendarGrid');
+            grid.innerHTML = '';
+
+            const today = new Date().toISOString().slice(0, 10);
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
+
+            // Build attendance map
+            const attendanceMap = {};
+            data.days.forEach(day => {
+                attendanceMap[day.date] = day;
+            });
+
+            // Previous month days
+            const prevMonth = new Date(year, month - 2, 1);
+            const daysInPrevMonth = new Date(year, month - 1, 0).getDate();
+
+            for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+                const dayNum = daysInPrevMonth - i;
+                const dayEl = createBranchDayElement(dayNum, null, true);
+                grid.appendChild(dayEl);
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayData = attendanceMap[dateStr];
+                const isToday = dateStr === today;
+                const isExpanded = expandedDays.has(dateStr);
+                const dayEl = createBranchDayElement(day, dayData, false, isToday, isExpanded, dateStr);
+                grid.appendChild(dayEl);
+            }
+
+            // Next month days
+            const totalCells = firstDayOfMonth + daysInMonth;
+            const remainingCells = (7 - (totalCells % 7)) % 7;
+
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayEl = createBranchDayElement(day, null, true);
+                grid.appendChild(dayEl);
+            }
+        }
+
+        /**
+         * Toggle expanded view for a day
+         */
+        function toggleDayEmployees(dateStr) {
+            if (expandedDays.has(dateStr)) {
+                expandedDays.delete(dateStr);
+            } else {
+                expandedDays.add(dateStr);
+            }
+            // Re-render to show/hide expanded list
+            loadBranchCalendarData();
+        }
+
+        /**
+         * Create a day element for the branch calendar
+         */
+        function createBranchDayElement(dayNum, dayData, isOtherMonth, isToday = false, isExpanded = false, dateStr = null) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'branch-calendar-day-cell';
+
+            if (isOtherMonth) {
+                dayEl.classList.add('branch-day-other-month');
+            }
+
+            if (isToday) {
+                dayEl.classList.add('branch-day-today');
+            }
+
+            if (dayData && dayData.employees.length > 0) {
+                const employees = dayData.employees;
+                const displayLimit = isExpanded ? employees.length : 10;
+                const displayEmployees = employees.slice(0, displayLimit);
+                const remainingCount = employees.length - displayLimit;
+
+                // Build employee list HTML
+                let employeesHtml = '';
+                displayEmployees.forEach(emp => {
+                    const statusClass = `status-${emp.status.toLowerCase()}`;
+                    const timeRange = emp.time_in && emp.time_out
+                        ? `${emp.time_in} - ${emp.time_out}`
+                        : (emp.time_in || '-');
+                    employeesHtml += `
+                        <div class="branch-employee-item ${statusClass}">
+                            <span class="emp-name">${emp.name}</span>
+                            <span class="emp-time">${timeRange}</span>
+                        </div>
+                    `;
+                });
+
+                // Add see more button if needed
+                let seeMoreHtml = '';
+                if (remainingCount > 0 && !isExpanded) {
+                    seeMoreHtml = `<button class="see-more-btn" onclick="toggleDayEmployees('${dateStr}')">+${remainingCount} more</button>`;
+                } else if (isExpanded && employees.length > 10) {
+                    seeMoreHtml = `<button class="see-more-btn" onclick="toggleDayEmployees('${dateStr}')">Show less</button>`;
+                }
+
+                // Build summary
+                const summary = dayData.summary;
+                let summaryText = `${summary.total} employees`;
+                if (summary.absent > 0 || summary.late > 0) {
+                    const issues = [];
+                    if (summary.absent > 0) issues.push(`${summary.absent} Absent`);
+                    if (summary.late > 0) issues.push(`${summary.late} Late`);
+                    summaryText += ` (${issues.join(', ')})`;
+                }
+
+                dayEl.innerHTML = `
+                    <span class="branch-day-number">${dayNum}</span>
+                    <div class="branch-employee-list ${isExpanded ? 'expanded' : ''}">${employeesHtml}</div>
+                    ${seeMoreHtml}
+                    <div class="branch-day-summary">${summaryText}</div>
+                `;
+            } else {
+                dayEl.innerHTML = `
+                    <span class="branch-day-number">${dayNum}</span>
+                    <div class="branch-employee-list"></div>
+                    <div class="branch-day-summary">No employees</div>
+                `;
+            }
+
+            return dayEl;
+        }
     </script>
 </body>
 </html>
