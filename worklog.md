@@ -4,6 +4,44 @@
 
 ### 2026-04-10
 
+**Task:** Implement Soft Delete for Branch Deletion
+
+**Status:** ✅ Completed
+
+**Problem:** Branch deletion was using hard `DELETE` queries, permanently removing branches from the database. This caused potential data integrity issues with historical attendance records and prevented recovery of accidentally deleted branches.
+
+**Solution:** Changed all branch deletion logic to use soft delete by updating `is_active` column to `0` instead of hard-deleting records. Updated all branch queries to filter by `is_active = 1` to only show active branches.
+
+**Changes Made:**
+
+**1. Modified `employee/branch_actions.php` (lines 114-127):**
+- Changed: `DELETE FROM branches WHERE id = ?`
+- To: `UPDATE branches SET is_active = 0 WHERE id = ?`
+
+**2. Modified `employee/select_emp.php` (lines 94, 123, 143):**
+- Added `AND is_active = 1` to branch existence check query
+- Added `AND is_active = 1` to branch lookup query
+- Changed hard delete to soft delete: `UPDATE branches SET is_active = 0 WHERE id = ?`
+
+**3. Modified `employee/function/attendance.php` (lines 395, 457, 533, 579-623):**
+- Added `AND is_active = 1` to add_branch duplicate check
+- Added `AND is_active = 1` to delete_branch lookup
+- Changed: `DELETE FROM branches` → `UPDATE branches SET is_active = 0`
+- Enhanced `undo_delete_branch` to reactivate soft-deleted branches if they exist
+
+**4. Modified `employee/eng_dashboard.php` (line 91):**
+- Added `AND is_active = 1` to branch name query
+
+**Result:** 
+- Deleted branches are now hidden from UI but preserved in database
+- Historical attendance records remain intact (no broken foreign key references)
+- Undo functionality can restore soft-deleted branches by reactivating them
+- All branch listings only show active branches (`is_active = 1`)
+
+---
+
+### 2026-04-10
+
 **Task:** Fix Branch Employee Modal Showing Zero Data Mismatch
 
 **Status:** ✅ Completed
