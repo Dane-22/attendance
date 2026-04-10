@@ -221,6 +221,34 @@ switch ($filter) {
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         break;
+
+    case 'employees_with_deductions':
+        $filterTitle = 'Employees with Government Deductions';
+        $sql = "SELECT 
+                    e.id,
+                    e.employee_code,
+                    CONCAT(e.first_name, ' ', COALESCE(e.middle_name, ''), ' ', e.last_name) as full_name,
+                    COALESCE(b.branch_name, 'Unassigned') as branch_name,
+                    e.daily_rate,
+                    e.position,
+                    COALESCE(SUM(dpr.days_worked), 0) as total_days_worked,
+                    COALESCE(SUM(dpr.basic_pay), 0) as total_basic_pay,
+                    COALESCE(SUM(dpr.total_deductions), 0) as total_deductions,
+                    COALESCE(SUM(dpr.take_home_pay), 0) as total_net_pay
+                FROM employees e
+                LEFT JOIN branches b ON e.branch_id = b.id
+                LEFT JOIN daily_payroll_reports dpr ON e.id = dpr.employee_id 
+                    AND dpr.report_date BETWEEN ? AND ?
+                WHERE e.has_deduction = 1
+                  AND e.status = 'Active'
+                GROUP BY e.id, e.employee_code, e.first_name, e.middle_name, e.last_name, 
+                         b.branch_name, e.daily_rate, e.position
+                ORDER BY b.branch_name, e.last_name, e.first_name";
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param("ss", $startDate, $endDate);
+        $stmt->execute();
+        $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        break;
 }
 
 // Format currency helper
@@ -268,6 +296,9 @@ function formatCurrency($amount) {
                         </option>
                         <option value="employer_share" <?php echo $filter === 'employer_share' ? 'selected' : ''; ?>>
                             Employer Share Contribution
+                        </option>
+                        <option value="employees_with_deductions" <?php echo $filter === 'employees_with_deductions' ? 'selected' : ''; ?>>
+                            Employees with Deductions
                         </option>
                     </select>
                 </div>
@@ -338,6 +369,18 @@ function formatCurrency($amount) {
                                 <th>Employer Share</th>
                                 <th>Total Contribution</th>
                             </tr>
+                        <?php elseif ($filter === 'employees_with_deductions'): ?>
+                            <tr>
+                                <th>Employee Code</th>
+                                <th>Employee Name</th>
+                                <th>Branch</th>
+                                <th>Position</th>
+                                <th>Daily Rate</th>
+                                <th>Days Worked</th>
+                                <th>Basic Pay</th>
+                                <th>Total Deductions</th>
+                                <th>Net Pay</th>
+                            </tr>
                         <?php endif; ?>
                     </thead>
                     <tbody>
@@ -379,6 +422,19 @@ function formatCurrency($amount) {
                                     <td class="amount net"><?php echo formatCurrency($row['total_contribution']); ?></td>
                                 </tr>
                                 <?php $grandTotal += ($row['total_contribution'] ?? 0); ?>
+                            <?php elseif ($filter === 'employees_with_deductions'): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($row['employee_code']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['full_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['branch_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo htmlspecialchars($row['position']); ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['daily_rate']); ?></td>
+                                    <td><?php echo $row['total_days_worked']; ?></td>
+                                    <td class="amount"><?php echo formatCurrency($row['total_basic_pay']); ?></td>
+                                    <td class="amount deduction"><?php echo formatCurrency($row['total_deductions']); ?></td>
+                                    <td class="amount net"><?php echo formatCurrency($row['total_net_pay']); ?></td>
+                                </tr>
+                                <?php $grandTotal += ($row['total_net_pay'] ?? 0); ?>
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </tbody>
@@ -392,6 +448,10 @@ function formatCurrency($amount) {
                                 <td colspan="3"><strong>Grand Total Cash Advance:</strong></td>
                                 <td class="amount"><strong><?php echo formatCurrency($grandTotal); ?></strong></td>
                                 <td colspan="2"></td>
+                            <?php elseif ($filter === 'employees_with_deductions'): ?>
+                                <td colspan="6"><strong>Grand Total Net Pay:</strong></td>
+                                <td class="amount deduction"><strong><?php echo formatCurrency(array_sum(array_column($data, 'total_deductions'))); ?></strong></td>
+                                <td class="amount net"><strong><?php echo formatCurrency($grandTotal); ?></strong></td>
                             <?php endif; ?>
                         </tr>
                     </tfoot>
