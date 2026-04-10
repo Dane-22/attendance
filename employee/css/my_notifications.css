@@ -366,79 +366,40 @@
         justify-content: center;
     }
     
-    /* Notification Card - Single Row Layout */
     .notification-card {
-        flex-direction: row;
-        align-items: center;
+        flex-direction: column;
         gap: 12px;
-        padding: 12px 16px;
+        padding: 16px;
     }
     
     .notification-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 16px;
-        flex: 0 0 auto;
-    }
-    
-    .notification-content {
-        flex: 1;
-        min-width: 0;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
     }
     
     .notification-header-row {
-        flex-direction: row;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
+        flex-direction: column;
+        gap: 4px;
     }
     
     .notification-header-row h4 {
-        font-size: 13px;
-        margin: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 14px;
     }
     
     .notification-time {
         font-size: 11px;
-        white-space: nowrap;
-        flex-shrink: 0;
     }
     
     .notification-message {
-        display: none;
-    }
-    
-    .notification-meta {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-    
-    .status-badge {
-        font-size: 10px;
-        padding: 3px 8px;
-    }
-    
-    .date-info {
-        font-size: 11px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
     }
     
     .notification-actions {
-        flex: 0 0 auto;
-        flex-direction: row;
-        gap: 6px;
-        width: auto;
+        width: 100%;
         justify-content: flex-end;
-    }
-    
-    .btn-action {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
     }
 }
 
