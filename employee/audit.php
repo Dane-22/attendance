@@ -2043,6 +2043,80 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             color: #9CAF50;
         }
 
+        /* Multiple Records Styles */
+        .day-records {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 100px;
+        }
+
+        .day-record {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            padding: 2px 3px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-size: 0.65rem;
+            line-height: 1.2;
+        }
+
+        .record-num {
+            font-size: 0.6rem;
+            color: #FFA500;
+            font-weight: 600;
+        }
+
+        .day-record-branch {
+            font-size: 0.6rem;
+            color: #FFA500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .day-total-hours {
+            font-size: 0.65rem;
+            color: #2196F3;
+            font-weight: 600;
+            text-align: center;
+            padding: 2px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2px;
+        }
+
+        /* Hidden records (shown when See more is clicked) */
+        .hidden-record {
+            display: none;
+        }
+
+        /* See more / See less button */
+        .see-more-btn {
+            background: rgba(255, 165, 0, 0.2);
+            border: 1px solid rgba(255, 165, 0, 0.4);
+            color: #FFA500;
+            font-size: 0.6rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            margin: 2px 0;
+            transition: all 0.2s ease;
+        }
+
+        .see-more-btn:hover {
+            background: rgba(255, 165, 0, 0.4);
+        }
+
+        .see-more-btn.expanded {
+            background: rgba(33, 150, 243, 0.2);
+            border-color: rgba(33, 150, 243, 0.4);
+            color: #2196F3;
+        }
+
         .day-branch {
             font-size: 0.6rem;
             color: #FFA500;
@@ -2577,7 +2651,26 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
 
             try {
                 const response = await fetch(`api/get_employee_attendance_detailed.php?employee_id=${currentEmployeeId}&month=${currentMonth}`);
-                const data = await response.json();
+
+                // Check if response is OK
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('HTTP Error:', response.status, response.statusText);
+                    console.error('Response text:', text);
+                    alert('Server error: ' + response.status + ' - Check console for details');
+                    return;
+                }
+
+                // Try to parse JSON
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (jsonError) {
+                    console.error('Invalid JSON response:', text);
+                    alert('Invalid response from server. Check console (F12) for raw response.');
+                    return;
+                }
 
                 if (data.success) {
                     renderIndividualCalendar(data);
@@ -2587,7 +2680,12 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 }
             } catch (error) {
                 console.error('Error loading calendar data:', error);
-                alert('Error loading attendance data. Please try again.');
+                // Try to get more details about the error
+                let errorMsg = 'Error loading attendance data.';
+                if (error.message) {
+                    errorMsg += ' Details: ' + error.message;
+                }
+                alert(errorMsg + ' Please check console (F12) for more info.');
             } finally {
                 document.getElementById('individualCalendarLoading').style.display = 'none';
                 document.getElementById('individualCalendarContent').style.display = 'block';
@@ -2629,7 +2727,8 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
 
             for (let i = firstDayOfMonth - 1; i >= 0; i--) {
                 const dayNum = daysInPrevMonth - i;
-                const dayEl = createDayElement(dayNum, null, true);
+                const prevMonthDateStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                const dayEl = createDayElement(dayNum, null, true, false, prevMonthDateStr);
                 grid.appendChild(dayEl);
             }
 
@@ -2638,16 +2737,19 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const dayData = attendanceMap[dateStr];
                 const isToday = dateStr === today;
-                const dayEl = createDayElement(day, dayData, false, isToday);
+                const dayEl = createDayElement(day, dayData, false, isToday, dateStr);
                 grid.appendChild(dayEl);
             }
 
             // Next month days to fill grid
             const totalCells = firstDayOfMonth + daysInMonth;
             const remainingCells = (7 - (totalCells % 7)) % 7;
+            const nextMonth = month === 12 ? 1 : month + 1;
+            const nextYear = month === 12 ? year + 1 : year;
 
             for (let day = 1; day <= remainingCells; day++) {
-                const dayEl = createDayElement(day, null, true);
+                const nextMonthDateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayEl = createDayElement(day, null, true, false, nextMonthDateStr);
                 grid.appendChild(dayEl);
             }
         }
@@ -2655,7 +2757,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         /**
          * Create a day element for the calendar
          */
-        function createDayElement(dayNum, dayData, isOtherMonth, isToday = false) {
+        function createDayElement(dayNum, dayData, isOtherMonth, isToday = false, dateStr = null) {
             const dayEl = document.createElement('div');
             dayEl.className = 'calendar-day-cell';
 
@@ -2663,7 +2765,12 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 dayEl.classList.add('day-other-month');
             }
 
-            if (dayData) {
+            // Generate dateStr if not provided (for other months)
+            if (!dateStr && dayData) {
+                dateStr = dayData.date;
+            }
+
+            if (dayData && dayData.records && dayData.records.length > 0) {
                 const status = dayData.status || 'No Record';
                 dayEl.classList.add(`day-${status.toLowerCase().replace(/\s+/g, '-')}`);
 
@@ -2671,20 +2778,38 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     dayEl.classList.add('day-today');
                 }
 
-                let timesHtml = '';
-                if (dayData.time_in) {
-                    timesHtml += `<span class="day-time-in">${dayData.time_in}</span>`;
-                }
-                if (dayData.time_out) {
-                    timesHtml += `<span class="day-time-out">${dayData.time_out}</span>`;
-                }
+                const hasMultipleRecords = dayData.records.length > 1;
 
-                const branchHtml = dayData.branch ? `<span class="day-branch">${dayData.branch}</span>` : '';
+                // Build HTML for records (show all if single, first + see more if multiple)
+                let recordsHtml = '';
+                dayData.records.forEach((record, index) => {
+                    const recordNum = hasMultipleRecords ? `<span class="record-num">#${index + 1}</span>` : '';
+                    const hiddenClass = (hasMultipleRecords && index > 0) ? 'hidden-record' : '';
+                    recordsHtml += `
+                        <div class="day-record ${hiddenClass}" data-date="${dateStr}">
+                            ${recordNum}
+                            <span class="day-time-in">${record.time_in || '--:--'}</span>
+                            <span class="day-time-out">${record.time_out || '--:--'}</span>
+                            <span class="day-record-branch">${record.branch || 'N/A'}</span>
+                        </div>
+                    `;
+                });
+
+                // Add "See more" button for multiple records
+                const seeMoreHtml = hasMultipleRecords
+                    ? `<button class="see-more-btn" onclick="toggleDayRecords('${dateStr}', this)">See more (${dayData.records.length})</button>`
+                    : '';
+
+                // Show total hours if multiple records
+                const totalHoursHtml = hasMultipleRecords
+                    ? `<span class="day-total-hours">Total: ${dayData.total_hours || 0}h</span>`
+                    : '';
 
                 dayEl.innerHTML = `
                     <span class="day-number">${dayNum}</span>
-                    <div class="day-times">${timesHtml}</div>
-                    ${branchHtml}
+                    <div class="day-records" id="records-${dateStr}">${recordsHtml}</div>
+                    ${seeMoreHtml}
+                    ${totalHoursHtml}
                     <span class="day-status">${status}</span>
                 `;
             } else {
@@ -2692,13 +2817,42 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     dayEl.classList.add('day-today');
                 }
 
+                const status = dayData ? (dayData.status || 'No Record') : 'No Record';
+                if (status !== 'No Record') {
+                    dayEl.classList.add(`day-${status.toLowerCase().replace(/\s+/g, '-')}`);
+                }
+
                 dayEl.innerHTML = `
                     <span class="day-number">${dayNum}</span>
                     <div class="day-times"></div>
+                    <span class="day-status">${status}</span>
                 `;
             }
 
             return dayEl;
+        }
+
+        /**
+         * Toggle day records visibility (See more / See less)
+         */
+        function toggleDayRecords(dateStr, btn) {
+            const recordsContainer = document.getElementById(`records-${dateStr}`);
+            if (!recordsContainer) return;
+
+            const hiddenRecords = recordsContainer.querySelectorAll('.hidden-record');
+            const isExpanded = btn.classList.contains('expanded');
+
+            if (isExpanded) {
+                // Collapse - hide extra records
+                hiddenRecords.forEach(record => record.style.display = 'none');
+                btn.classList.remove('expanded');
+                btn.textContent = `See more (${hiddenRecords.length + 1})`;
+            } else {
+                // Expand - show all records
+                hiddenRecords.forEach(record => record.style.display = 'block');
+                btn.classList.add('expanded');
+                btn.textContent = 'See less';
+            }
         }
 
         // Close modal on escape key

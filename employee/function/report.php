@@ -447,15 +447,28 @@ while ($row = mysqli_fetch_assoc($attendance_result)) {
             $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name] = [
                 'status' => $status,
                 'hours' => 0,
-                'ot_hours' => 0
+                'ot_hours' => 0,
+                'time_in' => $time_in,
+                'time_out' => $time_out,
+                'records' => []
             ];
         }
 
         $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name]['status'] = $status;
         $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name]['hours'] += $worked_hours;
         $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name]['ot_hours'] += floatval($row['total_ot_hrs'] ?? 0);
+        // Store individual record for merging logic
+        $employee_payroll[$emp_id]['_daily'][$attendance_date][$branch_name]['records'][] = [
+            'time_in' => $time_in,
+            'time_out' => $time_out,
+            'hours' => $worked_hours,
+            'ot_hours' => floatval($row['total_ot_hrs'] ?? 0)
+        ];
     }
 }
+
+// Merge threshold in minutes - records within this gap will be merged
+$MERGE_THRESHOLD_MINUTES = 15;
 
 // Finalize day/hour totals from per-day/per-branch attendance
 foreach ($employee_payroll as $emp_id => &$payroll) {
@@ -473,10 +486,93 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
             continue;
         }
 
+        // Collect all records for this date across all branches for merging analysis
+        $all_records = [];
+        foreach ($branches as $bName => $bData) {
+            if (isset($bData['records']) && is_array($bData['records'])) {
+                foreach ($bData['records'] as $record) {
+                    $all_records[] = array_merge($record, ['branch' => $bName]);
+                }
+            } else {
+                // Fallback for legacy data without records array
+                $all_records[] = [
+                    'time_in' => $bData['time_in'] ?? null,
+                    'time_out' => $bData['time_out'] ?? null,
+                    'hours' => $bData['hours'] ?? 0,
+                    'ot_hours' => $bData['ot_hours'] ?? 0,
+                    'branch' => $bName
+                ];
+            }
+        }
+
+        // Filter out records without valid times
+        $all_records = array_filter($all_records, function($r) {
+            return !empty($r['time_in']) && !empty($r['time_out']);
+        });
+
+        if (empty($all_records)) {
+            continue;
+        }
+
+        // Sort by time_in
+        usort($all_records, function($a, $b) {
+            return strtotime($a['time_in']) - strtotime($b['time_in']);
+        });
+
+        // Merge records within threshold
+        $merged_records = [];
+        $current_merge = null;
+        $merge_count = 0;
+
+        foreach ($all_records as $record) {
+            if ($current_merge === null) {
+                $current_merge = $record;
+            } else {
+                $gap = strtotime($record['time_in']) - strtotime($current_merge['time_out']);
+                if ($gap < ($MERGE_THRESHOLD_MINUTES * 60)) {
+                    // Merge - extend time_out and accumulate hours
+                    $current_merge['time_out'] = $record['time_out'];
+                    $current_merge['hours'] += $record['hours'];
+                    $current_merge['ot_hours'] += $record['ot_hours'];
+                    // Track that we merged across branches if different
+                    if ($current_merge['branch'] !== $record['branch']) {
+                        $current_merge['branch'] = $current_merge['branch'] . '/' . $record['branch'];
+                    }
+                    $merge_count++;
+                } else {
+                    // Save current merge and start new one
+                    $merged_records[] = $current_merge;
+                    $current_merge = $record;
+                }
+            }
+        }
+        if ($current_merge !== null) {
+            $merged_records[] = $current_merge;
+        }
+
+        // Log if records were merged
+        if ($merge_count > 0) {
+            error_log("[report.php] Merged {$merge_count} attendance records for employee {$emp_id} on {$attendance_date}");
+        }
+
         // If employee worked at exactly 2 branches on the same date (transfer scenario),
-        // split day=0.5 for each branch
-        if (count($branches) === 2) {
-            foreach ($branches as $bName => $bData) {
+        // and we didn't merge them (different branches with large gap)
+        $unique_branches = array_unique(array_column($all_records, 'branch'));
+        $is_transfer_scenario = count($unique_branches) === 2 && count($merged_records) === 2;
+
+        if ($is_transfer_scenario) {
+            // Calculate hours per branch from original records (not merged)
+            $branch_hours = [];
+            foreach ($all_records as $record) {
+                $bName = $record['branch'];
+                if (!isset($branch_hours[$bName])) {
+                    $branch_hours[$bName] = ['hours' => 0, 'ot_hours' => 0];
+                }
+                $branch_hours[$bName]['hours'] += $record['hours'];
+                $branch_hours[$bName]['ot_hours'] += $record['ot_hours'];
+            }
+
+            foreach ($branch_hours as $bName => $bData) {
                 if (!isset($payroll['_branches'][$bName])) {
                     $payroll['_branches'][$bName] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
                 }
@@ -485,25 +581,51 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
                 $payroll['_branches'][$bName]['ot_hours'] += floatval($bData['ot_hours'] ?? 0);
             }
             $payroll['days_worked'] += 1.0;
-            foreach ($branches as $bData) {
-                $payroll['total_hours'] += floatval($bData['hours'] ?? 0);
-                $payroll['total_ot_hrs'] += floatval($bData['ot_hours'] ?? 0);
+            foreach ($all_records as $record) {
+                $payroll['total_hours'] += floatval($record['hours'] ?? 0);
+                $payroll['total_ot_hrs'] += floatval($record['ot_hours'] ?? 0);
             }
             continue;
         }
 
-        // Default: count 1 day if any timed-out attendance exists for the date
-        // Assign full day to each branch that has attendance
+        // Default: count 1 day for the date, accumulate hours from merged records
         $payroll['days_worked'] += 1.0;
-        foreach ($branches as $bName => $bData) {
-            if (!isset($payroll['_branches'][$bName])) {
-                $payroll['_branches'][$bName] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
+        foreach ($merged_records as $mRecord) {
+            $payroll['total_hours'] += floatval($mRecord['hours'] ?? 0);
+            $payroll['total_ot_hrs'] += floatval($mRecord['ot_hours'] ?? 0);
+        }
+
+        // Assign to primary branch (the one with most hours on this day)
+        $branch_hour_totals = [];
+        foreach ($merged_records as $mRecord) {
+            $branches_in_record = explode('/', $mRecord['branch']);
+            foreach ($branches_in_record as $bName) {
+                if (!isset($branch_hour_totals[$bName])) {
+                    $branch_hour_totals[$bName] = ['hours' => 0, 'ot_hours' => 0];
+                }
+                $branch_hour_totals[$bName]['hours'] += floatval($mRecord['hours'] ?? 0) / count($branches_in_record);
+                $branch_hour_totals[$bName]['ot_hours'] += floatval($mRecord['ot_hours'] ?? 0) / count($branches_in_record);
             }
-            $payroll['_branches'][$bName]['days'] += 1.0;
-            $payroll['_branches'][$bName]['hours'] += floatval($bData['hours'] ?? 0);
-            $payroll['_branches'][$bName]['ot_hours'] += floatval($bData['ot_hours'] ?? 0);
-            $payroll['total_hours'] += floatval($bData['hours'] ?? 0);
-            $payroll['total_ot_hrs'] += floatval($bData['ot_hours'] ?? 0);
+        }
+
+        // Find primary branch (most hours)
+        $primary_branch = '';
+        $max_hours = 0;
+        foreach ($branch_hour_totals as $bName => $bData) {
+            if ($bData['hours'] > $max_hours) {
+                $max_hours = $bData['hours'];
+                $primary_branch = $bName;
+            }
+        }
+
+        // Assign full day to primary branch
+        if ($primary_branch && isset($branch_hour_totals[$primary_branch])) {
+            if (!isset($payroll['_branches'][$primary_branch])) {
+                $payroll['_branches'][$primary_branch] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
+            }
+            $payroll['_branches'][$primary_branch]['days'] += 1.0;
+            $payroll['_branches'][$primary_branch]['hours'] += $branch_hour_totals[$primary_branch]['hours'];
+            $payroll['_branches'][$primary_branch]['ot_hours'] += $branch_hour_totals[$primary_branch]['ot_hours'];
         }
     }
 }
