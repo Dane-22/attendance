@@ -1061,7 +1061,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 return;
             }
             
-            let html = '<div class="requests-grid" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%;">';
+            let html = '<div class="requests-grid">';
             
             requests.forEach(request => {
                 const statusClass = request.status;
@@ -1163,7 +1163,7 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 return;
             }
             
-            let html = '<div class="requests-grid" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%;">';
+            let html = '<div class="requests-grid">';
             
             requests.forEach(request => {
                 const statusClass = request.status;
