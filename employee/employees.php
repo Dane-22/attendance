@@ -208,7 +208,7 @@ if (!isset($search)) $search = '';
                   <span style="color: #4ade80;"><?php echo htmlspecialchars($e['status']); ?></span>
                 </div>
                 <div class="employee-row-deduction">
-                  <?php if ($isSuperAdmin): ?>
+                  <?php if ($isSuperAdmin || $isAdmin): ?>
                     <span class="deduction-badge <?php echo ($e['has_deduction'] ?? 1) ? 'with-deduction' : 'no-deduction'; ?>" 
                           onclick="toggleDeductionStatus(event, <?php echo $e['id']; ?>, <?php echo ($e['has_deduction'] ?? 1) ? 0 : 1; ?>)"
                           title="Click to toggle deduction status">

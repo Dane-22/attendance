@@ -9,17 +9,23 @@ require_once __DIR__ . '/../../conn/db_connection.php';
 
 header('Content-Type: application/json');
 
-// Check if user is Super Admin
+// Check if user is Super Admin or Admin
 $isSuperAdmin = false;
+$isAdmin = false;
 $sessionPosition = $_SESSION['position'] ?? '';
 $sessionRole = $_SESSION['role'] ?? '';
 $sessionUserRole = $_SESSION['user_role'] ?? '';
+
 if ($sessionPosition === 'Super Admin' || $sessionRole === 'Super Admin' || $sessionUserRole === 'Super Admin') {
     $isSuperAdmin = true;
+    $isAdmin = true;
+}
+if ($sessionPosition === 'Admin' || $sessionRole === 'Admin' || $sessionUserRole === 'Admin') {
+    $isAdmin = true;
 }
 
-if (!$isSuperAdmin) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized: Only Super Admin can modify deduction status']);
+if (!$isSuperAdmin && !$isAdmin) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized: Only Super Admin or Admin can modify deduction status']);
     exit;
 }
 
