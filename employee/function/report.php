@@ -505,9 +505,20 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
             }
         }
 
-        // Filter out records without valid times
+        // Filter out records without valid times and short records
         $all_records = array_filter($all_records, function($r) {
-            return !empty($r['time_in']) && !empty($r['time_out']);
+            // Must have both time_in and time_out
+            if (empty($r['time_in']) || empty($r['time_out'])) {
+                return false;
+            }
+            // Must be at least 30 minutes (0.5 hours)
+            $start_ts = strtotime($r['time_in']);
+            $end_ts = strtotime($r['time_out']);
+            if ($start_ts === false || $end_ts === false) {
+                return false;
+            }
+            $hours = ($end_ts - $start_ts) / 3600;
+            return $hours >= 0.5;
         });
 
         if (empty($all_records)) {

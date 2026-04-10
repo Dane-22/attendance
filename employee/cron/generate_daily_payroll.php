@@ -64,6 +64,23 @@ while ($row = mysqli_fetch_assoc($result)) {
     $attendance_date = $row['attendance_date'];
     $branch_id = $row['branch_id'];
     
+    // Validate attendance record exists with time_in and time_out
+    $validate_sql = "SELECT id, time_in, time_out FROM attendance 
+                     WHERE employee_id = ? AND attendance_date = ? 
+                     AND time_in IS NOT NULL AND time_out IS NOT NULL";
+    $validate_stmt = mysqli_prepare($db, $validate_sql);
+    mysqli_stmt_bind_param($validate_stmt, 'is', $employee_id, $attendance_date);
+    mysqli_stmt_execute($validate_stmt);
+    $validate_result = mysqli_stmt_get_result($validate_stmt);
+    
+    if (mysqli_num_rows($validate_result) == 0) {
+        echo "SKIP: No valid attendance record for Employee $employee_id on $attendance_date\n";
+        $skipped++;
+        mysqli_stmt_close($validate_stmt);
+        continue;
+    }
+    mysqli_stmt_close($validate_stmt);
+    
     // Check if record already exists in daily_payroll_reports
     $check_sql = "SELECT id FROM daily_payroll_reports 
                   WHERE employee_id = ? AND report_date = ? AND branch_id = ?";

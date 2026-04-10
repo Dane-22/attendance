@@ -132,6 +132,12 @@ while ($row = mysqli_fetch_assoc($attendance_result)) {
         $end_ts = strtotime($time_out);
         if ($start_ts !== false && $end_ts !== false && $end_ts > $start_ts) {
             $worked_hours = ($end_ts - $start_ts) / 3600;
+            
+            // Skip if less than 30 minutes
+            if ($worked_hours < 0.5) {
+                $log_message("Skipping short record for employee $emp_id: {$worked_hours} hours");
+                continue;
+            }
         }
     }
     
@@ -271,6 +277,23 @@ foreach ($employees as $emp_id => $payroll) {
         
         $take_home_pay = $gross_plus_allowance - $total_deductions;
         $take_home_pay = max(0, $take_home_pay);
+        
+        // Validate attendance record still exists with time_in and time_out
+        $validate_query = "SELECT id FROM attendance 
+                          WHERE employee_id = ? AND attendance_date = ? 
+                          AND time_in IS NOT NULL AND time_out IS NOT NULL
+                          LIMIT 1";
+        $validate_stmt = mysqli_prepare($db, $validate_query);
+        mysqli_stmt_bind_param($validate_stmt, 'is', $emp_id, $yesterday);
+        mysqli_stmt_execute($validate_stmt);
+        $validate_result = mysqli_stmt_get_result($validate_stmt);
+        $valid_attendance = mysqli_num_rows($validate_result) > 0;
+        mysqli_stmt_close($validate_stmt);
+        
+        if (!$valid_attendance) {
+            $log_message("SKIP: No valid attendance record for emp_id=$emp_id on $yesterday");
+            continue;
+        }
         
         // Check if record exists for this employee/date/branch
         $check_query = "SELECT id FROM daily_payroll_reports 
