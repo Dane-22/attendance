@@ -64,9 +64,13 @@ while ($branch_row = mysqli_fetch_assoc($branch_result)) {
 
 // Fetch overtime data
 $overtime_query = "SELECT a.employee_id, a.attendance_date, a.time_in, a.time_out, a.total_ot_hrs,
-                          a.branch_name, e.first_name, e.last_name, e.employee_code, e.daily_rate
+                          a.branch_name, e.first_name, e.last_name, e.employee_code, e.daily_rate,
+                          r.requested_at, r.approved_at
                    FROM attendance a
                    JOIN employees e ON a.employee_id = e.id
+                   LEFT JOIN overtime_requests r ON a.employee_id = r.employee_id 
+                       AND a.attendance_date = r.request_date 
+                       AND r.status = 'approved'
                    WHERE a.attendance_date BETWEEN ? AND ?
                    AND a.total_ot_hrs > 0
                    AND e.status = 'Active'";
@@ -118,7 +122,9 @@ while ($row = mysqli_fetch_assoc($overtime_result)) {
         'time_out' => $row['time_out'],
         'ot_hours' => $ot_hours,
         'ot_amount' => $ot_amount,
-        'branch' => $row['branch_name']
+        'branch' => $row['branch_name'],
+        'requested_at' => $row['requested_at'],
+        'approved_at' => $row['approved_at']
     ];
     
     $total_ot_hours += $ot_hours;
@@ -328,13 +334,15 @@ uasort($employee_overtime, function($a, $b) {
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">Time Out</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">Branch</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">OT Hours</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium uppercase">Date Requested</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium uppercase">Date Approved</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase">OT Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($employee_overtime)): ?>
                             <tr>
-                                <td colspan="7" class="px-4 py-8 text-center text-gray-400">
+                                <td colspan="9" class="px-4 py-8 text-center text-gray-400">
                                     <i class="fas fa-inbox text-4xl mb-2"></i>
                                     <p>No overtime records found for this period</p>
                                 </td>
@@ -385,6 +393,12 @@ uasort($employee_overtime, function($a, $b) {
                                                 <?php echo number_format($entry['ot_hours'], 1); ?> hrs
                                             </span>
                                         </td>
+                                        <td class="px-4 py-3 text-center text-sm text-gray-300">
+                                            <?php echo $entry['requested_at'] ? date('M d, Y h:i A', strtotime($entry['requested_at'])) : '-'; ?>
+                                        </td>
+                                        <td class="px-4 py-3 text-center text-sm text-gray-300">
+                                            <?php echo $entry['approved_at'] ? date('M d, Y h:i A', strtotime($entry['approved_at'])) : '-'; ?>
+                                        </td>
                                         <td class="px-4 py-3 text-right text-sm font-medium text-yellow-400">
                                             ₱<?php echo number_format($entry['ot_amount'], 0); ?>
                                         </td>
@@ -394,7 +408,7 @@ uasort($employee_overtime, function($a, $b) {
                                     
                                     <!-- Employee Total Row -->
                                     <tr class="bg-gray-800/50 border-b-2 border-yellow-500/30">
-                                        <td colspan="5" class="px-4 py-2 text-right text-sm font-medium text-gray-400">
+                                        <td colspan="7" class="px-4 py-2 text-right text-sm font-medium text-gray-400">
                                             Total for <?php echo htmlspecialchars($data['employee']['last_name']); ?>
                                         </td>
                                         <td class="px-4 py-2 text-center">
@@ -412,7 +426,7 @@ uasort($employee_overtime, function($a, $b) {
                         <?php if (!empty($employee_overtime)): ?>
                         <tfoot>
                             <tr class="bg-gradient-to-r from-yellow-600 to-yellow-800 text-white font-bold">
-                                <td colspan="5" class="px-4 py-3 text-right">GRAND TOTAL</td>
+                                <td colspan="7" class="px-4 py-3 text-right">GRAND TOTAL</td>
                                 <td class="px-4 py-3 text-center"><?php echo number_format($total_ot_hours, 1); ?> hrs</td>
                                 <td class="px-4 py-3 text-right">₱<?php echo number_format($total_ot_amount, 0); ?></td>
                             </tr>
@@ -512,9 +526,9 @@ uasort($employee_overtime, function($a, $b) {
                             cellClass = ' class="employee-name"';
                         } else if (index === 5) {
                             cellClass = ' class="ot-hours text-center"';
-                        } else if (index === 6) {
+                        } else if (index === 8) {
                             cellClass = ' class="ot-amount text-right"';
-                        } else if (index === 1 || index === 2 || index === 3 || index === 4) {
+                        } else if (index >= 1 && index <= 7) {
                             cellClass = ' class="text-center"';
                         }
                     }
