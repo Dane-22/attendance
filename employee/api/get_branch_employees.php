@@ -50,7 +50,7 @@ if ($branchName === 'Unassigned') {
     $stmt = $db->prepare($sql);
     $stmt->bind_param("ss", $startDate, $endDate);
 } else {
-    // Query for employees in the specified branch
+    // Query for employees in the specified branch (based on payroll records, not current assignment)
     $sql = "SELECT 
                 e.id,
                 e.employee_code,
@@ -63,19 +63,18 @@ if ($branchName === 'Unassigned') {
                 COALESCE(SUM(dpr.gross_pay), 0) as gross_pay,
                 COALESCE(SUM(dpr.total_deductions), 0) as total_deductions,
                 COALESCE(SUM(dpr.take_home_pay), 0) as take_home_pay
-            FROM employees e
-            JOIN branches b ON e.branch_id = b.id
-            LEFT JOIN daily_payroll_reports dpr ON e.id = dpr.employee_id 
-                AND dpr.report_date BETWEEN ? AND ?
+            FROM daily_payroll_reports dpr
+            JOIN branches b ON dpr.branch_id = b.id
+            JOIN employees e ON dpr.employee_id = e.id
             WHERE b.branch_name = ?
-              AND e.status = 'Active'
+              AND dpr.report_date BETWEEN ? AND ?
             GROUP BY e.id, e.employee_code, e.first_name, e.middle_name, e.last_name, 
                      e.position, e.daily_rate
             HAVING days_worked > 0 OR basic_pay > 0
             ORDER BY e.last_name, e.first_name";
-    
+
     $stmt = $db->prepare($sql);
-    $stmt->bind_param("sss", $startDate, $endDate, $branchName);
+    $stmt->bind_param("sss", $branchName, $startDate, $endDate);
 }
 
 $stmt->execute();

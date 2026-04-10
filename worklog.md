@@ -2,6 +2,217 @@
 
 ## Work Log for Attendance System
 
+### 2026-04-10
+
+**Task:** Implement Search Functionality in Notification Pages
+
+**Status:** ✅ Completed
+
+**Problem:** The notification pages (`admin_notification.php` and `notification.php`) displayed all requests without a way to filter or search. Administrators needed to quickly find specific requests by employee name, branch, reason, amount, or date without manually scanning through all records.
+
+**Solution:** Added real-time search functionality to both notification pages with client-side filtering, debounced input, and clear visual feedback.
+
+**Actions Taken:**
+
+**1. Added Search UI Components:**
+- Search input field with placeholder text: "Search by employee name, branch, reason, amount, or date..."
+- Search icon positioned inside input field
+- Clear button (X) that appears when text is entered
+- Results counter showing "Showing X of Y results"
+- Dark/light theme styling support
+
+**2. Implemented Client-Side Search Logic:**
+- Added `filterRequests(searchTerm)` function to filter the `currentRequests` array
+- Search scope includes: employee name, branch name, reason text, amount, request date, requested date, leave date, leave type
+- Case-insensitive matching using `toLowerCase()`
+- 300ms debounce to prevent excessive re-rendering while typing
+- Escape key clears search and returns focus to input
+
+**3. Updated Data Loading and Rendering:**
+- Added `filteredRequests` array to track filtered subset
+- Modified `loadRequests()` to initialize `filteredRequests` and clear search on tab/type switch
+- Updated all render functions (`renderRequests`, `renderCashAdvanceRequests`, `renderLeaveRequests`) to use `filteredRequests`
+- Search clears automatically when switching between request types or status tabs
+
+**4. Files Modified:**
+- `employee/notification.php` (Super Admin dashboard):
+  - Added search CSS styles (lines 670-767)
+  - Added search HTML structure (lines 785-793)
+  - Added JavaScript search functions: `filterRequests()`, `handleSearchInput()`, `clearSearch()`, `updateSearchResultsCount()` (lines 853-945)
+  - Updated `loadRequests()` to reset search on data load (lines 1011-1031)
+
+- `employee/admin_notification.php` (Admin dashboard):
+  - Added search CSS styles (lines 832-929)
+  - Added search HTML structure (lines 957-965)
+  - Added JavaScript search functions with support for leave requests (lines 1014-1112)
+  - Updated `loadRequests()` to reset search on data load (lines 1180-1201)
+
+**Features:**
+- Real-time filtering as user types (300ms debounce)
+- Searches across all visible request fields
+- Clear button to reset search instantly
+- Results counter feedback
+- Preserves search within current tab (clears on tab switch)
+- No backend changes required (client-side only)
+- Mobile responsive styling
+
+---
+
+### 2026-04-10
+
+**Task:** Create Cash Advance Per Employee Documentation
+
+**Status:** ✅ Completed
+
+**Problem:** Need documentation explaining how cash advance per employee report works in billing.php and its relationship with cash advance request APIs.
+
+**Solution:** Created comprehensive documentation file explaining the data flow, database schema, API endpoints, and implementation details.
+
+**Actions Taken:**
+
+**1. Analyzed Cash Advance Integration:**
+- Reviewed `billing.php` cash advance query (lines 152-185)
+- Reviewed `cash_advance_request.php` - Submit request API
+- Reviewed `cash_advance_history.php` - Get history API
+- Reviewed `approve_cash_advance.php` - Admin approval API
+- Reviewed database schema for `cash_advances` table
+
+**2. Key Findings Documented:**
+- `billing.php` queries `cash_advances` table directly (not via API)
+- Query aggregates total cash advance per employee within date range
+- Shows: Employee Code, Name, Branch, Total Amount, Request Count, Latest Status
+- Date filtering based on `request_date` field
+- Only employees with cash advances shown (`HAVING total_cash_advance > 0`)
+
+**3. API Endpoints Documented:**
+- `POST /cash_advance_request.php` - Submit new request with validation (max 50% of monthly salary)
+- `GET /cash_advance_history.php?emp_id={id}` - Get employee transaction history with running balance
+- `POST /approve_cash_advance.php` - Admin approve/reject/pay actions
+
+**4. Status Workflow:**
+- Pending → Approved → Paid
+- Pending → Rejected
+
+**Files Created:**
+- `docs/cash_advance_billing_integration.md` - Complete documentation including:
+  - Architecture diagram showing data flow
+  - Database table schema
+  - SQL query explanation
+  - API endpoint reference
+  - Print preview integration details
+
+---
+
+### 2026-04-10
+
+**Task:** Implement Branch-Specific Employee Detail Modal in Billing Page
+
+**Status:** ✅ Completed
+
+**Problem:** The billing page (`billing.php`) displayed aggregated salary data by branch, but administrators needed to see the detailed employee-level breakdown for each branch to verify payroll calculations and identify discrepancies.
+
+**Solution:** Made branch names clickable in the Site Salary and Office Salary reports, opening a modal that displays detailed employee payroll data for the selected branch.
+
+**Actions Taken:**
+
+**1. Created API Endpoint:**
+- `employee/api/get_branch_employees.php` - New API endpoint that:
+  - Accepts `branch_name`, `start_date`, `end_date` parameters
+  - Queries `daily_payroll_reports` joined with `employees` table
+  - Handles "Unassigned" branches (employees without branch assignments)
+  - Returns employee details: name, code, position, daily rate, days worked, basic pay, OT, deductions, net pay
+  - Calculates totals (employee count, sums for all monetary fields)
+  - Returns JSON response with structured data
+
+**2. Added Modal HTML Structure to `employee/billing.php`:**
+- Added `branchDetailModal` container with header, body, and footer
+- Modal header shows branch name and close button
+- Loading spinner state while fetching data
+- Error message container for failed requests
+- Table structure with columns: Employee, Position, Days, Basic Pay, OT, Deductions, Net Pay
+- Dynamic totals row showing employee count and all monetary totals
+
+**3. Implemented JavaScript Functions:**
+- `openBranchModal(branchName)` - Opens modal, shows loading state, fetches data from API
+- `renderBranchEmployees(data)` - Populates table with employee data and updates totals
+- `closeBranchModal()` - Closes modal and restores body scroll
+- `formatCurrency(amount)` - Helper for consistent currency formatting
+- `escapeHtml(text)` - XSS prevention for dynamic content
+- Event listeners: ESC key closes modal, click outside closes modal
+- Current date range passed from PHP to JavaScript for API calls
+
+**4. Added CSS Styling to `employee/css/billing.css`:**
+- `.branch-link` - Gold-colored clickable branch names with hover effects and eye icon
+- `.branch-modal` - Modal overlay with dark background (z-index: 1001)
+- `.branch-modal-content` - Card-style container with gold border accent
+- `.branch-modal-header` - Dark header with gold title text
+- `.branch-modal-body` - Scrollable content area with period display
+- `.branch-detail-table` - Styled table with sticky headers and hover effects
+- `.loading-spinner` - Animated loading indicator
+- `.branch-modal-error` - Styled error message container
+- Mobile responsive styles: converts table to card view on screens <768px
+
+**5. Made Branch Names Clickable:**
+- Modified table rows for `site_salary` and `office_salary` filters
+- Wrapped branch names in `<span class="branch-link">` with onclick handler
+- Used `htmlspecialchars(addslashes())` for XSS protection in JavaScript strings
+
+**Files Created:**
+- `employee/api/get_branch_employees.php` - API endpoint for branch employee data
+
+**Files Modified:**
+- `employee/billing.php` - Added modal HTML (lines 472-519), JavaScript functions (lines 746-851), clickable branch links (lines 399-403)
+- `employee/css/billing.css` - Added modal and branch link styles (lines 872-1151)
+
+**Features:**
+- Click any branch name in Site/Office Salary reports to view detailed breakdown
+- Shows all employees in the branch with their payroll details
+- Displays totals: employee count, days worked, basic pay, OT, deductions, net pay
+- Loading spinner while fetching data
+- Error handling for failed API requests
+- Close via X button, outside click, or ESC key
+- Mobile responsive: table converts to card view on small screens
+- Respects current date range filter from billing page
+- Handles "Unassigned" branches (employees without branch assignments)
+
+---
+
+### 2026-04-10
+
+**Task:** Increase Overtime Request Limit from 1 to 3 Per Day Per Employee
+
+**Status:** ✅ Completed
+
+**Problem:** The system only allowed 1 pending overtime request per employee per day. Users requested the ability to submit up to 3 overtime requests per day for the same employee.
+
+**Solution:** Updated the validation logic in both overtime request endpoints to count pending requests and allow up to 3 instead of rejecting at 1.
+
+**Changes Made:**
+
+**1. Updated `@/wamp64/www/main/employee/function/attendance.php` (lines 2670-2704):**
+- Changed from `SELECT id ... LIMIT 1` to `SELECT COUNT(*) as pending_count`
+- Changed condition from `if ($existingPending)` to `if ($pendingCount >= 3)`
+- Updated error message: "Maximum of 3 pending overtime requests allowed per day"
+
+**2. Updated `@/wamp64/www/main/overtime_request.php` (lines 71-85):**
+- Changed from checking any non-rejected request to counting only pending requests
+- Updated query: `SELECT COUNT(*) as pending_count FROM overtime_requests WHERE employee_id = ? AND request_date = ? AND status = 'pending'`
+- Changed condition from `if (mysqli_num_rows($check_result) > 0)` to `if ($pending_count >= 3)`
+- Updated error message and HTTP 409 response
+
+**Files Modified:**
+- `employee/function/attendance.php` - Core overtime request validation logic
+- `overtime_request.php` - API endpoint validation
+- `docs/overtime_requests_per_day.md` - Updated documentation to reflect new limit
+
+**Behavior:**
+- Employees can now have up to 3 pending overtime requests for the same date
+- Once a request is approved or rejected, a new one can be submitted
+- Error message clearly states the 3-request limit when exceeded
+- All other validation (max 4 hours per request) remains unchanged
+
+---
+
 ### 2026-04-09
 
 **Task:** Audit Page - Auto-Absent Feature for Employees Without Time-In Records
