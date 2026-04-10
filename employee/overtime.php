@@ -333,14 +333,13 @@ uasort($employee_overtime, function($a, $b) {
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">Branch</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">OT Hours</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">Date Requested</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium uppercase">Date Approved</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase">OT Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($employee_overtime)): ?>
                             <tr>
-                                <td colspan="7" class="px-4 py-8 text-center text-gray-400">
+                                <td colspan="6" class="px-4 py-8 text-center text-gray-400">
                                     <i class="fas fa-inbox text-4xl mb-2"></i>
                                     <p>No overtime records found for this period</p>
                                 </td>
@@ -388,9 +387,6 @@ uasort($employee_overtime, function($a, $b) {
                                         <td class="px-4 py-3 text-center text-sm text-gray-300">
                                             <?php echo $entry['requested_at'] ? date('M d, Y h:i A', strtotime($entry['requested_at'])) : '-'; ?>
                                         </td>
-                                        <td class="px-4 py-3 text-center text-sm text-gray-300">
-                                            <?php echo $entry['approved_at'] ? date('M d, Y h:i A', strtotime($entry['approved_at'])) : '-'; ?>
-                                        </td>
                                         <td class="px-4 py-3 text-right text-sm font-medium text-yellow-400">
                                             ₱<?php echo number_format($entry['ot_amount'], 0); ?>
                                         </td>
@@ -400,7 +396,7 @@ uasort($employee_overtime, function($a, $b) {
                                     
                                     <!-- Employee Total Row -->
                                     <tr class="bg-gray-800/50 border-b-2 border-yellow-500/30">
-                                        <td colspan="5" class="px-4 py-2 text-right text-sm font-medium text-gray-400">
+                                        <td colspan="4" class="px-4 py-2 text-right text-sm font-medium text-gray-400">
                                             Total for <?php echo htmlspecialchars($data['employee']['last_name']); ?>
                                         </td>
                                         <td class="px-4 py-2 text-center">
@@ -418,7 +414,7 @@ uasort($employee_overtime, function($a, $b) {
                         <?php if (!empty($employee_overtime)): ?>
                         <tfoot>
                             <tr class="bg-gradient-to-r from-yellow-600 to-yellow-800 text-white font-bold">
-                                <td colspan="5" class="px-4 py-3 text-right">GRAND TOTAL</td>
+                                <td colspan="4" class="px-4 py-3 text-right">GRAND TOTAL</td>
                                 <td class="px-4 py-3 text-center"><?php echo number_format($total_ot_hours, 1); ?> hrs</td>
                                 <td class="px-4 py-3 text-right">₱<?php echo number_format($total_ot_amount, 0); ?></td>
                             </tr>
@@ -518,9 +514,9 @@ uasort($employee_overtime, function($a, $b) {
                             cellClass = ' class="employee-name"';
                         } else if (index === 3) {
                             cellClass = ' class="ot-hours text-center"';
-                        } else if (index === 6) {
+                        } else if (index === 5) {
                             cellClass = ' class="ot-amount text-right"';
-                        } else if (index >= 1 && index <= 5) {
+                        } else if (index >= 1 && index <= 4) {
                             cellClass = ' class="text-center"';
                         }
                     }
