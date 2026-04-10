@@ -4,6 +4,51 @@
 
 ### 2026-04-10
 
+**Task:** Fix Branch Employee Modal Showing Zero Data Mismatch
+
+**Status:** ✅ Completed
+
+**Problem:** The billing page showed aggregated salary data for "BCDA - Fence" with ₱2,500 net pay and 2 employees, but clicking the branch name opened a modal displaying "Total (0 employees)" with all values at ₱0.00. The modal data didn't match the main table.
+
+**Root Cause:** Data source mismatch between the main billing query and the modal's employee detail query:
+- **Main table (`billing.php`):** Queried `daily_payroll_reports` joined via `dpr.branch_id`, showing payroll records by work location
+- **Modal API (`get_branch_employees.php`):** Queried `employees` table joined via `e.branch_id`, filtering by employee's current assigned branch
+
+When employees had worked at "BCDA - Fence" but their current profile showed a different branch assignment (or were inactive), they appeared in the main totals but not in the modal.
+
+**Solution:** Modified `get_branch_employees.php` to query from `daily_payroll_reports` as the primary table, matching the main billing aggregation logic.
+
+**Changes Made:**
+
+**`employee/api/get_branch_employees.php` (lines 52-78):**
+- Changed FROM clause from `employees e` to `daily_payroll_reports dpr`
+- Changed join: `JOIN branches b ON dpr.branch_id = b.id` (was: `e.branch_id = b.id`)
+- Changed join: `JOIN employees e ON dpr.employee_id = e.id` (was: `LEFT JOIN daily_payroll_reports`)
+- Removed `e.status = 'Active'` filter so inactive employees still show in historical payroll data
+- Updated parameter binding order: `sss` with `branchName, startDate, endDate`
+
+**Before:**
+```sql
+FROM employees e
+JOIN branches b ON e.branch_id = b.id
+LEFT JOIN daily_payroll_reports dpr ON e.id = dpr.employee_id
+WHERE b.branch_name = ? AND e.status = 'Active'
+```
+
+**After:**
+```sql
+FROM daily_payroll_reports dpr
+JOIN branches b ON dpr.branch_id = b.id
+JOIN employees e ON dpr.employee_id = e.id
+WHERE b.branch_name = ? AND dpr.report_date BETWEEN ? AND ?
+```
+
+**Result:** Modal now correctly displays employees based on where they actually worked (payroll records), matching the aggregated totals in the main billing table.
+
+---
+
+### 2026-04-10
+
 **Task:** Implement Search Functionality in Notification Pages
 
 **Status:** ✅ Completed

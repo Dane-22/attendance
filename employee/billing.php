@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../conn/db_connection.php';
+require_once 'function/week_calculator.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['employee_id'])) {
@@ -229,7 +230,32 @@ switch ($filter) {
         break;
 
     case 'employees_with_deductions':
-        $filterTitle = 'Employees with Government Deductions';
+        // Use shared week calculator for consistent week calculations with weekly_report.php
+        $year = date('Y');
+        $month = date('m');
+        $today = date('j');
+        
+        // Get week boundaries using shared helper
+        $weekBoundaries = calculateWorkWeekBoundaries($year, $month);
+        
+        // Determine current week
+        $currentWeek = getWeekNumberForDate($year, $month, $today);
+        if ($currentWeek == 0) {
+            $currentWeek = 1; // Default to week 1 if today is Sunday
+        }
+        
+        $maxDeductionWeek = min($currentWeek, 3); // Cap at week 3
+        
+        // Get cumulative deductions for weeks 1 through maxDeductionWeek
+        $cumulativeDeductions = calculateCumulativeDeductions($maxDeductionWeek);
+        
+        // Get the end date of the last deduction week
+        $lastDeductionDay = isset($weekBoundaries[$maxDeductionWeek]) ? $weekBoundaries[$maxDeductionWeek]['end'] : 21;
+        
+        $filterTitle = 'Employees with Government Deductions (Week 1-' . $maxDeductionWeek . ')';
+        
+        // Query sums payroll data up to the last deduction day
+        // Deductions will be overridden with cumulative calculated values
         $sql = "SELECT 
                     e.id,
                     e.employee_code,
@@ -237,10 +263,10 @@ switch ($filter) {
                     COALESCE(b.branch_name, 'Unassigned') as branch_name,
                     e.daily_rate,
                     e.position,
-                    COALESCE(SUM(dpr.days_worked), 0) as total_days_worked,
-                    COALESCE(SUM(dpr.basic_pay), 0) as total_basic_pay,
-                    COALESCE(SUM(dpr.total_deductions), 0) as total_deductions,
-                    COALESCE(SUM(dpr.take_home_pay), 0) as total_net_pay
+                    COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.days_worked ELSE 0 END), 0) as total_days_worked,
+                    COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.basic_pay ELSE 0 END), 0) as total_basic_pay,
+                    COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.total_deductions ELSE 0 END), 0) as calculated_deductions,
+                    COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.take_home_pay ELSE 0 END), 0) as total_net_pay
                 FROM employees e
                 LEFT JOIN branches b ON e.branch_id = b.id
                 LEFT JOIN daily_payroll_reports dpr ON e.id = dpr.employee_id 
@@ -251,9 +277,18 @@ switch ($filter) {
                          b.branch_name, e.daily_rate, e.position
                 ORDER BY b.branch_name, e.last_name, e.first_name";
         $stmt = $db->prepare($sql);
-        $stmt->bind_param("ss", $startDate, $endDate);
+        $stmt->bind_param("iiiiss", $lastDeductionDay, $lastDeductionDay, $lastDeductionDay, $lastDeductionDay, $startDate, $endDate);
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        
+        // Override deductions with cumulative weekly calculated values
+        foreach ($data as &$row) {
+            // Use the cumulative deduction amount from week calculator
+            $row['total_deductions'] = $cumulativeDeductions['total'];
+            // Recalculate net pay with the new deduction amount
+            $row['total_net_pay'] = $row['total_basic_pay'] - $cumulativeDeductions['total'];
+        }
+        unset($row);
         break;
 }
 
