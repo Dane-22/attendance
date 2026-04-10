@@ -1911,11 +1911,6 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount + $pendingLeaveCou
         document.addEventListener('DOMContentLoaded', () => {
             loadRequests('pending');
         });
-        
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            loadRequests(currentTab);
-        }, 30000);
     </script>
 </body>
 </html>
