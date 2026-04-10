@@ -193,10 +193,12 @@ switch ($filter) {
                     SUM(dpr.sss_deduction) * 1.0733 as total_contribution,
                     COUNT(DISTINCT dpr.employee_id) as employee_count
                 FROM daily_payroll_reports dpr
+                JOIN employees e ON dpr.employee_id = e.id
                 WHERE dpr.report_date BETWEEN ? AND ? AND dpr.sss_deduction > 0
-                
+                  AND e.has_deduction = 1
+
                 UNION ALL
-                
+
                 SELECT 
                     'PhilHealth' as contribution_type,
                     SUM(dpr.philhealth_deduction) as total_employee_share,
@@ -204,10 +206,12 @@ switch ($filter) {
                     SUM(dpr.philhealth_deduction) * 2 as total_contribution,
                     COUNT(DISTINCT dpr.employee_id) as employee_count
                 FROM daily_payroll_reports dpr
+                JOIN employees e ON dpr.employee_id = e.id
                 WHERE dpr.report_date BETWEEN ? AND ? AND dpr.philhealth_deduction > 0
-                
+                  AND e.has_deduction = 1
+
                 UNION ALL
-                
+
                 SELECT 
                     'Pag-IBIG' as contribution_type,
                     SUM(dpr.pagibig_deduction) as total_employee_share,
@@ -215,7 +219,9 @@ switch ($filter) {
                     SUM(dpr.pagibig_deduction) * 2 as total_contribution,
                     COUNT(DISTINCT dpr.employee_id) as employee_count
                 FROM daily_payroll_reports dpr
-                WHERE dpr.report_date BETWEEN ? AND ? AND dpr.pagibig_deduction > 0";
+                JOIN employees e ON dpr.employee_id = e.id
+                WHERE dpr.report_date BETWEEN ? AND ? AND dpr.pagibig_deduction > 0
+                  AND e.has_deduction = 1";
         $stmt = $db->prepare($sql);
         $stmt->bind_param("ssssss", $startDate, $endDate, $startDate, $endDate, $startDate, $endDate);
         $stmt->execute();

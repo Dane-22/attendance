@@ -55,15 +55,44 @@ mysqli_stmt_bind_param($stmt, 'ss', $start_date, $end_date);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
+// Merge threshold in minutes - records within this gap will be merged
+$MERGE_THRESHOLD_MINUTES = 15;
+
+// Group all attendance records by employee_id and attendance_date for merging
+$attendance_groups = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $key = $row['employee_id'] . '_' . $row['attendance_date'];
+    if (!isset($attendance_groups[$key])) {
+        $attendance_groups[$key] = [
+            'employee_id' => $row['employee_id'],
+            'attendance_date' => $row['attendance_date'],
+            'daily_rate' => $row['daily_rate'],
+            'first_name' => $row['first_name'],
+            'last_name' => $row['last_name'],
+            'branch_id' => $row['branch_id'],
+            'branch_name' => $row['branch_name'],
+            'records' => []
+        ];
+    }
+    $attendance_groups[$key]['records'][] = [
+        'time_in' => $row['time_in'],
+        'time_out' => $row['time_out'],
+        'total_ot_hrs' => $row['total_ot_hrs'],
+        'branch_name' => $row['branch_name']
+    ];
+}
+
 $processed = 0;
 $errors = 0;
 $skipped = 0;
 
-while ($row = mysqli_fetch_assoc($result)) {
-    $employee_id = $row['employee_id'];
-    $attendance_date = $row['attendance_date'];
-    $branch_id = $row['branch_id'];
-    
+// Process each grouped attendance (one per employee per day)
+foreach ($attendance_groups as $group) {
+    $employee_id = $group['employee_id'];
+    $attendance_date = $group['attendance_date'];
+    $branch_id = $group['branch_id'];
+    $branch_name = $group['branch_name'];
+
     // Validate attendance record exists with time_in and time_out
     $validate_sql = "SELECT id, time_in, time_out FROM attendance 
                      WHERE employee_id = ? AND attendance_date = ? 
@@ -95,21 +124,91 @@ while ($row = mysqli_fetch_assoc($result)) {
         continue;
     }
     
-    // Calculate worked hours
-    $time_in = $row['time_in'];
-    $time_out = $row['time_out'];
-    $worked_hours = 0;
+    // Merge multiple attendance records for this employee on this date
+    $records = $group['records'];
     
-    if ($time_in && $time_out) {
-        $start_ts = strtotime($time_in);
-        $end_ts = strtotime($time_out);
+    // Filter out records without valid times and short records (less than 30 minutes)
+    $valid_records = array_filter($records, function($r) {
+        if (empty($r['time_in']) || empty($r['time_out'])) {
+            return false;
+        }
+        $start_ts = strtotime($r['time_in']);
+        $end_ts = strtotime($r['time_out']);
+        if ($start_ts === false || $end_ts === false) {
+            return false;
+        }
+        $hours = ($end_ts - $start_ts) / 3600;
+        return $hours >= 0.5; // At least 30 minutes
+    });
+    
+    if (empty($valid_records)) {
+        echo "SKIP: No valid attendance records for Employee $employee_id on $attendance_date\n";
+        $skipped++;
+        continue;
+    }
+    
+    // Sort by time_in
+    usort($valid_records, function($a, $b) {
+        return strtotime($a['time_in']) - strtotime($b['time_in']);
+    });
+    
+    // Merge records within threshold
+    $merged_records = [];
+    $current_merge = null;
+    $merge_count = 0;
+    
+    foreach ($valid_records as $record) {
+        if ($current_merge === null) {
+            $current_merge = $record;
+        } else {
+            $gap = strtotime($record['time_in']) - strtotime($current_merge['time_out']);
+            if ($gap < ($MERGE_THRESHOLD_MINUTES * 60)) {
+                // Merge - extend time_out and accumulate hours/OT
+                $current_merge['time_out'] = $record['time_out'];
+                $start_ts = strtotime($record['time_in']);
+                $end_ts = strtotime($record['time_out']);
+                if ($start_ts !== false && $end_ts !== false && $end_ts > $start_ts) {
+                    $current_merge['hours'] = ($end_ts - strtotime($current_merge['time_in'])) / 3600;
+                }
+                $current_merge['total_ot_hrs'] += floatval($record['total_ot_hrs'] ?? 0);
+                $merge_count++;
+            } else {
+                // Gap too large, save current and start new merge
+                $merged_records[] = $current_merge;
+                $current_merge = $record;
+            }
+        }
+    }
+    // Don't forget the last merge
+    if ($current_merge !== null) {
+        $merged_records[] = $current_merge;
+    }
+    
+    // Calculate total worked hours and OT from merged records
+    $worked_hours = 0;
+    $ot_hours = 0;
+    $first_time_in = null;
+    $last_time_out = null;
+    $total_ot_hrs = 0;
+    
+    foreach ($merged_records as $record) {
+        $start_ts = strtotime($record['time_in']);
+        $end_ts = strtotime($record['time_out']);
         if ($start_ts !== false && $end_ts !== false && $end_ts > $start_ts) {
-            $worked_hours = ($end_ts - $start_ts) / 3600;
+            $worked_hours += ($end_ts - $start_ts) / 3600;
+        }
+        $total_ot_hrs += floatval($record['total_ot_hrs'] ?? 0);
+        
+        if ($first_time_in === null || $start_ts < strtotime($first_time_in)) {
+            $first_time_in = $record['time_in'];
+        }
+        if ($last_time_out === null || $end_ts > strtotime($last_time_out)) {
+            $last_time_out = $record['time_out'];
         }
     }
     
-    $daily_rate = floatval($row['daily_rate'] ?? 0);
-    $ot_hours = floatval($row['total_ot_hrs'] ?? 0);
+    $daily_rate = floatval($group['daily_rate'] ?? 0);
+    $ot_hours = $total_ot_hrs;
     
     // Calculate payroll values
     $days_worked = 1.0; // One attendance record = one day
@@ -160,6 +259,9 @@ while ($row = mysqli_fetch_assoc($result)) {
         total_deductions = VALUES(total_deductions),
         take_home_pay = VALUES(take_home_pay),
         updated_at = NOW()";
+    
+    // Use the primary branch from the first record's branch_id
+    // If multiple branches were involved, use the last one (most recent)
     
     $insert_stmt = mysqli_prepare($db, $insert_sql);
     mysqli_stmt_bind_param($insert_stmt, 'isiiiiiddddddddddddddddds', 
