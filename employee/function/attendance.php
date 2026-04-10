@@ -2667,9 +2667,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 
 
-        // Check if there's already a pending request for this employee today
+        // Check if employee has reached the daily limit of 3 pending requests
 
-        $checkPendingSql = "SELECT id FROM overtime_requests WHERE employee_id = ? AND request_date = CURDATE() AND status = 'pending' LIMIT 1";
+        $checkPendingSql = "SELECT COUNT(*) as pending_count FROM overtime_requests WHERE employee_id = ? AND request_date = CURDATE() AND status = 'pending'";
 
         $checkPendingStmt = mysqli_prepare($db, $checkPendingSql);
 
@@ -2689,15 +2689,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         $checkPendingRes = mysqli_stmt_get_result($checkPendingStmt);
 
-        $existingPending = ($checkPendingRes && mysqli_num_rows($checkPendingRes) > 0) ? mysqli_fetch_assoc($checkPendingRes) : null;
+        $pendingCount = ($checkPendingRes && mysqli_num_rows($checkPendingRes) > 0) ? mysqli_fetch_assoc($checkPendingRes)['pending_count'] : 0;
 
         mysqli_stmt_close($checkPendingStmt);
 
 
 
-        if ($existingPending) {
+        if ($pendingCount >= 3) {
 
-            echo json_encode(['success' => false, 'message' => 'A pending overtime request already exists for this employee today']);
+            echo json_encode(['success' => false, 'message' => 'Maximum of 3 pending overtime requests allowed per day']);
 
             exit();
 

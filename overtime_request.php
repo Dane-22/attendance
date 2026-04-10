@@ -68,18 +68,19 @@ try {
     $requested_by_user_id = isset($input['requested_by_user_id']) ? intval($input['requested_by_user_id']) : null;
     $request_date = date('Y-m-d');
 
-    // Check for duplicate request for this date
-    $check_sql = "SELECT id FROM overtime_requests WHERE employee_id = ? AND request_date = ? AND status != 'rejected'";
+    // Check if employee has reached the daily limit of 3 pending requests
+    $check_sql = "SELECT COUNT(*) as pending_count FROM overtime_requests WHERE employee_id = ? AND request_date = ? AND status = 'pending'";
     $check_stmt = mysqli_prepare($db, $check_sql);
     mysqli_stmt_bind_param($check_stmt, "is", $employee_id, $request_date);
     mysqli_stmt_execute($check_stmt);
     $check_result = mysqli_stmt_get_result($check_stmt);
+    $pending_count = ($check_result && mysqli_num_rows($check_result) > 0) ? mysqli_fetch_assoc($check_result)['pending_count'] : 0;
 
-    if (mysqli_num_rows($check_result) > 0) {
+    if ($pending_count >= 3) {
         http_response_code(409);
         echo json_encode([
             'success' => false,
-            'message' => 'Duplicate overtime request for this date'
+            'message' => 'Maximum of 3 pending overtime requests allowed per day'
         ]);
         exit;
     }
