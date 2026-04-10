@@ -70,7 +70,7 @@ $overtime_query = "SELECT a.employee_id, a.attendance_date, a.time_in, a.time_ou
                    JOIN employees e ON a.employee_id = e.id
                    LEFT JOIN overtime_requests r ON a.employee_id = r.employee_id 
                        AND a.attendance_date = r.request_date 
-                       AND r.status = 'approved'
+                       AND r.status IN ('approved', 'pre-approved')
                    WHERE a.attendance_date BETWEEN ? AND ?
                    AND a.total_ot_hrs > 0
                    AND e.status = 'Active'";
