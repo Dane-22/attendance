@@ -88,7 +88,7 @@ try {
     // Get branch name for display
     $currentBranch = '';
     if ($currentBranchId) {
-        $branchNameQuery = "SELECT branch_name FROM branches WHERE id = ? LIMIT 1";
+        $branchNameQuery = "SELECT branch_name FROM branches WHERE id = ? AND is_active = 1 LIMIT 1";
         $branchNameStmt = mysqli_prepare($db, $branchNameQuery);
         mysqli_stmt_bind_param($branchNameStmt, 'i', $currentBranchId);
         mysqli_stmt_execute($branchNameStmt);

@@ -392,11 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             }
 
-            $branch_address = isset($_POST['branch_address']) ? trim($_POST['branch_address']) : '';
-
-            $order_number = isset($_POST['order_number']) ? trim($_POST['order_number']) : '';
-
-            $checkQuery = "SELECT id FROM branches WHERE branch_name = ?";
+            $checkQuery = "SELECT id FROM branches WHERE branch_name = ? AND is_active = 1";
 
             $checkStmt = mysqli_prepare($db, $checkQuery);
 
@@ -458,7 +454,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             }
 
-            $getBranchQuery = "SELECT branch_name FROM branches WHERE id = ?";
+            $getBranchQuery = "SELECT branch_name FROM branches WHERE id = ? AND is_active = 1";
 
             $getBranchStmt = mysqli_prepare($db, $getBranchQuery);
 
@@ -534,7 +530,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
-            $deleteQuery = "DELETE FROM branches WHERE id = ?";
+            $deleteQuery = "UPDATE branches SET is_active = 0 WHERE id = ?";
 
             $deleteStmt = mysqli_prepare($db, $deleteQuery);
 
@@ -580,7 +576,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
-            $checkQuery = "SELECT id FROM branches WHERE branch_name = ?";
+            $checkQuery = "SELECT id, is_active FROM branches WHERE branch_name = ?";
 
             $checkStmt = mysqli_prepare($db, $checkQuery);
 
@@ -602,11 +598,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $existingId = 0;
 
-                mysqli_stmt_bind_result($checkStmt, $existingId);
+                $existingIsActive = 0;
+
+                mysqli_stmt_bind_result($checkStmt, $existingId, $existingIsActive);
 
                 mysqli_stmt_fetch($checkStmt);
 
                 $existingId = intval($existingId);
+
+                // If branch exists but is inactive, reactivate it
+
+                if ($existingIsActive == 0) {
+
+                    $reactivateQuery = "UPDATE branches SET is_active = 1 WHERE id = ?";
+
+                    $reactivateStmt = mysqli_prepare($db, $reactivateQuery);
+
+                    mysqli_stmt_bind_param($reactivateStmt, 'i', $existingId);
+
+                    mysqli_stmt_execute($reactivateStmt);
+
+                    mysqli_stmt_close($reactivateStmt);
+
+                }
 
                 echo json_encode([
 

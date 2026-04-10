@@ -111,8 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit();
         }
 
-        // Delete the branch
-        $deleteQuery = "DELETE FROM branches WHERE id = ?";
+        // Soft delete: update is_active to 0 instead of hard delete
+        $deleteQuery = "UPDATE branches SET is_active = 0 WHERE id = ?";
         $deleteStmt = mysqli_prepare($db, $deleteQuery);
         mysqli_stmt_bind_param($deleteStmt, 'i', $branch_id);
 
@@ -127,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit();
     }
 
-    // GET ALL BRANCHES
+    // GET ALL BRANCHES (only active ones)
     if ($action === 'get_branches') {
         $query = "SELECT id, branch_name, created_at FROM branches WHERE is_active = 1 ORDER BY branch_name ASC";
         $result = mysqli_query($db, $query);

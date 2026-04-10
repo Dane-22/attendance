@@ -49,6 +49,57 @@ WHERE b.branch_name = ? AND dpr.report_date BETWEEN ? AND ?
 
 ### 2026-04-10
 
+**Task:** Sync Billing Deductions with Weekly Report
+
+**Status:** ✅ Completed
+
+**Problem:** The "Employees with Government Deductions" report in `billing.php` showed different deduction amounts than `weekly_report.php`. For example, Cesar Abubo showed ₱120 total deduction in billing but ₱250 in weekly report for April 6-10 (Week 2).
+
+**Root Cause:** 
+- `billing.php` used cumulative deductions (Week 1 + Week 2 = 650)
+- `weekly_report.php` uses single week deductions (Week 2 only = 250)
+- Both had different week calculation logic
+
+**Solution:** Created shared `week_calculator.php` helper and updated `billing.php` to use single-week deductions matching weekly_report.php logic.
+
+**Changes Made:**
+
+**`employee/function/week_calculator.php` (new file):**
+- `calculateWorkWeekBoundaries()` - Calculates work weeks (Mon-Sat, excluding Sundays)
+- `getWeeklyGovernmentDeductions()` - Returns prorated deductions per week (Week 1: 400, Week 2: 250, Week 3: 250)
+- `calculateCumulativeDeductions()` - Sums deductions for weeks 1-N
+- `getWeekNumberForDate()` - Determines which week a date falls into
+- `getCurrentWorkWeek()` - Gets current week based on today's date
+
+**`employee/billing.php` (lines 232-297):**
+- Added `require_once 'function/week_calculator.php'`
+- Modified `employees_with_deductions` case to use shared week calculation
+- Changed from cumulative to single-week deductions based on report end date
+- Now determines which week the date range falls into and applies that week's deduction amount
+- Override deductions with weekly calculated values from week calculator
+
+**Before:**
+```php
+// Used cumulative deductions
+$maxDeductionWeek = min($currentWeek, 3);
+$cumulativeDeductions = calculateCumulativeDeductions($maxDeductionWeek);
+$row['total_deductions'] = $cumulativeDeductions['total']; // 650 for Week 2
+```
+
+**After:**
+```php
+// Uses single week deductions matching weekly_report.php
+$deductionWeek = min($reportWeek, 3);
+$weeklyDeductions = getWeeklyGovernmentDeductions($deductionWeek);
+$row['total_deductions'] = $weeklyDeductions['total']; // 250 for Week 2
+```
+
+**Result:** Billing deductions now match weekly report exactly. For April 6-10 (Week 2), all employees with deductions now show ₱250 (SSS: 100 + PhilHealth: 100 + Pag-IBIG: 50).
+
+---
+
+### 2026-04-10
+
 **Task:** Implement Search Functionality in Notification Pages
 
 **Status:** ✅ Completed

@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => false, 'message' => 'Branch name must be 2-255 characters']);
                 exit();
             }
-            $checkQuery = "SELECT id FROM branches WHERE branch_name = ?";
+            $checkQuery = "SELECT id FROM branches WHERE branch_name = ? AND is_active = 1";
             $checkStmt = mysqli_prepare($db, $checkQuery);
             mysqli_stmt_bind_param($checkStmt, 's', $branch_name);
             mysqli_stmt_execute($checkStmt);
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => false, 'message' => 'Invalid branch ID']);
                 exit();
             }
-            $getBranchQuery = "SELECT branch_name FROM branches WHERE id = ?";
+            $getBranchQuery = "SELECT branch_name FROM branches WHERE id = ? AND is_active = 1";
             $getBranchStmt = mysqli_prepare($db, $getBranchQuery);
             mysqli_stmt_bind_param($getBranchStmt, 'i', $branch_id);
             mysqli_stmt_execute($getBranchStmt);
@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['success' => false, 'message' => "Cannot delete branch with active employees. ({$employeeCount['count']} assigned)"]);
                 exit();
             }
-            $deleteQuery = "DELETE FROM branches WHERE id = ?";
+            $deleteQuery = "UPDATE branches SET is_active = 0 WHERE id = ?";
             $deleteStmt = mysqli_prepare($db, $deleteQuery);
             mysqli_stmt_bind_param($deleteStmt, 'i', $branch_id);
             if (mysqli_stmt_execute($deleteStmt)) {

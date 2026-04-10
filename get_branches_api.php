@@ -14,7 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit;
 }
 
-$sql = "SELECT id, branch_name, branch_address, order_number FROM branches WHERE is_active = 1 ORDER BY branch_name ASC";
+// Removed the "WHERE is_active = 1" condition to get ALL branches
+$sql = "SELECT id, branch_name, branch_address, order_number, is_active FROM branches ORDER BY branch_name ASC";
 $result = mysqli_query($db, $sql);
 
 $branches = [];
@@ -25,6 +26,7 @@ if ($result) {
             'branch_name' => $row['branch_name'],
             'branch_address' => $row['branch_address'],
             'order_number' => $row['order_number'],
+            'is_active' => (bool)$row['is_active'], // Will be false for inactive branches
         ];
     }
 }
