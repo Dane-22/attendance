@@ -233,29 +233,34 @@ switch ($filter) {
         // Use shared week calculator for consistent week calculations with weekly_report.php
         $year = date('Y');
         $month = date('m');
-        $today = date('j');
         
-        // Get week boundaries using shared helper
-        $weekBoundaries = calculateWorkWeekBoundaries($year, $month);
+        // Parse end date to determine which week the report period falls into
+        $endDateParts = explode('-', $endDate);
+        $reportYear = intval($endDateParts[0]);
+        $reportMonth = intval($endDateParts[1]);
+        $reportEndDay = intval($endDateParts[2]);
         
-        // Determine current week
-        $currentWeek = getWeekNumberForDate($year, $month, $today);
-        if ($currentWeek == 0) {
-            $currentWeek = 1; // Default to week 1 if today is Sunday
+        // Get week boundaries using shared helper for the report's month
+        $weekBoundaries = calculateWorkWeekBoundaries($reportYear, $reportMonth);
+        
+        // Determine which week the end date falls into (single week like weekly_report)
+        $reportWeek = getWeekNumberForDate($reportYear, $reportMonth, $reportEndDay);
+        if ($reportWeek == 0) {
+            $reportWeek = 1; // Default to week 1 if end date is Sunday
         }
         
-        $maxDeductionWeek = min($currentWeek, 3); // Cap at week 3
+        // Cap at week 3 for deductions (matching weekly_report logic)
+        $deductionWeek = min($reportWeek, 3);
         
-        // Get cumulative deductions for weeks 1 through maxDeductionWeek
-        $cumulativeDeductions = calculateCumulativeDeductions($maxDeductionWeek);
+        // Get the single week deduction amount (not cumulative) - matching weekly_report.php
+        $weeklyDeductions = getWeeklyGovernmentDeductions($deductionWeek);
         
-        // Get the end date of the last deduction week
-        $lastDeductionDay = isset($weekBoundaries[$maxDeductionWeek]) ? $weekBoundaries[$maxDeductionWeek]['end'] : 21;
+        // Get the end date of the deduction week for filtering
+        $lastDeductionDay = isset($weekBoundaries[$deductionWeek]) ? $weekBoundaries[$deductionWeek]['end'] : 21;
         
-        $filterTitle = 'Employees with Government Deductions (Week 1-' . $maxDeductionWeek . ')';
+        $filterTitle = 'Employees with Government Deductions (Week ' . $deductionWeek . ')';
         
         // Query sums payroll data up to the last deduction day
-        // Deductions will be overridden with cumulative calculated values
         $sql = "SELECT 
                     e.id,
                     e.employee_code,
@@ -265,7 +270,7 @@ switch ($filter) {
                     e.position,
                     COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.days_worked ELSE 0 END), 0) as total_days_worked,
                     COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.basic_pay ELSE 0 END), 0) as total_basic_pay,
-                    COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.total_deductions ELSE 0 END), 0) as calculated_deductions,
+                    COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.total_deductions ELSE 0 END), 0) as db_deductions,
                     COALESCE(SUM(CASE WHEN DAY(dpr.report_date) <= ? THEN dpr.take_home_pay ELSE 0 END), 0) as total_net_pay
                 FROM employees e
                 LEFT JOIN branches b ON e.branch_id = b.id
@@ -281,12 +286,12 @@ switch ($filter) {
         $stmt->execute();
         $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         
-        // Override deductions with cumulative weekly calculated values
+        // Override deductions with weekly calculated values (matching weekly_report.php)
         foreach ($data as &$row) {
-            // Use the cumulative deduction amount from week calculator
-            $row['total_deductions'] = $cumulativeDeductions['total'];
+            // Use the single week deduction amount from week calculator
+            $row['total_deductions'] = $weeklyDeductions['total'];
             // Recalculate net pay with the new deduction amount
-            $row['total_net_pay'] = $row['total_basic_pay'] - $cumulativeDeductions['total'];
+            $row['total_net_pay'] = $row['total_basic_pay'] - $weeklyDeductions['total'];
         }
         unset($row);
         break;
