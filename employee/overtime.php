@@ -330,8 +330,6 @@ uasort($employee_overtime, function($a, $b) {
                             <tr class="bg-gray-800 text-white">
                                 <th class="px-4 py-3 text-left text-xs font-medium uppercase">Employee</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">Date</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium uppercase">Time In</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium uppercase">Time Out</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">Branch</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">OT Hours</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium uppercase">Date Requested</th>
@@ -342,7 +340,7 @@ uasort($employee_overtime, function($a, $b) {
                         <tbody>
                             <?php if (empty($employee_overtime)): ?>
                             <tr>
-                                <td colspan="9" class="px-4 py-8 text-center text-gray-400">
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-400">
                                     <i class="fas fa-inbox text-4xl mb-2"></i>
                                     <p>No overtime records found for this period</p>
                                 </td>
@@ -378,12 +376,6 @@ uasort($employee_overtime, function($a, $b) {
                                             <?php echo date('M d, Y', strtotime($entry['date'])); ?>
                                         </td>
                                         <td class="px-4 py-3 text-center text-sm text-gray-300">
-                                            <?php echo $entry['time_in'] ? date('h:i A', strtotime($entry['time_in'])) : '-'; ?>
-                                        </td>
-                                        <td class="px-4 py-3 text-center text-sm text-gray-300">
-                                            <?php echo $entry['time_out'] ? date('h:i A', strtotime($entry['time_out'])) : '-'; ?>
-                                        </td>
-                                        <td class="px-4 py-3 text-center text-sm text-gray-300">
                                             <span class="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs">
                                                 <?php echo htmlspecialchars($entry['branch']); ?>
                                             </span>
@@ -408,7 +400,7 @@ uasort($employee_overtime, function($a, $b) {
                                     
                                     <!-- Employee Total Row -->
                                     <tr class="bg-gray-800/50 border-b-2 border-yellow-500/30">
-                                        <td colspan="7" class="px-4 py-2 text-right text-sm font-medium text-gray-400">
+                                        <td colspan="5" class="px-4 py-2 text-right text-sm font-medium text-gray-400">
                                             Total for <?php echo htmlspecialchars($data['employee']['last_name']); ?>
                                         </td>
                                         <td class="px-4 py-2 text-center">
@@ -426,7 +418,7 @@ uasort($employee_overtime, function($a, $b) {
                         <?php if (!empty($employee_overtime)): ?>
                         <tfoot>
                             <tr class="bg-gradient-to-r from-yellow-600 to-yellow-800 text-white font-bold">
-                                <td colspan="7" class="px-4 py-3 text-right">GRAND TOTAL</td>
+                                <td colspan="5" class="px-4 py-3 text-right">GRAND TOTAL</td>
                                 <td class="px-4 py-3 text-center"><?php echo number_format($total_ot_hours, 1); ?> hrs</td>
                                 <td class="px-4 py-3 text-right">₱<?php echo number_format($total_ot_amount, 0); ?></td>
                             </tr>
@@ -524,11 +516,11 @@ uasort($employee_overtime, function($a, $b) {
                     if (!isHeader) {
                         if (index === 0) {
                             cellClass = ' class="employee-name"';
-                        } else if (index === 5) {
+                        } else if (index === 3) {
                             cellClass = ' class="ot-hours text-center"';
-                        } else if (index === 8) {
+                        } else if (index === 6) {
                             cellClass = ' class="ot-amount text-right"';
-                        } else if (index >= 1 && index <= 7) {
+                        } else if (index >= 1 && index <= 5) {
                             cellClass = ' class="text-center"';
                         }
                     }
