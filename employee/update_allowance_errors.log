@@ -2277,3 +2277,73 @@
 )
 
 [10-Apr-2026 09:56:54 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 09:58:52 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 09:58:52 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 09:59:32 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 09:59:32 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 09:59:45 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 09:59:45 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 10:01:04 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 10:01:04 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 10:01:13 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 10:01:13 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 10:02:16 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 10:02:16 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 10:02:23 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 10:02:23 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 10:02:38 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 10:02:38 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 10:03:33 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 10:03:33 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30
+[10-Apr-2026 10:04:25 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 30
+    [month] => 2026-04
+)
+
+[10-Apr-2026 10:04:25 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 30

@@ -2049,8 +2049,6 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             flex-direction: column;
             gap: 3px;
             flex: 1;
-            overflow-y: auto;
-            max-height: 100px;
         }
 
         .day-record {
@@ -2091,6 +2089,12 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         /* Hidden records (shown when See more is clicked) */
         .hidden-record {
             display: none;
+        }
+
+        /* Ensure day cell expands to fit content */
+        .calendar-day-cell {
+            min-height: auto !important;
+            aspect-ratio: auto !important;
         }
 
         /* See more / See less button */
@@ -2778,14 +2782,20 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     dayEl.classList.add('day-today');
                 }
 
-                const hasMultipleRecords = dayData.records.length > 1;
+                const MIN_RECORDS_VISIBLE = 4;
+                const totalRecords = dayData.records.length;
+                const hasMoreThanMin = totalRecords > MIN_RECORDS_VISIBLE;
+                const hiddenCount = totalRecords - MIN_RECORDS_VISIBLE;
 
-                // Build HTML for records (show all if single, first + see more if multiple)
+                // Debug: log records for this date
+                console.log(`Date ${dateStr}: ${totalRecords} records found`, dayData.records);
+
+                // Build HTML for records (show minimum 4, hide rest if more than 4)
                 let recordsHtml = '';
                 dayData.records.forEach((record, index) => {
-                    const recordNum = hasMultipleRecords ? `<span class="record-num">#${index + 1}</span>` : '';
-                    const hiddenClass = (hasMultipleRecords && index > 0) ? 'hidden-record' : '';
-                    recordsHtml += `
+                    const recordNum = totalRecords > 1 ? `<span class="record-num">#${index + 1}</span>` : '';
+                    const hiddenClass = (hasMoreThanMin && index >= MIN_RECORDS_VISIBLE) ? 'hidden-record' : '';
+                    const recordHtml = `
                         <div class="day-record ${hiddenClass}" data-date="${dateStr}">
                             ${recordNum}
                             <span class="day-time-in">${record.time_in || '--:--'}</span>
@@ -2793,15 +2803,18 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                             <span class="day-record-branch">${record.branch || 'N/A'}</span>
                         </div>
                     `;
+                    recordsHtml += recordHtml;
+                    console.log(`  Record ${index + 1} HTML:`, recordHtml);
                 });
+                console.log(`  Total recordsHtml length:`, recordsHtml.length);
 
-                // Add "See more" button for multiple records
-                const seeMoreHtml = hasMultipleRecords
-                    ? `<button class="see-more-btn" onclick="toggleDayRecords('${dateStr}', this)">See more (${dayData.records.length})</button>`
+                // Add "See more" button only if more than 4 records
+                const seeMoreHtml = hasMoreThanMin
+                    ? `<button class="see-more-btn" onclick="toggleDayRecords('${dateStr}', this, ${MIN_RECORDS_VISIBLE})">See more (${hiddenCount} more)</button>`
                     : '';
 
                 // Show total hours if multiple records
-                const totalHoursHtml = hasMultipleRecords
+                const totalHoursHtml = totalRecords > 1
                     ? `<span class="day-total-hours">Total: ${dayData.total_hours || 0}h</span>`
                     : '';
 
@@ -2835,23 +2848,31 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         /**
          * Toggle day records visibility (See more / See less)
          */
-        function toggleDayRecords(dateStr, btn) {
+        function toggleDayRecords(dateStr, btn, minVisible = 4) {
             const recordsContainer = document.getElementById(`records-${dateStr}`);
-            if (!recordsContainer) return;
+            if (!recordsContainer) {
+                console.error('No records container found for date:', dateStr);
+                return;
+            }
 
-            const hiddenRecords = recordsContainer.querySelectorAll('.hidden-record');
+            const allRecords = recordsContainer.querySelectorAll('.day-record');
             const isExpanded = btn.classList.contains('expanded');
 
             if (isExpanded) {
-                // Collapse - hide extra records
-                hiddenRecords.forEach(record => record.style.display = 'none');
+                // Collapse - hide records after minVisible
+                allRecords.forEach((record, index) => {
+                    if (index >= minVisible) {
+                        record.style.display = 'none';
+                    }
+                });
                 btn.classList.remove('expanded');
-                btn.textContent = `See more (${hiddenRecords.length + 1})`;
+                const hiddenCount = allRecords.length - minVisible;
+                btn.innerHTML = `See more (${hiddenCount} more)`;
             } else {
                 // Expand - show all records
-                hiddenRecords.forEach(record => record.style.display = 'block');
+                allRecords.forEach(record => record.style.display = 'block');
                 btn.classList.add('expanded');
-                btn.textContent = 'See less';
+                btn.innerHTML = 'See less';
             }
         }
 
