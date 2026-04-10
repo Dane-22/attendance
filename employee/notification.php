@@ -666,6 +666,105 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
             color: #000;
             border-color: #FFD700;
         }
+        
+        /* Search bar styles */
+        .search-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #FFD700;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+        }
+        
+        .search-clear {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            display: none;
+        }
+        
+        .search-clear:hover {
+            color: #fff;
+        }
+        
+        .search-clear.visible {
+            display: block;
+        }
+        
+        .search-results-count {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            margin-top: 8px;
+            margin-left: 4px;
+        }
+        
+        /* Light theme search styles */
+        body.light-theme .search-input {
+            background: #f5f5f5;
+            border-color: #ddd;
+            color: #333;
+        }
+        
+        body.light-theme .search-input:focus {
+            border-color: #FFD700;
+            background: #fff;
+        }
+        
+        body.light-theme .search-input::placeholder {
+            color: #999;
+        }
+        
+        body.light-theme .search-icon {
+            color: #999;
+        }
+        
+        body.light-theme .search-clear {
+            color: #999;
+        }
+        
+        body.light-theme .search-clear:hover {
+            color: #333;
+        }
+        
+        body.light-theme .search-results-count {
+            color: #666;
+        }
     </style>
     <script src="js/theme.js"></script>
 </head>
@@ -681,6 +780,16 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                         <span class="badge-count" id="pendingBadge"><?php echo $totalPendingCount; ?></span>
                         <span class="badge-label">Pending</span>
                     </div>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search by employee name, branch, reason, amount, or date...">
+                    <button class="search-clear" id="searchClear" onclick="clearSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-results-count" id="searchResultsCount"></div>
                 </div>
                 
                 <div class="request-type-tabs">
@@ -736,9 +845,118 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
         let currentTab = 'pending';
         let currentRequestType = 'overtime';
         let currentRequests = [];
+        let filteredRequests = [];
         let rejectionRequestId = null;
         let rejectionRequestType = null;
-        
+        let searchDebounceTimer = null;
+
+        // Search functionality
+        function filterRequests(searchTerm) {
+            if (!searchTerm || !searchTerm.trim()) {
+                filteredRequests = currentRequests;
+                return;
+            }
+
+            const term = searchTerm.toLowerCase().trim();
+            filteredRequests = currentRequests.filter(req => {
+                // Search across relevant fields based on request type
+                const employeeName = (req.employee_name || '').toLowerCase();
+                const branchName = (req.branch_name || '').toLowerCase();
+                const reason = ((req.overtime_reason || req.reason || '')).toLowerCase();
+                const amount = (req.amount || '').toString();
+                const requestDate = (req.request_date || '').toLowerCase();
+                const requestedAt = (req.requested_at || '').toLowerCase();
+                const leaveDate = (req.leave_date || '').toLowerCase();
+
+                return (
+                    employeeName.includes(term) ||
+                    branchName.includes(term) ||
+                    reason.includes(term) ||
+                    amount.includes(term) ||
+                    requestDate.includes(term) ||
+                    requestedAt.includes(term) ||
+                    leaveDate.includes(term)
+                );
+            });
+        }
+
+        function updateSearchResultsCount() {
+            const countEl = document.getElementById('searchResultsCount');
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.trim();
+
+            if (!searchTerm) {
+                countEl.textContent = '';
+                return;
+            }
+
+            const total = currentRequests.length;
+            const filtered = filteredRequests.length;
+
+            if (filtered === 0) {
+                countEl.textContent = `No results found for "${searchTerm}"`;
+            } else if (filtered === total) {
+                countEl.textContent = `Showing all ${total} results`;
+            } else {
+                countEl.textContent = `Showing ${filtered} of ${total} results`;
+            }
+        }
+
+        function handleSearchInput() {
+            const searchInput = document.getElementById('searchInput');
+            const searchClear = document.getElementById('searchClear');
+            const searchTerm = searchInput.value;
+
+            // Show/hide clear button
+            searchClear.classList.toggle('visible', searchTerm.length > 0);
+
+            // Debounce search
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                filterRequests(searchTerm);
+                updateSearchResultsCount();
+
+                // Re-render with filtered results
+                if (currentRequestType === 'cash_advance') {
+                    renderCashAdvanceRequests(filteredRequests);
+                } else {
+                    renderRequests(filteredRequests);
+                }
+            }, 300);
+        }
+
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchClear = document.getElementById('searchClear');
+
+            searchInput.value = '';
+            searchClear.classList.remove('visible');
+            filteredRequests = currentRequests;
+            updateSearchResultsCount();
+
+            // Re-render with all results
+            if (currentRequestType === 'cash_advance') {
+                renderCashAdvanceRequests(filteredRequests);
+            } else {
+                renderRequests(filteredRequests);
+            }
+
+            searchInput.focus();
+        }
+
+        // Initialize search event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', handleSearchInput);
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        clearSearch();
+                    }
+                });
+            }
+        });
+
         function switchRequestType(type) {
             currentRequestType = type;
             document.querySelectorAll('.type-tab').forEach(btn => {
@@ -792,12 +1010,24 @@ $totalPendingCount = $pendingCount + $pendingCashAdvanceCount;
                 
                 if (data.success) {
                     currentRequests = data.requests;
+                    // Reset filtered requests to show all
+                    filteredRequests = currentRequests;
+                    // Clear search input when switching tabs/types
+                    const searchInput = document.getElementById('searchInput');
+                    const searchClear = document.getElementById('searchClear');
+                    if (searchInput) {
+                        searchInput.value = '';
+                    }
+                    if (searchClear) {
+                        searchClear.classList.remove('visible');
+                    }
+                    updateSearchResultsCount();
                     console.log('DEBUG: Loaded requests:', data.requests.map(r => ({id: r.id, status: r.status})));
                     updateCounts(data.counts);
                     if (currentRequestType === 'cash_advance') {
-                        renderCashAdvanceRequests(data.requests);
+                        renderCashAdvanceRequests(filteredRequests);
                     } else {
-                        renderRequests(data.requests);
+                        renderRequests(filteredRequests);
                     }
                 } else {
                     container.innerHTML = `
