@@ -104,16 +104,6 @@ if (!$isFutureDate && !$isSunday) {
     }
 }
 
-// Check if leave_transactions table exists
-$hasLeaveTable = false;
-$tableCheckResult = mysqli_query($db, "SHOW TABLES LIKE 'leave_transactions'");
-if ($tableCheckResult && mysqli_num_rows($tableCheckResult) > 0) {
-    $hasLeaveTable = true;
-}
-if ($tableCheckResult) {
-    mysqli_free_result($tableCheckResult);
-}
-
 // Determine date range based on filter
 if ($filter === 'week') {
     // Get current week (Monday to Sunday)
@@ -165,36 +155,7 @@ if (!empty($searchQuery)) {
 }
 
 // Helper function to determine attendance status
-// Modified to support auto-absent and on-leave detection
-function getAttendanceStatus($record, $shouldApplyAutoAbsent = false, $hasLeaveTable = false, $db = null, $checkDate = null) {
-    // Check for On Leave status first (highest priority)
-    if ($hasLeaveTable && $db && $checkDate && !empty($record['employee_id'])) {
-        $leaveSql = "SELECT COUNT(*) as leave_count 
-                     FROM leave_transactions 
-                     WHERE employee_id = ? 
-                     AND transaction_type = 'debit' 
-                     AND reference_date = ?";
-        $leaveStmt = mysqli_prepare($db, $leaveSql);
-        if ($leaveStmt) {
-            mysqli_stmt_bind_param($leaveStmt, 'is', $record['employee_id'], $checkDate);
-            mysqli_stmt_execute($leaveStmt);
-            $leaveResult = mysqli_stmt_get_result($leaveStmt);
-            $leaveRow = mysqli_fetch_assoc($leaveResult);
-            if ($leaveRow && $leaveRow['leave_count'] > 0) {
-                return ['class' => 'status-on-leave', 'text' => 'On Leave', 'key' => 'on_leave', 'is_auto' => false];
-            }
-            mysqli_stmt_close($leaveStmt);
-        }
-    }
-
-    // If no attendance record and auto-absent applies
-    $hasNoAttendanceRecord = empty($record['attendance_id']) && empty($record['time_in']);
-    $isExplicitlyAbsent = (!$record['time_in'] && ($record['status'] ?? '') === 'Absent');
-    
-    if ($hasNoAttendanceRecord && $shouldApplyAutoAbsent) {
-        return ['class' => 'status-absent', 'text' => 'Absent (Auto)', 'key' => 'absent', 'is_auto' => true];
-    }
-    
+function getAttendanceStatus($record) {
     $isLate = false;
     if ($record['time_in'] && strtolower($record['position']) === 'worker') {
         $timeIn = strtotime($record['time_in']);
@@ -203,32 +164,31 @@ function getAttendanceStatus($record, $shouldApplyAutoAbsent = false, $hasLeaveT
             $isLate = true;
         }
     }
-    
+
     if ($record['time_in'] && $record['time_out']) {
         if ($isLate) {
-            return ['class' => 'status-late', 'text' => 'Late', 'key' => 'late', 'is_auto' => false];
+            return ['class' => 'status-late', 'text' => 'Late', 'key' => 'late'];
         } else {
-            return ['class' => 'status-completed', 'text' => 'Completed', 'key' => 'completed', 'is_auto' => false];
+            return ['class' => 'status-completed', 'text' => 'Completed', 'key' => 'completed'];
         }
     } elseif ($record['time_in']) {
         if ($isLate) {
-            return ['class' => 'status-late', 'text' => 'Late', 'key' => 'late', 'is_auto' => false];
+            return ['class' => 'status-late', 'text' => 'Late', 'key' => 'late'];
         } else {
-            return ['class' => 'status-present', 'text' => 'Present', 'key' => 'present', 'is_auto' => false];
+            return ['class' => 'status-present', 'text' => 'Present', 'key' => 'present'];
         }
     } else {
         // Explicitly marked absent (manual)
-        return ['class' => 'status-absent', 'text' => $record['status'] ?? 'Absent', 'key' => 'absent', 'is_auto' => false];
+        return ['class' => 'status-absent', 'text' => $record['status'] ?? 'Absent', 'key' => 'absent'];
     }
 }
 
 // Build status filter condition for SQL
-// Modified to support auto-absent logic
-function buildStatusFilterCondition($statusFilter, $shouldApplyAutoAbsent = false) {
+function buildStatusFilterCondition($statusFilter) {
     if ($statusFilter === 'all') {
         return '';
     }
-    
+
     switch ($statusFilter) {
         case 'present':
             return " AND a.time_in IS NOT NULL AND a.time_out IS NULL AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')";
@@ -237,44 +197,36 @@ function buildStatusFilterCondition($statusFilter, $shouldApplyAutoAbsent = fals
         case 'completed':
             return " AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')";
         case 'absent':
-            if ($shouldApplyAutoAbsent) {
-                // Show both explicitly marked absent AND employees with no attendance record
-                return " AND (a.time_in IS NULL AND (a.status = 'Absent' OR a.id IS NULL))";
-            } else {
-                // Only show explicitly marked absent
-                return " AND a.time_in IS NULL AND a.status = 'Absent'";
-            }
+            return " AND a.time_in IS NULL AND a.status = 'Absent'";
         default:
             return '';
     }
 }
 
-$statusFilterCondition = buildStatusFilterCondition($statusFilter, $shouldApplyAutoAbsent);
+$statusFilterCondition = buildStatusFilterCondition($statusFilter);
 
 // Get total count for pagination
-// Modified to use employees as base table to include employees with no attendance records
 $totalRecords = 0;
 
-// Build base count query - now counting from employees table
-$baseCountWhere = " WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')";
-
 if ($filter === 'week') {
-    // For week filter, count employees who have any attendance in the week OR no attendance at all
-    $countSql = "SELECT COUNT(DISTINCT e.id) as total 
-                 FROM employees e 
-                 LEFT JOIN attendance a ON e.id = a.employee_id 
-                     AND a.attendance_date BETWEEN ? AND ?
-                     AND a.id = (
-                         SELECT id FROM attendance 
-                         WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?
-                         ORDER BY time_in ASC LIMIT 1
-                     )
-                 LEFT JOIN branches b ON e.branch_id = b.id" . 
-                 $baseCountWhere . $searchCondition . $statusFilterCondition;
+    // Count all attendance records + auto-absent employees for the week
+    $countSql = "SELECT 
+        ((SELECT COUNT(*) FROM attendance a 
+          INNER JOIN employees e ON a.employee_id = e.id 
+          LEFT JOIN branches b ON e.branch_id = b.id 
+          WHERE a.attendance_date BETWEEN ? AND ? 
+          AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')" . 
+         $searchCondition . str_replace('a.id IS NULL', '1=0', $statusFilterCondition) . 
+         ") + (SELECT COUNT(DISTINCT e.id) FROM employees e 
+          LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
+          LEFT JOIN branches b ON e.branch_id = b.id 
+          WHERE a.id IS NULL AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')" . 
+         $searchCondition . ($statusFilter === 'absent' ? '' : ($statusFilterCondition ? ' AND 1=0' : '')) . 
+         ")) as total";
     $countStmt = mysqli_prepare($db, $countSql);
     if ($countStmt) {
-        $params = array_merge([$weekStart, $weekEnd, $weekStart, $weekEnd], $searchParams);
-        $types = 'ssss' . $searchTypes;
+        $params = array_merge([$weekStart, $weekEnd], $searchParams, [$weekStart, $weekEnd], $searchParams);
+        $types = 'ss' . $searchTypes . 'ss' . $searchTypes;
         mysqli_stmt_bind_param($countStmt, $types, ...$params);
         mysqli_stmt_execute($countStmt);
         $countResult = mysqli_stmt_get_result($countStmt);
@@ -283,21 +235,24 @@ if ($filter === 'week') {
         mysqli_stmt_close($countStmt);
     }
 } elseif ($filter === 'month') {
-    $countSql = "SELECT COUNT(DISTINCT e.id) as total 
-                 FROM employees e 
-                 LEFT JOIN attendance a ON e.id = a.employee_id 
-                     AND a.attendance_date BETWEEN ? AND ?
-                     AND a.id = (
-                         SELECT id FROM attendance 
-                         WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ?
-                         ORDER BY time_in ASC LIMIT 1
-                     )
-                 LEFT JOIN branches b ON e.branch_id = b.id" . 
-                 $baseCountWhere . $searchCondition . $statusFilterCondition;
+    // Count all attendance records + auto-absent employees for the month
+    $countSql = "SELECT 
+        ((SELECT COUNT(*) FROM attendance a 
+          INNER JOIN employees e ON a.employee_id = e.id 
+          LEFT JOIN branches b ON e.branch_id = b.id 
+          WHERE a.attendance_date BETWEEN ? AND ? 
+          AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')" . 
+         $searchCondition . str_replace('a.id IS NULL', '1=0', $statusFilterCondition) . 
+         ") + (SELECT COUNT(DISTINCT e.id) FROM employees e 
+          LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
+          LEFT JOIN branches b ON e.branch_id = b.id 
+          WHERE a.id IS NULL AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')" . 
+         $searchCondition . ($statusFilter === 'absent' ? '' : ($statusFilterCondition ? ' AND 1=0' : '')) . 
+         ")) as total";
     $countStmt = mysqli_prepare($db, $countSql);
     if ($countStmt) {
-        $params = array_merge([$monthStart, $monthEnd, $monthStart, $monthEnd], $searchParams);
-        $types = 'ssss' . $searchTypes;
+        $params = array_merge([$monthStart, $monthEnd], $searchParams, [$monthStart, $monthEnd], $searchParams);
+        $types = 'ss' . $searchTypes . 'ss' . $searchTypes;
         mysqli_stmt_bind_param($countStmt, $types, ...$params);
         mysqli_stmt_execute($countStmt);
         $countResult = mysqli_stmt_get_result($countStmt);
@@ -306,18 +261,24 @@ if ($filter === 'week') {
         mysqli_stmt_close($countStmt);
     }
 } else {
-    // Day filter - count all active employees with optional attendance join
-    $countSql = "SELECT COUNT(DISTINCT e.id) as total 
-                 FROM employees e 
-                 LEFT JOIN attendance a ON e.id = a.employee_id 
-                     AND a.attendance_date = ?
-                     AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date = ? ORDER BY time_in ASC LIMIT 1)
-                 LEFT JOIN branches b ON e.branch_id = b.id" . 
-                 $baseCountWhere . $searchCondition . $statusFilterCondition;
+    // Day filter - count all attendance records + auto-absent employees
+    $countSql = "SELECT 
+        ((SELECT COUNT(*) FROM attendance a 
+          INNER JOIN employees e ON a.employee_id = e.id 
+          LEFT JOIN branches b ON e.branch_id = b.id 
+          WHERE a.attendance_date = ? 
+          AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')" . 
+         $searchCondition . str_replace('a.id IS NULL', '1=0', $statusFilterCondition) . 
+         ") + (SELECT COUNT(*) FROM employees e 
+          LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = ?
+          LEFT JOIN branches b ON e.branch_id = b.id 
+          WHERE a.id IS NULL AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')" . 
+         $searchCondition . ($statusFilter === 'absent' ? '' : ($statusFilterCondition ? ' AND 1=0' : '')) . 
+         ")) as total";
     $countStmt = mysqli_prepare($db, $countSql);
     if ($countStmt) {
-        $params = array_merge([$selectedDate, $selectedDate], $searchParams);
-        $types = 'ss' . $searchTypes;
+        $params = array_merge([$selectedDate], $searchParams, [$selectedDate], $searchParams);
+        $types = 's' . $searchTypes . 's' . $searchTypes;
         mysqli_stmt_bind_param($countStmt, $types, ...$params);
         mysqli_stmt_execute($countStmt);
         $countResult = mysqli_stmt_get_result($countStmt);
@@ -333,60 +294,109 @@ $currentPage = min($currentPage, $totalPages);
 $offset = ($currentPage - 1) * $RECORDS_PER_PAGE;
 
 // Get attendance summary based on filter
-// Modified to use employees as base table and include auto-absent logic
 $attendanceSummary = [];
 
-// Build summary query with employees as base
-$summarySelect = "
-    COUNT(DISTINCT e.id) as total_employees,
-    SUM(CASE WHEN a.time_in IS NOT NULL AND a.time_out IS NULL THEN 1 ELSE 0 END) as currently_present,
-    SUM(CASE WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL THEN 1 ELSE 0 END) as completed_shifts,
-    SUM(CASE 
-        WHEN (a.time_in IS NULL AND a.status = 'Absent') 
-             OR (a.id IS NULL AND ? = 1) 
-        THEN 1 ELSE 0 END) as absent_count";
-
-$summaryBaseWhere = " WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')";
-
 if ($filter === 'week') {
-    $summarySql = "SELECT " . $summarySelect . "
-        FROM employees e
-        LEFT JOIN attendance a ON e.id = a.employee_id 
-            AND a.attendance_date BETWEEN ? AND ?
-            AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
-        LEFT JOIN branches b ON e.branch_id = b.id
-        " . $summaryBaseWhere;
+    $summarySql = "SELECT 
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')) as total_records,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND a.time_in IS NOT NULL AND a.time_out IS NULL
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')) as currently_present,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')) as completed_shifts,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND a.time_in IS NULL AND a.status = 'Absent'
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')) +
+        (SELECT COUNT(DISTINCT e.id) FROM employees e 
+         LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
+         WHERE a.id IS NULL AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND ? = 1) as absent_count";
     $summaryStmt = mysqli_prepare($db, $summarySql);
     if ($summaryStmt) {
-        // First param is shouldApplyAutoAbsent (1 or 0)
         $autoAbsentInt = $shouldApplyAutoAbsent ? 1 : 0;
-        mysqli_stmt_bind_param($summaryStmt, 'isss', $autoAbsentInt, $weekStart, $weekEnd, $weekStart, $weekEnd);
+        mysqli_stmt_bind_param($summaryStmt, 'ssssssssssi', 
+            $weekStart, $weekEnd, $weekStart, $weekEnd, $weekStart, $weekEnd, 
+            $weekStart, $weekEnd, $weekStart, $weekEnd, $autoAbsentInt);
     }
 } elseif ($filter === 'month') {
-    $summarySql = "SELECT " . $summarySelect . "
-        FROM employees e
-        LEFT JOIN attendance a ON e.id = a.employee_id 
-            AND a.attendance_date BETWEEN ? AND ?
-            AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
-        LEFT JOIN branches b ON e.branch_id = b.id
-        " . $summaryBaseWhere;
+    $summarySql = "SELECT 
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')) as total_records,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND a.time_in IS NOT NULL AND a.time_out IS NULL
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')) as currently_present,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')) as completed_shifts,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date BETWEEN ? AND ?
+         AND a.time_in IS NULL AND a.status = 'Absent'
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')) +
+        (SELECT COUNT(DISTINCT e.id) FROM employees e 
+         LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
+         WHERE a.id IS NULL AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND ? = 1) as absent_count";
     $summaryStmt = mysqli_prepare($db, $summarySql);
     if ($summaryStmt) {
         $autoAbsentInt = $shouldApplyAutoAbsent ? 1 : 0;
-        mysqli_stmt_bind_param($summaryStmt, 'isss', $autoAbsentInt, $monthStart, $monthEnd, $monthStart, $monthEnd);
+        mysqli_stmt_bind_param($summaryStmt, 'ssssssssssi', 
+            $monthStart, $monthEnd, $monthStart, $monthEnd, $monthStart, $monthEnd, 
+            $monthStart, $monthEnd, $monthStart, $monthEnd, $autoAbsentInt);
     }
 } else {
-    $summarySql = "SELECT " . $summarySelect . "
-        FROM employees e
-        LEFT JOIN attendance a ON e.id = a.employee_id 
-            AND a.attendance_date = ?
-            AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date = ? ORDER BY time_in ASC LIMIT 1)
-        LEFT JOIN branches b ON e.branch_id = b.id
-        " . $summaryBaseWhere;
+    $summarySql = "SELECT 
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date = ?
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')) as total_records,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date = ?
+         AND a.time_in IS NOT NULL AND a.time_out IS NULL
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')) as currently_present,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date = ?
+         AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')) as completed_shifts,
+        (SELECT COUNT(*) FROM attendance a 
+         INNER JOIN employees e ON a.employee_id = e.id
+         WHERE a.attendance_date = ?
+         AND a.time_in IS NULL AND a.status = 'Absent'
+         AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')) +
+        (SELECT COUNT(*) FROM employees e 
+         LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = ?
+         WHERE a.id IS NULL AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+         AND ? = 1) as absent_count";
     $summaryStmt = mysqli_prepare($db, $summarySql);
     if ($summaryStmt) {
         $autoAbsentInt = $shouldApplyAutoAbsent ? 1 : 0;
-        mysqli_stmt_bind_param($summaryStmt, 'iss', $autoAbsentInt, $selectedDate, $selectedDate);
+        mysqli_stmt_bind_param($summaryStmt, 'sssssi', 
+            $selectedDate, $selectedDate, $selectedDate, $selectedDate, 
+            $selectedDate, $autoAbsentInt);
     }
 }
 if ($summaryStmt) {
@@ -397,14 +407,11 @@ if ($summaryStmt) {
 }
 
 // Get detailed attendance based on filter with search and pagination
-// Modified to use employees as base table for auto-absent support
 $attendanceData = [];
 
-// Base WHERE clause for employee filtering
-$detailBaseWhere = " WHERE e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')";
-
 if ($filter === 'week') {
-    $detailSql = "SELECT 
+    // Week filter - Use UNION to show all attendance records + auto-absent employees
+    $detailSql = "(SELECT 
         a.id as attendance_id,
         e.id as employee_id,
         a.attendance_date,
@@ -416,33 +423,47 @@ if ($filter === 'week') {
         e.first_name,
         e.last_name,
         e.employee_code,
-        e.position
-    FROM employees e
-    LEFT JOIN attendance a ON e.id = a.employee_id 
-        AND a.attendance_date BETWEEN ? AND ?
-        AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
+        e.position,
+        0 as is_auto_absent
+    FROM attendance a
+    INNER JOIN employees e ON a.employee_id = e.id
     LEFT JOIN branches b ON e.branch_id = b.id
-    " . $detailBaseWhere . $searchCondition . $statusFilterCondition . "
-    ORDER BY 
-        CASE 
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
-                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 1
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL 
-                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 2
-            WHEN a.time_in IS NOT NULL 
-                 AND (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 3
-            ELSE 4
-        END,
-        e.last_name, e.first_name
+    WHERE a.attendance_date BETWEEN ? AND ?
+    AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+    " . $searchCondition . str_replace('a.id IS NULL', '1=0', $statusFilterCondition) . "
+    ORDER BY a.attendance_date DESC, a.time_in, e.last_name, e.first_name)
+    UNION ALL
+    (SELECT 
+        NULL as attendance_id,
+        e.id as employee_id,
+        ? as attendance_date,
+        NULL as time_in,
+        NULL as time_out,
+        COALESCE(b.branch_name, 'N/A') as branch_name,
+        'Absent' as status,
+        0 as minutes_worked,
+        e.first_name,
+        e.last_name,
+        e.employee_code,
+        e.position,
+        1 as is_auto_absent
+    FROM employees e
+    LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
+    LEFT JOIN branches b ON e.branch_id = b.id
+    WHERE a.id IS NULL
+    AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+    " . $searchCondition . ($statusFilter === 'absent' ? '' : ($statusFilterCondition ? ' AND 1=0' : '')) . "
+    ORDER BY e.last_name, e.first_name)
     LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
-        $params = array_merge([$weekStart, $weekEnd, $weekStart, $weekEnd], $searchParams, [$RECORDS_PER_PAGE, $offset]);
-        $types = 'ssss' . $searchTypes . 'ii';
+        $params = array_merge([$weekStart, $weekEnd], $searchParams, [$weekStart, $weekStart, $weekEnd], $searchParams, [$RECORDS_PER_PAGE, $offset]);
+        $types = 'ss' . $searchTypes . 'sss' . $searchTypes . 'ii';
         mysqli_stmt_bind_param($detailStmt, $types, ...$params);
     }
 } elseif ($filter === 'month') {
-    $detailSql = "SELECT 
+    // Month filter - Use UNION to show all attendance records + auto-absent employees
+    $detailSql = "(SELECT 
         a.id as attendance_id,
         e.id as employee_id,
         a.attendance_date,
@@ -454,33 +475,47 @@ if ($filter === 'week') {
         e.first_name,
         e.last_name,
         e.employee_code,
-        e.position
-    FROM employees e
-    LEFT JOIN attendance a ON e.id = a.employee_id 
-        AND a.attendance_date BETWEEN ? AND ?
-        AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date BETWEEN ? AND ? ORDER BY time_in ASC LIMIT 1)
+        e.position,
+        0 as is_auto_absent
+    FROM attendance a
+    INNER JOIN employees e ON a.employee_id = e.id
     LEFT JOIN branches b ON e.branch_id = b.id
-    " . $detailBaseWhere . $searchCondition . $statusFilterCondition . "
-    ORDER BY 
-        CASE 
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
-                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 1
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL 
-                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 2
-            WHEN a.time_in IS NOT NULL 
-                 AND (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 3
-            ELSE 4
-        END,
-        e.last_name, e.first_name
+    WHERE a.attendance_date BETWEEN ? AND ?
+    AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+    " . $searchCondition . str_replace('a.id IS NULL', '1=0', $statusFilterCondition) . "
+    ORDER BY a.attendance_date DESC, a.time_in, e.last_name, e.first_name)
+    UNION ALL
+    (SELECT 
+        NULL as attendance_id,
+        e.id as employee_id,
+        ? as attendance_date,
+        NULL as time_in,
+        NULL as time_out,
+        COALESCE(b.branch_name, 'N/A') as branch_name,
+        'Absent' as status,
+        0 as minutes_worked,
+        e.first_name,
+        e.last_name,
+        e.employee_code,
+        e.position,
+        1 as is_auto_absent
+    FROM employees e
+    LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
+    LEFT JOIN branches b ON e.branch_id = b.id
+    WHERE a.id IS NULL
+    AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+    " . $searchCondition . ($statusFilter === 'absent' ? '' : ($statusFilterCondition ? ' AND 1=0' : '')) . "
+    ORDER BY e.last_name, e.first_name)
     LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
-        $params = array_merge([$monthStart, $monthEnd, $monthStart, $monthEnd], $searchParams, [$RECORDS_PER_PAGE, $offset]);
-        $types = 'ssss' . $searchTypes . 'ii';
+        $params = array_merge([$monthStart, $monthEnd], $searchParams, [$monthStart, $monthStart, $monthEnd], $searchParams, [$RECORDS_PER_PAGE, $offset]);
+        $types = 'ss' . $searchTypes . 'sss' . $searchTypes . 'ii';
         mysqli_stmt_bind_param($detailStmt, $types, ...$params);
     }
 } else {
-    $detailSql = "SELECT 
+    // Day filter - Use UNION to show all attendance records + auto-absent employees
+    $detailSql = "(SELECT 
         a.id as attendance_id,
         e.id as employee_id,
         a.attendance_date,
@@ -492,29 +527,42 @@ if ($filter === 'week') {
         e.first_name,
         e.last_name,
         e.employee_code,
-        e.position
-    FROM employees e
-    LEFT JOIN attendance a ON e.id = a.employee_id 
-        AND a.attendance_date = ?
-        AND a.id = (SELECT id FROM attendance WHERE employee_id = e.id AND attendance_date = ? ORDER BY time_in ASC LIMIT 1)
+        e.position,
+        0 as is_auto_absent
+    FROM attendance a
+    INNER JOIN employees e ON a.employee_id = e.id
     LEFT JOIN branches b ON e.branch_id = b.id
-    " . $detailBaseWhere . $searchCondition . $statusFilterCondition . "
-    ORDER BY 
-        CASE 
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NULL 
-                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 1
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL 
-                 AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 2
-            WHEN a.time_in IS NOT NULL 
-                 AND (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00') THEN 3
-            ELSE 4
-        END,
-        e.last_name, e.first_name
+    WHERE a.attendance_date = ?
+    AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+    " . $searchCondition . str_replace('a.id IS NULL', '1=0', $statusFilterCondition) . "
+    ORDER BY a.time_in, e.last_name, e.first_name)
+    UNION ALL
+    (SELECT 
+        NULL as attendance_id,
+        e.id as employee_id,
+        ? as attendance_date,
+        NULL as time_in,
+        NULL as time_out,
+        COALESCE(b.branch_name, 'N/A') as branch_name,
+        'Absent' as status,
+        0 as minutes_worked,
+        e.first_name,
+        e.last_name,
+        e.employee_code,
+        e.position,
+        1 as is_auto_absent
+    FROM employees e
+    LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = ?
+    LEFT JOIN branches b ON e.branch_id = b.id
+    WHERE a.id IS NULL
+    AND e.status = 'Active' AND e.position IN ('Worker', 'Admin', 'Engineer')
+    " . $searchCondition . ($statusFilter === 'absent' ? '' : ($statusFilterCondition ? ' AND 1=0' : '')) . "
+    ORDER BY e.last_name, e.first_name)
     LIMIT ? OFFSET ?";
     $detailStmt = mysqli_prepare($db, $detailSql);
     if ($detailStmt) {
-        $params = array_merge([$selectedDate, $selectedDate], $searchParams, [$RECORDS_PER_PAGE, $offset]);
-        $types = 'ss' . $searchTypes . 'ii';
+        $params = array_merge([$selectedDate], $searchParams, [$selectedDate, $selectedDate], $searchParams, [$RECORDS_PER_PAGE, $offset]);
+        $types = 's' . $searchTypes . 'ss' . $searchTypes . 'ii';
         mysqli_stmt_bind_param($detailStmt, $types, ...$params);
     }
 }
@@ -1044,7 +1092,7 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                     <div class="stat-card">
                         <div class="text-gray-400 text-sm">Total Records</div>
                         <div class="text-2xl font-bold text-white">
-                            <?php echo $attendanceSummary['total_employees'] ?? 0; ?>
+                            <?php echo $attendanceSummary['total_records'] ?? 0; ?>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -1148,11 +1196,17 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                     <?php foreach ($attendanceData as $record): 
                                         $hoursWorked = $record['minutes_worked'] ? round($record['minutes_worked'] / 60, 2) : 0;
                                         
-                                        // Determine status using helper function with auto-absent parameters
-                                        $statusInfo = getAttendanceStatus($record, $shouldApplyAutoAbsent, $hasLeaveTable, $db, $selectedDate);
-                                        $statusClass = $statusInfo['class'];
-                                        $statusText = $statusInfo['text'];
-                                        $isAutoAbsent = $statusInfo['is_auto'] ?? false;
+                                        // Determine status - use is_auto_absent from query or determine from record
+                                        $isAutoAbsent = !empty($record['is_auto_absent']);
+                                        
+                                        if ($isAutoAbsent) {
+                                            $statusClass = 'status-absent';
+                                            $statusText = 'Absent (Auto)';
+                                        } else {
+                                            $statusInfo = getAttendanceStatus($record);
+                                            $statusClass = $statusInfo['class'];
+                                            $statusText = $statusInfo['text'];
+                                        }
                                         
                                         // Determine row class for auto-absent
                                         $rowClass = $isAutoAbsent ? 'auto-absent-row' : '';
