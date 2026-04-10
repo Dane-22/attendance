@@ -396,7 +396,11 @@ function formatCurrency($amount) {
                         ?>
                             <?php if ($filter === 'site_salary' || $filter === 'office_salary'): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($row['branch_name'] ?? 'N/A'); ?></td>
+                                    <td>
+                                        <span class="branch-link" onclick="openBranchModal('<?php echo htmlspecialchars(addslashes($row['branch_name'] ?? 'N/A'), ENT_QUOTES); ?>')">
+                                            <?php echo htmlspecialchars($row['branch_name'] ?? 'N/A'); ?>
+                                        </span>
+                                    </td>
                                     <td><?php echo $row['employee_count']; ?></td>
                                     <td class="amount"><?php echo formatCurrency($row['total_basic_pay']); ?></td>
                                     <td class="amount"><?php echo formatCurrency($row['total_ot_pay']); ?></td>
@@ -466,6 +470,55 @@ function formatCurrency($amount) {
             <?php endif; ?>
         </div>
     </div>
+        </div>
+    </div>
+
+    <!-- Branch Detail Modal -->
+    <div id="branchDetailModal" class="branch-modal">
+        <div class="branch-modal-content">
+            <div class="branch-modal-header">
+                <h2 id="branchModalTitle">Branch Details</h2>
+                <button class="close-btn" onclick="closeBranchModal()">&times;</button>
+            </div>
+            <div class="branch-modal-body">
+                <p class="branch-modal-period" id="branchModalPeriod"></p>
+                <div id="branchModalLoading" class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+                <div id="branchModalError" class="branch-modal-error" style="display: none;"></div>
+                <div id="branchModalContent" style="display: none;">
+                    <table class="branch-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Position</th>
+                                <th>Days</th>
+                                <th>Basic Pay</th>
+                                <th>OT</th>
+                                <th>Deductions</th>
+                                <th>Net Pay</th>
+                            </tr>
+                        </thead>
+                        <tbody id="branchModalTableBody">
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="2"><strong>Total (<span id="branchModalEmployeeCount">0</span> employees)</strong></td>
+                                <td id="branchModalTotalDays">0</td>
+                                <td id="branchModalTotalBasic" class="amount"></td>
+                                <td id="branchModalTotalOT" class="amount"></td>
+                                <td id="branchModalTotalDeductions" class="amount deduction"></td>
+                                <td id="branchModalTotalNet" class="amount net"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="branch-modal-footer">
+                <button class="filter-btn close-modal-btn" onclick="closeBranchModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
         </div>
     </div>
 
@@ -688,7 +741,118 @@ function formatCurrency($amount) {
             if (event.target == modal) {
                 closePrintPreview();
             }
+            var branchModal = document.getElementById('branchDetailModal');
+            if (event.target == branchModal) {
+                closeBranchModal();
+            }
         }
+
+        // Branch Modal Functions
+        const currentDateRange = {
+            start: '<?php echo $startDate; ?>',
+            end: '<?php echo $endDate; ?>'
+        };
+
+        function formatCurrency(amount) {
+            return '₱' + parseFloat(amount || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+
+        function openBranchModal(branchName) {
+            const modal = document.getElementById('branchDetailModal');
+            const loading = document.getElementById('branchModalLoading');
+            const content = document.getElementById('branchModalContent');
+            const error = document.getElementById('branchModalError');
+            const title = document.getElementById('branchModalTitle');
+            const period = document.getElementById('branchModalPeriod');
+
+            // Show modal
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            // Reset state
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            error.style.display = 'none';
+
+            // Set title and period
+            title.textContent = branchName + ' - Employee Details';
+            const startDate = new Date(currentDateRange.start);
+            const endDate = new Date(currentDateRange.end);
+            period.textContent = 'Period: ' + startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + 
+                                 ' - ' + endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+            // Fetch data
+            fetch('api/get_branch_employees.php?branch_name=' + encodeURIComponent(branchName) + 
+                  '&start_date=' + encodeURIComponent(currentDateRange.start) + 
+                  '&end_date=' + encodeURIComponent(currentDateRange.end))
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    if (data.error) {
+                        error.textContent = data.error;
+                        error.style.display = 'block';
+                    } else {
+                        renderBranchEmployees(data);
+                        content.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    loading.style.display = 'none';
+                    error.textContent = 'Failed to load data. Please try again.';
+                    error.style.display = 'block';
+                    console.error('Error fetching branch data:', err);
+                });
+        }
+
+        function renderBranchEmployees(data) {
+            const tbody = document.getElementById('branchModalTableBody');
+            const employees = data.employees || [];
+            const totals = data.totals || {};
+
+            // Clear existing content
+            tbody.innerHTML = '';
+
+            // Render employee rows
+            employees.forEach(emp => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${escapeHtml(emp.full_name)}</strong><br><small>${escapeHtml(emp.employee_code)}</small></td>
+                    <td>${escapeHtml(emp.position || 'N/A')}</td>
+                    <td>${emp.days_worked || 0}</td>
+                    <td class="amount">${formatCurrency(emp.basic_pay)}</td>
+                    <td class="amount">${formatCurrency(emp.ot_amount)}</td>
+                    <td class="amount deduction">${formatCurrency(emp.total_deductions)}</td>
+                    <td class="amount net">${formatCurrency(emp.take_home_pay)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update totals
+            document.getElementById('branchModalEmployeeCount').textContent = totals.employee_count || 0;
+            document.getElementById('branchModalTotalDays').textContent = totals.total_days_worked || 0;
+            document.getElementById('branchModalTotalBasic').textContent = formatCurrency(totals.total_basic_pay);
+            document.getElementById('branchModalTotalOT').textContent = formatCurrency(totals.total_ot_amount);
+            document.getElementById('branchModalTotalDeductions').textContent = formatCurrency(totals.total_deductions);
+            document.getElementById('branchModalTotalNet').textContent = formatCurrency(totals.total_take_home);
+        }
+
+        function closeBranchModal() {
+            document.getElementById('branchDetailModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeBranchModal();
+            }
+        });
     </script>
 </body>
 </html>
