@@ -1,22 +1,33 @@
 <?php
 require_once __DIR__ . '/conn/db_connection.php';
-require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 $employeeId = $_POST['employee_id'] ?? null;
 $branchName = $_POST['branch_name'] ?? null;
-
-// Geolocation parameters (optional)
-$latitude = isset($_POST['latitude']) ? floatval($_POST['latitude']) : null;
-$longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
-$accuracy = isset($_POST['accuracy']) ? floatval($_POST['accuracy']) : null;
-$locationVerified = isset($_POST['location_verified']) ? intval($_POST['location_verified']) : 0;
+$attendanceTimestampRaw = trim((string)($_POST['attendance_timestamp'] ?? ''));
 
 if (!$employeeId || !$branchName) {
-    // Log missing parameters
-    logApiActivity($db, $employeeId ?? null, 'Time Out Failed', "Missing employee_id or branch_name in time out request");
     echo json_encode(['success' => false, 'message' => 'Missing employee_id or branch_name']);
     exit();
+}
+
+function resolveAttendanceDateTime(string $raw): ?array {
+    if ($raw === '') {
+        return null;
+    }
+
+    try {
+        $timezone = new DateTimeZone('Asia/Manila');
+        $dateTime = new DateTime($raw, $timezone);
+        $dateTime->setTimezone($timezone);
+
+        return [
+            'date' => $dateTime->format('Y-m-d'),
+            'datetime' => $dateTime->format('Y-m-d H:i:s'),
+        ];
+    } catch (Throwable $e) {
+        return null;
+    }
 }
 
 function attendanceHasColumn($db, $columnName) {
@@ -29,10 +40,6 @@ function attendanceHasColumn($db, $columnName) {
 $hasTimeIn = attendanceHasColumn($db, 'time_in');
 $hasTimeOut = attendanceHasColumn($db, 'time_out');
 $hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
-$hasClockOutLat = attendanceHasColumn($db, 'clock_out_lat');
-$hasClockOutLng = attendanceHasColumn($db, 'clock_out_lng');
-$hasLocationAccuracy = attendanceHasColumn($db, 'location_accuracy');
-$hasLocationVerified = attendanceHasColumn($db, 'location_verified');
 
 if (!$hasTimeIn) {
     echo json_encode([
@@ -50,7 +57,15 @@ if (!$hasTimeOut) {
     exit();
 }
 
-$date = date('Y-m-d');
+$resolvedAttendance = resolveAttendanceDateTime($attendanceTimestampRaw);
+
+if ($attendanceTimestampRaw !== '' && !$resolvedAttendance) {
+    echo json_encode(['success' => false, 'message' => 'Invalid attendance_timestamp']);
+    exit();
+}
+
+$date = $resolvedAttendance['date'] ?? date('Y-m-d');
+$timeOutValue = $resolvedAttendance['datetime'] ?? date('Y-m-d H:i:s');
 
 // Find today's latest running attendance row
 $sql = $hasIsTimeRunning
@@ -64,87 +79,31 @@ $row = $result ? mysqli_fetch_assoc($result) : null;
 mysqli_stmt_close($stmt);
 
 if (!$row) {
-    // Log no open record found
-    logApiActivity($db, $employeeId, 'Time Out Failed', "No open attendance record for time out - Employee ID: {$employeeId}");
     echo json_encode(['success' => false, 'message' => 'No open attendance record for time out']);
     exit();
 }
 
 if (!empty($row['branch_name']) && $row['branch_name'] !== $branchName) {
-    // Log branch mismatch
-    logApiActivity($db, $employeeId, 'Time Out Failed', "Cannot time out from different branch. Attempted: {$branchName}, Original: {$row['branch_name']}");
     echo json_encode(['success' => false, 'message' => 'Cannot time out from a different branch']);
     exit();
 }
 
 $attendanceId = $row['id'];
-$shouldIncludeLocation = $hasClockOutLat && $hasClockOutLng;
-
-// Build dynamic UPDATE based on available columns
-$updateFields = ["time_out = NOW()", "updated_at = NOW()"];
-$updateTypes = '';
-$updateParams = [];
-
-if ($hasIsTimeRunning) {
-    $updateFields[] = "is_time_running = 0";
-}
-
-// Add location columns if available and provided
-if ($shouldIncludeLocation && $latitude !== null && $longitude !== null) {
-    $updateFields[] = "clock_out_lat = ?";
-    $updateFields[] = "clock_out_lng = ?";
-    $updateTypes .= 'dd';
-    $updateParams[] = $latitude;
-    $updateParams[] = $longitude;
-    
-    if ($hasLocationAccuracy && $accuracy !== null) {
-        $updateFields[] = "location_accuracy = ?";
-        $updateTypes .= 'd';
-        $updateParams[] = $accuracy;
-    }
-    
-    if ($hasLocationVerified) {
-        $updateFields[] = "location_verified = ?";
-        $updateTypes .= 'i';
-        $updateParams[] = $locationVerified;
-    }
-}
-
-// Add attendance_id to params
-$updateTypes .= 'i';
-$updateParams[] = $attendanceId;
-
-$updateSql = "UPDATE attendance SET " . implode(', ', $updateFields) . " WHERE id = ?";
+$updateSql = $hasIsTimeRunning
+    ? "UPDATE attendance SET time_out = ?, is_time_running = 0, updated_at = NOW() WHERE id = ?"
+    : "UPDATE attendance SET time_out = ?, updated_at = NOW() WHERE id = ?";
 $updateStmt = mysqli_prepare($db, $updateSql);
-mysqli_stmt_bind_param($updateStmt, $updateTypes, ...$updateParams);
+mysqli_stmt_bind_param($updateStmt, 'si', $timeOutValue, $attendanceId);
 if (mysqli_stmt_execute($updateStmt)) {
-    $response = [
+    echo json_encode([
         'success' => true,
         'message' => 'Time out recorded',
         'attendance_id' => $attendanceId,
-        'time_out' => date('Y-m-d H:i:s'),
+        'time_out' => $timeOutValue,
         'is_time_running' => false
-    ];
-    
-    // Include location data in response if saved
-    if ($shouldIncludeLocation && $latitude !== null && $longitude !== null) {
-        $response['location'] = [
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'accuracy' => $accuracy,
-            'verified' => $locationVerified
-        ];
-    }
-    
-    echo json_encode($response);
-    
-    // Log activity to database
-    logApiActivity($db, $employeeId, 'Time Out', "Employee ID {$employeeId} timed out at branch: {$branchName}");
+    ]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
-    
-    // Log failed activity to database
-    logApiActivity($db, $employeeId, 'Time Out Failed', "Failed to record time out for Employee ID {$employeeId} - Error: " . mysqli_error($db));
 }
 mysqli_stmt_close($updateStmt);
 ?>

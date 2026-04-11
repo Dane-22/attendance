@@ -1,21 +1,34 @@
 <?php
 require_once __DIR__ . '/conn/db_connection.php';
-require_once __DIR__ . '/functions.php';
 header('Content-Type: application/json');
 
 $employeeId = $_POST['employee_id'] ?? null;
 $branchName = $_POST['branch_name'] ?? null;
 $debug = isset($_POST['debug']) ? (int)$_POST['debug'] : 0;
-
-// Geolocation parameters (optional)
-$latitude = isset($_POST['latitude']) ? floatval($_POST['latitude']) : null;
-$longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
-$accuracy = isset($_POST['accuracy']) ? floatval($_POST['accuracy']) : null;
-$locationVerified = isset($_POST['location_verified']) ? intval($_POST['location_verified']) : 0;
+$attendanceTimestampRaw = trim((string)($_POST['attendance_timestamp'] ?? ''));
 
 if (!$employeeId || !$branchName) {
     echo json_encode(['success' => false, 'message' => 'Missing employee_id or branch_name']);
     exit();
+}
+
+function resolveAttendanceDateTime(string $raw): ?array {
+    if ($raw === '') {
+        return null;
+    }
+
+    try {
+        $timezone = new DateTimeZone('Asia/Manila');
+        $dateTime = new DateTime($raw, $timezone);
+        $dateTime->setTimezone($timezone);
+
+        return [
+            'date' => $dateTime->format('Y-m-d'),
+            'datetime' => $dateTime->format('Y-m-d H:i:s'),
+        ];
+    } catch (Throwable $e) {
+        return null;
+    }
 }
 
 function attendanceHasColumn($db, $columnName) {
@@ -42,10 +55,6 @@ $hasTimeOut = attendanceHasColumn($db, 'time_out');
 $hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
 $hasIsOvertimeRunning = attendanceHasColumn($db, 'is_overtime_running');
 $hasTotalOtHrs = attendanceHasColumn($db, 'total_ot_hrs');
-$hasClockInLat = attendanceHasColumn($db, 'clock_in_lat');
-$hasClockInLng = attendanceHasColumn($db, 'clock_in_lng');
-$hasLocationAccuracy = attendanceHasColumn($db, 'location_accuracy');
-$hasLocationVerified = attendanceHasColumn($db, 'location_verified');
 
 if (!$hasTimeIn) {
     $payload = [
@@ -79,7 +88,15 @@ if (!$hasTimeOut) {
     exit();
 }
 
-$date = date('Y-m-d');
+$resolvedAttendance = resolveAttendanceDateTime($attendanceTimestampRaw);
+
+if ($attendanceTimestampRaw !== '' && !$resolvedAttendance) {
+    echo json_encode(['success' => false, 'message' => 'Invalid attendance_timestamp']);
+    exit();
+}
+
+$date = $resolvedAttendance['date'] ?? date('Y-m-d');
+$attendanceDateTime = $resolvedAttendance['datetime'] ?? null;
 
 // Check if already clocked in for today
 // Check if employee has any open session at a different branch today
@@ -106,89 +123,35 @@ foreach ($openRows as $row) {
 // Otherwise, allow time-in (multiple sessions allowed at the same branch in a day)
 
 $shouldIncludeOtDefaults = $hasIsOvertimeRunning && $hasTotalOtHrs;
-$shouldIncludeLocation = $hasClockInLat && $hasClockInLng;
 
 $insertSql = null;
-$insertTypes = 'iss';
-$insertParams = [$employeeId, $branchName, $date];
-
-// Build dynamic INSERT based on available columns
-$columns = ['employee_id', 'branch_name', 'attendance_date', 'time_in', 'status', 'created_at'];
-$values = ['?', '?', '?', 'NOW()', "'Present'", 'NOW()'];
-
-if ($hasIsTimeRunning) {
-    $columns[] = 'is_time_running';
-    $values[] = '1';
+if ($hasIsTimeRunning && $shouldIncludeOtDefaults) {
+    $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_overtime_running, is_time_running, total_ot_hrs) VALUES (?, ?, ?, ?, 'Present', NOW(), 0, 1, '')";
+} elseif ($hasIsTimeRunning) {
+    $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_time_running) VALUES (?, ?, ?, ?, 'Present', NOW(), 1)";
+} elseif ($shouldIncludeOtDefaults) {
+    $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at, is_overtime_running, total_ot_hrs) VALUES (?, ?, ?, ?, 'Present', NOW(), 0, '')";
+} else {
+    $insertSql = "INSERT INTO attendance (employee_id, branch_name, attendance_date, time_in, status, created_at) VALUES (?, ?, ?, ?, 'Present', NOW())";
 }
-
-if ($hasIsOvertimeRunning) {
-    $columns[] = 'is_overtime_running';
-    $values[] = '0';
-}
-
-if ($hasTotalOtHrs) {
-    $columns[] = 'total_ot_hrs';
-    $values[] = "''";
-}
-
-// Add location columns if available and provided
-if ($shouldIncludeLocation && $latitude !== null && $longitude !== null) {
-    $columns[] = 'clock_in_lat';
-    $columns[] = 'clock_in_lng';
-    $values[] = '?';
-    $values[] = '?';
-    $insertTypes .= 'dd';
-    $insertParams[] = $latitude;
-    $insertParams[] = $longitude;
-    
-    if ($hasLocationAccuracy && $accuracy !== null) {
-        $columns[] = 'location_accuracy';
-        $values[] = '?';
-        $insertTypes .= 'd';
-        $insertParams[] = $accuracy;
-    }
-    
-    if ($hasLocationVerified) {
-        $columns[] = 'location_verified';
-        $values[] = '?';
-        $insertTypes .= 'i';
-        $insertParams[] = $locationVerified;
-    }
-}
-
-$insertSql = "INSERT INTO attendance (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
-
 $insertStmt = mysqli_prepare($db, $insertSql);
-mysqli_stmt_bind_param($insertStmt, $insertTypes, ...$insertParams);
+if (!$insertStmt) {
+    echo json_encode(['success' => false, 'message' => 'Database error preparing insert: ' . mysqli_error($db)]);
+    exit();
+}
+
+$timeInValue = $attendanceDateTime ?? date('Y-m-d H:i:s');
+mysqli_stmt_bind_param($insertStmt, 'isss', $employeeId, $branchName, $date, $timeInValue);
 if (mysqli_stmt_execute($insertStmt)) {
-    $attendanceId = mysqli_insert_id($db);
-    $response = [
+    echo json_encode([
         'success' => true,
         'message' => 'Time in recorded',
-        'attendance_id' => $attendanceId,
-        'time_in' => date('Y-m-d H:i:s'),
+        'attendance_id' => mysqli_insert_id($db),
+        'time_in' => $timeInValue,
         'is_time_running' => true
-    ];
-    
-    // Include location data in response if saved
-    if ($shouldIncludeLocation && $latitude !== null && $longitude !== null) {
-        $response['location'] = [
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'accuracy' => $accuracy,
-            'verified' => $locationVerified
-        ];
-    }
-    
-    echo json_encode($response);
-    
-    // Log activity to database
-    logApiActivity($db, $employeeId, 'Time In', "Employee ID {$employeeId} timed in at branch: {$branchName}");
+    ]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($db)]);
-    
-    // Log failed activity to database
-    logApiActivity($db, $employeeId, 'Time In Failed', "Failed to record time in for Employee ID {$employeeId} at branch: {$branchName} - Error: " . mysqli_error($db));
 }
 mysqli_stmt_close($insertStmt);
 ?>

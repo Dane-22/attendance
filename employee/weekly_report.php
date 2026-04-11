@@ -192,7 +192,13 @@ include __DIR__ . '/function/report.php';
                     <button type="button" onclick="exportToExcel()" class="btn-secondary">
                         <i class="fas fa-file-excel mr-2"></i>Export Excel
                     </button>
+                    <button type="button" onclick="openBundlePrintModal()" class="btn-primary" id="bundlePrintBtn" disabled>
+                        <i class="fas fa-print mr-2"></i>Bundle Print <span id="bundlePrintCount">(0 pages)</span>
+                    </button>
                 </form>
+                <div class="mb-4 flex items-center gap-2">
+                    <span id="selectionCounter" class="text-sm text-gray-400">0 employees selected</span>
+                </div>
 
                 <!-- Quick Branch Filter Links -->
                 <div class="mb-6">
@@ -280,6 +286,9 @@ include __DIR__ . '/function/report.php';
                     <table class="w-full border-collapse min-w-[1200px]" id="reportTable">
                         <thead>
                             <tr class="bg-gradient-to-r from-yellow-600 to-yellow-800">
+                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2" style="width: 40px;">
+                                    <input type="checkbox" id="selectAllCheckbox" class="bundle-checkbox" onclick="toggleSelectAll()" title="Select All">
+                                </th>
                                 <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
                                     Employee
                                 </th>
@@ -346,7 +355,10 @@ include __DIR__ . '/function/report.php';
                                 $total_deductions = $payroll['sss_deduction'] + $payroll['philhealth_deduction'] + $payroll['pagibig_deduction'] + $ca_deduction + $sss_loan;
                                 $take_home = $gross_plus_allowance - $total_deductions;
                             ?>
-                            <tr class="border-b border-gray-700 hover:bg-gray-800/50">
+                            <tr class="border-b border-gray-700 hover:bg-gray-800/50" data-emp-id="<?php echo $emp_id; ?>">
+                                <td class="px-2 py-2 text-center">
+                                    <input type="checkbox" class="bundle-checkbox emp-checkbox" value="<?php echo $emp_id; ?>" onchange="updateSelection()" data-emp-name="<?php echo htmlspecialchars($payroll['employee']['last_name'] . ', ' . $payroll['employee']['first_name']); ?>">
+                                </td>
                                 <td class="px-3 py-2">
                                     <div class="font-medium text-white text-sm">
                                         <?php echo htmlspecialchars(strtoupper($payroll['employee']['last_name'] . ', ' . $payroll['employee']['first_name'])); ?>
@@ -469,6 +481,7 @@ include __DIR__ . '/function/report.php';
                             $grand_take_home = $payroll_totals['total_gross'] + $total_allowance + $total_ot - $grand_total_deductions;
                             ?>
                             <tr class="bg-gray-800 font-bold border-t-2 border-yellow-500" id="totalRow">
+                                <td class="px-2 py-3 text-center text-gray-400">-</td>
                                 <td class="px-3 py-3 text-white">TOTAL</td>
                                 <td class="px-2 py-3 text-center text-gray-400">-</td>
                                 <td class="px-2 py-3 text-center text-white" id="totalDays"><?php echo $payroll_totals['total_days']; ?></td>
@@ -516,6 +529,32 @@ include __DIR__ . '/function/report.php';
                     <i class="fas fa-print mr-2"></i>Print
                 </button>
                 <button type="button" onclick="closePayslipModal()" class="btn-secondary">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bundle Print Modal -->
+    <div id="bundlePrintModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-panel bundle-modal">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold text-yellow-400">
+                    <i class="fas fa-print mr-2"></i>Bundle Print Preview
+                </h3>
+                <button type="button" onclick="closeBundlePrintModal()" class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="bundlePrintContent">
+                <!-- Bundle print content will be dynamically inserted here -->
+            </div>
+            <div class="modal-footer">
+                <span id="bundlePageInfo" class="text-sm text-gray-400 mr-auto"></span>
+                <button type="button" onclick="printBundlePayslips()" class="btn-primary">
+                    <i class="fas fa-print mr-2"></i>Print All Pages
+                </button>
+                <button type="button" onclick="closeBundlePrintModal()" class="btn-secondary">
                     Close
                 </button>
             </div>
@@ -852,6 +891,373 @@ include __DIR__ . '/function/report.php';
                 console.error('Error:', error);
                 showToast('Error saving loan. Please check your connection.', 'error');
             });
+        }
+
+        // Bundle Print Functions
+        let selectedEmployees = new Set();
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const empCheckboxes = document.querySelectorAll('.emp-checkbox');
+            
+            empCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+                const empId = checkbox.value;
+                if (selectAllCheckbox.checked) {
+                    selectedEmployees.add(empId);
+                } else {
+                    selectedEmployees.delete(empId);
+                }
+            });
+            
+            updateSelectionUI();
+        }
+
+        function updateSelection() {
+            selectedEmployees.clear();
+            const empCheckboxes = document.querySelectorAll('.emp-checkbox');
+
+            empCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedEmployees.add(checkbox.value);
+                }
+            });
+
+            // Update select all checkbox state
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const allChecked = empCheckboxes.length > 0 && empCheckboxes.length === selectedEmployees.size;
+            selectAllCheckbox.checked = allChecked;
+
+            updateSelectionUI();
+        }
+        window.updateSelection = updateSelection;
+
+        function updateSelectionUI() {
+            const count = selectedEmployees.size;
+            const pages = Math.ceil(count / 6);
+            
+            document.getElementById('selectionCounter').textContent = `${count} employees selected`;
+            document.getElementById('bundlePrintCount').textContent = `(${pages} page${pages !== 1 ? 's' : ''})`;
+            document.getElementById('bundlePrintBtn').disabled = count === 0;
+        }
+
+        function openBundlePrintModal() {
+            if (selectedEmployees.size === 0) {
+                showToast('Please select at least one employee', 'error');
+                return;
+            }
+
+            const bundleData = collectBundleData();
+            const content = document.getElementById('bundlePrintContent');
+            const totalPages = Math.ceil(bundleData.length / 6);
+
+            let html = '';
+
+            for (let page = 0; page < totalPages; page++) {
+                const pageEmployees = bundleData.slice(page * 6, (page + 1) * 6);
+                html += generatePageHTML(pageEmployees, page + 1, totalPages);
+            }
+
+            content.innerHTML = html;
+            document.getElementById('bundlePageInfo').textContent = `${totalPages} page${totalPages !== 1 ? 's' : ''} (${bundleData.length} employees)`;
+            document.getElementById('bundlePrintModal').style.display = 'flex';
+        }
+
+        function closeBundlePrintModal() {
+            document.getElementById('bundlePrintModal').style.display = 'none';
+        }
+
+        function collectBundleData() {
+            const data = [];
+            const empCheckboxes = document.querySelectorAll('.emp-checkbox:checked');
+            
+            empCheckboxes.forEach(checkbox => {
+                const empId = checkbox.value;
+                const empName = checkbox.getAttribute('data-emp-name');
+                const row = checkbox.closest('tr');
+                
+                // Get data from the row cells and inputs
+                const cells = row.querySelectorAll('td');
+                const allowance = parseFloat(document.getElementById('allowance_' + empId)?.value || 0);
+                const ca = parseFloat(document.getElementById('ca_' + empId)?.value || 0);
+                const loan = parseFloat(document.getElementById('loan_' + empId)?.value || 0);
+                
+                // Extract values from cells (skip checkbox and name columns)
+                const daysWorked = cells[2]?.textContent?.trim() || '0';
+                const dailyRate = cells[5]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                const grossPay = cells[6]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                const otHours = cells[7]?.textContent?.trim() || '0';
+                const otAmount = cells[8]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                const sss = cells[13]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                const philhealth = cells[14]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                const pagibig = cells[15]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                const totalDeductions = cells[17]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                const takeHome = cells[18]?.textContent?.trim().replace(/[^0-9.]/g, '') || '0';
+                
+                data.push({
+                    empId,
+                    empName,
+                    daysWorked: parseFloat(daysWorked) || 0,
+                    dailyRate: parseFloat(dailyRate) || 0,
+                    grossPay: parseFloat(grossPay) || 0,
+                    otHours: parseFloat(otHours) || 0,
+                    otAmount: parseFloat(otAmount) || 0,
+                    allowance,
+                    sss: parseFloat(sss) || 0,
+                    philhealth: parseFloat(philhealth) || 0,
+                    pagibig: parseFloat(pagibig) || 0,
+                    ca,
+                    loan,
+                    totalDeductions: parseFloat(totalDeductions) || 0,
+                    takeHome: parseFloat(takeHome) || 0,
+                    period: '<?php echo $date_range_label; ?>'
+                });
+            });
+            
+            return data;
+        }
+
+        function generatePageHTML(employees, pageNum, totalPages) {
+            let payslipsHTML = '';
+            
+            employees.forEach(emp => {
+                const grossWithAllowance = emp.grossPay + emp.allowance + emp.otAmount;
+                const finalDeductions = emp.totalDeductions + emp.ca;
+                const finalTakeHome = grossWithAllowance - finalDeductions;
+                
+                payslipsHTML += `
+                    <div class="bundle-payslip">
+                        <div class="bp-header">
+                            <h4 class="bp-name">${emp.empName}</h4>
+                            <p class="bp-info">ID: ${emp.empId} | ${emp.period}</p>
+                        </div>
+                        <div class="bp-section">
+                            <h5 class="bp-section-title earnings">EARNINGS</h5>
+                            <div class="bp-row">
+                                <span>Days:</span>
+                                <span>${emp.daysWorked}</span>
+                            </div>
+                            <div class="bp-row">
+                                <span>Rate:</span>
+                                <span>₱${numberFormat(emp.dailyRate)}</span>
+                            </div>
+                            <div class="bp-row">
+                                <span>Basic:</span>
+                                <span>₱${numberFormat(emp.grossPay)}</span>
+                            </div>
+                            ${emp.otAmount > 0 ? `
+                            <div class="bp-row">
+                                <span>OT (${emp.otHours}h):</span>
+                                <span>₱${numberFormat(emp.otAmount)}</span>
+                            </div>` : ''}
+                            ${emp.allowance > 0 ? `
+                            <div class="bp-row">
+                                <span>Allowance:</span>
+                                <span>₱${numberFormat(emp.allowance)}</span>
+                            </div>` : ''}
+                            <div class="bp-row total">
+                                <span>Gross:</span>
+                                <span>₱${numberFormat(grossWithAllowance)}</span>
+                            </div>
+                        </div>
+                        <div class="bp-section">
+                            <h5 class="bp-section-title deductions">DEDUCTIONS</h5>
+                            ${emp.sss > 0 ? `
+                            <div class="bp-row">
+                                <span>SSS:</span>
+                                <span>₱${numberFormat(emp.sss)}</span>
+                            </div>` : ''}
+                            ${emp.philhealth > 0 ? `
+                            <div class="bp-row">
+                                <span>PhilHealth:</span>
+                                <span>₱${numberFormat(emp.philhealth)}</span>
+                            </div>` : ''}
+                            ${emp.pagibig > 0 ? `
+                            <div class="bp-row">
+                                <span>Pag-IBIG:</span>
+                                <span>₱${numberFormat(emp.pagibig)}</span>
+                            </div>` : ''}
+                            ${emp.ca > 0 ? `
+                            <div class="bp-row">
+                                <span>CA:</span>
+                                <span>₱${numberFormat(emp.ca)}</span>
+                            </div>` : ''}
+                            ${emp.loan > 0 ? `
+                            <div class="bp-row">
+                                <span>SSS Loan:</span>
+                                <span>₱${numberFormat(emp.loan)}</span>
+                            </div>` : ''}
+                            <div class="bp-row total">
+                                <span>Total:</span>
+                                <span>₱${numberFormat(finalDeductions)}</span>
+                            </div>
+                        </div>
+                        <div class="bp-footer">
+                            <div class="bp-row net">
+                                <span>NET PAY:</span>
+                                <span>₱${numberFormat(finalTakeHome)}</span>
+                            </div>
+                        </div>
+                        <div class="bp-signatures">
+                            <div class="bp-sig-line"></div>
+                            <div class="bp-sig-line"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Fill empty slots if less than 6 employees
+            const emptySlots = 6 - employees.length;
+            for (let i = 0; i <emptySlots; i++) {
+                payslipsHTML += `<div class="bundle-payslip empty"></div>`;
+            }
+            
+            return `
+                <div class="bundle-page">
+                    <div class="bundle-page-header">Page ${pageNum} of ${totalPages}</div>
+                    <div class="bundle-page-grid">
+                        ${payslipsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function printBundlePayslips() {
+            const content = document.getElementById('bundlePrintContent').innerHTML;
+            const printWindow = window.open('', '_blank');
+            
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Bundle Payslips</title>
+                    <style>
+                        @page {
+                            margin: 5mm;
+                            size: auto;
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                        }
+                        .bundle-page {
+                            width: 100%;
+                            height: 100vh;
+                            page-break-after: always;
+                            box-sizing: border-box;
+                            padding: 5mm;
+                        }
+                        .bundle-page:last-child {
+                            page-break-after: auto;
+                        }
+                        .bundle-page-header {
+                            text-align: center;
+                            font-size: 10pt;
+                            color: #666;
+                            margin-bottom: 3mm;
+                        }
+                        .bundle-page-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr 1fr;
+                            grid-template-rows: 1fr 1fr;
+                            gap: 2mm;
+                            height: calc(100% - 10mm);
+                            width: 100%;
+                        }
+                        .bundle-payslip {
+                            border: 1px solid #444;
+                            border-radius: 2mm;
+                            padding: 2mm;
+                            display: flex;
+                            flex-direction: column;
+                            font-size: 7pt;
+                            background: #1a1a1a;
+                            color: #fff;
+                            box-sizing: border-box;
+                            overflow: hidden;
+                        }
+                        .bundle-payslip.empty {
+                            border: 1px dashed #666;
+                            background: #f5f5f5;
+                        }
+                        .bp-header {
+                            text-align: center;
+                            border-bottom: 1px solid #FFD700;
+                            padding-bottom: 1mm;
+                            margin-bottom: 1mm;
+                        }
+                        .bp-name {
+                            font-size: 9pt;
+                            font-weight: bold;
+                            margin: 0;
+                            line-height: 1.2;
+                            color: #FFD700;
+                        }
+                        .bp-info {
+                            font-size: 6pt;
+                            color: #999;
+                            margin: 0;
+                        }
+                        .bp-section {
+                            flex: 1;
+                        }
+                        .bp-section-title {
+                            font-size: 7pt;
+                            font-weight: bold;
+                            margin: 1mm 0 0.5mm 0;
+                            text-transform: uppercase;
+                        }
+                        .bp-section-title.earnings {
+                            color: #FFD700;
+                        }
+                        .bp-section-title.deductions {
+                            color: #ef4444;
+                        }
+                        .bp-row {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 0.3mm 0;
+                            font-size: 6.5pt;
+                            line-height: 1.1;
+                            color: #ddd;
+                        }
+                        .bp-row.total {
+                            border-top: 1px solid #555;
+                            margin-top: 0.5mm;
+                            padding-top: 0.5mm;
+                            font-weight: bold;
+                            color: #fff;
+                        }
+                        .bp-row.net {
+                            font-size: 9pt;
+                            font-weight: bold;
+                            color: #10b981;
+                        }
+                        .bp-footer {
+                            border-top: 1px solid #10b981;
+                            margin-top: 1mm;
+                            padding-top: 1mm;
+                        }
+                        .bp-signatures {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-top: 2mm;
+                        }
+                        .bp-sig-line {
+                            width: 40%;
+                            border-top: 1px solid #666;
+                            height: 3mm;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
         }
     </script>
 </body>

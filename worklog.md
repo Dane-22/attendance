@@ -2,6 +2,123 @@
 
 ## Work Log for Attendance System
 
+
+### 2026-04-11
+
+**Task:** Fix Overtime Display in Weekly Report
+
+**Status:** ✅ Completed
+
+**Problem:** Approved overtime for employees was not being displayed in the 'Overtime Amount' column of `weekly_report.php`. The report was using overtime hours from `daily_payroll_reports` which didn't check for approval status from `overtime_requests` table.
+
+**Root Cause:** The `daily_payroll_calculation.php` cron job populated `daily_payroll_reports` with unapproved overtime hours directly from the `attendance` table, without verifying if overtime requests were approved.
+
+**Solution:** Modified `employee/function/report.php` to query approved overtime directly from `overtime_requests` table and use that as the authoritative source.
+
+**Changes Made:**
+
+**`employee/function/report.php`:**
+- Added query to fetch approved overtime from `overtime_requests` table (lines 244-264)
+  - Filters by status IN ('approved', 'pre-approved')
+  - Uses `requested_hours` column
+- Organized approved overtime data by employee ID (lines 267-285)
+- Removed accumulation of `total_ot_hrs` from `daily_payroll_reports` (line 422)
+- Applied approved overtime hours to each employee before payroll calculation (lines 688-697)
+
+**`employee/weekly_report.php`:**
+- Added OT Hrs column to table header (colspan 2 under Overtime)
+- Added "OT Hrs" sub-header between Basic Pay and OT Amt
+- Added data cell displaying `total_ot_hrs` with 1 decimal
+- Added total OT hours to total row
+
+**Result:** Weekly report now displays only approved overtime hours and amounts. Unapproved/pending overtime is excluded from payroll.
+
+---
+
+### 2026-04-11
+
+**Task:** Implement Date Range View in Overtime Page
+
+**Status:** ✅ Completed
+
+**Problem:** The overtime page only supported Weekly and Monthly views. Users needed the flexibility to view overtime records for custom date ranges, similar to the payroll report.
+
+**Solution:** Added 'range' view type to overtime.php with date range inputs, toggle button, and proper date handling.
+
+**Changes Made:**
+
+**[employee/overtime.php](cci:7://file:///c:/wamp64/www/main/employee/overtime.php:0:0-0:0):**
+
+1. **Line 26** - Changed default view:
+   - BEFORE: `$view_type = $_GET['view'] ?? 'weekly';`
+   - AFTER: `$view_type = $_GET['view'] ?? 'range';`
+
+2. **Lines 41-64** - Added custom date range logic:
+   - Added `start_date` and `end_date` parameter handling
+   - Added `elseif ($view_type === 'range' && $start_date && $end_date)` block
+   - Date validation with fallback to current week if invalid
+   - Date range label format: "Custom Range: M d, Y - M d, Y"
+
+3. **Lines 218-237** - Added Date Range toggle button:
+   - Added third toggle option with calendar icon
+   - Active state styling for range view
+
+4. **Lines 267-317** - Added conditional date range inputs:
+   - Start Date and End Date input fields (visible only in range view)
+   - Filter button for applying date range
+   - Month/Week selectors hidden when in range view
+
+5. **Lines 202-210** - Updated header title logic:
+   - Shows "Custom Date Range Overtime Report" when in range view
+
+**Features:**
+- Date Range is now the default view when accessing overtime.php
+- Default range is last 7 days (start: -7 days, end: today)
+- Users can select any custom date range
+- Invalid dates fall back to current week
+- Branch filter and search work with date range
+- Excel export preserves date range context
+
+---
+
+
+### 2026-04-11
+
+**Task:** Fix Password Reset AJAX Error
+
+**Status:** ✅ Completed
+
+**Problem:** Password reset button in employee edit modal was showing "Error resetting password. Please try again." Console showed 500 Internal Server Error with "Unexpected end of JSON input".
+
+**Root Cause:** 
+1. Incorrect AJAX path in `employees.js.php` - path was missing proper directory traversal
+2. `employees_function.php` lacked session/database initialization when called directly via AJAX
+3. Missing JSON responses for error cases (non-Super Admin, rate limit)
+4. Production server had different directory structure requiring multiple path attempts for db_connection.php
+
+**Solution:** Fixed path resolution, added proper initialization, comprehensive error handling, and multi-path database file detection.
+
+**Changes Made:**
+
+**`employee/js/employees.js.php`:**
+- Fixed fetch URL path from incorrect `../employee/function/` to proper `../employee/function/` (lines 145)
+- Added `X-Requested-With: XMLHttpRequest` header for AJAX detection (line 149)
+
+**`employee/function/employees_function.php`:**
+- Added error reporting and logging configuration (lines 1-5)
+- Added `jsonError()` helper function for consistent JSON error responses (lines 12-17)
+- Added session auto-start and database connection initialization with try-catch (lines 19-46)
+- Added multi-path detection for `db_connection.php` to handle different server structures
+- Moved `columnExists()` function and `$hasDeductionColumn` check to top of file (lines 57-62)
+- Added JSON error responses for non-Super Admin access (lines 115-121)
+- Added JSON error responses for rate limiting (lines 126-131)
+- Added shutdown handler to catch and return fatal errors as JSON (lines 468-478)
+
+**Result:** Password reset now works correctly and returns proper JSON responses for all success and error cases.
+
+---
+
+
 ### 2026-04-10
 
 **Task:** Implement Soft Delete for Branch Deletion
