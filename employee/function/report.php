@@ -241,6 +241,49 @@ $attendance_result = mysqli_stmt_get_result($stmt2);
 $attendance_row_count = mysqli_num_rows($attendance_result);
 error_log("[report.php] Attendance query executed. Date range: $start_date to $end_date. Rows fetched: $attendance_row_count");
 
+// Fetch approved overtime from overtime_requests table (authoritative source)
+$approved_ot_query = "SELECT r.employee_id, r.request_date, r.ot_hours, r.ot_start_time, r.ot_end_time, r.reason
+                      FROM overtime_requests r
+                      WHERE r.request_date BETWEEN ? AND ?
+                      AND r.status IN ('approved', 'pre-approved')";
+
+if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
+    $approved_ot_query .= " AND r.employee_id IN (SELECT id FROM employees WHERE branch_id = ? AND status = 'Active')";
+}
+$approved_ot_query .= " ORDER BY r.request_date, r.employee_id";
+
+$ot_stmt = mysqli_prepare($db, $approved_ot_query);
+if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
+    mysqli_stmt_bind_param($ot_stmt, 'ssi', $start_date, $end_date, $selected_branch);
+} else {
+    mysqli_stmt_bind_param($ot_stmt, 'ss', $start_date, $end_date);
+}
+mysqli_stmt_execute($ot_stmt);
+$approved_ot_result = mysqli_stmt_get_result($ot_stmt);
+$approved_ot_row_count = mysqli_num_rows($approved_ot_result);
+error_log("[report.php] Approved overtime query executed. Date range: $start_date to $end_date. Approved OT rows: $approved_ot_row_count");
+
+// Organize approved overtime by employee
+$approved_overtime = [];
+while ($ot_row = mysqli_fetch_assoc($approved_ot_result)) {
+    $emp_id = $ot_row['employee_id'];
+    if (!isset($approved_overtime[$emp_id])) {
+        $approved_overtime[$emp_id] = [
+            'total_hours' => 0,
+            'entries' => []
+        ];
+    }
+    $approved_overtime[$emp_id]['total_hours'] += floatval($ot_row['ot_hours']);
+    $approved_overtime[$emp_id]['entries'][] = [
+        'date' => $ot_row['request_date'],
+        'hours' => floatval($ot_row['ot_hours']),
+        'start_time' => $ot_row['ot_start_time'],
+        'end_time' => $ot_row['ot_end_time'],
+        'reason' => $ot_row['reason']
+    ];
+}
+error_log("[report.php] Approved overtime organized. Employees with approved OT: " . count($approved_overtime));
+
 // Government deduction constants (monthly)
 $MONTHLY_PHILHEALTH = 250.00;
 $MONTHLY_SSS = 450.00;
@@ -376,7 +419,7 @@ while ($row = mysqli_fetch_assoc($payroll_result)) {
         // Accumulate totals from daily records
         $employee_payroll[$emp_id]['days_worked'] += floatval($row['days_worked'] ?? 0);
         $employee_payroll[$emp_id]['total_hours'] += floatval($row['total_hours'] ?? 0);
-        $employee_payroll[$emp_id]['total_ot_hrs'] += floatval($row['ot_hours'] ?? 0);
+        // Note: total_ot_hrs will be set from approved_overtime array (authoritative source)
         $employee_payroll[$emp_id]['gross_pay'] += floatval($row['gross_pay'] ?? 0);
         
         // Accumulate performance allowance from daily records (take the max or latest)
@@ -638,6 +681,17 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
             $payroll['_branches'][$primary_branch]['hours'] += $branch_hour_totals[$primary_branch]['hours'];
             $payroll['_branches'][$primary_branch]['ot_hours'] += $branch_hour_totals[$primary_branch]['ot_hours'];
         }
+    }
+}
+unset($payroll);
+
+// Apply approved overtime hours to each employee (authoritative source from overtime_requests)
+foreach ($employee_payroll as $emp_id => &$payroll) {
+    if (isset($approved_overtime[$emp_id])) {
+        $payroll['total_ot_hrs'] = $approved_overtime[$emp_id]['total_hours'];
+        error_log("[report.php] Applied approved OT for emp_id=$emp_id: " . $approved_overtime[$emp_id]['total_hours'] . " hours");
+    } else {
+        $payroll['total_ot_hrs'] = 0; // No approved overtime for this employee
     }
 }
 unset($payroll);
