@@ -242,7 +242,7 @@ $attendance_row_count = mysqli_num_rows($attendance_result);
 error_log("[report.php] Attendance query executed. Date range: $start_date to $end_date. Rows fetched: $attendance_row_count");
 
 // Fetch approved overtime from overtime_requests table (authoritative source)
-$approved_ot_query = "SELECT r.employee_id, r.request_date, r.ot_hours, r.ot_start_time, r.ot_end_time, r.reason
+$approved_ot_query = "SELECT r.employee_id, r.request_date, r.requested_hours as ot_hours, r.requested_at as requested_at, r.approved_at as approved_at, r.overtime_reason as reason
                       FROM overtime_requests r
                       WHERE r.request_date BETWEEN ? AND ?
                       AND r.status IN ('approved', 'pre-approved')";
