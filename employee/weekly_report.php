@@ -739,10 +739,10 @@ include __DIR__ . '/function/report.php';
         // Update Payment Status Function
         function updatePaymentStatus(empId, status) {
             const select = document.getElementById('remarks_' + empId);
-            
-            // Get employee name from the row
+
+            // Get employee name from the row (2nd td contains the name)
             const row = select.closest('tr');
-            const empName = row.querySelector('td:first-child .font-medium').textContent.trim();
+            const empName = row.querySelector('td:nth-child(2) .font-medium').textContent.trim();
             
             // Update visual styling
             select.classList.remove('paid', 'not-paid');
@@ -813,12 +813,11 @@ include __DIR__ . '/function/report.php';
         // Save Performance Allowance Function
         function saveAllowance(empId, allowanceValue) {
             const input = document.getElementById('allowance_' + empId);
-            
-            // Get employee name from the row
+
+            // Get employee name from the row (2nd td contains the name)
             const row = input.closest('tr');
-            const empName = row.querySelector('td:first-child .font-medium').textContent.trim();
-            
-            // Send AJAX request to update database
+            const empName = row.querySelector('td:nth-child(2) .font-medium').textContent.trim();
+
             const formData = new FormData();
             formData.append('employee_id', empId);
             formData.append('performance_allowance', allowanceValue);
@@ -826,7 +825,7 @@ include __DIR__ . '/function/report.php';
             formData.append('month', <?php echo $month; ?>);
             formData.append('week', <?php echo $selected_week; ?>);
             formData.append('view_type', '<?php echo $view_type; ?>');
-            
+
             fetch('update_allowance.php', {
                 method: 'POST',
                 body: formData
@@ -857,7 +856,7 @@ include __DIR__ . '/function/report.php';
         function saveLoan(empId, loanValue) {
             const input = document.getElementById('loan_' + empId);
             const row = input.closest('tr');
-            const empName = row.querySelector('td:first-child .font-medium').textContent.trim();
+            const empName = row.querySelector('td:nth-child(2) .font-medium').textContent.trim();
 
             const formData = new FormData();
             formData.append('employee_id', empId);

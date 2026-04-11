@@ -332,40 +332,31 @@ $employee_payroll = [];
 $column_check = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'performance_allowance'");
 $has_allowance_column = mysqli_num_rows($column_check) > 0;
 
+// Check if sss_loan column exists in employees table
+$loan_column_check = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'sss_loan'");
+$has_loan_column = mysqli_num_rows($loan_column_check) > 0;
+
 // Check if has_deduction column exists
 $deduction_column_check = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'has_deduction'");
 $has_deduction_column = mysqli_num_rows($deduction_column_check) > 0;
 
+// Build query based on available columns
+$select_columns = "e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name";
 if ($has_allowance_column) {
-    if ($has_deduction_column) {
-        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, e.has_deduction, b.branch_name
-                                FROM employees e
-                                LEFT JOIN branches b ON e.branch_id = b.id
-                                WHERE e.status = 'Active'
-                                AND LOWER(e.position) = 'worker'";
-    } else {
-        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.performance_allowance, e.position, e.status, e.branch_id, b.branch_name
-                                FROM employees e
-                                LEFT JOIN branches b ON e.branch_id = b.id
-                                WHERE e.status = 'Active'
-                                AND LOWER(e.position) = 'worker'";
-    }
-} else {
-    // Fallback query without performance_allowance column
-    if ($has_deduction_column) {
-        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, e.has_deduction, b.branch_name
-                                FROM employees e
-                                LEFT JOIN branches b ON e.branch_id = b.id
-                                WHERE e.status = 'Active'
-                                AND LOWER(e.position) = 'worker'";
-    } else {
-        $all_employees_query = "SELECT e.id, e.employee_code, e.first_name, e.last_name, e.daily_rate, e.position, e.status, e.branch_id, b.branch_name
-                                FROM employees e
-                                LEFT JOIN branches b ON e.branch_id = b.id
-                                WHERE e.status = 'Active'
-                                AND LOWER(e.position) = 'worker'";
-    }
+    $select_columns .= ", e.performance_allowance";
 }
+if ($has_loan_column) {
+    $select_columns .= ", e.sss_loan";
+}
+if ($has_deduction_column) {
+    $select_columns .= ", e.has_deduction";
+}
+
+$all_employees_query = "SELECT $select_columns
+                        FROM employees e
+                        LEFT JOIN branches b ON e.branch_id = b.id
+                        WHERE e.status = 'Active'
+                        AND LOWER(e.position) = 'worker'";
 
 // Add branch filter if not 'all'
 $has_branch_filter = ($selected_branch !== 'all' && $selected_branch !== '' && is_numeric($selected_branch));
@@ -397,7 +388,7 @@ while ($emp = mysqli_fetch_assoc($all_employees_result)) {
         'total_deductions' => 0,
         'net_pay' => 0,
         'performance_allowance' => floatval($emp['performance_allowance'] ?? 0),
-        'sss_loan' => 0,
+        'sss_loan' => floatval($emp['sss_loan'] ?? 0),
         '_daily' => [],
         '_branches' => [],  // Track per-branch totals: [branch_name => ['days'=>x, 'hours'=>y, 'ot_hours'=>z]]
         '_has_payroll_record' => []  // Track dates covered by daily_payroll_reports

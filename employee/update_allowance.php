@@ -1,4 +1,10 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/update_allowance_errors.log');
+error_log("[update_allowance.php] ========== SCRIPT STARTED ==========");
+
 require_once __DIR__ . '/../conn/db_connection.php';
 
 header("Access-Control-Allow-Origin: *");
@@ -22,7 +28,10 @@ $year = isset($_REQUEST['year']) ? (int)$_REQUEST['year'] : 0;
 $month = isset($_REQUEST['month']) ? (int)$_REQUEST['month'] : 0;
 $week = isset($_REQUEST['week']) ? (int)$_REQUEST['week'] : 1;
 $viewType = isset($_REQUEST['view_type']) ? trim($_REQUEST['view_type']) : 'weekly';
-$viewType = $viewType === 'monthly' ? 'monthly' : 'weekly';
+// Validate view_type - only allow specific values
+if (!in_array($viewType, ['monthly', 'weekly', 'range'])) {
+    $viewType = 'weekly';
+}
 
 if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
     fail('Missing or invalid payroll allowance parameters.');
@@ -30,14 +39,28 @@ if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || 
 
 mysqli_begin_transaction($db);
 
+error_log("[update_allowance.php] Starting transaction for emp=$employeeId, year=$year, month=$month, week=$week, view=$viewType");
+
 try {
-    $employeeStmt = mysqli_prepare($db, "UPDATE employees SET performance_allowance = ? WHERE id = ?");
-    if (!$employeeStmt) {
-        throw new Exception(mysqli_error($db));
+    error_log("[update_allowance.php] About to update employees table");
+
+    // Check if performance_allowance column exists in employees table
+    $columnCheck = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'performance_allowance'");
+    if (mysqli_num_rows($columnCheck) > 0) {
+        $employeeStmt = mysqli_prepare($db, "UPDATE employees SET performance_allowance = ? WHERE id = ?");
+        if (!$employeeStmt) {
+            error_log("[update_allowance.php] Failed to prepare employee statement: " . mysqli_error($db));
+            throw new Exception(mysqli_error($db));
+        }
+        mysqli_stmt_bind_param($employeeStmt, 'di', $performanceAllowance, $employeeId);
+        mysqli_stmt_execute($employeeStmt);
+        error_log("[update_allowance.php] Updated employees table, rows affected: " . mysqli_stmt_affected_rows($employeeStmt));
+        mysqli_stmt_close($employeeStmt);
+    } else {
+        error_log("[update_allowance.php] performance_allowance column doesn't exist in employees table, skipping");
     }
-    mysqli_stmt_bind_param($employeeStmt, 'di', $performanceAllowance, $employeeId);
-    mysqli_stmt_execute($employeeStmt);
-    mysqli_stmt_close($employeeStmt);
+
+    error_log("[update_allowance.php] About to query weekly_payroll_reports");
 
     $selectStmt = mysqli_prepare(
         $db,

@@ -37,7 +37,10 @@ $year = isset($_REQUEST['year']) ? (int)$_REQUEST['year'] : 0;
 $month = isset($_REQUEST['month']) ? (int)$_REQUEST['month'] : 0;
 $week = isset($_REQUEST['week']) ? (int)$_REQUEST['week'] : 1;
 $viewType = isset($_REQUEST['view_type']) ? trim($_REQUEST['view_type']) : 'weekly';
-$viewType = $viewType === 'monthly' ? 'monthly' : 'weekly';
+// Validate view_type - only allow specific values
+if (!in_array($viewType, ['monthly', 'weekly', 'range'])) {
+    $viewType = 'weekly';
+}
 
 if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
     fail('Missing or invalid payroll loan parameters.');
@@ -46,6 +49,18 @@ if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || 
 mysqli_begin_transaction($db);
 
 try {
+    // Update employee's permanent SSS loan value in employees table (if column exists)
+    $columnCheck = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'sss_loan'");
+    if (mysqli_num_rows($columnCheck) > 0) {
+        $employeeStmt = mysqli_prepare($db, "UPDATE employees SET sss_loan = ? WHERE id = ?");
+        if ($employeeStmt) {
+            mysqli_stmt_bind_param($employeeStmt, 'di', $sssLoan, $employeeId);
+            mysqli_stmt_execute($employeeStmt);
+            mysqli_stmt_close($employeeStmt);
+            error_log("[update_loan.php] Updated employees.sss_loan for emp=$employeeId");
+        }
+    }
+
     $selectStmt = mysqli_prepare(
         $db,
         "SELECT id, gross_pay, ot_amount, ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, performance_allowance
@@ -144,7 +159,7 @@ try {
         $dailyRate = (float)$empRow['daily_rate'];
         $branchId = (int)$empRow['branch_id'];
 
-        mysqli_stmt_bind_param($insertStmt, 'iiiisidddd',
+        mysqli_stmt_bind_param($insertStmt, 'iiiiisdddd',
             $employeeId, $year, $month, $week, $viewType, $branchId,
             $dailyRate, $sssLoan, $sssLoan, $sssLoan
         );
