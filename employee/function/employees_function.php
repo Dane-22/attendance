@@ -18,9 +18,23 @@ function jsonError($message) {
 
 try {
     if (!isset($db)) {
-        $dbPath = __DIR__ . '/../conn/db_connection.php';
-        if (!file_exists($dbPath)) {
-            jsonError('Database connection file not found: ' . $dbPath);
+        // Try multiple paths for different server configurations
+        $possiblePaths = [
+            __DIR__ . '/../conn/db_connection.php',  // Same level as employee folder
+            __DIR__ . '/../../conn/db_connection.php', // One level above employee folder
+            __DIR__ . '/../../../conn/db_connection.php', // Two levels above
+        ];
+        
+        $dbPath = null;
+        foreach ($possiblePaths as $path) {
+            if (file_exists($path)) {
+                $dbPath = $path;
+                break;
+            }
+        }
+        
+        if (!$dbPath) {
+            jsonError('Database connection file not found. Tried: ' . implode(', ', $possiblePaths));
         }
         require_once $dbPath;
     }
