@@ -10,3 +10,15 @@
 [11-Apr-2026 16:29:27 Asia/Manila] [update_loan.php] Record found: NO
 [11-Apr-2026 16:29:27 Asia/Manila] [update_loan.php] Applied loan=10 to ALL weeks for emp=12, 2026-4
 [11-Apr-2026 16:29:27 Asia/Manila] [update_loan.php] Created new record id=15960 with loan=10
+[11-Apr-2026 16:40:36 Asia/Manila] [update_loan.php] ========== Request received ==========
+[11-Apr-2026 16:40:36 Asia/Manila] Employee ID: 13
+[11-Apr-2026 16:40:36 Asia/Manila] SSS Loan: 10.00
+[11-Apr-2026 16:40:36 Asia/Manila] Year: 2026
+[11-Apr-2026 16:40:36 Asia/Manila] Month: 4
+[11-Apr-2026 16:40:36 Asia/Manila] Week: 2
+[11-Apr-2026 16:40:36 Asia/Manila] View Type: range
+[11-Apr-2026 16:40:36 Asia/Manila] [update_loan.php] Updated employees.sss_loan for emp=13
+[11-Apr-2026 16:40:36 Asia/Manila] [update_loan.php] Query: emp=13, year=2026, month=4, week=2, view=range
+[11-Apr-2026 16:40:36 Asia/Manila] [update_loan.php] Record found: NO
+[11-Apr-2026 16:40:36 Asia/Manila] [update_loan.php] Applied loan=10 to ALL weeks for emp=13, 2026-4
+[11-Apr-2026 16:40:36 Asia/Manila] [update_loan.php] Created new record id=15961 with loan=10
