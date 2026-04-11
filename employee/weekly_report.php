@@ -295,7 +295,7 @@ include __DIR__ . '/function/report.php';
                                 <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
                                     Basic Pay
                                 </th>
-                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" colspan="1">
+                                <th class="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" colspan="2">
                                     Overtime
                                 </th>
                                 <th class="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider border-b border-gray-600" rowspan="2">
@@ -323,7 +323,8 @@ include __DIR__ . '/function/report.php';
                             <tr class="bg-gradient-to-r from-yellow-700 to-yellow-900">
                                 <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">Days</th>
                                 <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">Hrs</th>
-                                <th class="px-2 py-2 text-right text-xs font-medium text-white uppercase border-b border-gray-600">Amt</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-white uppercase border-b border-gray-600">OT Hrs</th>
+                                <th class="px-2 py-2 text-right text-xs font-medium text-white uppercase border-b border-gray-600">OT Amt</th>
                                 <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">CA</th>
                                 <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">SSS</th>
                                 <th class="px-2 py-2 text-right text-xs font-medium text-red-300 uppercase border-b border-gray-600 bg-red-900/20">PHIC</th>
@@ -365,6 +366,9 @@ include __DIR__ . '/function/report.php';
                                 </td>
                                 <td class="px-2 py-2 text-right text-sm font-medium text-white">
                                     <?php echo number_format($payroll['gross_pay'], 0); ?>
+                                </td>
+                                <td class="px-2 py-2 text-center text-sm text-yellow-400">
+                                    <?php echo ($ot_hours > 0) ? number_format($ot_hours, 1) : '-'; ?>
                                 </td>
                                 <td class="px-2 py-2 text-right text-sm text-gray-400">
                                     <?php echo number_format($ot_amount, 0); ?>
@@ -471,6 +475,7 @@ include __DIR__ . '/function/report.php';
                                 <td class="px-2 py-3 text-center text-gray-400" id="totalHours"><?php echo number_format($payroll_totals['total_hours'], 0); ?></td>
                                 <td class="px-2 py-3 text-right text-gray-400">-</td>
                                 <td class="px-2 py-3 text-right text-yellow-400" id="totalGross"><?php echo number_format($payroll_totals['total_gross'], 0); ?></td>
+                                <td class="px-2 py-3 text-center text-yellow-400" id="totalOTHours"><?php echo number_format($total_ot_hours, 1); ?></td>
                                 <td class="px-2 py-3 text-right text-gray-400" id="totalOTAmount"><?php echo number_format($total_ot, 0); ?></td>
                                 <td class="px-2 py-3 text-right text-yellow-400" id="totalGrossPlusOT"><?php echo number_format($payroll_totals['total_gross'] + $total_ot, 0); ?></td>
                                 <td class="px-2 py-3 text-right text-blue-400" id="totalAllowance"><?php echo number_format($total_allowance, 0); ?></td>
