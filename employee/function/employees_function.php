@@ -1,10 +1,34 @@
 <?php
+// Enable error logging for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 // Initialize session and database if called directly (for AJAX requests)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-if (!isset($db)) {
-    require_once __DIR__ . '/../conn/db_connection.php';
+
+// Helper to return JSON error and exit
+function jsonError($message) {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => $message]);
+    exit;
+}
+
+try {
+    if (!isset($db)) {
+        $dbPath = __DIR__ . '/../conn/db_connection.php';
+        if (!file_exists($dbPath)) {
+            jsonError('Database connection file not found: ' . $dbPath);
+        }
+        require_once $dbPath;
+    }
+    if (!isset($db) || !$db) {
+        jsonError('Database connection failed');
+    }
+} catch (Exception $e) {
+    jsonError('Database initialization error: ' . $e->getMessage());
 }
 
 // Check if user is Super Admin
@@ -422,4 +446,16 @@ function buildEmployeeUrl($params = []) {
     
     return '?' . http_build_query($urlParams);
 }
+
+// Register shutdown handler to catch fatal errors
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Server error: ' . $error['message'] . ' in ' . $error['file'] . ':' . $error['line']
+        ]);
+    }
+});
 ?>
