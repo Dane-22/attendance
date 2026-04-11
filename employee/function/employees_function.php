@@ -76,10 +76,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if user is Super Admin for employee modifications
     if (!$isSuperAdmin) {
         $msg = 'Error: Only Super Admin can modify employee records.';
+        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => $msg]);
+            exit;
+        }
     } else {
         // Apply rate limiting for POST requests
         if (!checkRateLimit()) {
             $msg = 'Rate limit exceeded. Please wait a minute.';
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
         } else {
             $action = $_POST['action'] ?? '';
 
