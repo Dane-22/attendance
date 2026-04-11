@@ -142,7 +142,7 @@
       }
       
       // Send AJAX request to reset password
-      fetch('../employee/function/employees_function.php', {
+      fetch('../function/employees_function.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

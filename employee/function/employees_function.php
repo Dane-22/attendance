@@ -1,4 +1,12 @@
 <?php
+// Initialize session and database if called directly (for AJAX requests)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($db)) {
+    require_once __DIR__ . '/../conn/db_connection.php';
+}
+
 // Check if user is Super Admin
 $isSuperAdmin = false;
 $sessionPosition = $_SESSION['position'] ?? '';
@@ -7,6 +15,13 @@ $sessionUserRole = $_SESSION['user_role'] ?? '';
 if ($sessionPosition === 'Super Admin' || $sessionRole === 'Super Admin' || $sessionUserRole === 'Super Admin') {
     $isSuperAdmin = true;
 }
+
+// Check if has_deduction column exists (needed for POST handlers)
+function columnExists($db, $table, $column) {
+    $result = mysqli_query($db, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+    return $result && mysqli_num_rows($result) > 0;
+}
+$hasDeductionColumn = columnExists($db, 'employees', 'has_deduction');
 
 // ===== RATE LIMITER CONFIGURATION =====
 $rateLimitEnabled = false; // Set to true pag working na lahat
@@ -352,13 +367,6 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $searchTerm = mysqli_real_escape_string($db, $search);
 
 $fromClause = "FROM employees e LEFT JOIN branches b ON b.id = e.branch_id";
-
-// Check if has_deduction column exists
-function columnExists($db, $table, $column) {
-    $result = mysqli_query($db, "SHOW COLUMNS FROM `$table` LIKE '$column'");
-    return $result && mysqli_num_rows($result) > 0;
-}
-$hasDeductionColumn = columnExists($db, 'employees', 'has_deduction');
 
 // Build search condition
 $searchCondition = "WHERE e.status = 'Active'";
