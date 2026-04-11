@@ -23,7 +23,7 @@ if ($current_week > 5) $current_week = 5;
 // Handle filters
 $selected_month = $_GET['month'] ?? $current_month;
 $selected_week = intval($_GET['week'] ?? $current_week);
-$view_type = $_GET['view'] ?? 'weekly';
+$view_type = $_GET['view'] ?? 'range';
 $selected_branch = $_GET['branch'] ?? 'all';
 
 // Validate week
@@ -38,6 +38,10 @@ $month = $month_year[1];
 $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 $has_week_5 = $days_in_month > 28;
 
+// Handle custom date range parameters
+$start_date = $_GET['start_date'] ?? null;
+$end_date = $_GET['end_date'] ?? null;
+
 // Calculate date ranges
 if ($view_type === 'weekly') {
     $week_start_day = 1 + (($selected_week - 1) * 7);
@@ -45,6 +49,18 @@ if ($view_type === 'weekly') {
     $start_date = sprintf('%04d-%02d-%02d', $year, $month, $week_start_day);
     $end_date = sprintf('%04d-%02d-%02d', $year, $month, $week_end_day);
     $date_range_label = "Week $selected_week: " . date('M d', strtotime($start_date)) . " - " . date('M d, Y', strtotime($end_date));
+} elseif ($view_type === 'range' && $start_date && $end_date) {
+    // Validate and sanitize dates
+    $start_ts = strtotime($start_date);
+    $end_ts = strtotime($end_date);
+    
+    if ($start_ts === false || $end_ts === false || $end_ts < $start_ts) {
+        // Invalid dates, fallback to current week
+        $start_date = date('Y-m-d', strtotime('monday this week'));
+        $end_date = date('Y-m-d', strtotime('sunday this week'));
+    }
+    
+    $date_range_label = "Custom Range: " . date('M d, Y', strtotime($start_date)) . " - " . date('M d, Y', strtotime($end_date));
 } else {
     $start_date = sprintf('%04d-%02d-01', $year, $month);
     $end_date = sprintf('%04d-%02d-%02d', $year, $month, $days_in_month);
@@ -199,9 +215,15 @@ uasort($employee_overtime, function($a, $b) {
             <div class="header-card">
                 <div class="header-left">
                     <div>
-                        <div class="welcome">
-                            <?php echo ($view_type === 'weekly') ? 'Weekly' : 'Monthly'; ?> Overtime Report
-                        </div>
+<div class="welcome">
+    <?php 
+    if ($view_type === 'range') {
+        echo 'Custom Date Range';
+    } else {
+        echo ($view_type === 'weekly') ? 'Weekly' : 'Monthly';
+    }
+    ?> Overtime Report
+</div>
                         <div class="text-sm text-gray">
                             Admin Panel | <?php echo $date_range_label; ?>
                             <?php if ($selected_branch !== 'all'): ?>
@@ -215,17 +237,21 @@ uasort($employee_overtime, function($a, $b) {
                 </div>
             </div>
 
-            <!-- View Type Toggle -->
-            <div class="view-toggle mb-4">
-                <div class="view-option <?php echo ($view_type === 'weekly') ? 'active' : ''; ?>" 
-                     onclick="changeView('weekly')">
-                    <i class="fas fa-calendar-week mr-2"></i> Weekly View
-                </div>
-                <div class="view-option <?php echo ($view_type === 'monthly') ? 'active' : ''; ?>" 
-                     onclick="changeView('monthly')">
-                    <i class="fas fa-calendar-alt mr-2"></i> Monthly View
-                </div>
-            </div>
+<!-- View Type Toggle -->
+<div class="view-toggle mb-4">
+    <div class="view-option <?php echo ($view_type === 'weekly') ? 'active' : ''; ?>" 
+         onclick="changeView('weekly')">
+        <i class="fas fa-calendar-week mr-2"></i> Weekly View
+    </div>
+    <div class="view-option <?php echo ($view_type === 'monthly') ? 'active' : ''; ?>" 
+         onclick="changeView('monthly')">
+        <i class="fas fa-calendar-alt mr-2"></i> Monthly View
+    </div>
+    <div class="view-option <?php echo ($view_type === 'range') ? 'active' : ''; ?>" 
+         onclick="changeView('range')">
+        <i class="fas fa-calendar mr-2"></i> Date Range
+    </div>
+</div>
 
             <!-- Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -264,34 +290,55 @@ uasort($employee_overtime, function($a, $b) {
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="ot-card rounded-lg p-4 mb-6">
-                <form method="GET" class="flex flex-wrap gap-4 items-end" id="filterForm">
-                    <input type="hidden" name="view" id="viewInput" value="<?php echo $view_type; ?>">
-                    
-                    <div class="flex-1 min-w-[200px]">
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Select Month</label>
-                        <select name="month" class="input-field" onchange="document.getElementById('filterForm').submit();">
-                            <?php
-                            for ($i = 0; $i < 12; $i++) {
-                                $month_option = date('Y-m', strtotime("-$i months", strtotime($current_month . '-01')));
-                                $selected = ($month_option == $selected_month) ? 'selected' : '';
-                                echo "<option value=\"$month_option\" $selected>" . date('F Y', strtotime($month_option . '-01')) . "</option>";
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    
-                    <?php if ($view_type === 'weekly'): ?>
-                    <div class="flex-1 min-w-[150px]">
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Select Week</label>
-                        <select name="week" class="input-field" onchange="document.getElementById('filterForm').submit();">
-                            <?php for ($w = 1; $w <= ($has_week_5 ? 5 : 4); $w++): ?>
-                                <option value="<?php echo $w; ?>" <?php echo ($w == $selected_week) ? 'selected' : ''; ?>>Week <?php echo $w; ?></option>
-                            <?php endfor; ?>
-                        </select>
-                    </div>
-                    <?php endif; ?>
+<!-- Filters -->
+<div class="ot-card rounded-lg p-4 mb-6">
+    <form method="GET" class="flex flex-wrap gap-4 items-end" id="filterForm">
+        <input type="hidden" name="view" id="viewInput" value="<?php echo $view_type; ?>">
+        
+        <?php if ($view_type === 'range'): ?>
+        <!-- Date Range Inputs with Search Button -->
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+            <input type="date" name="start_date" class="input-field" 
+                   value="<?php echo $_GET['start_date'] ?? date('Y-m-d', strtotime('-7 days')); ?>">
+        </div>
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+            <input type="date" name="end_date" class="input-field" 
+                   value="<?php echo $_GET['end_date'] ?? date('Y-m-d'); ?>">
+        </div>
+        <div class="flex-initial">
+            <label class="block text-sm font-medium text-gray-300 mb-2">&​nbsp;</label>
+            <button type="submit" class="btn-secondary h-[38px]">
+                <i class="fas fa-search mr-2"></i>Filter
+            </button>
+        </div>
+        <?php else: ?>
+        <!-- Month/Week Selectors for Weekly/Monthly views -->
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Select Month</label>
+            <select name="month" class="input-field" onchange="document.getElementById('filterForm').submit();">
+                <?php
+                for ($i = 0; $i < 12; $i++) {
+                    $month_option = date('Y-m', strtotime("-$i months", strtotime($current_month . '-01')));
+                    $selected = ($month_option == $selected_month) ? 'selected' : '';
+                    echo "<option value=\"$month_option\" $selected>" . date('F Y', strtotime($month_option . '-01')) . "</option>";
+                }
+                ?>
+            </select>
+        </div>
+        
+        <?php if ($view_type === 'weekly'): ?>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Select Week</label>
+            <select name="week" class="input-field" onchange="document.getElementById('filterForm').submit();">
+                <?php for ($w = 1; $w <= ($has_week_5 ? 5 : 4); $w++): ?>
+                    <option value="<?php echo $w; ?>" <?php echo ($w == $selected_week) ? 'selected' : ''; ?>>Week <?php echo $w; ?></option>
+                <?php endfor; ?>
+            </select>
+        </div>
+        <?php endif; ?>
+        <?php endif; ?>
 
                     <div class="flex-1 min-w-[200px]">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Branch</label>
