@@ -16,7 +16,7 @@ if ($current_week > 5) $current_week = 5;
 // Handle filters
 $selected_month = $_GET['month'] ?? $current_month;
 $selected_week = intval($_GET['week'] ?? $current_week);
-$view_type = $_GET['view'] ?? 'weekly'; // 'weekly', 'monthly', or 'range'
+$view_type = $_GET['view'] ?? 'range'; // 'weekly', 'monthly', or 'range'
 $selected_branch = $_GET['branch'] ?? 'all'; // 'all' or specific branch
 
 // Handle custom date range parameters
