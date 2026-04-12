@@ -16,7 +16,7 @@ if (mysqli_query($db, $sql)) {
     echo "ALTER TABLE ERROR: " . mysqli_error($db) . "\n";
 }
 
-// Verify the change
+// Verify the change  
 $result2 = mysqli_query($db, "SHOW COLUMNS FROM weekly_payroll_reports LIKE 'view_type'");
 $row2 = mysqli_fetch_assoc($result2);
 echo "AFTER: " . $row2['Type'] . "\n";

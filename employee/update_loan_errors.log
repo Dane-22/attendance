@@ -52,3 +52,28 @@
 [11-Apr-2026 16:48:27 Asia/Manila] [update_loan.php] Updated employees.sss_loan for emp=13
 [11-Apr-2026 16:48:27 Asia/Manila] [update_loan.php] Query: emp=13, year=2026, month=4, week=2, view=range
 [11-Apr-2026 16:48:27 Asia/Manila] [update_loan.php] Record found: NO
+[13-Apr-2026 07:19:11 Asia/Manila] [update_loan.php] ========== Request received ==========
+[13-Apr-2026 07:19:11 Asia/Manila] Employee ID: 13
+[13-Apr-2026 07:19:11 Asia/Manila] SSS Loan: 0.00
+[13-Apr-2026 07:19:11 Asia/Manila] Year: 2026
+[13-Apr-2026 07:19:11 Asia/Manila] Month: 4
+[13-Apr-2026 07:19:11 Asia/Manila] Week: 2
+[13-Apr-2026 07:19:11 Asia/Manila] View Type: range
+[13-Apr-2026 07:19:11 Asia/Manila] [update_loan.php] Updated employees.sss_loan for emp=13
+[13-Apr-2026 07:19:11 Asia/Manila] [update_loan.php] Query: emp=13, year=2026, month=4, week=2, view=range
+[13-Apr-2026 07:19:11 Asia/Manila] [update_loan.php] Record found: NO
+[13-Apr-2026 07:19:11 Asia/Manila] [update_loan.php] ERROR: Duplicate entry '13-2026-4-2--20' for key 'weekly_payroll_reports.unique_employee_period_week'
+[13-Apr-2026 07:19:11 Asia/Manila] [update_loan.php] Stack trace: #0 C:\wamp64\www\main\employee\update_loan.php(166): mysqli_stmt_execute(Object(mysqli_stmt))
+#1 {main}
+[13-Apr-2026 07:21:17 Asia/Manila] [update_loan.php] ========== Request received ==========
+[13-Apr-2026 07:21:17 Asia/Manila] Employee ID: 13
+[13-Apr-2026 07:21:17 Asia/Manila] SSS Loan: 10.00
+[13-Apr-2026 07:21:17 Asia/Manila] Year: 2026
+[13-Apr-2026 07:21:17 Asia/Manila] Month: 4
+[13-Apr-2026 07:21:17 Asia/Manila] Week: 2
+[13-Apr-2026 07:21:17 Asia/Manila] View Type: range
+[13-Apr-2026 07:21:17 Asia/Manila] [update_loan.php] Updated employees.sss_loan for emp=13
+[13-Apr-2026 07:21:17 Asia/Manila] [update_loan.php] Query: emp=13, year=2026, month=4, week=2, view=range
+[13-Apr-2026 07:21:17 Asia/Manila] [update_loan.php] Record found: YES (id=15961)
+[13-Apr-2026 07:21:17 Asia/Manila] [update_loan.php] Applied loan=10 to ALL weeks for emp=13, 2026-4
+[13-Apr-2026 07:21:17 Asia/Manila] [update_loan.php] Updated existing record id=15961 with loan=10

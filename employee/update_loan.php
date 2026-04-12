@@ -61,6 +61,7 @@ try {
         }
     }
 
+    // First try to find record with matching view_type
     $selectStmt = mysqli_prepare(
         $db,
         "SELECT id, gross_pay, ot_amount, ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, performance_allowance
@@ -76,6 +77,24 @@ try {
     $existing = mysqli_stmt_get_result($selectStmt);
     $existingRow = mysqli_fetch_assoc($existing);
     mysqli_stmt_close($selectStmt);
+
+    // If not found, also check for records with empty/null view_type (legacy data)
+    if (!$existingRow) {
+        $selectStmt2 = mysqli_prepare(
+            $db,
+            "SELECT id, gross_pay, ot_amount, ca_deduction, sss_deduction, philhealth_deduction, pagibig_deduction, performance_allowance
+             FROM weekly_payroll_reports
+             WHERE employee_id = ? AND report_year = ? AND report_month = ? AND week_number = ? AND (view_type IS NULL OR view_type = '')
+             LIMIT 1"
+        );
+        if ($selectStmt2) {
+            mysqli_stmt_bind_param($selectStmt2, 'iiii', $employeeId, $year, $month, $week);
+            mysqli_stmt_execute($selectStmt2);
+            $existing2 = mysqli_stmt_get_result($selectStmt2);
+            $existingRow = mysqli_fetch_assoc($existing2);
+            mysqli_stmt_close($selectStmt2);
+        }
+    }
 
     error_log("[update_loan.php] Query: emp=$employeeId, year=$year, month=$month, week=$week, view=$viewType");
     error_log("[update_loan.php] Record found: " . ($existingRow ? 'YES (id=' . $existingRow['id'] . ')' : 'NO'));
@@ -93,17 +112,18 @@ try {
         $totalDeductions = $sssDeduction + $philhealthDeduction + $pagibigDeduction + $caDeduction + $sssLoan;
         $takeHomePay = $grossPay + $performanceAllowance + $otAmount - $totalDeductions;
 
+        // Also update view_type if it was null/empty (legacy data fix)
         $updateStmt = mysqli_prepare(
             $db,
             "UPDATE weekly_payroll_reports
-             SET sss_loan = ?, total_deductions = ?, take_home_pay = ?
+             SET sss_loan = ?, total_deductions = ?, take_home_pay = ?, view_type = ?
              WHERE id = ?"
         );
         if (!$updateStmt) {
             throw new Exception(mysqli_error($db));
         }
         $reportId = (int)$existingRow['id'];
-        mysqli_stmt_bind_param($updateStmt, 'dddi', $sssLoan, $totalDeductions, $takeHomePay, $reportId);
+        mysqli_stmt_bind_param($updateStmt, 'dddsi', $sssLoan, $totalDeductions, $takeHomePay, $viewType, $reportId);
         mysqli_stmt_execute($updateStmt);
         mysqli_stmt_close($updateStmt);
 
@@ -191,6 +211,8 @@ try {
     ]);
 } catch (Exception $error) {
     mysqli_rollback($db);
+    error_log("[update_loan.php] ERROR: " . $error->getMessage());
+    error_log("[update_loan.php] Stack trace: " . $error->getTraceAsString());
     fail('Failed to update loan: ' . $error->getMessage(), 500);
 }
 
