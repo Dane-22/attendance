@@ -41,21 +41,33 @@ $viewType = isset($_REQUEST['view_type']) ? trim($_REQUEST['view_type']) : 'week
 // Check what view_type values are actually allowed in the database
 $allowedViewTypes = ['weekly']; // default safe value
 $colCheckResult = mysqli_query($db, "SHOW COLUMNS FROM weekly_payroll_reports LIKE 'view_type'");
+$colType = 'unknown';
 if ($colCheckResult && $colRow = mysqli_fetch_assoc($colCheckResult)) {
     $colType = $colRow['Type'];
+    error_log("[update_loan.php] view_type column type: " . $colType);
     // Parse ENUM values from definition like "enum('weekly','monthly','range')"
-    if (preg_match("/enum\((.+?)\)/i", $colType, $matches)) {
-        $allowedViewTypes = array_map(function($v) {
-            return trim($v, "'\"");
-        }, explode(',', $matches[1]));
+    if (preg_match("/enum\s*\(\s*(.+?)\s*\)/i", $colType, $matches)) {
+        $enumStr = $matches[1];
+        // Handle both 'value' and "value" formats
+        preg_match_all("/'([^']+)'/", $enumStr, $singleQuotes);
+        preg_match_all('/"([^"]+)"/', $enumStr, $doubleQuotes);
+        $allowedViewTypes = array_merge($singleQuotes[1], $doubleQuotes[1]);
+        error_log("[update_loan.php] Parsed ENUM values: " . implode(',', $allowedViewTypes));
+    } else {
+        error_log("[update_loan.php] Column is not ENUM, type: " . $colType);
+        // For non-ENUM columns (VARCHAR, etc), allow the requested value
+        $allowedViewTypes = ['weekly', 'monthly', 'range', $viewType];
     }
+} else {
+    error_log("[update_loan.php] Could not check column type");
 }
 
 // Validate view_type - only allow values that exist in the database
+$originalViewType = $viewType;
 if (!in_array($viewType, $allowedViewTypes)) {
     $viewType = $allowedViewTypes[0] ?? 'weekly'; // Use first allowed value as default
 }
-error_log("[update_loan.php] Allowed view_types: " . implode(',', $allowedViewTypes) . ", using: $viewType");
+error_log("[update_loan.php] Original view_type: $originalViewType, Allowed: " . implode(',', $allowedViewTypes) . ", Using: $viewType");
 
 if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
     fail('Missing or invalid payroll loan parameters.');
