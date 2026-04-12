@@ -38,38 +38,14 @@ $month = isset($_REQUEST['month']) ? (int)$_REQUEST['month'] : 0;
 $week = isset($_REQUEST['week']) ? (int)$_REQUEST['week'] : 1;
 $viewType = isset($_REQUEST['view_type']) ? trim($_REQUEST['view_type']) : 'weekly';
 
-// Check what view_type values are actually allowed in the database
-$allowedViewTypes = ['weekly']; // default safe value
-$colCheckResult = mysqli_query($db, "SHOW COLUMNS FROM weekly_payroll_reports LIKE 'view_type'");
-$colType = 'unknown';
-if ($colCheckResult && $colRow = mysqli_fetch_assoc($colCheckResult)) {
-    $colType = $colRow['Type'];
-    error_log("[update_loan.php] view_type column type: " . $colType);
-    // Parse ENUM values from definition like "enum('weekly','monthly','range')"
-    if (preg_match("/enum\s*\(\s*(.+?)\s*\)/i", $colType, $matches)) {
-        $enumStr = $matches[1];
-        // Handle both 'value' and "value" formats
-        preg_match_all("/'([^']+)'/", $enumStr, $singleQuotes);
-        preg_match_all('/"([^"]+)"/', $enumStr, $doubleQuotes);
-        $allowedViewTypes = array_merge($singleQuotes[1], $doubleQuotes[1]);
-        error_log("[update_loan.php] Parsed ENUM values: " . implode(',', $allowedViewTypes));
-    } else {
-        error_log("[update_loan.php] Column is not ENUM, type: " . $colType);
-        // For non-ENUM columns (VARCHAR, etc), check if it's a known safe type
-        // If VARCHAR/CHAR/Text, any value should work - but data truncation suggests otherwise
-        // So assume only 'weekly' is safe unless column allows otherwise
-        $allowedViewTypes = ['weekly']; // Default safe value
-    }
-} else {
-    error_log("[update_loan.php] Could not check column type");
-}
-
-// Validate view_type - only allow values that exist in the database
+// PRODUCTION FIX: Always use 'weekly' as view_type to avoid schema mismatches
+// The view_type is primarily used for filtering/reporting, 'weekly' works for all cases
 $originalViewType = $viewType;
-if (!in_array($viewType, $allowedViewTypes)) {
-    $viewType = $allowedViewTypes[0] ?? 'weekly'; // Use first allowed value as default
+if ($viewType === 'range' || $viewType === 'monthly') {
+    error_log("[update_loan.php] Converting view_type from '$viewType' to 'weekly' for compatibility");
+    $viewType = 'weekly';
 }
-error_log("[update_loan.php] Original view_type: $originalViewType, Allowed: " . implode(',', $allowedViewTypes) . ", Using: $viewType");
+error_log("[update_loan.php] Using view_type: $viewType (original: $originalViewType)");
 
 if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
     fail('Missing or invalid payroll loan parameters.');
