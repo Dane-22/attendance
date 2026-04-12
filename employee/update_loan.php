@@ -112,18 +112,45 @@ try {
         $totalDeductions = $sssDeduction + $philhealthDeduction + $pagibigDeduction + $caDeduction + $sssLoan;
         $takeHomePay = $grossPay + $performanceAllowance + $otAmount - $totalDeductions;
 
-        // Also update view_type if it was null/empty (legacy data fix)
-        $updateStmt = mysqli_prepare(
-            $db,
-            "UPDATE weekly_payroll_reports
-             SET sss_loan = ?, total_deductions = ?, take_home_pay = ?, view_type = ?
-             WHERE id = ?"
-        );
-        if (!$updateStmt) {
-            throw new Exception(mysqli_error($db));
-        }
+        // Update the record - only update view_type if it was null/empty (legacy data)
         $reportId = (int)$existingRow['id'];
-        mysqli_stmt_bind_param($updateStmt, 'dddsi', $sssLoan, $totalDeductions, $takeHomePay, $viewType, $reportId);
+
+        // Check if we need to also fix view_type (legacy data with null/empty view_type)
+        $checkViewTypeStmt = mysqli_prepare($db, "SELECT view_type FROM weekly_payroll_reports WHERE id = ? LIMIT 1");
+        mysqli_stmt_bind_param($checkViewTypeStmt, 'i', $reportId);
+        mysqli_stmt_execute($checkViewTypeStmt);
+        $vtResult = mysqli_stmt_get_result($checkViewTypeStmt);
+        $vtRow = mysqli_fetch_assoc($vtResult);
+        mysqli_stmt_close($checkViewTypeStmt);
+
+        $currentViewType = $vtRow['view_type'] ?? '';
+        $needsViewTypeFix = (empty($currentViewType) || $currentViewType === '');
+
+        if ($needsViewTypeFix) {
+            // Only update view_type if it's empty (avoids data truncation on production if ENUM differs)
+            $updateStmt = mysqli_prepare(
+                $db,
+                "UPDATE weekly_payroll_reports
+                 SET sss_loan = ?, total_deductions = ?, take_home_pay = ?, view_type = ?
+                 WHERE id = ?"
+            );
+            if (!$updateStmt) {
+                throw new Exception(mysqli_error($db));
+            }
+            mysqli_stmt_bind_param($updateStmt, 'dddsi', $sssLoan, $totalDeductions, $takeHomePay, $viewType, $reportId);
+        } else {
+            // Don't touch view_type if it already has a value
+            $updateStmt = mysqli_prepare(
+                $db,
+                "UPDATE weekly_payroll_reports
+                 SET sss_loan = ?, total_deductions = ?, take_home_pay = ?
+                 WHERE id = ?"
+            );
+            if (!$updateStmt) {
+                throw new Exception(mysqli_error($db));
+            }
+            mysqli_stmt_bind_param($updateStmt, 'dddi', $sssLoan, $totalDeductions, $takeHomePay, $reportId);
+        }
         mysqli_stmt_execute($updateStmt);
         mysqli_stmt_close($updateStmt);
 
