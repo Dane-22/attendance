@@ -55,8 +55,10 @@ if ($colCheckResult && $colRow = mysqli_fetch_assoc($colCheckResult)) {
         error_log("[update_loan.php] Parsed ENUM values: " . implode(',', $allowedViewTypes));
     } else {
         error_log("[update_loan.php] Column is not ENUM, type: " . $colType);
-        // For non-ENUM columns (VARCHAR, etc), allow the requested value
-        $allowedViewTypes = ['weekly', 'monthly', 'range', $viewType];
+        // For non-ENUM columns (VARCHAR, etc), check if it's a known safe type
+        // If VARCHAR/CHAR/Text, any value should work - but data truncation suggests otherwise
+        // So assume only 'weekly' is safe unless column allows otherwise
+        $allowedViewTypes = ['weekly']; // Default safe value
     }
 } else {
     error_log("[update_loan.php] Could not check column type");
