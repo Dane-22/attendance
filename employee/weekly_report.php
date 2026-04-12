@@ -353,7 +353,7 @@ include __DIR__ . '/function/report.php';
                                 $ca_deduction = 0; // Placeholder for cash advance
                                 $sss_loan = floatval($payroll['sss_loan'] ?? 0);
                                 $total_deductions = $payroll['sss_deduction'] + $payroll['philhealth_deduction'] + $payroll['pagibig_deduction'] + $ca_deduction + $sss_loan;
-                                $take_home = $gross_plus_allowance - $total_deductions;
+                                $take_home = $gross_plus_allowance + $ot_amount - $total_deductions;
                             ?>
                             <tr class="border-b border-gray-700 hover:bg-gray-800/50" data-emp-id="<?php echo $emp_id; ?>">
                                 <td class="px-2 py-2 text-center">
