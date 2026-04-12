@@ -37,10 +37,25 @@ $year = isset($_REQUEST['year']) ? (int)$_REQUEST['year'] : 0;
 $month = isset($_REQUEST['month']) ? (int)$_REQUEST['month'] : 0;
 $week = isset($_REQUEST['week']) ? (int)$_REQUEST['week'] : 1;
 $viewType = isset($_REQUEST['view_type']) ? trim($_REQUEST['view_type']) : 'weekly';
-// Validate view_type - only allow specific values
-if (!in_array($viewType, ['monthly', 'weekly', 'range'])) {
-    $viewType = 'weekly';
+
+// Check what view_type values are actually allowed in the database
+$allowedViewTypes = ['weekly']; // default safe value
+$colCheckResult = mysqli_query($db, "SHOW COLUMNS FROM weekly_payroll_reports LIKE 'view_type'");
+if ($colCheckResult && $colRow = mysqli_fetch_assoc($colCheckResult)) {
+    $colType = $colRow['Type'];
+    // Parse ENUM values from definition like "enum('weekly','monthly','range')"
+    if (preg_match("/enum\((.+?)\)/i", $colType, $matches)) {
+        $allowedViewTypes = array_map(function($v) {
+            return trim($v, "'\"");
+        }, explode(',', $matches[1]));
+    }
 }
+
+// Validate view_type - only allow values that exist in the database
+if (!in_array($viewType, $allowedViewTypes)) {
+    $viewType = $allowedViewTypes[0] ?? 'weekly'; // Use first allowed value as default
+}
+error_log("[update_loan.php] Allowed view_types: " . implode(',', $allowedViewTypes) . ", using: $viewType");
 
 if ($employeeId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $week < 1 || $week > 5) {
     fail('Missing or invalid payroll loan parameters.');
