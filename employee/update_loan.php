@@ -211,9 +211,13 @@ try {
         $dailyRate = (float)$empRow['daily_rate'];
         $branchId = (int)$empRow['branch_id'];
 
+        // Calculate proper values for new record (gross_pay=0, other deductions=0)
+        $totalDeductions = $sssLoan; // Only SSS loan since gross=0 and other deductions=0
+        $takeHomePay = 0 - $sssLoan; // 0 gross - loan = negative (or just -loan)
+
         mysqli_stmt_bind_param($insertStmt, 'iiiiisdddd',
             $employeeId, $year, $month, $week, $viewType, $branchId,
-            $dailyRate, $sssLoan, $sssLoan, $sssLoan
+            $dailyRate, $sssLoan, $totalDeductions, $takeHomePay
         );
         mysqli_stmt_execute($insertStmt);
         $newId = mysqli_insert_id($db);
