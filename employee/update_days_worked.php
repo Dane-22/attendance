@@ -181,6 +181,7 @@ try {
                  pagibig_deduction = ?,
                  total_deductions = ?,
                  take_home_pay = ?,
+                 is_manual_adjustment = 1,
                  updated_at = NOW()
              WHERE id = ?"
         );
@@ -216,8 +217,8 @@ try {
              (employee_id, report_date, report_year, report_month, report_day, week_number, branch_id,
               days_worked, total_hours, daily_rate, basic_pay, ot_hours, ot_rate, ot_amount,
               performance_allowance, gross_pay, gross_plus_allowance, ca_deduction,
-              sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions, take_home_pay, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')"
+              sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions, take_home_pay, status, is_manual_adjustment)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 1)"
         );
         if (!$insertStmt) {
             throw new Exception("Failed to prepare insert statement: " . mysqli_error($db));

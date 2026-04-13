@@ -198,6 +198,7 @@ $payroll_query = "SELECT
                     dpr.take_home_pay,
                     dpr.status,
                     dpr.branch_id,
+                    dpr.is_manual_adjustment,
                     b.branch_name,
                     e.first_name,
                     e.last_name,
@@ -451,13 +452,24 @@ while ($row = mysqli_fetch_assoc($payroll_result)) {
             'hours' => floatval($row['total_hours'] ?? 0),
             'ot_hours' => floatval($row['ot_hours'] ?? 0)
         ];
+        
+        // Track if this employee has manual adjustments
+        if (!empty($row['is_manual_adjustment'])) {
+            $employee_payroll[$emp_id]['_has_manual_adjustment'] = true;
+        }
     }
 }
 
 // Process attendance data as fallback (for dates not in daily_payroll_reports)
+// Skip employees with manual adjustments entirely to prevent overwriting manual changes
 error_log("[report.php] About to process attendance data");
 while ($row = mysqli_fetch_assoc($attendance_result)) {
     $emp_id = $row['employee_id'];
+    
+    // Skip this employee entirely if they have manual adjustments
+    if (isset($employee_payroll[$emp_id]['_has_manual_adjustment']) && $employee_payroll[$emp_id]['_has_manual_adjustment']) {
+        continue;
+    }
     
     if (isset($employee_payroll[$emp_id])) {
         $attendance_date = $row['attendance_date'] ?? null;
