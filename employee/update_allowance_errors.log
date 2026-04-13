@@ -2356,3 +2356,168 @@
 )
 
 [13-Apr-2026 13:45:08 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 59
+[13-Apr-2026 15:24:09 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:09 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:09 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:09 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:09 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:11 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:11 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:11 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:11 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:11 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:12 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:12 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:12 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:12 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:12 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:25 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:25 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:25 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:25 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 15:24:25 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219
+[13-Apr-2026 15:24:25 Asia/Manila] [report.php] FATAL ERROR: Uncaught mysqli_sql_exception: Unknown column 'dpr.is_manual_adjustment' in 'field list' in C:\wamp64\www\main\employee\function\report.php:219
+Stack trace:
+#0 C:\wamp64\www\main\employee\function\report.php(219): mysqli_prepare(Object(mysqli), 'SELECT \r\n      ...')
+#1 C:\wamp64\www\main\employee\weekly_report.php(52): include('C:\\wamp64\\www\\m...')
+#2 {main}
+  thrown in C:\wamp64\www\main\employee\function\report.php on line 219

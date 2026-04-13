@@ -297,6 +297,25 @@ try {
         error_log("[update_days_worked.php] Inserted new record ID=$newId");
     }
 
+    // Delete any other records for this employee in the same date range
+    // This consolidates manual adjustments to a single record
+    $recordIdToKeep = $existingRecord['id'] ?? $newId ?? null;
+    if ($recordIdToKeep) {
+        $deleteStmt = mysqli_prepare($db,
+            "DELETE FROM daily_payroll_reports 
+             WHERE employee_id = ? 
+             AND report_date BETWEEN ? AND ? 
+             AND id != ?"
+        );
+        if ($deleteStmt) {
+            mysqli_stmt_bind_param($deleteStmt, 'issi', $employeeId, $startDate, $endDate, $recordIdToKeep);
+            mysqli_stmt_execute($deleteStmt);
+            $deletedCount = mysqli_stmt_affected_rows($deleteStmt);
+            mysqli_stmt_close($deleteStmt);
+            error_log("[update_days_worked.php] Deleted $deletedCount other records in range, kept ID=$recordIdToKeep");
+        }
+    }
+
     // Also update weekly_payroll_reports if it exists (optional - don't fail if table missing)
     try {
         $weeklyCheckStmt = mysqli_prepare($db,
