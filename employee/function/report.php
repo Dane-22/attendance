@@ -198,7 +198,7 @@ $payroll_query = "SELECT
                     dpr.take_home_pay,
                     dpr.status,
                     dpr.branch_id,
-                    dpr.is_manual_adjustment,
+                    IFNULL(dpr.is_manual_adjustment, 0) as is_manual_adjustment,
                     b.branch_name,
                     e.first_name,
                     e.last_name,

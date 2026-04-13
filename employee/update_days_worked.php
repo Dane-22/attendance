@@ -169,22 +169,45 @@ try {
 
     if ($existingRecord) {
         // Update existing record
-        $updateStmt = mysqli_prepare($db,
-            "UPDATE daily_payroll_reports 
-             SET days_worked = ?, 
-                 total_hours = ?,
-                 basic_pay = ?, 
-                 gross_pay = ?, 
-                 gross_plus_allowance = ?, 
-                 sss_deduction = ?,
-                 philhealth_deduction = ?,
-                 pagibig_deduction = ?,
-                 total_deductions = ?,
-                 take_home_pay = ?,
-                 is_manual_adjustment = 1,
-                 updated_at = NOW()
-             WHERE id = ?"
-        );
+        // Check if is_manual_adjustment column exists
+        $colCheck = mysqli_query($db, "SHOW COLUMNS FROM daily_payroll_reports LIKE 'is_manual_adjustment'");
+        $hasManualCol = mysqli_num_rows($colCheck) > 0;
+        mysqli_free_result($colCheck);
+        
+        if ($hasManualCol) {
+            $updateStmt = mysqli_prepare($db,
+                "UPDATE daily_payroll_reports 
+                 SET days_worked = ?, 
+                     total_hours = ?,
+                     basic_pay = ?, 
+                     gross_pay = ?, 
+                     gross_plus_allowance = ?, 
+                     sss_deduction = ?,
+                     philhealth_deduction = ?,
+                     pagibig_deduction = ?,
+                     total_deductions = ?,
+                     take_home_pay = ?,
+                     is_manual_adjustment = 1,
+                     updated_at = NOW()
+                 WHERE id = ?"
+            );
+        } else {
+            $updateStmt = mysqli_prepare($db,
+                "UPDATE daily_payroll_reports 
+                 SET days_worked = ?, 
+                     total_hours = ?,
+                     basic_pay = ?, 
+                     gross_pay = ?, 
+                     gross_plus_allowance = ?, 
+                     sss_deduction = ?,
+                     philhealth_deduction = ?,
+                     pagibig_deduction = ?,
+                     total_deductions = ?,
+                     take_home_pay = ?,
+                     updated_at = NOW()
+                 WHERE id = ?"
+            );
+        }
         if (!$updateStmt) {
             throw new Exception("Failed to prepare update statement: " . mysqli_error($db));
         }
@@ -212,14 +235,30 @@ try {
         error_log("[update_days_worked.php] Updated existing record ID=$recordId, rows affected=$rowsAffected");
     } else {
         // Insert new record
-        $insertStmt = mysqli_prepare($db,
-            "INSERT INTO daily_payroll_reports 
-             (employee_id, report_date, report_year, report_month, report_day, week_number, branch_id,
-              days_worked, total_hours, daily_rate, basic_pay, ot_hours, ot_rate, ot_amount,
-              performance_allowance, gross_pay, gross_plus_allowance, ca_deduction,
-              sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions, take_home_pay, status, is_manual_adjustment)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 1)"
-        );
+        // Check if is_manual_adjustment column exists
+        $colCheck = mysqli_query($db, "SHOW COLUMNS FROM daily_payroll_reports LIKE 'is_manual_adjustment'");
+        $hasManualCol = mysqli_num_rows($colCheck) > 0;
+        mysqli_free_result($colCheck);
+        
+        if ($hasManualCol) {
+            $insertStmt = mysqli_prepare($db,
+                "INSERT INTO daily_payroll_reports 
+                 (employee_id, report_date, report_year, report_month, report_day, week_number, branch_id,
+                  days_worked, total_hours, daily_rate, basic_pay, ot_hours, ot_rate, ot_amount,
+                  performance_allowance, gross_pay, gross_plus_allowance, ca_deduction,
+                  sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions, take_home_pay, status, is_manual_adjustment)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 1)"
+            );
+        } else {
+            $insertStmt = mysqli_prepare($db,
+                "INSERT INTO daily_payroll_reports 
+                 (employee_id, report_date, report_year, report_month, report_day, week_number, branch_id,
+                  days_worked, total_hours, daily_rate, basic_pay, ot_hours, ot_rate, ot_amount,
+                  performance_allowance, gross_pay, gross_plus_allowance, ca_deduction,
+                  sss_deduction, philhealth_deduction, pagibig_deduction, sss_loan, total_deductions, take_home_pay, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')"
+            );
+        }
         if (!$insertStmt) {
             throw new Exception("Failed to prepare insert statement: " . mysqli_error($db));
         }
