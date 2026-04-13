@@ -860,6 +860,24 @@ while ($row = mysqli_fetch_assoc($payment_result)) {
 }
 mysqli_stmt_close($payment_stmt);
 
+// If no records found and view_type is not 'weekly', also try loading 'weekly' records
+// (since update_loan.php saves everything as 'weekly' for compatibility)
+if (empty($weekly_loans) && $view_type !== 'weekly') {
+    error_log("[report.php] No records found with view_type='$view_type', trying 'weekly'");
+    $payment_stmt2 = mysqli_prepare($db, $payment_status_query);
+    $weekly_view_type = 'weekly';
+    mysqli_stmt_bind_param($payment_stmt2, 'iiis', $year, $month, $week_num_for_db, $weekly_view_type);
+    mysqli_stmt_execute($payment_stmt2);
+    $payment_result2 = mysqli_stmt_get_result($payment_stmt2);
+    while ($row = mysqli_fetch_assoc($payment_result2)) {
+        $payment_statuses[$row['employee_id']] = $row['payment_status'];
+        $weekly_allowances[$row['employee_id']] = floatval($row['performance_allowance'] ?? 0);
+        $weekly_loans[$row['employee_id']] = floatval($row['sss_loan'] ?? 0);
+        error_log("[report.php] Found with 'weekly' fallback: emp_id=" . $row['employee_id'] . ", loan=" . $row['sss_loan']);
+    }
+    mysqli_stmt_close($payment_stmt2);
+}
+
 error_log("[report.php] Total employees with allowances: " . count($weekly_allowances));
 error_log("[report.php] Employee IDs with allowances: " . implode(', ', array_keys($weekly_allowances)));
 
