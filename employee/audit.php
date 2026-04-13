@@ -198,6 +198,8 @@ function buildStatusFilterCondition($statusFilter) {
             return " AND a.time_in IS NOT NULL AND a.time_out IS NOT NULL AND NOT (LOWER(e.position) = 'worker' AND TIME(a.time_in) >= '07:15:00')";
         case 'absent':
             return " AND a.time_in IS NULL AND a.status = 'Absent'";
+        case 'voided':
+            return " AND a.is_voided = 1";
         default:
             return '';
     }
@@ -424,7 +426,9 @@ if ($filter === 'week') {
         e.last_name,
         e.employee_code,
         e.position,
-        0 as is_auto_absent
+        0 as is_auto_absent,
+        a.is_voided,
+        a.void_reason
     FROM attendance a
     INNER JOIN employees e ON a.employee_id = e.id
     LEFT JOIN branches b ON e.branch_id = b.id
@@ -446,7 +450,9 @@ if ($filter === 'week') {
         e.last_name,
         e.employee_code,
         e.position,
-        1 as is_auto_absent
+        1 as is_auto_absent,
+        0 as is_voided,
+        NULL as void_reason
     FROM employees e
     LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
     LEFT JOIN branches b ON e.branch_id = b.id
@@ -476,7 +482,9 @@ if ($filter === 'week') {
         e.last_name,
         e.employee_code,
         e.position,
-        0 as is_auto_absent
+        0 as is_auto_absent,
+        a.is_voided,
+        a.void_reason
     FROM attendance a
     INNER JOIN employees e ON a.employee_id = e.id
     LEFT JOIN branches b ON e.branch_id = b.id
@@ -498,7 +506,9 @@ if ($filter === 'week') {
         e.last_name,
         e.employee_code,
         e.position,
-        1 as is_auto_absent
+        1 as is_auto_absent,
+        0 as is_voided,
+        NULL as void_reason
     FROM employees e
     LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date BETWEEN ? AND ?
     LEFT JOIN branches b ON e.branch_id = b.id
@@ -528,7 +538,9 @@ if ($filter === 'week') {
         e.last_name,
         e.employee_code,
         e.position,
-        0 as is_auto_absent
+        0 as is_auto_absent,
+        a.is_voided,
+        a.void_reason
     FROM attendance a
     INNER JOIN employees e ON a.employee_id = e.id
     LEFT JOIN branches b ON e.branch_id = b.id
@@ -550,7 +562,9 @@ if ($filter === 'week') {
         e.last_name,
         e.employee_code,
         e.position,
-        1 as is_auto_absent
+        1 as is_auto_absent,
+        0 as is_voided,
+        NULL as void_reason
     FROM employees e
     LEFT JOIN attendance a ON e.id = a.employee_id AND a.attendance_date = ?
     LEFT JOIN branches b ON e.branch_id = b.id
@@ -820,6 +834,124 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             background: #F44336;
             border-color: #F44336;
             color: #ffffff;
+        }
+        .btn-filter.active-voided {
+            background: #9CA3AF;
+            border-color: #9CA3AF;
+            color: #ffffff;
+        }
+        .status-voided {
+            background: rgba(128, 128, 128, 0.2);
+            color: #9CA3AF;
+            text-decoration: line-through;
+        }
+        .voided-row {
+            opacity: 0.6;
+            background: rgba(128, 128, 128, 0.05);
+        }
+        .btn-void {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: #F44336;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .btn-void:hover {
+            background: #F44336;
+            color: #ffffff;
+        }
+        /* Void Modal Styles */
+        .void-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        .void-modal-content {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .void-modal-header {
+            color: #F44336;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .void-modal-body {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .void-modal-body p {
+            margin: 8px 0;
+            color: #9CA3AF;
+        }
+        .void-modal-body label {
+            display: block;
+            margin: 16px 0 8px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+        .void-modal-body textarea {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 6px;
+            color: #ffffff;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .void-modal-body textarea:focus {
+            outline: none;
+            border-color: rgba(255, 165, 0, 0.6);
+        }
+        .void-modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .btn-confirm-void {
+            background: #F44336;
+            border: none;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .btn-confirm-void:hover {
+            background: #D32F2F;
         }
     </style>
 </head>
@@ -1170,6 +1302,10 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                            class="btn-filter <?php echo $statusFilter === 'absent' ? 'active-absent' : ''; ?>">
                             <i class="fas fa-times mr-1"></i>Absent
                         </a>
+                        <a href="?date=<?php echo $selectedDate; ?>&month=<?php echo $currentMonth; ?>&year=<?php echo $currentYear; ?>&filter=<?php echo $filter; ?>&status=voided<?php echo !empty($searchQuery) ? '&search=' . urlencode($searchQuery) . '&search_type=' . urlencode($searchType) : ''; ?>" 
+                           class="btn-filter <?php echo $statusFilter === 'voided' ? 'active-voided' : ''; ?>">
+                            <i class="fas fa-ban mr-1"></i>Voided
+                        </a>
                     </div>
                 </div>
 
@@ -1190,6 +1326,9 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                         <th>Time Out</th>
                                         <th>Hours</th>
                                         <th>Status</th>
+                                        <?php if ($isAdmin || $isSuperAdmin): ?>
+                                        <th>Actions</th>
+                                        <?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1198,18 +1337,28 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                         
                                         // Determine status - use is_auto_absent from query or determine from record
                                         $isAutoAbsent = !empty($record['is_auto_absent']);
+                                        $isVoided = !empty($record['is_voided']);
                                         
-                                        if ($isAutoAbsent) {
+                                        if ($isVoided) {
+                                            $statusClass = 'status-voided';
+                                            $statusText = 'Voided';
+                                            $voidTooltip = 'Voided: ' . htmlspecialchars($record['void_reason'] ?? 'No reason provided');
+                                        } elseif ($isAutoAbsent) {
                                             $statusClass = 'status-absent';
                                             $statusText = 'Absent (Auto)';
+                                            $voidTooltip = '';
                                         } else {
                                             $statusInfo = getAttendanceStatus($record);
                                             $statusClass = $statusInfo['class'];
                                             $statusText = $statusInfo['text'];
+                                            $voidTooltip = '';
                                         }
                                         
-                                        // Determine row class for auto-absent
-                                        $rowClass = $isAutoAbsent ? 'auto-absent-row' : '';
+                                        // Determine row class for auto-absent or voided
+                                        $rowClass = $isAutoAbsent ? 'auto-absent-row' : ($isVoided ? 'voided-row' : '');
+                                        
+                                        // Check if record can be voided (completed but not voided)
+                                        $canBeVoided = !$isVoided && !empty($record['time_in']) && !empty($record['time_out']) && ($isAdmin || $isSuperAdmin);
                                     ?>
                                         <tr class="<?php echo $rowClass; ?>">
                                             <?php if ($filter !== 'day'): ?>
@@ -1248,10 +1397,28 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                                             </td>
                                             <td>
                                                 <span class="status-badge <?php echo $statusClass; ?>" 
-                                                      title="<?php echo $isAutoAbsent ? 'Automatically marked absent - no time-in recorded by 8:30 AM' : ''; ?>">
+                                                      title="<?php echo $isVoided ? $voidTooltip : ($isAutoAbsent ? 'Automatically marked absent - no time-in recorded by 8:30 AM' : ''); ?>">
                                                     <?php echo $statusText; ?>
                                                 </span>
                                             </td>
+                                            <?php if ($isAdmin || $isSuperAdmin): ?>
+                                            <td class="text-center">
+                                                <?php if ($canBeVoided): ?>
+                                                    <button type="button" 
+                                                            class="btn-void"
+                                                            onclick="openVoidModal(<?php echo $record['attendance_id']; ?>, '<?php echo htmlspecialchars($record['first_name'] . ' ' . $record['last_name'], ENT_QUOTES); ?>', '<?php echo $record['attendance_date']; ?>')"
+                                                            title="Void this attendance record">
+                                                        <i class="fas fa-ban"></i> Void
+                                                    </button>
+                                                <?php elseif ($isVoided): ?>
+                                                    <span class="text-gray-500 text-xs" title="<?php echo $voidTooltip; ?>">
+                                                        <i class="fas fa-check-circle"></i> Voided
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-gray-600 text-xs">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <?php endif; ?>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -3143,5 +3310,111 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
             return dayEl;
         }
     </script>
+
+    <?php if ($isAdmin || $isSuperAdmin): ?>
+    <!-- Void Attendance Modal -->
+    <div id="voidModal" class="void-modal">
+        <div class="void-modal-content">
+            <div class="void-modal-header">
+                <i class="fas fa-ban"></i>
+                <span>Void Attendance Record</span>
+            </div>
+            <div class="void-modal-body">
+                <p><strong>Employee:</strong> <span id="voidEmployeeName"></span></p>
+                <p><strong>Date:</strong> <span id="voidDate"></span></p>
+                <label for="voidReason">Reason for voiding (required):</label>
+                <textarea id="voidReason" placeholder="Enter reason for voiding this attendance record..." maxlength="500"></textarea>
+                <div id="voidError" style="color: #F44336; font-size: 12px; margin-top: 8px; display: none;"></div>
+            </div>
+            <div class="void-modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeVoidModal()">Cancel</button>
+                <button type="button" class="btn-confirm-void" onclick="confirmVoid()">
+                    <i class="fas fa-ban"></i> Void Record
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Void Attendance Functions
+        let currentVoidAttendanceId = null;
+
+        function openVoidModal(attendanceId, employeeName, date) {
+            currentVoidAttendanceId = attendanceId;
+            document.getElementById('voidEmployeeName').textContent = employeeName;
+            document.getElementById('voidDate').textContent = date;
+            document.getElementById('voidReason').value = '';
+            document.getElementById('voidError').style.display = 'none';
+            document.getElementById('voidModal').style.display = 'flex';
+        }
+
+        function closeVoidModal() {
+            document.getElementById('voidModal').style.display = 'none';
+            currentVoidAttendanceId = null;
+        }
+
+        async function confirmVoid() {
+            const reason = document.getElementById('voidReason').value.trim();
+            const errorDiv = document.getElementById('voidError');
+
+            if (!reason) {
+                errorDiv.textContent = 'Please enter a reason for voiding this record.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (reason.length > 500) {
+                errorDiv.textContent = 'Reason must be less than 500 characters.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('api/void_attendance.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        attendance_id: currentVoidAttendanceId,
+                        void_reason: reason
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Attendance record voided successfully.');
+                    closeVoidModal();
+                    // Refresh the page to show updated status
+                    window.location.reload();
+                } else {
+                    errorDiv.textContent = result.error || 'Failed to void record.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.style.display = 'block';
+                console.error('Void attendance error:', error);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('voidModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeVoidModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('voidModal').style.display === 'flex') {
+                closeVoidModal();
+            }
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>

@@ -215,11 +215,13 @@ $payroll_row_count = mysqli_num_rows($payroll_result);
 error_log("[report.php] Payroll query executed. Date range: $start_date to $end_date. Rows fetched: $payroll_row_count");
 
 // Fetch attendance data as fallback/supplement (for dates not in daily_payroll_reports)
+// Exclude voided records - they should not count toward days worked
 $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch_name, a.time_in, a.time_out, a.total_ot_hrs,
                             e.first_name, e.last_name, e.employee_code, e.daily_rate, e.position
                      FROM attendance a
                      JOIN employees e ON a.employee_id = e.id
                      WHERE a.attendance_date BETWEEN ? AND ?
+                     AND a.is_voided = 0
                      AND e.status = 'Active'
                      AND LOWER(e.position) = 'worker'";
 
