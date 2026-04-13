@@ -82,12 +82,15 @@ $position = $employee['position'];
 $isWorker = strtolower($position) === 'worker';
 
 // Get attendance data - select ALL records per day, ordered by time_in
+// Include voided records but mark them as voided
 $sql = "SELECT
     a.attendance_date,
     a.time_in,
     a.time_out,
     a.status,
     a.branch_name,
+    a.is_voided,
+    a.void_reason,
     TIMESTAMPDIFF(MINUTE, a.time_in, a.time_out) / 60 as hours
 FROM attendance a
 WHERE a.employee_id = ?
@@ -114,7 +117,9 @@ while ($row = mysqli_fetch_assoc($result)) {
 
     // Determine status for this record
     $recordStatus = 'Absent';
-    if ($row['time_in']) {
+    if (!empty($row['is_voided'])) {
+        $recordStatus = 'Voided';
+    } elseif ($row['time_in']) {
         // Check for late status (Workers only, 7:15 AM threshold)
         if ($isWorker) {
             $timeInObj = strtotime($row['time_in']);
@@ -145,7 +150,9 @@ while ($row = mysqli_fetch_assoc($result)) {
         'time_out' => $timeOut,
         'status' => $recordStatus,
         'branch' => $row['branch_name'] ?? 'N/A',
-        'hours' => $row['hours'] ? round((float)$row['hours'], 2) : 0
+        'hours' => $row['hours'] ? round((float)$row['hours'], 2) : 0,
+        'is_voided' => !empty($row['is_voided']),
+        'void_reason' => $row['void_reason'] ?? null
     ];
 
     // Update total hours

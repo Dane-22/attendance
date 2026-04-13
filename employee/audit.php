@@ -1995,6 +1995,10 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                         <div class="legend-color day-absent"></div>
                         <span>Absent</span>
                     </div>
+                    <div class="legend-item">
+                        <div class="legend-color day-voided"></div>
+                        <span>Voided</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2256,6 +2260,33 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
         /* Hidden records (shown when See more is clicked) */
         .hidden-record {
             display: none;
+        }
+
+        /* Voided record styles */
+        .record-voided {
+            opacity: 0.6;
+            background: rgba(128, 128, 128, 0.15) !important;
+            text-decoration: line-through;
+        }
+        .record-voided .day-time-in,
+        .record-voided .day-time-out {
+            text-decoration: line-through;
+            color: #9CA3AF !important;
+        }
+        .void-badge {
+            background: rgba(244, 67, 54, 0.8);
+            color: #fff;
+            font-size: 0.55rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+        .day-voided {
+            background: rgba(128, 128, 128, 0.1);
         }
 
         /* Ensure day cell expands to fit content */
@@ -2943,7 +2974,11 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
 
             if (dayData && dayData.records && dayData.records.length > 0) {
                 const status = dayData.status || 'No Record';
+                const hasVoidedRecord = dayData.records.some(r => r.is_voided);
                 dayEl.classList.add(`day-${status.toLowerCase().replace(/\s+/g, '-')}`);
+                if (hasVoidedRecord) {
+                    dayEl.classList.add('day-voided');
+                }
 
                 if (isToday) {
                     dayEl.classList.add('day-today');
@@ -2962,9 +2997,12 @@ $nextYear = $currentMonth == 12 ? $currentYear + 1 : $currentYear;
                 dayData.records.forEach((record, index) => {
                     const recordNum = totalRecords > 1 ? `<span class="record-num">#${index + 1}</span>` : '';
                     const hiddenClass = (hasMoreThanMin && index >= MIN_RECORDS_VISIBLE) ? 'hidden-record' : '';
+                    const voidedClass = record.is_voided ? 'record-voided' : '';
+                    const voidedIndicator = record.is_voided ? '<span class="void-badge" title="' + (record.void_reason || 'Voided') + '"><i class="fas fa-ban"></i> VOIDED</span>' : '';
                     const recordHtml = `
-                        <div class="day-record ${hiddenClass}" data-date="${dateStr}">
+                        <div class="day-record ${hiddenClass} ${voidedClass}" data-date="${dateStr}">
                             ${recordNum}
+                            ${voidedIndicator}
                             <span class="day-time-in">${record.time_in || '--:--'}</span>
                             <span class="day-time-out">${record.time_out || '--:--'}</span>
                             <span class="day-record-branch">${record.branch || 'N/A'}</span>
