@@ -233,40 +233,45 @@ try {
         error_log("[update_days_worked.php] Inserted new record ID=$newId");
     }
 
-    // Also update weekly_payroll_reports if it exists
-    $weeklyCheckStmt = mysqli_prepare($db,
-        "SELECT id FROM weekly_payroll_reports 
-         WHERE employee_id = ? AND report_year = ? AND report_month = ? AND week_number = ? AND view_type = ?
-         LIMIT 1"
-    );
-    if ($weeklyCheckStmt) {
-        mysqli_stmt_bind_param($weeklyCheckStmt, 'iiiis', $employeeId, $year, $month, $week, $viewType);
-        mysqli_stmt_execute($weeklyCheckStmt);
-        $weeklyResult = mysqli_stmt_get_result($weeklyCheckStmt);
-        $weeklyRecord = mysqli_fetch_assoc($weeklyResult);
-        mysqli_stmt_close($weeklyCheckStmt);
+    // Also update weekly_payroll_reports if it exists (optional - don't fail if table missing)
+    try {
+        $weeklyCheckStmt = mysqli_prepare($db,
+            "SELECT id FROM weekly_payroll_reports 
+             WHERE employee_id = ? AND report_year = ? AND report_month = ? AND week_number = ? AND view_type = ?
+             LIMIT 1"
+        );
+        if ($weeklyCheckStmt) {
+            mysqli_stmt_bind_param($weeklyCheckStmt, 'iiiis', $employeeId, $year, $month, $week, $viewType);
+            mysqli_stmt_execute($weeklyCheckStmt);
+            $weeklyResult = mysqli_stmt_get_result($weeklyCheckStmt);
+            $weeklyRecord = mysqli_fetch_assoc($weeklyResult);
+            mysqli_stmt_close($weeklyCheckStmt);
 
-        if ($weeklyRecord) {
-            // Update weekly report
-            $weeklyUpdateStmt = mysqli_prepare($db,
-                "UPDATE weekly_payroll_reports 
-                 SET days_worked = ?, basic_pay = ?, gross_pay = ?, gross_plus_allowance = ?,
-                     sss_deduction = ?, philhealth_deduction = ?, pagibig_deduction = ?,
-                     total_deductions = ?, take_home_pay = ?, updated_at = NOW()
-                 WHERE id = ?"
-            );
-            if ($weeklyUpdateStmt) {
-                $weeklyId = $weeklyRecord['id'];
-                mysqli_stmt_bind_param($weeklyUpdateStmt, 'dddddddddi',
-                    $daysWorked, $basicPay, $grossPay, $grossPlusAllowance,
-                    $sssDeduction, $philhealthDeduction, $pagibigDeduction,
-                    $totalDeductions, $takeHomePay, $weeklyId
+            if ($weeklyRecord) {
+                // Update weekly report
+                $weeklyUpdateStmt = mysqli_prepare($db,
+                    "UPDATE weekly_payroll_reports 
+                     SET days_worked = ?, basic_pay = ?, gross_pay = ?, gross_plus_allowance = ?,
+                         sss_deduction = ?, philhealth_deduction = ?, pagibig_deduction = ?,
+                         total_deductions = ?, take_home_pay = ?, updated_at = NOW()
+                     WHERE id = ?"
                 );
-                mysqli_stmt_execute($weeklyUpdateStmt);
-                mysqli_stmt_close($weeklyUpdateStmt);
-                error_log("[update_days_worked.php] Updated weekly_payroll_reports ID=$weeklyId");
+                if ($weeklyUpdateStmt) {
+                    $weeklyId = $weeklyRecord['id'];
+                    mysqli_stmt_bind_param($weeklyUpdateStmt, 'dddddddddi',
+                        $daysWorked, $basicPay, $grossPay, $grossPlusAllowance,
+                        $sssDeduction, $philhealthDeduction, $pagibigDeduction,
+                        $totalDeductions, $takeHomePay, $weeklyId
+                    );
+                    mysqli_stmt_execute($weeklyUpdateStmt);
+                    mysqli_stmt_close($weeklyUpdateStmt);
+                    error_log("[update_days_worked.php] Updated weekly_payroll_reports ID=$weeklyId");
+                }
             }
         }
+    } catch (Exception $weeklyError) {
+        // Log but don't fail - weekly report update is optional
+        error_log("[update_days_worked.php] Weekly report update skipped: " . $weeklyError->getMessage());
     }
 
     mysqli_commit($db);
