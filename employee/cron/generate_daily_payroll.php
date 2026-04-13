@@ -50,7 +50,7 @@ $attendance_query = "SELECT
                      WHERE a.attendance_date BETWEEN ? AND ?
                      AND a.time_out IS NOT NULL
                      AND e.status = 'Active'
-                     AND LOWER(e.position) = 'worker'
+                     AND LOWER(e.position) IN ('worker', 'admin', 'engineer', 'developer')
                      ORDER BY a.attendance_date, a.employee_id";
 
 $stmt = mysqli_prepare($db, $attendance_query);

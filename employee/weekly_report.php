@@ -904,17 +904,26 @@ include __DIR__ . '/function/report.php';
 
         // Save Days Worked Function
         function saveDaysWorked(empId, daysValue) {
+            console.log('[saveDaysWorked] START - empId:', empId, 'daysValue:', daysValue);
+
             const input = document.getElementById('days_worked_' + empId);
+            console.log('[saveDaysWorked] Input element:', input);
+
             const row = input.closest('tr');
             const empName = row.querySelector('td:nth-child(2) .font-medium').textContent.trim();
             const dailyRate = parseFloat(input.getAttribute('data-daily-rate')) || 0;
             const days = parseFloat(daysValue) || 0;
 
+            console.log('[saveDaysWorked] Employee:', empName, 'Daily Rate:', dailyRate, 'Days:', days);
+
             // Update UI calculations immediately
             const basicPay = dailyRate * days;
+            console.log('[saveDaysWorked] Calculated basicPay:', basicPay);
+
             const grossPayCell = row.querySelector('td:nth-child(7)');
             if (grossPayCell) {
                 grossPayCell.textContent = numberFormat(basicPay);
+                console.log('[saveDaysWorked] Updated grossPayCell with:', numberFormat(basicPay));
             }
 
             const formData = new FormData();
@@ -927,27 +936,50 @@ include __DIR__ . '/function/report.php';
             formData.append('start_date', '<?php echo $start_date; ?>');
             formData.append('end_date', '<?php echo $end_date; ?>');
 
+            console.log('[saveDaysWorked] FormData prepared:', {
+                employee_id: empId,
+                days_worked: days,
+                year: <?php echo $year; ?>,
+                month: <?php echo $month; ?>,
+                week: <?php echo $selected_week; ?>,
+                view_type: '<?php echo $view_type; ?>',
+                start_date: '<?php echo $start_date; ?>',
+                end_date: '<?php echo $end_date; ?>'
+            });
+
+            console.log('[saveDaysWorked] Sending fetch request to update_days_worked.php...');
+
             fetch('update_days_worked.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('[saveDaysWorked] Response received:', response);
+                console.log('[saveDaysWorked] Response status:', response.status);
+                console.log('[saveDaysWorked] Response ok:', response.ok);
+                return response.json();
+            })
             .then(data => {
+                console.log('[saveDaysWorked] Response data:', data);
                 if (data.success) {
+                    console.log('[saveDaysWorked] SUCCESS - Showing toast and scheduling page reload in 1 second');
                     showToast(`Days worked saved for ${empName}`, 'success');
                     // Reload page to show updated calculations from server
                     setTimeout(() => {
+                        console.log('[saveDaysWorked] RELOADING PAGE...');
                         window.location.reload();
                     }, 1000);
                 } else {
-                    console.error('Failed to save days worked:', data.error);
+                    console.error('[saveDaysWorked] FAILED - Server returned error:', data.error, 'Message:', data.message);
                     showToast('Failed to save days worked: ' + (data.message || 'Unknown error'), 'error');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('[saveDaysWorked] CATCH ERROR:', error);
                 showToast('Error saving days worked. Please check your connection.', 'error');
             });
+
+            console.log('[saveDaysWorked] END - fetch initiated');
         }
 
         // Bundle Print Functions

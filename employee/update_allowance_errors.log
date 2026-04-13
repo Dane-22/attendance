@@ -1950,3 +1950,409 @@
 [13-Apr-2026 09:28:12 Asia/Manila] [report.php] No weekly loan found for emp_id=59, using daily value: 0
 [13-Apr-2026 09:28:12 Asia/Manila] [report.php] No weekly loan found for emp_id=60, using daily value: 0
 [13-Apr-2026 09:28:12 Asia/Manila] [report.php] No weekly loan found for emp_id=132, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Payroll query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 17
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Attendance query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 58
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Approved overtime query executed. Date range: 2026-04-01 to 2026-04-30. Approved OT rows: 6
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Approved overtime organized. Employees with approved OT: 4
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to process attendance data
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=117: 4 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=24: 3 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=37: 2 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=68: 4 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to calculate payroll
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=2, view=range
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=10.00, loan=10.00
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Total employees with allowances: 1
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Employee IDs with allowances: 13
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 73
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Weekly loans loaded: Array
+(
+    [13] => 10
+)
+
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=12, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=117, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Merged loan for emp_id=13: 10
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=14, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=121, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=126, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=15, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=16, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=63, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=17, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=18, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=19, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=20, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=21, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=22, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=23, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=24, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=25, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=27, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=26, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=127, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=28, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=135, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=29, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=122, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=30, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=114, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=31, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=32, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=33, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=34, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=136, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=134, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=35, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=36, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=123, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=37, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=38, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=113, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=39, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=40, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=67, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=11, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=41, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=42, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=43, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=44, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=45, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=124, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=46, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=47, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=48, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=130, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=68, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=49, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=125, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=116, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=129, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=50, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=133, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=131, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=51, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=52, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=53, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=54, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=55, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=56, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=115, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=57, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=58, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=59, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=60, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=132, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Payroll query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 17
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Attendance query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 58
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Approved overtime query executed. Date range: 2026-04-01 to 2026-04-30. Approved OT rows: 6
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Approved overtime organized. Employees with approved OT: 4
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to process attendance data
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=117: 4 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=24: 3 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=37: 2 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Applied approved OT for emp_id=68: 4 hours
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to calculate payroll
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=2, view=range
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=10.00, loan=10.00
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Total employees with allowances: 1
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Employee IDs with allowances: 13
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 73
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Weekly loans loaded: Array
+(
+    [13] => 10
+)
+
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=12, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=117, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] Merged loan for emp_id=13: 10
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=14, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=121, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=126, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=15, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=16, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=63, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=17, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=18, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=19, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=20, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=21, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=22, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=23, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=24, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=25, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=27, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=26, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=127, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=28, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=135, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=29, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=122, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=30, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=114, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=31, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=32, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=33, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=34, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=136, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=134, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=35, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=36, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=123, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=37, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=38, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=113, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=39, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=40, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=67, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=11, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=41, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=42, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=43, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=44, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=45, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=124, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=46, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=47, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=48, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=130, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=68, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=49, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=125, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=116, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=129, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=50, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=133, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=131, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=51, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=52, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=53, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=54, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=55, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=56, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=115, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=57, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=58, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=59, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=60, using daily value: 0
+[13-Apr-2026 13:16:35 Asia/Manila] [report.php] No weekly loan found for emp_id=132, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Payroll query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 17
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Attendance query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 58
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Approved overtime query executed. Date range: 2026-04-01 to 2026-04-30. Approved OT rows: 6
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Approved overtime organized. Employees with approved OT: 4
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] About to process attendance data
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Applied approved OT for emp_id=117: 4 hours
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Applied approved OT for emp_id=24: 3 hours
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Applied approved OT for emp_id=37: 2 hours
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Applied approved OT for emp_id=68: 4 hours
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] About to calculate payroll
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=2, view=range
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=10.00, loan=10.00
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Total employees with allowances: 1
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Employee IDs with allowances: 13
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 73
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Weekly loans loaded: Array
+(
+    [13] => 10
+)
+
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=12, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=117, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] Merged loan for emp_id=13: 10
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=14, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=121, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=126, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=15, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=16, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=63, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=17, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=18, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=19, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=20, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=21, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=22, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=23, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=24, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=25, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=27, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=26, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=127, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=28, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=135, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=29, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=122, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=30, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=114, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=31, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=32, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=33, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=34, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=136, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=134, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=35, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=36, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=123, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=37, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=38, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=113, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=39, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=40, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=67, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=11, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=41, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=42, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=43, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=44, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=45, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=124, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=46, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=47, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=48, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=130, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=68, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=49, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=125, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=116, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=129, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=50, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=133, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=131, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=51, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=52, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=53, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=54, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=55, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=56, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=115, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=57, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=58, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=59, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=60, using daily value: 0
+[13-Apr-2026 13:16:40 Asia/Manila] [report.php] No weekly loan found for emp_id=132, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] File loaded - starting execution
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Received dates - start_date: , end_date: , view_type: range
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] About to fetch payroll data
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Payroll query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 17
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Attendance query executed. Date range: 2026-04-01 to 2026-04-30. Rows fetched: 58
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Approved overtime query executed. Date range: 2026-04-01 to 2026-04-30. Approved OT rows: 6
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Approved overtime organized. Employees with approved OT: 4
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] About to process daily_payroll_reports data
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] About to process attendance data
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Applied approved OT for emp_id=117: 4 hours
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Applied approved OT for emp_id=24: 3 hours
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Applied approved OT for emp_id=37: 2 hours
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Applied approved OT for emp_id=68: 4 hours
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] About to calculate payroll
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Payroll calculated, about to load allowances
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Loading allowances for year=2026, month=04, week=2, view=range
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Found in DB: emp_id=13, allowance=10.00, loan=10.00
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Total employees with allowances: 1
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Employee IDs with allowances: 13
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] About to merge allowances into employee data. Employee count: 73
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Weekly loans loaded: Array
+(
+    [13] => 10
+)
+
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=12, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=117, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] Merged loan for emp_id=13: 10
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=14, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=121, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=126, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=15, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=16, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=63, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=17, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=18, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=19, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=20, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=21, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=22, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=23, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=24, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=25, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=27, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=26, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=127, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=28, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=135, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=29, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=122, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=30, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=114, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=31, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=32, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=33, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=34, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=136, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=134, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=35, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=36, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=123, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=37, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=38, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=113, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=39, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=40, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=67, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=11, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=41, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=42, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=43, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=44, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=45, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=124, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=46, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=47, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=48, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=130, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=68, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=49, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=125, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=116, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=129, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=50, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=133, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=131, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=51, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=52, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=53, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=54, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=55, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=56, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=115, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=57, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=58, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=59, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=60, using daily value: 0
+[13-Apr-2026 13:17:11 Asia/Manila] [report.php] No weekly loan found for emp_id=132, using daily value: 0
+[13-Apr-2026 13:45:04 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 59
+    [month] => 2026-04
+)
+
+[13-Apr-2026 13:45:04 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 59
+[13-Apr-2026 13:45:08 Asia/Manila] [get_employee_attendance_detailed.php] Request received: Array
+(
+    [employee_id] => 59
+    [month] => 2026-04
+)
+
+[13-Apr-2026 13:45:08 Asia/Manila] [get_employee_attendance_detailed.php] Success - returning 30 days for employee 59
