@@ -367,8 +367,18 @@ include __DIR__ . '/function/report.php';
                                 <td class="px-2 py-2 text-center text-gray-400">
                                     <?php echo $date_range_label; ?>
                                 </td>
-                                <td class="px-2 py-2 text-center text-sm text-gray-400">
-                                    <?php echo $payroll['days_worked']; ?>
+                                <td class="px-2 py-2 text-center text-sm">
+                                    <input type="number"
+                                           name="days_worked_<?php echo $emp_id; ?>"
+                                           id="days_worked_<?php echo $emp_id; ?>"
+                                           value="<?php echo number_format($payroll['days_worked'], 1, '.', ''); ?>"
+                                           min="0"
+                                           max="31"
+                                           step="0.5"
+                                           class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center text-gray-400 focus:border-yellow-500 focus:outline-none days-worked-input"
+                                           data-emp-id="<?php echo $emp_id; ?>"
+                                           data-daily-rate="<?php echo $payroll['daily_rate']; ?>"
+                                           onchange="saveDaysWorked(<?php echo $emp_id; ?>, this.value)">
                                 </td>
                                 <td class="px-2 py-2 text-center text-sm text-white">
                                     <?php echo number_format($payroll['total_hours'], 0); ?>
@@ -889,6 +899,54 @@ include __DIR__ . '/function/report.php';
             .catch(error => {
                 console.error('Error:', error);
                 showToast('Error saving loan. Please check your connection.', 'error');
+            });
+        }
+
+        // Save Days Worked Function
+        function saveDaysWorked(empId, daysValue) {
+            const input = document.getElementById('days_worked_' + empId);
+            const row = input.closest('tr');
+            const empName = row.querySelector('td:nth-child(2) .font-medium').textContent.trim();
+            const dailyRate = parseFloat(input.getAttribute('data-daily-rate')) || 0;
+            const days = parseFloat(daysValue) || 0;
+
+            // Update UI calculations immediately
+            const basicPay = dailyRate * days;
+            const grossPayCell = row.querySelector('td:nth-child(7)');
+            if (grossPayCell) {
+                grossPayCell.textContent = numberFormat(basicPay);
+            }
+
+            const formData = new FormData();
+            formData.append('employee_id', empId);
+            formData.append('days_worked', days);
+            formData.append('year', <?php echo $year; ?>);
+            formData.append('month', <?php echo $month; ?>);
+            formData.append('week', <?php echo $selected_week; ?>);
+            formData.append('view_type', '<?php echo $view_type; ?>');
+            formData.append('start_date', '<?php echo $start_date; ?>');
+            formData.append('end_date', '<?php echo $end_date; ?>');
+
+            fetch('update_days_worked.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`Days worked saved for ${empName}`, 'success');
+                    // Reload page to show updated calculations from server
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    console.error('Failed to save days worked:', data.error);
+                    showToast('Failed to save days worked: ' + (data.message || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error saving days worked. Please check your connection.', 'error');
             });
         }
 
