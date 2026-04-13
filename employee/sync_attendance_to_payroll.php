@@ -31,11 +31,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_date = $_POST['end_date'] ?? date('Y-m-d');
     $sync_mode = $_POST['sync_mode'] ?? 'missing'; // 'missing' or 'all'
     
+    // Debug logging
+    error_log("[sync_attendance] Starting sync - Date range: $start_date to $end_date, Mode: $sync_mode");
+    
     // Validate dates
     if (!strtotime($start_date) || !strtotime($end_date)) {
         $error = 'Invalid date format.';
+        error_log("[sync_attendance] Error: Invalid date format");
     } elseif (strtotime($end_date) < strtotime($start_date)) {
         $error = 'End date must be after start date.';
+        error_log("[sync_attendance] Error: End date before start date");
     } else {
         // Get all attendance records in date range
         $att_query = "SELECT 
@@ -64,6 +69,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_bind_param($stmt, 'ss', $start_date, $end_date);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
+        
+        $attendance_count = mysqli_num_rows($result);
+        error_log("[sync_attendance] Found $attendance_count attendance records");
+        
+        if ($attendance_count === 0) {
+            $error = "No attendance records found for date range $start_date to $end_date. Make sure attendance records have time_out values.";
+        }
         
         $processed = 0;
         $skipped = 0;
@@ -172,14 +184,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'status' => $exists ? 'Updated' : 'Inserted',
                     'gross_pay' => $gross_pay
                 ];
+                error_log("[sync_attendance] Success: Employee $employee_id on $attendance_date - Gross: $gross_pay");
             } else {
                 $errors++;
+                $db_error = mysqli_error($db);
                 $sync_results[] = [
                     'employee' => $row['last_name'] . ', ' . $row['first_name'],
                     'date' => $attendance_date,
-                    'status' => 'Error: ' . mysqli_error($db),
+                    'status' => 'Error: ' . $db_error,
                     'gross_pay' => 0
                 ];
+                error_log("[sync_attendance] Error: Employee $employee_id on $attendance_date - $db_error");
             }
             mysqli_stmt_close($payroll_stmt);
         }
@@ -487,6 +502,71 @@ while ($row = mysqli_fetch_assoc($recent_dates_result)) {
                     </tbody>
                 </table>
             </div>
+        </div>
+        
+        <!-- Diagnostic: Today's Attendance -->
+        <div class="mt-6 form-card">
+            <h3 class="text-md font-semibold text-white mb-3">
+                <i class="fas fa-stethoscope mr-2" style="color: var(--orange);"></i>
+                Diagnostic: Today's Attendance Records (with time_out)
+            </h3>
+            <?php
+            $today = date('Y-m-d');
+            $diag_query = "SELECT a.id, a.employee_id, a.attendance_date, a.time_in, a.time_out, 
+                                 a.total_ot_hrs, a.branch_name, e.first_name, e.last_name, e.position
+                          FROM attendance a
+                          JOIN employees e ON a.employee_id = e.id
+                          WHERE a.attendance_date = ?
+                          AND a.time_out IS NOT NULL
+                          AND e.status = 'Active'
+                          AND LOWER(e.position) IN ('worker', 'admin', 'engineer', 'developer')
+                          ORDER BY a.time_in DESC
+                          LIMIT 10";
+            $diag_stmt = mysqli_prepare($db, $diag_query);
+            mysqli_stmt_bind_param($diag_stmt, 's', $today);
+            mysqli_stmt_execute($diag_stmt);
+            $diag_result = mysqli_stmt_get_result($diag_stmt);
+            $today_count = mysqli_num_rows($diag_result);
+            ?>
+            <p class="text-sm text-gray-400 mb-3">
+                Found <strong><?php echo $today_count; ?></strong> completed attendance records for today (<?php echo $today; ?>).
+                Only records with <code>time_out</code> values can be synced.
+            </p>
+            <?php if ($today_count > 0): ?>
+            <div class="overflow-x-auto">
+                <table class="sync-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Position</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Branch</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($d = mysqli_fetch_assoc($diag_result)): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($d['last_name'] . ', ' . $d['first_name']); ?></td>
+                                <td><?php echo htmlspecialchars($d['position']); ?></td>
+                                <td><?php echo $d['time_in'] ? date('h:i A', strtotime($d['time_in'])) : '-'; ?></td>
+                                <td><?php echo $d['time_out'] ? date('h:i A', strtotime($d['time_out'])) : '-'; ?></td>
+                                <td><?php echo htmlspecialchars($d['branch_name'] ?? 'N/A'); ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="alert-error">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                No completed attendance records found for today. This means either:<br>
+                1. No one has clocked out yet today<br>
+                2. Attendance records don't have time_out values<br>
+                3. The position filter (Worker/Admin/Engineer/Developer) excludes your employees
+            </div>
+            <?php endif; ?>
+            <?php mysqli_stmt_close($diag_stmt); ?>
         </div>
         
         <!-- Quick Tips -->
