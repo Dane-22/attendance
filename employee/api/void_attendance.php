@@ -174,6 +174,21 @@ if ($rows_affected === 0) {
     exit;
 }
 
+// Also delete from daily_payroll_reports to ensure voided records don't count in reports
+$delete_payroll_sql = "DELETE FROM daily_payroll_reports 
+                       WHERE employee_id = ? 
+                       AND report_date = ?";
+$delete_payroll_stmt = mysqli_prepare($db, $delete_payroll_sql);
+if ($delete_payroll_stmt) {
+    mysqli_stmt_bind_param($delete_payroll_stmt, 'is', $record['employee_id'], $record['attendance_date']);
+    mysqli_stmt_execute($delete_payroll_stmt);
+    $payroll_deleted = mysqli_stmt_affected_rows($delete_payroll_stmt);
+    mysqli_stmt_close($delete_payroll_stmt);
+    if ($payroll_deleted > 0) {
+        error_log("[void_attendance.php] Deleted {$payroll_deleted} payroll record(s) for employee {$record['employee_id']} on {$record['attendance_date']}");
+    }
+}
+
 // Log the activity
 $employee_name = $record['first_name'] . ' ' . $record['last_name'];
 $action = "Attendance Voided";
