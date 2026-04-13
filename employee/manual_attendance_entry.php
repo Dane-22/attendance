@@ -182,7 +182,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     updated_at = NOW()";
                 
                 $payroll_stmt = mysqli_prepare($db, $payroll_sql);
-                $days_worked = 1.0;
+                // Calculate days and pay based on actual hours (Option E - Hybrid)
+                $calc_result = calculateDaysAndPay($worked_hours, $daily_rate);
+                $days_worked = $calc_result['days_worked'];
+                $basic_pay = $calc_result['gross_pay']; // Use calculated pay based on hours
                 $payroll_status = 'Pending';
                 
                 mysqli_stmt_bind_param($payroll_stmt, 'isiiiiiddddddddddddddddds', 

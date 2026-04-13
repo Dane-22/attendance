@@ -27,6 +27,9 @@ if (php_sapi_name() !== 'cli') {
 // Database connection
 require_once __DIR__ . '/../../conn/db_connection.php';
 
+// Include utility functions for payroll calculation
+require_once __DIR__ . '/../../functions.php';
+
 // Log file
 $log_file = __DIR__ . '/daily_payroll_calculation.log';
 $log_message = function($msg) use ($log_file) {
@@ -158,34 +161,47 @@ foreach ($employees as $emp_id => &$payroll) {
     
     // Process daily attendance (single day)
     foreach ($payroll['_daily'] as $attendance_date => $branches) {
+        // Calculate total hours for the day across all branches
+        $day_total_hours = 0;
+        foreach ($branches as $bData) {
+            $day_total_hours += floatval($bData['hours'] ?? 0);
+        }
+        
+        // Calculate days based on actual hours (Option E - Hybrid)
+        $calc_result = calculateDaysAndPay($day_total_hours, $payroll['daily_rate']);
+        $proportional_days = $calc_result['days_worked'];
+        
         if (count($branches) === 2) {
-            // Split day for 2 branches (transfer scenario)
+            // Split day for 2 branches (transfer scenario) - split proportionally
             foreach ($branches as $bName => $bData) {
                 if (!isset($payroll['_branches'][$bName])) {
                     $payroll['_branches'][$bName] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
                 }
-                $payroll['_branches'][$bName]['days'] += 0.5;
-                $payroll['_branches'][$bName]['hours'] += floatval($bData['hours'] ?? 0);
+                $branch_hours = floatval($bData['hours'] ?? 0);
+                // Each branch gets proportional share of the calculated days
+                $branch_share = $day_total_hours > 0 ? ($branch_hours / $day_total_hours) * $proportional_days : 0;
+                $payroll['_branches'][$bName]['days'] += $branch_share;
+                $payroll['_branches'][$bName]['hours'] += $branch_hours;
                 $payroll['_branches'][$bName]['ot_hours'] += floatval($bData['ot_hours'] ?? 0);
             }
-            $payroll['days_worked'] += 1.0;
+            $payroll['days_worked'] += $proportional_days;
             foreach ($branches as $bData) {
                 $payroll['total_hours'] += floatval($bData['hours'] ?? 0);
                 $payroll['total_ot_hrs'] += floatval($bData['ot_hours'] ?? 0);
             }
         } else {
-            // Full day at one or more branches
-            $payroll['days_worked'] += 1.0;
+            // Single branch - use calculated proportional days
             foreach ($branches as $bName => $bData) {
                 if (!isset($payroll['_branches'][$bName])) {
                     $payroll['_branches'][$bName] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
                 }
-                $payroll['_branches'][$bName]['days'] += 1.0;
+                $payroll['_branches'][$bName]['days'] += $proportional_days;
                 $payroll['_branches'][$bName]['hours'] += floatval($bData['hours'] ?? 0);
                 $payroll['_branches'][$bName]['ot_hours'] += floatval($bData['ot_hours'] ?? 0);
                 $payroll['total_hours'] += floatval($bData['hours'] ?? 0);
                 $payroll['total_ot_hrs'] += floatval($bData['ot_hours'] ?? 0);
             }
+            $payroll['days_worked'] += $proportional_days;
         }
     }
     

@@ -5,6 +5,9 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../update_allowance_errors.log');
 error_log("[report.php] File loaded - starting execution");
 
+// Include utility functions for payroll calculation
+require_once __DIR__ . '/../../functions.php';
+
 // Catch fatal errors
 register_shutdown_function(function() {
     $error = error_get_last();
@@ -645,12 +648,16 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
             continue;
         }
 
-        // Default: count 1 day for the date, accumulate hours from merged records
-        $payroll['days_worked'] += 1.0;
+        // Default: calculate days based on actual hours worked (Option E - Hybrid)
+        $day_hours = 0;
         foreach ($merged_records as $mRecord) {
+            $day_hours += floatval($mRecord['hours'] ?? 0);
             $payroll['total_hours'] += floatval($mRecord['hours'] ?? 0);
             $payroll['total_ot_hrs'] += floatval($mRecord['ot_hours'] ?? 0);
         }
+        // Calculate days and pay based on hours (full day if >= 8h, else hourly)
+        $calc_result = calculateDaysAndPay($day_hours, $payroll['daily_rate']);
+        $payroll['days_worked'] += $calc_result['days_worked'];
 
         // Assign to primary branch (the one with most hours on this day)
         $branch_hour_totals = [];
@@ -675,12 +682,14 @@ foreach ($employee_payroll as $emp_id => &$payroll) {
             }
         }
 
-        // Assign full day to primary branch
+        // Assign proportional days to primary branch based on hours
         if ($primary_branch && isset($branch_hour_totals[$primary_branch])) {
             if (!isset($payroll['_branches'][$primary_branch])) {
                 $payroll['_branches'][$primary_branch] = ['days' => 0, 'hours' => 0, 'ot_hours' => 0];
             }
-            $payroll['_branches'][$primary_branch]['days'] += 1.0;
+            // Calculate days proportionally based on hours (same calculation as above)
+            $branch_calc = calculateDaysAndPay($branch_hour_totals[$primary_branch]['hours'], $payroll['daily_rate']);
+            $payroll['_branches'][$primary_branch]['days'] += $branch_calc['days_worked'];
             $payroll['_branches'][$primary_branch]['hours'] += $branch_hour_totals[$primary_branch]['hours'];
             $payroll['_branches'][$primary_branch]['ot_hours'] += $branch_hour_totals[$primary_branch]['ot_hours'];
         }

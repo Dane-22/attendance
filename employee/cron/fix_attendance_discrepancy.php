@@ -10,6 +10,9 @@ date_default_timezone_set('Asia/Manila');
 // Database connection
 require_once __DIR__ . '/../../conn/db_connection.php';
 
+// Include utility functions for payroll calculation
+require_once __DIR__ . '/../../functions.php';
+
 // Log file
 $log_file = __DIR__ . '/fix_attendance_discrepancy.log';
 $log_message = function($msg) use ($log_file) {
@@ -192,9 +195,10 @@ while ($row = mysqli_fetch_assoc($attendance_result)) {
     $daily_rate = floatval($row['daily_rate'] ?? 0);
     $ot_hours = floatval($row['total_ot_hrs'] ?? 0);
     
-    // Calculate payroll values
-    $days_worked = 1.0;
-    $basic_pay = $daily_rate * $days_worked;
+    // Calculate payroll values using hours-based calculation (Option E - Hybrid)
+    $calc_result = calculateDaysAndPay($worked_hours, $daily_rate);
+    $days_worked = $calc_result['days_worked'];
+    $basic_pay = $calc_result['gross_pay']; // Use calculated pay based on hours
     $ot_rate = $daily_rate / 8;
     $ot_amount = $ot_hours * $ot_rate;
     $gross_pay = $basic_pay + $ot_amount;

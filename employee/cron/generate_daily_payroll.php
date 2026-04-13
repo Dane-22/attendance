@@ -15,6 +15,9 @@ date_default_timezone_set('Asia/Manila');
 
 require_once __DIR__ . '/../../conn/db_connection.php';
 
+// Include utility functions for payroll calculation
+require_once __DIR__ . '/../../functions.php';
+
 // Get date range from parameters or use defaults
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d', strtotime('-7 days'));
 $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
@@ -210,9 +213,10 @@ foreach ($attendance_groups as $group) {
     $daily_rate = floatval($group['daily_rate'] ?? 0);
     $ot_hours = $total_ot_hrs;
     
-    // Calculate payroll values
-    $days_worked = 1.0; // One attendance record = one day
-    $basic_pay = $daily_rate * $days_worked;
+    // Calculate payroll values using hours-based calculation (Option E - Hybrid)
+    $calc_result = calculateDaysAndPay($worked_hours, $daily_rate);
+    $days_worked = $calc_result['days_worked'];
+    $basic_pay = $calc_result['gross_pay']; // Use calculated pay based on hours
     $ot_rate = $daily_rate / 8;
     $ot_amount = $ot_hours * $ot_rate;
     $gross_pay = $basic_pay + $ot_amount;

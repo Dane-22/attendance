@@ -194,3 +194,32 @@ function sendPushNotification($db, $userId, $title, $message, $url = null) {
 
     return $result;
 }
+
+/**
+ * Calculate days worked and gross pay based on actual hours (Option E - Hybrid)
+ * For full days (>=8 hours): full day pay
+ * For partial days (<8 hours): hourly rate × actual hours
+ * @param float $actual_hours Hours actually worked
+ * @param float $daily_rate Employee's daily rate
+ * @return array ['days_worked' => float, 'gross_pay' => float, 'hourly_rate' => float]
+ */
+function calculateDaysAndPay($actual_hours, $daily_rate) {
+    $standard_hours = 8.0;
+    $hourly_rate = $daily_rate / $standard_hours;
+
+    if ($actual_hours >= $standard_hours) {
+        // Full day: pay full daily rate
+        $days_worked = 1.0;
+        $gross_pay = $daily_rate;
+    } else {
+        // Partial day: pay hourly rate × actual hours
+        $days_worked = $actual_hours / $standard_hours;
+        $gross_pay = $hourly_rate * $actual_hours;
+    }
+
+    return [
+        'days_worked' => round($days_worked, 2),
+        'gross_pay' => round($gross_pay, 2),
+        'hourly_rate' => round($hourly_rate, 2)
+    ];
+}

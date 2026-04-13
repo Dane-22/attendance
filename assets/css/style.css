@@ -791,7 +791,7 @@ body{ background: var(--bg-page); color:var(--soft-white); }
 .sidebar-backdrop.show{ opacity:1; pointer-events:auto; }
 
 /* Mobile open button base style */
-.mobile-open-btn{ display:none; position:fixed; left:12px; top:12px; z-index:10001; background:var(--accent); border-radius:8px; padding:.5rem; border:none; color:#111; }
+.mobile-open-btn{ display:none; position:fixed; left:12px; top:12px; z-index:10001; background:var(--accent); border-radius:8px; padding:.5rem; border:none; color:#111; width:48px; height:48px; font-size:1.4rem; }
 @media (max-width: 1023px){ .mobile-open-btn{ display:block; } }
 
 /* Fixed hamburger (top-left) for mobile */
@@ -902,7 +902,13 @@ button, a[role="button"]{ touch-action:manipulation; }
 .mobile-header{ z-index: 1000; }
 
 /* Consistent gold color for hamburger/toggle */
-#mobileOpenBtn,
+#mobileOpenBtn{
+  color: #ffffff;
+  fill: #ffffff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
 #sidebarToggle{
   color: #d4af37;
   fill: #d4af37;
