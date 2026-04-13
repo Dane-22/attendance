@@ -204,7 +204,7 @@ $payroll_query = "SELECT
                  JOIN employees e ON dpr.employee_id = e.id
                  LEFT JOIN branches b ON dpr.branch_id = b.id
                  WHERE dpr.report_date BETWEEN ? AND ?
-                 AND LOWER(e.position) = 'worker'";
+                 AND LOWER(e.position) IN ('worker', 'admin', 'engineer', 'developer')";
 
 // Add branch filter if not 'all'
 if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
@@ -233,7 +233,7 @@ $attendance_query = "SELECT a.employee_id, a.attendance_date, a.status, a.branch
                      WHERE a.attendance_date BETWEEN ? AND ?
                      AND a.is_voided = 0
                      AND e.status = 'Active'
-                     AND LOWER(e.position) = 'worker'";
+                     AND LOWER(e.position) IN ('worker', 'admin', 'engineer', 'developer')";
 
 // Add branch filter if not 'all' - filter by branch_id
 if ($selected_branch !== 'all' && is_numeric($selected_branch)) {
@@ -368,7 +368,7 @@ $all_employees_query = "SELECT $select_columns
                         FROM employees e
                         LEFT JOIN branches b ON e.branch_id = b.id
                         WHERE e.status = 'Active'
-                        AND LOWER(e.position) = 'worker'";
+                        AND LOWER(e.position) IN ('worker', 'admin', 'engineer', 'developer')";
 
 // Add branch filter if not 'all'
 $has_branch_filter = ($selected_branch !== 'all' && $selected_branch !== '' && is_numeric($selected_branch));
