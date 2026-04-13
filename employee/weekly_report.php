@@ -962,13 +962,8 @@ include __DIR__ . '/function/report.php';
             .then(data => {
                 console.log('[saveDaysWorked] Response data:', data);
                 if (data.success) {
-                    console.log('[saveDaysWorked] SUCCESS - Showing toast and scheduling page reload in 1 second');
+                    console.log('[saveDaysWorked] SUCCESS - Days worked saved, no page reload');
                     showToast(`Days worked saved for ${empName}`, 'success');
-                    // Reload page to show updated calculations from server
-                    setTimeout(() => {
-                        console.log('[saveDaysWorked] RELOADING PAGE...');
-                        window.location.reload();
-                    }, 1000);
                 } else {
                     console.error('[saveDaysWorked] FAILED - Server returned error:', data.error, 'Message:', data.message);
                     showToast('Failed to save days worked: ' + (data.message || 'Unknown error'), 'error');
