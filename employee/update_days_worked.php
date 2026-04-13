@@ -50,8 +50,32 @@ mysqli_begin_transaction($db);
 
 try {
     // Fetch employee's daily rate and other details
-    $empQuery = "SELECT daily_rate, performance_allowance, sss_loan, branch_id, has_deduction 
-                 FROM employees WHERE id = ? AND status = 'Active'";
+    // Check which columns exist first
+    $columnCheck = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'sss_loan'");
+    $hasSssLoanColumn = mysqli_num_rows($columnCheck) > 0;
+    mysqli_free_result($columnCheck);
+    
+    $columnCheck2 = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'has_deduction'");
+    $hasHasDeductionColumn = mysqli_num_rows($columnCheck2) > 0;
+    mysqli_free_result($columnCheck2);
+    
+    $columnCheck3 = mysqli_query($db, "SHOW COLUMNS FROM employees LIKE 'performance_allowance'");
+    $hasPerformanceAllowanceColumn = mysqli_num_rows($columnCheck3) > 0;
+    mysqli_free_result($columnCheck3);
+    
+    // Build query based on available columns
+    $selectColumns = "daily_rate, branch_id";
+    if ($hasPerformanceAllowanceColumn) {
+        $selectColumns .= ", performance_allowance";
+    }
+    if ($hasSssLoanColumn) {
+        $selectColumns .= ", sss_loan";
+    }
+    if ($hasHasDeductionColumn) {
+        $selectColumns .= ", has_deduction";
+    }
+    
+    $empQuery = "SELECT $selectColumns FROM employees WHERE id = ? AND status = 'Active'";
     $empStmt = mysqli_prepare($db, $empQuery);
     if (!$empStmt) {
         throw new Exception("Failed to prepare employee query: " . mysqli_error($db));
