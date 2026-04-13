@@ -1,7 +1,17 @@
 <?php
-// Log that report.php is being loaded
+// Enable error reporting for debugging
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../update_allowance_errors.log');
 error_log("[report.php] File loaded - starting execution");
+
+// Catch fatal errors
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        error_log("[report.php] FATAL ERROR: " . $error['message'] . " in " . $error['file'] . " on line " . $error['line']);
+    }
+});
 
 // Get current month and year
 $current_month = date('Y-m');
