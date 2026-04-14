@@ -2,6 +2,202 @@
 
 ## Work Log for Attendance System
 
+### 2026-04-11
+
+**Task:** Implement Bundle Print Payslip Feature
+
+**Status:** ✅ Completed
+
+**Problem:** Administrators needed to print multiple employee payslips at once instead of printing individually. The requirement was to fit 4 payslips per A4 bond paper in a 2×2 grid layout with auto-fit scaling for any paper size.
+
+**Solution:** Added checkbox selection, bundle print button, modal preview, and print functionality to `weekly_report.php`.
+
+**Changes Made:**
+
+**`employee/weekly_report.php`:**
+- Added checkbox column in table header with "Select All" functionality
+- Added individual checkboxes for each employee row with `onchange="updateSelection()"`
+- Added "Bundle Print" button with dynamic page counter (shows "(X pages)")
+- Added selection counter display showing "X employees selected"
+- Added Bundle Print Modal with preview and "Print All Pages" button
+- Added JavaScript functions:
+  - `toggleSelectAll()` - Select/deselect all employees
+  - `updateSelection()` - Track individual selections and update UI
+  - `openBundlePrintModal()` - Open preview modal with 2×2 grid layout
+  - `collectBundleData()` - Gather payroll data from selected rows
+  - `generatePageHTML()` - Create 4-up payslip layout (4 per page)
+  - `printBundlePayslips()` - Print all pages with auto-fit CSS
+- Exposed all functions to `window` scope for inline event handlers
+
+**`employee/css/report.css`:**
+- Added `.bundle-checkbox` styling with gold accent color
+- Added `.bundle-modal` for larger preview modal (900px max-width)
+- Added `.bundle-page-grid` for 2×2 grid layout (4 payslips per page)
+- Added `.bundle-payslip` card styles with dark theme
+- Added payslip component styles (header, sections, signatures)
+
+**Features:**
+- Select individual employees or use "Select All" checkbox
+- Page counter automatically calculates pages needed (4 payslips per page)
+- Modal shows preview of all pages with 2×2 grid layout
+- Print works on any bond paper size (A4, Letter, Legal) with auto-fit scaling
+- Multi-page support for more than 4 employees
+- Preserves all payslip data: earnings, deductions, net pay, signature lines
+- Cut guides between payslips for easy cutting
+
+---
+
+### 2026-04-11
+
+**Task:** Create Comprehensive SOP Documentation Suite
+
+**Status:** ✅ Completed
+
+**Problem:** Need standardized operating procedures for all user roles (Admin, Super Admin, Engineer, Worker, Security Guard) and a detailed Admin User Manual for system operations.
+
+**Solution:** Created 7 comprehensive documentation files covering all roles and system operations.
+
+**Files Created:**
+
+1. **`docs/MASTER_SOP.md`** - Comprehensive 15-section master SOP covering:
+   - System overview and architecture
+   - All role-based procedures (Admin, Super Admin, Engineer, Worker, Security Guard)
+   - Attendance, payroll, branch management workflows
+   - Emergency procedures and compliance
+
+2. **`docs/SOP_ADMIN.md`** - Admin role procedures:
+   - Daily operations and attendance monitoring
+   - Employee management (view/edit, no create/delete)
+   - Payroll review procedures and checklists
+   - Reporting workflows
+
+3. **`docs/SOP_SUPER_ADMIN.md`** - Super Admin procedures:
+   - Full system access and configuration
+   - Employee lifecycle management (CRUD operations)
+   - Approval workflows (OT, CA, transfers, leave)
+   - System maintenance and override authority
+
+4. **`docs/SOP_ENGINEER.md`** - Engineer/Site Engineer procedures:
+   - Site management and multi-location clock-in
+   - Transfer requests and approval tracking
+   - Personal payroll and attendance viewing
+   - Field operation guidance
+
+5. **`docs/SOP_WORKER.md`** - Employee/Worker procedures:
+   - Basic attendance (QR code scanning)
+   - Personal record management
+   - Request submission (OT, leave, transfers)
+   - FAQ and troubleshooting for non-technical users
+
+6. **`docs/SOP_SECURITY_GUARD.md`** - Security Guard specific:
+   - Special "no deductions" payroll explanation
+   - Shift-based attendance for night/day shifts
+   - Simplified procedures for security personnel
+
+7. **`docs/SOP_APPROVAL_WORKFLOWS.md`** - Approval process documentation:
+   - OT, CA, leave, transfer approval chains
+   - Authority matrix and escalation procedures
+   - Bulk operations and audit monitoring
+
+8. **`docs/ADMIN_USER_MANUAL.md`** - Step-by-step Admin guide:
+   - Dashboard navigation
+   - Button-by-button instructions
+   - Daily/weekly/monthly task checklists
+   - Troubleshooting common issues
+
+**Total:** 8 documentation files created covering all system roles and operations.
+
+---
+
+### 2026-04-11
+
+**Task:** Fix SSS Loan Saving and Take Home Pay Calculation
+
+**Status:** ✅ Completed
+
+**Problem:** 
+1. SSS loan values saved in "Custom Range" view were lost after page refresh
+2. Take Home Pay calculation was incorrect - not including OT amount
+
+**Root Cause:**
+1. `update_loan.php` converted `view_type` from 'range' to 'weekly' before saving to avoid schema issues, but `report.php` only queried with the original 'range' view_type when loading data
+2. The take_home calculation used `$gross_plus_allowance - $total_deductions` but the display showed `$gross_plus_allowance + $ot_amount`, creating a mismatch
+
+**Solution:**
+1. Modified `report.php` to fallback and query 'weekly' records when no data found with requested view_type
+2. Fixed take_home calculation to include OT amount: `$gross_plus_allowance + $ot_amount - $total_deductions`
+
+**Changes Made:**
+- `employee/function/report.php`: Added fallback query for 'weekly' view_type (lines 863-879)
+- `employee/weekly_report.php`: Fixed take_home calculation to include OT (line 356)
+
+---
+
+### 2026-04-11
+
+**Task:** Change Default View to Date Range in Weekly Report
+
+**Status:** ✅ Completed
+
+**Problem:** The weekly report page defaulted to 'weekly' view when first accessed, but users preferred the Date Range view as the default.
+
+**Solution:** Changed the default `$view_type` from 'weekly' to 'range' in the report.php include file.
+
+**Changes Made:**
+
+**`employee/function/report.php` (line 19):**
+- BEFORE: `$view_type = $_GET['view'] ?? 'weekly';`
+- AFTER: `$view_type = $_GET['view'] ?? 'range';`
+
+**Result:** When accessing `weekly_report.php` without parameters, it now defaults to Date Range view with last 7 days as the default date range.
+
+---
+
+### 2026-04-11
+
+**Task:** Implement Date Range View in Overtime Page
+
+**Status:** ✅ Completed
+
+**Problem:** The overtime page only supported Weekly and Monthly views. Users needed the flexibility to view overtime records for custom date ranges, similar to the payroll report.
+
+**Solution:** Added 'range' view type to overtime.php with date range inputs, toggle button, and proper date handling.
+
+**Changes Made:**
+
+**`employee/overtime.php`:**
+
+1. **Line 26** - Changed default view:
+   - BEFORE: `$view_type = $_GET['view'] ?? 'weekly';`
+   - AFTER: `$view_type = $_GET['view'] ?? 'range';`
+
+2. **Lines 41-64** - Added custom date range logic:
+   - Added `start_date` and `end_date` parameter handling
+   - Added `elseif ($view_type === 'range' && $start_date && $end_date)` block
+   - Date validation with fallback to current week if invalid
+   - Date range label format: "Custom Range: M d, Y - M d, Y"
+
+3. **Lines 218-237** - Added Date Range toggle button:
+   - Added third toggle option with calendar icon
+   - Active state styling for range view
+
+4. **Lines 267-317** - Added conditional date range inputs:
+   - Start Date and End Date input fields (visible only in range view)
+   - Filter button for applying date range
+   - Month/Week selectors hidden when in range view
+
+5. **Lines 202-210** - Updated header title logic:
+   - Shows "Custom Date Range Overtime Report" when in range view
+
+**Features:**
+- Date Range is now the default view when accessing overtime.php
+- Default range is last 7 days (start: -7 days, end: today)
+- Users can select any custom date range
+- Invalid dates fall back to current week
+- Branch filter and search work with date range
+- Excel export preserves date range context
+
+---
 
 ### 2026-04-11
 

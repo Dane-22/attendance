@@ -348,7 +348,7 @@ include __DIR__ . '/function/report.php';
                                 $ot_hours = $payroll['total_ot_hrs'];
                                 $ot_rate = $payroll['daily_rate'] / 8;
                                 $ot_amount = $ot_hours * $ot_rate;
-                                $allowance = floatval($payroll['performance_allowance'] ?? 0);
+                                $allowance = floatval($payroll['performance_allowance'] ?? 0) * $payroll['days_worked'];
                                 $gross_plus_allowance = $payroll['gross_pay'] + $allowance;
                                 $ca_deduction = 0; // Placeholder for cash advance
                                 $sss_loan = floatval($payroll['sss_loan'] ?? 0);
@@ -375,10 +375,10 @@ include __DIR__ . '/function/report.php';
                                            min="0"
                                            max="31"
                                            step="0.5"
-                                           class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center text-gray-400 focus:border-yellow-500 focus:outline-none days-worked-input"
+                                           class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center text-gray-400 focus:border-yellow-500 focus:outline-none days-worked-input <?php echo ($_SESSION['position'] !== 'Super Admin') ? 'cursor-not-allowed opacity-75' : ''; ?>"
                                            data-emp-id="<?php echo $emp_id; ?>"
                                            data-daily-rate="<?php echo $payroll['daily_rate']; ?>"
-                                           onchange="saveDaysWorked(<?php echo $emp_id; ?>, this.value)">
+                                           <?php if ($_SESSION['position'] !== 'Super Admin'): ?>readonly<?php else: ?>onchange="saveDaysWorked(<?php echo $emp_id; ?>, this.value)"<?php endif; ?>>
                                 </td>
                                 <td class="px-2 py-2 text-center text-sm text-white">
                                     <?php echo number_format($payroll['total_hours'], 0); ?>
@@ -482,7 +482,7 @@ include __DIR__ . '/function/report.php';
                                 $total_ot += $emp_ot_hours * $emp_ot_rate;
                                 
                                 // Accumulate performance allowance from each employee
-                                $total_allowance += floatval($payroll['performance_allowance'] ?? 0);
+                                $total_allowance += floatval($payroll['performance_allowance'] ?? 0) * $payroll['days_worked'];
                                 
                                 // Use the pre-calculated total_deductions from the payroll array
                                 $sum_total_deductions += $payroll['total_deductions'];
@@ -1018,7 +1018,7 @@ include __DIR__ . '/function/report.php';
 
         function updateSelectionUI() {
             const count = selectedEmployees.size;
-            const pages = Math.ceil(count / 6);
+            const pages = Math.ceil(count / 4);
             
             document.getElementById('selectionCounter').textContent = `${count} employees selected`;
             document.getElementById('bundlePrintCount').textContent = `(${pages} page${pages !== 1 ? 's' : ''})`;
@@ -1033,12 +1033,12 @@ include __DIR__ . '/function/report.php';
 
             const bundleData = collectBundleData();
             const content = document.getElementById('bundlePrintContent');
-            const totalPages = Math.ceil(bundleData.length / 6);
+            const totalPages = Math.ceil(bundleData.length / 4);
 
             let html = '';
 
             for (let page = 0; page < totalPages; page++) {
-                const pageEmployees = bundleData.slice(page * 6, (page + 1) * 6);
+                const pageEmployees = bundleData.slice(page * 4, (page + 1) * 4);
                 html += generatePageHTML(pageEmployees, page + 1, totalPages);
             }
 
@@ -1046,10 +1046,12 @@ include __DIR__ . '/function/report.php';
             document.getElementById('bundlePageInfo').textContent = `${totalPages} page${totalPages !== 1 ? 's' : ''} (${bundleData.length} employees)`;
             document.getElementById('bundlePrintModal').style.display = 'flex';
         }
+        window.openBundlePrintModal = openBundlePrintModal;
 
         function closeBundlePrintModal() {
             document.getElementById('bundlePrintModal').style.display = 'none';
         }
+        window.closeBundlePrintModal = closeBundlePrintModal;
 
         function collectBundleData() {
             const data = [];
@@ -1190,9 +1192,9 @@ include __DIR__ . '/function/report.php';
                 `;
             });
             
-            // Fill empty slots if less than 6 employees
-            const emptySlots = 6 - employees.length;
-            for (let i = 0; i <emptySlots; i++) {
+            // Fill empty slots if less than 4 employees
+            const emptySlots = 4 - employees.length;
+            for (let i = 0; i < emptySlots; i++) {
                 payslipsHTML += `<div class="bundle-payslip empty"></div>`;
             }
             
