@@ -286,7 +286,7 @@ try {
         $totalHours = $daysWorked * 8; // Assume 8 hours per day
         $otRate = $dailyRate / 8;
         
-        mysqli_stmt_bind_param($insertStmt, 'isiiiiidddddddddddddddd',
+        mysqli_stmt_bind_param($insertStmt, 'isiiiiiddddddddddddddd',
             $employeeId,
             $startDate,
             $reportYear,
