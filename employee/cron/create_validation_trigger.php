@@ -29,12 +29,17 @@ FOR EACH ROW
 BEGIN
     DECLARE v_attendance_count INT DEFAULT 0;
     
-    SELECT COUNT(*) INTO v_attendance_count
-    FROM attendance a
-    WHERE a.employee_id = NEW.employee_id
-      AND a.attendance_date = NEW.report_date
-      AND a.time_in IS NOT NULL
-      AND a.time_out IS NOT NULL;
+    -- Skip validation for manual adjustments
+    IF NEW.is_manual_adjustment = 1 THEN
+        SET v_attendance_count = 1;
+    ELSE
+        SELECT COUNT(*) INTO v_attendance_count
+        FROM attendance a
+        WHERE a.employee_id = NEW.employee_id
+          AND a.attendance_date = NEW.report_date
+          AND a.time_in IS NOT NULL
+          AND a.time_out IS NOT NULL;
+    END IF;
     
     IF v_attendance_count = 0 THEN
         SIGNAL SQLSTATE '45000'
