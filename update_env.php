@@ -8,7 +8,7 @@ $newEnv = <<<'ENV'
 DB_HOST=localhost
 DB_USER=jajr_user
 DB_PASS=SecurePass123!
-DB_SCHEMA=attendance_v2
+DB_SCHEMA=attendance_db
 
 # API Keys
 GEMINI_API_KEY=AIzaSyBWu7rBWpsDaaTLG8qktsT5drCq0EYBeT0
