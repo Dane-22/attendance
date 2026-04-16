@@ -1,8 +1,27 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/update_days_worked_errors.log');
+
+// Capture all output and errors
+ob_start();
+$lastError = null;
+
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        $output = ob_get_clean();
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Fatal error: ' . $error['message'] . ' in ' . $error['file'] . ' line ' . $error['line'],
+            'debug_output' => $output
+        ]);
+    }
+});
+
 error_log("[update_days_worked.php] ========== SCRIPT STARTED ==========");
 
 require_once __DIR__ . '/../conn/db_connection.php';
@@ -17,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function fail($message, $statusCode = 400) {
+    ob_clean();
     http_response_code($statusCode);
     echo json_encode(['success' => false, 'message' => $message]);
     exit;
@@ -359,6 +379,7 @@ try {
 
     mysqli_commit($db);
     
+    ob_clean();
     echo json_encode([
         'success' => true,
         'message' => 'Days worked updated successfully.',
