@@ -35,9 +35,11 @@ function attendanceHasColumn($db, $columnName) {
 
 $hasTimeIn = attendanceHasColumn($db, 'time_in');
 $hasTimeOut = attendanceHasColumn($db, 'time_out');
+ $hasStatus = attendanceHasColumn($db, 'status');
 
 $timeInSelect = $hasTimeIn ? "a.time_in" : "NULL";
 $timeOutSelect = $hasTimeOut ? "a.time_out" : "NULL";
+ $statusSelect = $hasStatus ? "a.status" : "''";
 
 // Get ALL attendance logs for the employee on the specified date
 $sql = "SELECT 
@@ -46,7 +48,7 @@ $sql = "SELECT
             a.attendance_date,
             {$timeInSelect} as time_in,
             {$timeOutSelect} as time_out,
-            a.status,
+            {$statusSelect} as status,
             a.branch_name,
             a.created_at
         FROM attendance a

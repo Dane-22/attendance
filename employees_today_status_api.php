@@ -32,12 +32,14 @@ $hasTimeOut = attendanceHasColumn($db, 'time_out');
 $hasIsTimeRunning = attendanceHasColumn($db, 'is_time_running');
 $hasTotalOtHrs = attendanceHasColumn($db, 'total_ot_hrs');
 $hasIsOvertimeRunning = attendanceHasColumn($db, 'is_overtime_running');
+ $hasStatus = attendanceHasColumn($db, 'status');
 
 $timeInSelect = $hasTimeIn ? "a.time_in" : "NULL";
 $timeOutSelect = $hasTimeOut ? "a.time_out" : "NULL";
 $isTimeRunningSelect = $hasIsTimeRunning ? "COALESCE(a.is_time_running, 0)" : "0";
 $totalOtHrsSelect = $hasTotalOtHrs ? "COALESCE(a.total_ot_hrs, '')" : "''";
 $isOvertimeRunningSelect = $hasIsOvertimeRunning ? "COALESCE(a.is_overtime_running, 0)" : "0";
+ $todayStatusSelect = $hasStatus ? "a.status" : "''";
 
 // Midnight auto-close logic: auto-close any open sessions from yesterday at 23:59:59
 function autoCloseYesterdayOpenSessions($db, $today) {
@@ -126,7 +128,7 @@ $sql = "SELECT
             e.branch_id,
             b.branch_name AS assigned_branch_name,
             a.branch_name,
-            a.status as today_status,
+            {$todayStatusSelect} as today_status,
             {$timeInSelect} as time_in,
             {$timeOutSelect} as time_out,
             COALESCE(a.is_auto_absent, 0) as is_auto_absent,
