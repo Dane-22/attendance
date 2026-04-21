@@ -54,6 +54,9 @@ try {
     // Ensure DB session uses PHT (UTC+08:00) for NOW()/CURDATE()
     @mysqli_query($db, "SET time_zone = '+08:00'");
     
+    // Disable ONLY_FULL_GROUP_BY to allow ORDER BY with DISTINCT
+    @mysqli_query($db, "SET SESSION sql_mode = 'ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
+    
     // Set charset to ensure proper JSON encoding
     mysqli_set_charset($db, 'utf8mb4');
     
