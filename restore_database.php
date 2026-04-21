@@ -25,59 +25,82 @@ if (!$conn) {
 }
 echo "✅ Connected to MySQL<br>";
 
-// Create database
+// Drop database if exists and recreate
+mysqli_query($conn, "DROP DATABASE IF EXISTS $database");
 if (!mysqli_query($conn, "CREATE DATABASE IF NOT EXISTS $database")) {
     die("❌ Failed to create database: " . mysqli_error($conn));
 }
 echo "✅ Created database: $database<br>";
 
-// Select the database
-mysqli_select_db($conn, $database);
+// Use mysql command line for better SQL import (handles DELIMITER/triggers properly)
+$command = sprintf(
+    'mysql -h %s -u %s %s %s < "%s" 2>&1',
+    escapeshellarg($host),
+    escapeshellarg($user),
+    $pass ? '-p' . escapeshellarg($pass) : '',
+    escapeshellarg($database),
+    $sqlFile
+);
 
-// Read and execute SQL file
-$sql = file_get_contents($sqlFile);
+echo "⏳ Importing SQL dump...<br>";
+$output = shell_exec($command);
+$returnCode = 0;
 
-// Split by semicolons to execute statements individually
-$statements = array_filter(array_map('trim', explode(';', $sql)));
-
-$success = 0;
-$failed = 0;
-
-foreach ($statements as $statement) {
-    if (empty($statement)) continue;
+// Alternative: Try using multi_query if shell_exec fails
+if (empty($output) || strpos($output, 'error') !== false) {
+    echo "⚠️ Shell import had issues, trying PHP method...<br>";
     
-    // Skip comments and empty lines
-    $cleanStatement = trim(preg_replace('/--.*\n/', '', $statement));
-    if (empty($cleanStatement)) continue;
+    // Select the database
+    mysqli_select_db($conn, $database);
     
-    if (mysqli_query($conn, $statement . ';')) {
-        $success++;
-    } else {
-        $failed++;
-        // Only show errors for important statements
-        if (!strpos($statement, 'DROP TABLE') && !strpos($statement, 'INSERT INTO `activity_logs`')) {
-            echo "⚠️ Warning: " . mysqli_error($conn) . "<br>";
+    // Read SQL file
+    $sql = file_get_contents($sqlFile);
+    
+    // Remove DELIMITER commands and normalize trigger syntax
+    $sql = preg_replace('/DELIMITER\s+\$\$/i', '', $sql);
+    $sql = preg_replace('/DELIMITER\s+;/i', '', $sql);
+    $sql = str_replace('$$', ';', $sql);
+    
+    // Remove SQL comments that might cause issues
+    $sql = preg_replace('/--[^\n]*\n/', "\n", $sql);
+    $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
+    
+    // Execute using multi_query
+    if (mysqli_multi_query($conn, $sql)) {
+        do {
+            if ($result = mysqli_store_result($conn)) {
+                mysqli_free_result($result);
+            }
+        } while (mysqli_more_results($conn) && mysqli_next_result($conn));
+        
+        if (mysqli_errno($conn)) {
+            echo "⚠️ Some statements failed: " . mysqli_error($conn) . "<br>";
         }
     }
 }
 
-echo "<br>✅ Database restored!<br>";
-echo "- Successful statements: $success<br>";
-echo "- Failed statements: $failed<br><br>";
+echo "<br>✅ Database restore completed!<br><br>";
 
 // Verify tables
+mysqli_select_db($conn, $database);
 $result = mysqli_query($conn, "SHOW TABLES");
-$tableCount = mysqli_num_rows($result);
-echo "📊 Tables created: $tableCount<br><ul>";
-while ($row = mysqli_fetch_array($result)) {
-    echo "<li>{$row[0]}</li>";
+if ($result) {
+    $tableCount = mysqli_num_rows($result);
+    echo "📊 Tables created: $tableCount<br><ul>";
+    while ($row = mysqli_fetch_array($result)) {
+        echo "<li>{$row[0]}</li>";
+    }
+    echo "</ul>";
+    
+    // Check employees count
+    $empResult = mysqli_query($conn, "SELECT COUNT(*) as count FROM employees");
+    if ($empResult) {
+        $empCount = mysqli_fetch_assoc($empResult)['count'];
+        echo "👥 Employees in database: $empCount<br><br>";
+    }
+} else {
+    echo "⚠️ Could not retrieve tables<br>";
 }
-echo "</ul>";
-
-// Check employees count
-$empResult = mysqli_query($conn, "SELECT COUNT(*) as count FROM employees");
-$empCount = mysqli_fetch_assoc($empResult)['count'];
-echo "👥 Employees in database: $empCount<br><br>";
 
 mysqli_close($conn);
 
