@@ -774,7 +774,7 @@ error_log("[report.php] Payroll calculated, about to load allowances");
 function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $month, $selected_week, $view_type, $selected_branch) {
     // Check if weekly_payroll_reports table exists
     $table_check = mysqli_query($db, "SHOW TABLES LIKE 'weekly_payroll_reports'");
-    // ... rest of the code remains the same ...
+    if (mysqli_num_rows($table_check) == 0) {
         // Table doesn't exist, skip saving
         return;
     }
@@ -838,21 +838,22 @@ function saveWeeklyReportData($db, $employee_payroll, $payroll_totals, $year, $m
                 $sss_deduction = $payroll['sss_deduction'];
                 $philhealth_deduction = $payroll['philhealth_deduction'];
                 $pagibig_deduction = $payroll['pagibig_deduction'];
+            }
+            
+            // Calculate net pay
+            $net_pay = $gross_pay - $payroll['total_deductions'];
+            $payroll['net_pay'] = max(0, $net_pay); // Ensure no negative net pay
+            
+            // Update totals
+            if ($days_worked > 0) {
+                $payroll_totals['total_employees']++;
+            }
+            $payroll_totals['total_days'] += $days_worked;
+            $payroll_totals['total_hours'] += $payroll['total_hours'];
+            $payroll_totals['total_gross'] += $gross_pay;
+            $payroll_totals['total_deductions'] += $payroll['total_deductions'];
+            $payroll_totals['total_net'] += $payroll['net_pay'];
         }
-        
-        // Calculate net pay
-        $net_pay = $gross_pay - $payroll['total_deductions'];
-        $payroll['net_pay'] = max(0, $net_pay); // Ensure no negative net pay
-        
-        // Update totals
-        if ($days_worked > 0) {
-            $payroll_totals['total_employees']++;
-        }
-        $payroll_totals['total_days'] += $days_worked;
-        $payroll_totals['total_hours'] += $payroll['total_hours'];
-        $payroll_totals['total_gross'] += $gross_pay;
-        $payroll_totals['total_deductions'] += $payroll['total_deductions'];
-        $payroll_totals['total_net'] += $payroll['net_pay'];
     }
     unset($payroll); // Break reference
 }
