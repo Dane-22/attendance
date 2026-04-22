@@ -174,6 +174,11 @@ $total_branch_pages = ceil($total_branches / $branches_per_page);
 $branch_offset = ($branch_page - 1) * $branches_per_page;
 $paginated_branches = array_slice($all_branches_list, $branch_offset, $branches_per_page);
 
+// Check if is_manual_adjustment column exists
+$manual_adjustment_col_check = mysqli_query($db, "SHOW COLUMNS FROM daily_payroll_reports LIKE 'is_manual_adjustment'");
+$has_manual_adjustment_col = mysqli_num_rows($manual_adjustment_col_check) > 0;
+mysqli_free_result($manual_adjustment_col_check);
+
 // Fetch payroll data from daily_payroll_reports for the date range (primary source)
 error_log("[report.php] About to fetch payroll data");
 $payroll_query = "SELECT 
@@ -197,8 +202,14 @@ $payroll_query = "SELECT
                     dpr.total_deductions,
                     dpr.take_home_pay,
                     dpr.status,
-                    dpr.branch_id,
-                    IFNULL(dpr.is_manual_adjustment, 0) as is_manual_adjustment,
+                    dpr.branch_id";
+
+if ($has_manual_adjustment_col) {
+    $payroll_query .= ",
+                    IFNULL(dpr.is_manual_adjustment, 0) as is_manual_adjustment";
+}
+
+$payroll_query .= ",
                     b.branch_name,
                     e.first_name,
                     e.last_name,
@@ -453,8 +464,8 @@ while ($row = mysqli_fetch_assoc($payroll_result)) {
             'ot_hours' => floatval($row['ot_hours'] ?? 0)
         ];
         
-        // Track if this employee has manual adjustments
-        if (!empty($row['is_manual_adjustment'])) {
+        // Track if this employee has manual adjustments (only if column exists)
+        if ($has_manual_adjustment_col && !empty($row['is_manual_adjustment'])) {
             $employee_payroll[$emp_id]['_has_manual_adjustment'] = true;
         }
     }
